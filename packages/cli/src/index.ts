@@ -1,3 +1,3 @@
-export const testie = () => {
-  return "testie";
+export const browserTester = () => {
+  return "browser-tester";
 };

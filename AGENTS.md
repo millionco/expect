@@ -1,4 +1,4 @@
-# Testie
+# Browser Tester
 
 ## Coding Standards
 

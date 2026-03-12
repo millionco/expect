@@ -1,5 +1,5 @@
 {
-  "name": "testie",
+  "name": "browser-tester",
   "private": true,
   "scripts": {
     "dev": "turbo dev",
