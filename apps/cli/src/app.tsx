@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import type { BrowserEnvironmentHints, BrowserFlowPlan, TestTarget } from "@browser-tester/orchestrator";
-import { COLORS, VERSION } from "./constants.js";
+import { Avatar } from "./avatar.js";
+import { COLORS } from "./constants.js";
 import { MenuItem } from "./menu-item.js";
 import { BranchSwitcherScreen } from "./branch-switcher-screen.js";
 import { CommitPickerScreen } from "./commit-picker-screen.js";
-import { ColoredLogo } from "./colored-logo.js";
 import { FlowInputScreen } from "./flow-input-screen.js";
 import { PlanningScreen } from "./planning-screen.js";
 import { PlanReviewScreen } from "./plan-review-screen.js";
@@ -290,29 +290,20 @@ export const App = () => {
   }
 
   return (
-    <Box flexDirection="column" width="100%" paddingX={2} paddingY={1}>
-      <Box
-        flexDirection="column"
-        borderStyle="double"
-        borderColor={COLORS.BORDER}
-        paddingX={2}
-        paddingY={1}
-      >
-        <Box flexDirection="row" justifyContent="space-between">
-          <Text color="white" bold>browser-tester</Text>
-          <Text color={COLORS.DIM}>v{VERSION}</Text>
+    <Box flexDirection="column" width="100%" paddingX={1} paddingY={1}>
+      <Box flexDirection="row" gap={2}>
+        <Avatar />
+        <Box flexDirection="column">
+          <Text bold color={COLORS.TEXT}>browser-tester</Text>
+          <Text color={COLORS.DIM}>AI-powered browser testing</Text>
         </Box>
+      </Box>
 
-        <Text color={COLORS.DIM}>═══════════════════════════════════════</Text>
+      <Text color={COLORS.DIVIDER}>────────────────────────────────────────</Text>
 
-        <Box marginTop={1}>
-          <ColoredLogo />
-        </Box>
-        <Text color={COLORS.TEXT}>AI-powered browser testing for your changes</Text>
-
-        <Text color={COLORS.DIM}>───────────────────────────────────────</Text>
-
-        <Box flexDirection="column" marginTop={1} gap={1}>
+      <Box marginTop={1} flexDirection="column">
+        <Text bold color={COLORS.TEXT}>Actions</Text>
+        <Box flexDirection="column" marginTop={0}>
           {menuOptions.map((option, index) => (
             <MenuItem
               key={option.label}
@@ -325,23 +316,25 @@ export const App = () => {
         </Box>
       </Box>
 
-      <Box flexDirection="row" justifyContent="space-between" width="100%" marginTop={1}>
+      <Text color={COLORS.DIVIDER}>────────────────────────────────────────</Text>
+
+      <Box marginTop={1} flexDirection="column">
+        <Text bold color={COLORS.TEXT}>Options</Text>
         <Text color={COLORS.DIM}>
-          <Text color={COLORS.CYAN}>↑↓</Text> navigate · <Text color={COLORS.CYAN}>[b]</Text> branch
-          <Text color={COLORS.AMBER}> {gitState.currentBranch}</Text>
-          {menuOptions[selectedIndex]?.action === "test-unstaged" && gitState.diffStats ? (
-            <>
-              <Text color={COLORS.DIM}> · </Text>
-              <Text color={COLORS.GREEN}>+{gitState.diffStats.additions}</Text>
-              <Text color={COLORS.DIM}> </Text>
-              <Text color={COLORS.RED}>-{gitState.diffStats.deletions}</Text>
-              <Text color={COLORS.DIM}> · {gitState.diffStats.filesChanged} files</Text>
-            </>
-          ) : null}
+          auto-run after planning (<Text color={COLORS.PURPLE}>tab</Text>):{" "}
+          <Text color={autoRunAfterPlanning ? COLORS.GREEN : COLORS.DIM}>
+            {autoRunAfterPlanning ? "yes" : "no"}
+          </Text>
         </Text>
-        <Text color={autoRunAfterPlanning ? COLORS.AMBER : COLORS.DIM}>
-          auto-run: {autoRunAfterPlanning ? "ON" : "OFF"}
-          <Text color={COLORS.DIM}> <Text color={COLORS.CYAN}>[tab]</Text></Text>
+      </Box>
+
+      <Text color={COLORS.DIVIDER}>────────────────────────────────────────</Text>
+
+      <Box marginTop={1}>
+        <Text color={COLORS.DIM}>
+          (<Text color={COLORS.PURPLE}>b</Text>) switch branch <Text color={COLORS.DIM}>({gitState.currentBranch})</Text>{" "}
+          (<Text color={COLORS.PURPLE}>j/k</Text>) navigate{" "}
+          (<Text color={COLORS.PURPLE}>RET</Text>) select
         </Text>
       </Box>
     </Box>

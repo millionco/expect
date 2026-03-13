@@ -30,14 +30,14 @@ export const FLOW_DESCRIPTION_CHAR_LIMIT = 120;
 
 export const COLORS = {
   TEXT: "white",
-  DIM: "gray",
+  DIM: "#888888",
   GREEN: "greenBright",
   SELECTION: "cyanBright",
   RED: "redBright",
   BORDER: "gray",
   DIVIDER: "gray",
   YELLOW: "yellowBright",
-  PURPLE: "magentaBright",
+  PURPLE: "blueBright",
   CYAN: "cyanBright",
   AMBER: "yellowBright",
 } as const;
