@@ -1,4 +1,5 @@
 import { exec } from "child_process";
+import { GH_TIMEOUT_MS, PR_LIMIT } from "../constants.js";
 
 export interface RemoteBranch {
   name: string;
@@ -6,8 +7,6 @@ export interface RemoteBranch {
   prNumber: number | null;
   prStatus: "open" | "draft" | "merged" | null;
 }
-
-const GH_TIMEOUT_MS = 15000;
 
 const normalizePrStatus = (
   state: string,
@@ -37,7 +36,7 @@ const execAsync = (command: string): Promise<string> =>
 const fetchPrs = async (state: string): Promise<GhPr[]> => {
   try {
     const output = await execAsync(
-      `gh pr list --state ${state} --limit 100 --json headRefName,author,number,state,isDraft`,
+      `gh pr list --state ${state} --limit ${PR_LIMIT} --json headRefName,author,number,state,isDraft`,
     );
     return JSON.parse(output);
   } catch {

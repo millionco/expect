@@ -1,6 +1,5 @@
 import { execSync } from "child_process";
-
-const GIT_TIMEOUT_MS = 5000;
+import { GIT_TIMEOUT_MS } from "../constants.js";
 
 export const fetchLocalBranches = (): string[] => {
   try {

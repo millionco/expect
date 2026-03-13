@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
 import { Text } from "ink";
-import { COLORS } from "./constants.js";
+import { COLORS, SPINNER_INTERVAL_MS } from "./constants.js";
 
 const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-
-const SPINNER_INTERVAL_MS = 80;
 
 interface SpinnerProps {
   message: string;

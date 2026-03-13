@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
-import { COLORS, SEARCH_PLACEHOLDER } from "./constants.js";
+import { COLORS, COLUMN_PADDING, SEARCH_PLACEHOLDER } from "./constants.js";
 import { fetchCommits, type Commit } from "./utils/fetch-commits.js";
 
 interface CommitPickerScreenProps {
@@ -25,7 +25,7 @@ export const CommitPickerScreen = ({ onSelect }: CommitPickerScreenProps) => {
   }, [commits, searchQuery]);
 
   const maxHashWidth = useMemo(
-    () => Math.max(...filteredCommits.map((commit) => commit.shortHash.length), 0),
+    () => Math.max(...filteredCommits.map((commit) => commit.shortHash.length), 0) + COLUMN_PADDING,
     [filteredCommits],
   );
 
@@ -67,7 +67,7 @@ export const CommitPickerScreen = ({ onSelect }: CommitPickerScreenProps) => {
         {filteredCommits.map((commit, index) => (
           <Text key={commit.hash} color={index === highlightedIndex ? COLORS.SELECTION : COLORS.TEXT}>
             {index === highlightedIndex ? "➤ " : "  "}
-            <Text color={COLORS.YELLOW}>{commit.shortHash.padEnd(maxHashWidth + 1)}</Text>
+            <Text color={COLORS.YELLOW}>{commit.shortHash.padEnd(maxHashWidth)}</Text>
             <Text color={index === highlightedIndex ? COLORS.SELECTION : COLORS.TEXT}>
               {commit.subject}
             </Text>

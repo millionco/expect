@@ -1,4 +1,5 @@
 import { execSync } from "child_process";
+import { COMMIT_LIMIT, GIT_TIMEOUT_MS } from "../constants.js";
 
 export interface Commit {
   hash: string;
@@ -8,10 +9,9 @@ export interface Commit {
   relativeDate: string;
 }
 
-const GIT_TIMEOUT_MS = 5000;
 const FIELD_SEPARATOR = "---FIELD---";
 
-export const fetchCommits = (limit: number = 50): Commit[] => {
+export const fetchCommits = (limit: number = COMMIT_LIMIT): Commit[] => {
   try {
     const format = ["%H", "%h", "%s", "%an", "%cr"].join(FIELD_SEPARATOR);
     const output = execSync(

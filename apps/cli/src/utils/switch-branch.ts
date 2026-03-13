@@ -1,12 +1,11 @@
 import { execSync } from "child_process";
-
-const GIT_TIMEOUT_MS = 10000;
+import { SWITCH_BRANCH_TIMEOUT_MS } from "../constants.js";
 
 export const switchBranch = (branch: string): boolean => {
   try {
     execSync(`git checkout ${branch}`, {
       encoding: "utf-8",
-      timeout: GIT_TIMEOUT_MS,
+      timeout: SWITCH_BRANCH_TIMEOUT_MS,
       stdio: "pipe",
     });
     return true;

@@ -1,4 +1,5 @@
 import { execSync } from "child_process";
+import { GIT_TIMEOUT_MS } from "../constants.js";
 
 export interface DiffStats {
   additions: number;
@@ -18,7 +19,6 @@ export interface GitState {
 export type TestScope = "unstaged-changes" | "select-commit" | "entire-branch" | "select-branch";
 
 const MAIN_BRANCH_NAMES = ["main", "master"];
-const GIT_TIMEOUT_MS = 5000;
 
 const execGit = (command: string): string | null => {
   try {

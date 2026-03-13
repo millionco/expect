@@ -80,8 +80,6 @@ export const App = () => {
   const recommendedScope = gitState ? getRecommendedScope(gitState) : null;
   const menuOptions =
     gitState && recommendedScope ? buildMenuOptions(recommendedScope, gitState) : [];
-  const showSwitchBranch = Boolean(recommendedScope);
-
   useInput((input, key) => {
     if (!gitState || !recommendedScope) return;
 
@@ -99,7 +97,7 @@ export const App = () => {
       setSelectedIndex((previous) => Math.max(0, previous - 1));
     }
 
-    if (input === "b" && showSwitchBranch) {
+    if (input === "b") {
       setScreen("switch-branch");
     }
 
@@ -181,9 +179,7 @@ export const App = () => {
       />
 
       <Text color={COLORS.DIM}>
-        {showSwitchBranch
-          ? "↑/↓ to navigate · Enter to select · [b] switch branch"
-          : "Enter to select"}
+        ↑/↓ to navigate · Enter to select · [b] switch branch
       </Text>
     </Box>
   );

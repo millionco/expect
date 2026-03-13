@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Box, Text } from "ink";
+import { LOGO_ANIMATION_INTERVAL_MS } from "./constants.js";
 
 const LOGO_LINES = [
   "   __            __  _    ",
@@ -20,15 +21,13 @@ const SHADES = [
   "#dd6611",
 ];
 
-const ANIMATION_INTERVAL_MS = 400;
-
 export const ColoredLogo = () => {
   const [offset, setOffset] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setOffset((previous) => (previous + 1) % SHADES.length);
-    }, ANIMATION_INTERVAL_MS);
+    }, LOGO_ANIMATION_INTERVAL_MS);
     return () => clearInterval(interval);
   }, []);
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
-import { COLORS, SEARCH_PLACEHOLDER } from "./constants.js";
+import { COLORS, COLUMN_PADDING, SEARCH_PLACEHOLDER } from "./constants.js";
 import { fetchLocalBranches } from "./utils/fetch-local-branches.js";
 import { fetchRemoteBranches, type RemoteBranch } from "./utils/fetch-remote-branches.js";
 import { Spinner } from "./spinner.js";
@@ -71,12 +71,12 @@ export const BranchSwitcherScreen = ({ onSelect }: BranchSwitcherScreenProps) =>
   }, [remoteBranches, searchQuery, activeFilter]);
 
   const maxBranchWidth = useMemo(
-    () => Math.max(...filteredRemoteBranches.map((branch) => branch.name.length), 0),
+    () => Math.max(...filteredRemoteBranches.map((branch) => branch.name.length), 0) + COLUMN_PADDING,
     [filteredRemoteBranches],
   );
 
   const maxAuthorWidth = useMemo(
-    () => Math.max(...filteredRemoteBranches.map((branch) => branch.author.length), 0),
+    () => Math.max(...filteredRemoteBranches.map((branch) => branch.author.length), 0) + COLUMN_PADDING,
     [filteredRemoteBranches],
   );
 
@@ -173,9 +173,9 @@ export const BranchSwitcherScreen = ({ onSelect }: BranchSwitcherScreenProps) =>
               filteredRemoteBranches.map((branch, index) => (
                 <Text key={branch.name} color={index === highlightedIndex ? COLORS.SELECTION : COLORS.TEXT}>
                   {index === highlightedIndex ? "➤ " : "  "}
-                  {branch.name.padEnd(maxBranchWidth + 2)}
+                  {branch.name.padEnd(maxBranchWidth)}
                   {branch.author && (
-                    <Text color={COLORS.YELLOW}>{branch.author.padEnd(maxAuthorWidth + 2)}</Text>
+                    <Text color={COLORS.YELLOW}>{branch.author.padEnd(maxAuthorWidth)}</Text>
                   )}
                   <PrBadge branch={branch} />
                 </Text>
