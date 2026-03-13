@@ -5,6 +5,9 @@ export type AriaRole = Parameters<Page["getByRole"]>[0];
 
 export interface SnapshotOptions {
   timeout?: number;
+  interactive?: boolean;
+  compact?: boolean;
+  maxDepth?: number;
 }
 
 export interface RefEntry {

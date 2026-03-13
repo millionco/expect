@@ -248,4 +248,164 @@ describe("snapshot", () => {
       expect(result.tree).toContain("paragraph");
     });
   });
+
+  describe("interactive filter", () => {
+    it("should only include interactive elements", async () => {
+      await page.setContent(`
+        <html><body>
+          <h1>Title</h1>
+          <p>Description</p>
+          <button>Submit</button>
+          <a href="/link">Link</a>
+          <input type="text" placeholder="Name" />
+        </body></html>
+      `);
+
+      const result = await snapshot(page, { interactive: true });
+      const roles = Object.values(result.refs).map((entry) => entry.role);
+      expect(roles).toContain("button");
+      expect(roles).toContain("link");
+      expect(roles).toContain("textbox");
+      expect(roles).not.toContain("heading");
+      expect(roles).not.toContain("paragraph");
+    });
+
+    it("should return no interactive elements message for static page", async () => {
+      await page.setContent(`
+        <html><body>
+          <h1>Title</h1>
+          <p>Just text</p>
+        </body></html>
+      `);
+
+      const result = await snapshot(page, { interactive: true });
+      expect(result.tree).toBe("(no interactive elements)");
+      expect(Object.keys(result.refs).length).toBe(0);
+    });
+
+    it("should exclude non-interactive tree lines", async () => {
+      await page.setContent(`
+        <html><body>
+          <h1>Title</h1>
+          <button>OK</button>
+        </body></html>
+      `);
+
+      const result = await snapshot(page, { interactive: true });
+      expect(result.tree).not.toContain("heading");
+      expect(result.tree).toContain("button");
+    });
+  });
+
+  describe("compact filter", () => {
+    it("should remove empty structural nodes without refs", async () => {
+      await page.setContent(`
+        <html><body>
+          <div>
+            <div>
+              <button>Deep</button>
+            </div>
+          </div>
+        </body></html>
+      `);
+
+      const full = await snapshot(page);
+      const compacted = await snapshot(page, { compact: true });
+      expect(compacted.tree.split("\n").length).toBeLessThanOrEqual(full.tree.split("\n").length);
+      expect(compacted.tree).toContain("button");
+      expect(compacted.tree).toContain("[ref=");
+    });
+
+    it("should keep structural parents of ref-bearing children", async () => {
+      await page.setContent(`
+        <html><body>
+          <nav>
+            <a href="/home">Home</a>
+            <a href="/about">About</a>
+          </nav>
+        </body></html>
+      `);
+
+      const result = await snapshot(page, { compact: true });
+      expect(result.tree).toContain("navigation");
+      expect(result.tree).toContain("link");
+    });
+  });
+
+  describe("maxDepth filter", () => {
+    it("should limit tree depth", async () => {
+      await page.setContent(`
+        <html><body>
+          <nav>
+            <ul>
+              <li><a href="/home">Home</a></li>
+              <li><a href="/about">About</a></li>
+            </ul>
+          </nav>
+        </body></html>
+      `);
+
+      const shallow = await snapshot(page, { maxDepth: 1 });
+      const deep = await snapshot(page);
+      expect(shallow.tree.split("\n").length).toBeLessThan(deep.tree.split("\n").length);
+    });
+
+    it("should return top-level elements only at depth 0", async () => {
+      await page.setContent(`
+        <html><body>
+          <h1>Title</h1>
+          <nav>
+            <a href="/link">Link</a>
+          </nav>
+        </body></html>
+      `);
+
+      const result = await snapshot(page, { maxDepth: 0 });
+      for (const line of result.tree.split("\n")) {
+        if (line.trim()) {
+          expect(line).toMatch(/^- /);
+        }
+      }
+    });
+  });
+
+  describe("combined filters", () => {
+    it("should apply interactive and compact together", async () => {
+      await page.setContent(`
+        <html><body>
+          <h1>Title</h1>
+          <div>
+            <div>
+              <button>Submit</button>
+            </div>
+          </div>
+          <p>Footer text</p>
+        </body></html>
+      `);
+
+      const result = await snapshot(page, { interactive: true, compact: true });
+      expect(result.tree).toContain("button");
+      expect(result.tree).not.toContain("heading");
+      expect(result.tree).not.toContain("paragraph");
+      expect(Object.keys(result.refs).length).toBe(1);
+    });
+
+    it("should apply interactive and maxDepth together", async () => {
+      await page.setContent(`
+        <html><body>
+          <nav>
+            <ul>
+              <li><a href="/home">Home</a></li>
+            </ul>
+          </nav>
+          <button>Top</button>
+        </body></html>
+      `);
+
+      const result = await snapshot(page, { interactive: true, maxDepth: 0 });
+      const roles = Object.values(result.refs).map((entry) => entry.role);
+      expect(roles).toContain("button");
+      expect(roles).not.toContain("link");
+    });
+  });
 });
