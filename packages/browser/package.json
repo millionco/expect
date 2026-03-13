@@ -19,6 +19,16 @@
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
+    },
+    "./mcp": {
+      "import": {
+        "types": "./dist/mcp.d.ts",
+        "default": "./dist/mcp.js"
+      },
+      "require": {
+        "types": "./dist/mcp.d.cts",
+        "default": "./dist/mcp.cjs"
+      }
     }
   },
   "scripts": {
@@ -30,7 +40,9 @@
   },
   "dependencies": {
     "@browser-tester/cookies": "workspace:*",
-    "playwright": "^1.52.0"
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "playwright": "^1.52.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",

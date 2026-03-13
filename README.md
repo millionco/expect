@@ -43,8 +43,6 @@ Core workflow:
 Other commands: fill, type, select, hover, screenshot (--annotate), diff, --video
 ```
 
-
-
 ### 3/12 notes
 
 **P0**: GET USERS
