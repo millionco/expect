@@ -9,7 +9,7 @@ export const COMMIT_LIMIT = 50;
 export const PR_LIMIT = 100;
 export const COLUMN_PADDING = 2;
 export const SPINNER_INTERVAL_MS = 80;
-export const LOGO_ANIMATION_INTERVAL_MS = 400;
+
 export const COLORS = {
   TEXT: "#cccccc",
   DIM: "#666666",

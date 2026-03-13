@@ -34,11 +34,11 @@ export const CommitPickerScreen = ({ onSelect }: CommitPickerScreenProps) => {
     setHighlightedIndex(0);
   }, []);
 
-  useInput((_input, key) => {
-    if (key.downArrow) {
+  useInput((input, key) => {
+    if (key.downArrow || (key.ctrl && input === "n")) {
       setHighlightedIndex((previous) => Math.min(filteredCommits.length - 1, previous + 1));
     }
-    if (key.upArrow) {
+    if (key.upArrow || (key.ctrl && input === "p")) {
       setHighlightedIndex((previous) => Math.max(0, previous - 1));
     }
     if (key.return && filteredCommits.length > 0) {

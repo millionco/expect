@@ -95,10 +95,10 @@ export const App = () => {
       return;
     }
 
-    if (key.downArrow || input === "j") {
+    if (key.downArrow || input === "j" || (key.ctrl && input === "n")) {
       setSelectedIndex((previous) => Math.min(menuOptions.length - 1, previous + 1));
     }
-    if (key.upArrow || input === "k") {
+    if (key.upArrow || input === "k" || (key.ctrl && input === "p")) {
       setSelectedIndex((previous) => Math.max(0, previous - 1));
     }
 

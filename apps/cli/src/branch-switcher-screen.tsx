@@ -95,7 +95,7 @@ export const BranchSwitcherScreen = ({ onSelect }: BranchSwitcherScreenProps) =>
     [activeFilter],
   );
 
-  useInput((_input, key) => {
+  useInput((input, key) => {
     if (key.tab) {
       setActiveTab((previous) => (previous === "local" ? "remote" : "local"));
       setHighlightedIndex(0);
@@ -103,12 +103,12 @@ export const BranchSwitcherScreen = ({ onSelect }: BranchSwitcherScreenProps) =>
       return;
     }
 
-    if (key.downArrow) {
+    if (key.downArrow || (key.ctrl && input === "n")) {
       const max =
         activeTab === "local" ? filteredLocalBranches.length - 1 : filteredRemoteBranches.length - 1;
       setHighlightedIndex((previous) => Math.min(max, previous + 1));
     }
-    if (key.upArrow) {
+    if (key.upArrow || (key.ctrl && input === "p")) {
       setHighlightedIndex((previous) => Math.max(0, previous - 1));
     }
 
