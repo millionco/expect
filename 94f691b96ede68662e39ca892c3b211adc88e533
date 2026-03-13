@@ -1,0 +1,61 @@
+packages/orchestrator/src/constants.ts
+  50d1e19b02624a3a 5,9,11
+  fd528823e8d35d8e 6-8
+packages/agent/src/types.ts
+  fd528823e8d35d8e 14-15,22
+  50d1e19b02624a3a 7-13,21,23-24
+packages/utils/package.json
+  50d1e19b02624a3a 5-7,9-11,13-22,25-26,33
+packages/orchestrator/src/json.ts
+  50d1e19b02624a3a 1-26,28-35,37-45,47-59,62-70,72
+packages/agent/src/claude.ts
+  fd528823e8d35d8e 150
+  50d1e19b02624a3a 1-3,24-36,49,60-67,140-142,144,147-148,155-160
+packages/orchestrator/src/plan-browser-flow.ts
+  50d1e19b02624a3a 5,8-10,43-45,56,62-63
+  fd528823e8d35d8e 7,14-15,42,54,69-70,84,90
+packages/orchestrator/src/utils/prioritize-planning-files.ts
+  fd528823e8d35d8e 1-66
+packages/orchestrator/tests/plan-browser-flow.test.ts
+  fd528823e8d35d8e 117-170
+  50d1e19b02624a3a 85,113
+packages/orchestrator/src/utils/build-planning-diff-preview.ts
+  fd528823e8d35d8e 2-41,43-58
+packages/orchestrator/tests/json.test.ts
+  50d1e19b02624a3a 1-31
+packages/utils/tsup.config.ts
+  50d1e19b02624a3a 1-9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.11",
+  "base_commit_sha": "94f691b96ede68662e39ca892c3b211adc88e533",
+  "prompts": {
+    "50d1e19b02624a3a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "0b93beb0-d7d2-4d91-b099-e9dac1ed530f",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 546,
+      "total_deletions": 286,
+      "accepted_lines": 285,
+      "overriden_lines": 1
+    },
+    "fd528823e8d35d8e": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "",
+        "model": ""
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 226,
+      "total_deletions": 23,
+      "accepted_lines": 192,
+      "overriden_lines": 2
+    }
+  }
+}
