@@ -27,8 +27,6 @@ interface ScopeMenuOption {
   diffStats?: DiffStats;
 }
 
-const hasSwitchBranchTool = (_scope: TestScope): boolean => true;
-
 const buildMenuOptions = (scope: TestScope, gitState: GitState): ScopeMenuOption[] => {
   switch (scope) {
     case "unstaged-changes": {
@@ -82,7 +80,7 @@ export const App = () => {
   const recommendedScope = gitState ? getRecommendedScope(gitState) : null;
   const menuOptions =
     gitState && recommendedScope ? buildMenuOptions(recommendedScope, gitState) : [];
-  const showSwitchBranch = Boolean(recommendedScope && hasSwitchBranchTool(recommendedScope));
+  const showSwitchBranch = Boolean(recommendedScope);
 
   useInput((input, key) => {
     if (!gitState || !recommendedScope) return;
