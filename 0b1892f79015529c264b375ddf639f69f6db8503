@@ -1,0 +1,57 @@
+apps/cli/src/utils/live-chrome-options.ts
+  54644803251e112f 30,33,67
+packages/orchestrator/src/browser-mcp-config.ts
+  54644803251e112f 4,8,26-35,50,54,86-88,91-96,98-136
+packages/orchestrator/src/types.ts
+  54644803251e112f 82
+packages/orchestrator/tests/browser-mcp-config.test.ts
+  54644803251e112f 10,24,43-69
+apps/cli/src/testing-screen.tsx
+  54644803251e112f 74-81,84-85,92-93,110,113,118,127,135-136
+packages/orchestrator/src/execute-browser-flow.ts
+  54644803251e112f 7,24,28-34,38,43-51,53,73,77,104-106,124-126,130,133-134,136-145,154,398
+  fd528823e8d35d8e 25-27,35-37,39-42,52,54-57,393-397,399-406
+apps/cli/src/utils/run-test.ts
+  54644803251e112f 20-27,31,46-48,119-123,127
+  fd528823e8d35d8e 76-78,107,136,138-140
+packages/orchestrator/tests/plan-browser-flow.test.ts
+  54644803251e112f 105,122,124
+packages/orchestrator/src/plan-browser-flow.ts
+  54644803251e112f 106,126
+packages/orchestrator/tests/execute-browser-flow.test.ts
+  fd528823e8d35d8e 87-126,244,275-283,285-308
+  54644803251e112f 218,245-274,284,310-344
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.11",
+  "base_commit_sha": "0b1892f79015529c264b375ddf639f69f6db8503",
+  "prompts": {
+    "54644803251e112f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "47268e78-7c6f-4a62-b557-9d454f8fb53f",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 273,
+      "total_deletions": 61,
+      "accepted_lines": 249,
+      "overriden_lines": 0
+    },
+    "fd528823e8d35d8e": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "",
+        "model": ""
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 139,
+      "total_deletions": 23,
+      "accepted_lines": 112,
+      "overriden_lines": 0
+    }
+  }
+}
