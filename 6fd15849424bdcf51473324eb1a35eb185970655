@@ -1,0 +1,57 @@
+packages/mcp/src/server.ts
+  54644803251e112f 15,39-41,44-47,52-57,60-62,98-99,110-123,129,131-135,165-235,256,268,275-280,288-295,302,304,311,313-315,318-321,326-347,349-377,578-580,582,586,828,848,871,895-899,902-903,909,914-915,1038-1042,1044-1049,1051
+packages/orchestrator/src/types.ts
+  54644803251e112f 81-86
+apps/cli/src/utils/run-test.ts
+  54644803251e112f 1,20-37,63-66,69-70,96,99-105,117,121
+packages/browser/src/constants.ts
+  54644803251e112f 10-16
+apps/cli/src/testing-screen.tsx
+  54644803251e112f 72-73
+packages/browser/tests/resolve-live-chrome-cdp-endpoint.test.ts
+  54644803251e112f 1-51
+packages/orchestrator/src/plan-browser-flow.ts
+  54644803251e112f 105-114,124-126
+apps/cli/src/utils/browser-agent.ts
+  54644803251e112f 18,44-51,77-78
+packages/browser/src/create-page.ts
+  54644803251e112f 10,13,41-166,168-172,187,192,197-199,206-218
+packages/orchestrator/src/browser-mcp-config.ts
+  54644803251e112f 5,9-19,25-71
+packages/orchestrator/tests/browser-mcp-config.test.ts
+  54644803251e112f 1-41
+packages/browser/src/utils/resolve-live-chrome-cdp-endpoint.ts
+  54644803251e112f 1-63
+packages/browser/src/types.ts
+  54644803251e112f 57-62,69-70
+apps/cli/src/utils/live-chrome-options.ts
+  54644803251e112f 1-70
+packages/orchestrator/src/execute-browser-flow.ts
+  54644803251e112f 7,21-23,28,43-46,69,76-78,87-89,91-100,106-115,255-256,259
+apps/cli/src/index.tsx
+  54644803251e112f 9,16-20,23-26,31-34,40-50,53
+packages/orchestrator/tests/execute-browser-flow.test.ts
+  54644803251e112f 167-193,195-202
+packages/orchestrator/tests/plan-browser-flow.test.ts
+  54644803251e112f 104-107,121-123
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.11",
+  "base_commit_sha": "6fd15849424bdcf51473324eb1a35eb185970655",
+  "prompts": {
+    "54644803251e112f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "47268e78-7c6f-4a62-b557-9d454f8fb53f",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 921,
+      "total_deletions": 85,
+      "accepted_lines": 855,
+      "overriden_lines": 5
+    }
+  }
+}
