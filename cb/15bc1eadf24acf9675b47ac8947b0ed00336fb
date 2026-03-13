@@ -1,0 +1,27 @@
+apps/cli/src/utils/run-test.ts
+  6f37e56f375c25d0 1,6-9,17-45,67-72,74-80
+apps/cli/package.json
+  6f37e56f375c25d0 24,30
+apps/cli/tsup.config.ts
+  6f37e56f375c25d0 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.11",
+  "base_commit_sha": "cb15bc1eadf24acf9675b47ac8947b0ed00336fb",
+  "prompts": {
+    "6f37e56f375c25d0": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "7c936193-aeab-4851-a56f-09f4a0c1f888",
+        "model": "claude-4.6-opus-max-thinking-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 53,
+      "total_deletions": 5,
+      "accepted_lines": 51,
+      "overriden_lines": 0
+    }
+  }
+}
