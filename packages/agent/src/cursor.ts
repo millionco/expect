@@ -174,7 +174,11 @@ const spawnCursorAgent = async function* (
 
   const realWorkspace = settings.cwd ?? process.cwd();
   const overlayDir = settings.mcpServers
-    ? createWorkspaceOverlay(realWorkspace, settings.mcpServers, settings.executable ?? "cursor-agent")
+    ? createWorkspaceOverlay(
+        realWorkspace,
+        settings.mcpServers,
+        settings.executable ?? "cursor-agent",
+      )
     : undefined;
   const workspace = overlayDir ?? realWorkspace;
 

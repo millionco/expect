@@ -31,7 +31,10 @@ describe("detectDefaultBrowser", () => {
   });
 
   it("maps Edge macOS bundle id", async () => {
-    mockedGetDefaultBrowser.mockResolvedValue({ name: "Microsoft Edge", id: "com.microsoft.edgemac" });
+    mockedGetDefaultBrowser.mockResolvedValue({
+      name: "Microsoft Edge",
+      id: "com.microsoft.edgemac",
+    });
     expect(await detectDefaultBrowser()).toBe("edge");
   });
 
@@ -41,7 +44,10 @@ describe("detectDefaultBrowser", () => {
   });
 
   it("maps Linux desktop file id", async () => {
-    mockedGetDefaultBrowser.mockResolvedValue({ name: "Google Chrome", id: "google-chrome.desktop" });
+    mockedGetDefaultBrowser.mockResolvedValue({
+      name: "Google Chrome",
+      id: "google-chrome.desktop",
+    });
     expect(await detectDefaultBrowser()).toBe("chrome");
   });
 

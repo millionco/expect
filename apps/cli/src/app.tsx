@@ -201,16 +201,16 @@ export const App = () => {
         <Text color={COLORS.DIM}>
           ↑/↓ navigate · <Text color={COLORS.TEXT}>[b]</Text> switch branch
           <Text color={COLORS.TEXT}> {gitState.currentBranch}</Text>
-          {menuOptions[selectedIndex]?.action === "test-unstaged" && gitState.diffStats
-            ? <>
-                <Text color={COLORS.DIM}> · </Text>
-                <Text color={COLORS.GREEN}>+{gitState.diffStats.additions}</Text>
-                <Text color={COLORS.DIM}> </Text>
-                <Text color={COLORS.RED}>-{gitState.diffStats.deletions}</Text>
-                <Text color={COLORS.DIM}> · {gitState.diffStats.filesChanged} files</Text>
-              </>
-            : null}
-          </Text>
+          {menuOptions[selectedIndex]?.action === "test-unstaged" && gitState.diffStats ? (
+            <>
+              <Text color={COLORS.DIM}> · </Text>
+              <Text color={COLORS.GREEN}>+{gitState.diffStats.additions}</Text>
+              <Text color={COLORS.DIM}> </Text>
+              <Text color={COLORS.RED}>-{gitState.diffStats.deletions}</Text>
+              <Text color={COLORS.DIM}> · {gitState.diffStats.filesChanged} files</Text>
+            </>
+          ) : null}
+        </Text>
         <Text color={reviewPlan ? COLORS.DIM : COLORS.YELLOW}>
           {reviewPlan ? "⏵⏵" : "⏵⏵"} Automatically begin testing after planning
           <Text color={COLORS.DIM}> (tab)</Text>

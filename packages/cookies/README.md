@@ -61,14 +61,14 @@ const { cookies, warnings } = await extractCookies({
 });
 ```
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `url` | `string` | required | URL to match cookies against |
-| `browsers` | `Browser[]` | `["chrome","brave","edge","arc","firefox","safari"]` | Browsers to search |
-| `names` | `string[]` | all | Filter by cookie name |
-| `includeExpired` | `boolean` | `false` | Include expired cookies |
-| `timeoutMs` | `number` | `5000` | Keychain/DPAPI command timeout |
-| `onKeychainAccess` | `(browser) => void` | - | Fires before credential prompt |
+| Option             | Type                | Default                                              | Description                    |
+| ------------------ | ------------------- | ---------------------------------------------------- | ------------------------------ |
+| `url`              | `string`            | required                                             | URL to match cookies against   |
+| `browsers`         | `Browser[]`         | `["chrome","brave","edge","arc","firefox","safari"]` | Browsers to search             |
+| `names`            | `string[]`          | all                                                  | Filter by cookie name          |
+| `includeExpired`   | `boolean`           | `false`                                              | Include expired cookies        |
+| `timeoutMs`        | `number`            | `5000`                                               | Keychain/DPAPI command timeout |
+| `onKeychainAccess` | `(browser) => void` | -                                                    | Fires before credential prompt |
 
 Supported browsers: `chrome` `edge` `brave` `arc` `dia` `helium` `chromium` `vivaldi` `opera` `ghost` `sidekick` `yandex` `iridium` `thorium` `sigmaos` `wavebox` `comet` `blisk` `firefox` `safari`
 
@@ -81,9 +81,9 @@ const allProfiles = detectBrowserProfiles();
 const chromeOnly = detectBrowserProfiles({ browser: "chrome" });
 ```
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `browser` | `Browser` | all | Filter to a specific browser |
+| Option    | Type      | Default | Description                  |
+| --------- | --------- | ------- | ---------------------------- |
+| `browser` | `Browser` | all     | Filter to a specific browser |
 
 Returns `BrowserProfile[]`.
 
@@ -98,10 +98,10 @@ const { cookies, warnings } = await extractProfileCookies({
 });
 ```
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
+| Option    | Type             | Default  | Description                          |
+| --------- | ---------------- | -------- | ------------------------------------ |
 | `profile` | `BrowserProfile` | required | Profile from `detectBrowserProfiles` |
-| `port` | `number` | `9222` | CDP debugging port (Chromium only) |
+| `port`    | `number`         | `9222`   | CDP debugging port (Chromium only)   |
 
 ### `extractAllProfileCookies(profiles)`
 
@@ -115,14 +115,14 @@ const { cookies, warnings } = await extractAllProfileCookies(profiles);
 
 Wraps a `Cookie[]` with matching, conversion, and serialization.
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `match(url)` | `Cookie[]` | Cookies matching domain, path, secure flag, and expiry |
-| `toCookieHeader(url)` | `string` | `"name=value; name2=value2"` for matched cookies |
-| `toPlaywright()` | `PlaywrightCookie[]` | Playwright format (sameSite defaults to `"Lax"`) |
-| `toPuppeteer()` | `PuppeteerCookie[]` | Puppeteer format |
-| `toJSON()` | `string` | Serialize to JSON |
-| `fromJSON(json)` | `CookieJar` | Static deserializer |
+| Method                | Returns              | Description                                            |
+| --------------------- | -------------------- | ------------------------------------------------------ |
+| `match(url)`          | `Cookie[]`           | Cookies matching domain, path, secure flag, and expiry |
+| `toCookieHeader(url)` | `string`             | `"name=value; name2=value2"` for matched cookies       |
+| `toPlaywright()`      | `PlaywrightCookie[]` | Playwright format (sameSite defaults to `"Lax"`)       |
+| `toPuppeteer()`       | `PuppeteerCookie[]`  | Puppeteer format                                       |
+| `toJSON()`            | `string`             | Serialize to JSON                                      |
+| `fromJSON(json)`      | `CookieJar`          | Static deserializer                                    |
 
 ### `toCookieHeader(cookies)`
 
@@ -175,10 +175,10 @@ interface BrowserInfo {
 
 ### SQLite vs Profile Extraction
 
-|                            | SQLite                   | Profile                              |
-| -------------------------- | ------------------------ | ------------------------------------ |
-| Speed                      | Fast (no browser launch) | ~3s startup (Chromium), fast (others)|
-| Keychain popup (macOS)     | Yes                      | No                                   |
-| Firefox/Safari             | Yes                      | Yes                                  |
-| Requires browser installed | No (reads DB files)      | Yes                                  |
-| Cookie decryption          | Manual (keychain/DPAPI)  | Chromium handles it / not needed     |
+|                            | SQLite                   | Profile                               |
+| -------------------------- | ------------------------ | ------------------------------------- |
+| Speed                      | Fast (no browser launch) | ~3s startup (Chromium), fast (others) |
+| Keychain popup (macOS)     | Yes                      | No                                    |
+| Firefox/Safari             | Yes                      | Yes                                   |
+| Requires browser installed | No (reads DB files)      | Yes                                   |
+| Cookie decryption          | Manual (keychain/DPAPI)  | Chromium handles it / not needed      |

@@ -11,10 +11,7 @@ type Cell = Result | null;
 type SlotState = "idle" | "thinking" | "resolved";
 
 const GRID_COLUMNS = 4;
-const GRID: Cell[] = [
-  "pass", null,   "fail", "pass",
-  "skip", "pass", null,   "fail",
-];
+const GRID: Cell[] = ["pass", null, "fail", "pass", "skip", "pass", null, "fail"];
 
 const THINK_DURATION_MS: Record<Result, number> = {
   pass: 60,
@@ -91,7 +88,11 @@ export const ColoredLogo = () => {
             const index = rowIndex * GRID_COLUMNS + colIndex;
 
             if (cell === null) {
-              return <Text key={index} color={COLORS.DIM}>·</Text>;
+              return (
+                <Text key={index} color={COLORS.DIM}>
+                  ·
+                </Text>
+              );
             }
 
             const done = activeIndex >= GRID.length;
@@ -105,10 +106,18 @@ export const ColoredLogo = () => {
             }
 
             if (index === activeIndex && slotState === "thinking") {
-              return <Text key={index} color={RESULT_COLOR[cell]}>{THINKING_CHARS[shimmerFrame]}</Text>;
+              return (
+                <Text key={index} color={RESULT_COLOR[cell]}>
+                  {THINKING_CHARS[shimmerFrame]}
+                </Text>
+              );
             }
 
-            return <Text key={index} color={COLORS.DIM}>·</Text>;
+            return (
+              <Text key={index} color={COLORS.DIM}>
+                ·
+              </Text>
+            );
           })}
         </Box>
       ))}
