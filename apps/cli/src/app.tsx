@@ -291,7 +291,7 @@ export const App = () => {
 
   return (
     <Box flexDirection="column" width="100%" paddingX={1} paddingY={1}>
-      <Text color={COLORS.ORANGE}>{"─".repeat(stdout.columns - 2)}</Text>
+      <Text color={COLORS.ORANGE}>{"═".repeat(stdout.columns - 2)}</Text>
       <Text bold color={COLORS.TEXT}>browser-tester</Text>
       <Text color={COLORS.DIM}>AI-powered browser testing</Text>
 
@@ -305,11 +305,9 @@ export const App = () => {
               detail={option.detail}
               isSelected={index === selectedIndex}
               recommended={index === 0 && menuOptions.length > 1}
+              hint={menuOptions.length === 1 && index === selectedIndex ? "press return" : undefined}
             />
           ))}
-          {menuOptions.length === 1 && (
-            <Text color={COLORS.DIM}>  press <Text color={COLORS.TEXT}>return</Text> to continue</Text>
-          )}
         </Box>
       </Box>
 
