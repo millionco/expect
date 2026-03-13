@@ -5,11 +5,13 @@ import { useColors, useThemeContext } from "./theme-context.js";
 import { THEME_PICKER_VISIBLE_COUNT } from "./constants.js";
 import { saveThemeName } from "./utils/load-theme.js";
 
+type VariantFilter = "light" | "dark";
+
 interface ThemePickerScreenProps {
   onBack: () => void;
 }
 
-const THEME_NAMES = Object.keys(THEMES);
+const ALL_THEME_NAMES = Object.keys(THEMES);
 
 const ThemeSwatch = ({ theme }: { theme: ThemeDefinition }) => (
   <Text>
@@ -20,38 +22,54 @@ const ThemeSwatch = ({ theme }: { theme: ThemeDefinition }) => (
   </Text>
 );
 
+const filterThemes = (filter: VariantFilter): string[] =>
+  ALL_THEME_NAMES.filter((name) => THEMES[name]?.variant === filter);
+
 export const ThemePickerScreen = ({ onBack }: ThemePickerScreenProps) => {
   const { themeName, setTheme } = useThemeContext();
   const colors = useColors();
   const [previousTheme] = useState(themeName);
+  const currentVariant = THEMES[themeName]?.variant ?? "dark";
+  const [variantFilter, setVariantFilter] = useState<VariantFilter>(currentVariant);
+
+  const filteredThemeNames = useMemo(() => filterThemes(variantFilter), [variantFilter]);
+
   const [selectedIndex, setSelectedIndex] = useState(() => {
-    const index = THEME_NAMES.indexOf(themeName);
+    const index = filteredThemeNames.indexOf(themeName);
     return index >= 0 ? index : 0;
   });
 
   useEffect(() => {
-    const nextTheme = THEME_NAMES[selectedIndex];
+    const clamped = Math.min(selectedIndex, filteredThemeNames.length - 1);
+    if (clamped !== selectedIndex) setSelectedIndex(clamped);
+    const nextTheme = filteredThemeNames[clamped];
     if (nextTheme) setTheme(nextTheme);
-  }, [selectedIndex, setTheme]);
+  }, [selectedIndex, setTheme, filteredThemeNames]);
 
   const scrollOffset = useMemo(() => {
-    if (THEME_NAMES.length <= THEME_PICKER_VISIBLE_COUNT) return 0;
+    if (filteredThemeNames.length <= THEME_PICKER_VISIBLE_COUNT) return 0;
     const half = Math.floor(THEME_PICKER_VISIBLE_COUNT / 2);
-    const maxOffset = THEME_NAMES.length - THEME_PICKER_VISIBLE_COUNT;
+    const maxOffset = filteredThemeNames.length - THEME_PICKER_VISIBLE_COUNT;
     return Math.min(maxOffset, Math.max(0, selectedIndex - half));
-  }, [selectedIndex]);
+  }, [selectedIndex, filteredThemeNames]);
 
-  const visibleThemes = THEME_NAMES.slice(scrollOffset, scrollOffset + THEME_PICKER_VISIBLE_COUNT);
+  const visibleThemes = filteredThemeNames.slice(
+    scrollOffset,
+    scrollOffset + THEME_PICKER_VISIBLE_COUNT,
+  );
 
   useInput((input, key) => {
     if (key.downArrow || input === "j" || (key.ctrl && input === "n")) {
-      setSelectedIndex((previous) => Math.min(THEME_NAMES.length - 1, previous + 1));
+      setSelectedIndex((previous) => Math.min(filteredThemeNames.length - 1, previous + 1));
     }
     if (key.upArrow || input === "k" || (key.ctrl && input === "p")) {
       setSelectedIndex((previous) => Math.max(0, previous - 1));
     }
+    if (key.tab) {
+      setVariantFilter((previous) => (previous === "light" ? "dark" : "light"));
+    }
     if (key.return) {
-      const selected = THEME_NAMES[selectedIndex];
+      const selected = filteredThemeNames[selectedIndex];
       if (selected) saveThemeName(selected);
       onBack();
     }
@@ -61,12 +79,18 @@ export const ThemePickerScreen = ({ onBack }: ThemePickerScreenProps) => {
     }
   });
 
+  const filterLabel = variantFilter === "light" ? "light" : "dark";
+
   return (
     <Box flexDirection="column" width="100%" paddingX={1} paddingY={1}>
       <Text bold color={colors.TEXT || undefined}>
         Select theme
       </Text>
-      <Text color={colors.DIM}>{THEME_NAMES.length} themes available</Text>
+      <Text color={colors.DIM}>
+        {filteredThemeNames.length} themes{" "}
+        <Text color={colors.TEXT || undefined}>[{filterLabel}]</Text>{" "}
+        (<Text color={colors.TEXT || undefined}>{"\u21E5"} tab</Text> to filter)
+      </Text>
 
       <Box
         marginTop={1}

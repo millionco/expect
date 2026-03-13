@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
-import { THEMES, DEFAULT_THEME_NAME, type ThemeDefinition } from "./themes.js";
+import { THEMES, DEFAULT_DARK_THEME_NAME, type ThemeDefinition } from "./themes.js";
 
 export interface Colors {
   TEXT: string;
@@ -58,8 +58,8 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider = ({ children, initialTheme }: ThemeProviderProps) => {
-  const [themeName, setThemeName] = useState(initialTheme ?? DEFAULT_THEME_NAME);
-  const resolvedTheme = THEMES[themeName] ?? THEMES[DEFAULT_THEME_NAME];
+  const [themeName, setThemeName] = useState(initialTheme ?? DEFAULT_DARK_THEME_NAME);
+  const resolvedTheme = THEMES[themeName] ?? THEMES[DEFAULT_DARK_THEME_NAME];
   const colors = colorsFromTheme(resolvedTheme);
 
   return (
