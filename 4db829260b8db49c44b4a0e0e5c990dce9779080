@@ -1,0 +1,23 @@
+packages/cookies/src/sqlite/adapter.ts
+  a08e28ccc983fe76 1-2,9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.11",
+  "base_commit_sha": "4db829260b8db49c44b4a0e0e5c990dce9779080",
+  "prompts": {
+    "a08e28ccc983fe76": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e562d8d0-a269-4fef-b6b9-ef0e810ef5ab",
+        "model": "claude-4.6-opus-max-thinking-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 3,
+      "total_deletions": 2,
+      "accepted_lines": 3,
+      "overriden_lines": 0
+    }
+  }
+}
