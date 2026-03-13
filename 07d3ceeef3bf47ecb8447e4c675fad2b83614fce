@@ -1,0 +1,47 @@
+packages/orchestrator/src/browser-mcp-config.ts
+  061cd6362d1e33b9 16,22,25-32
+apps/cli/src/utils/slugify.ts
+  061cd6362d1e33b9 1-12
+packages/orchestrator/src/types.ts
+  061cd6362d1e33b9 60-64,73,98,163
+apps/cli/src/testing-screen.tsx
+  061cd6362d1e33b9 1,4,15-121,124-127,129-132,134-137,139-156,159-160,162-165,167-170,177,180-181,183-186,200-206,217,246,260-277,280,291-292,294-296
+apps/cli/src/app.tsx
+  061cd6362d1e33b9 23,113,270,274,276-283
+packages/mcp/src/server.ts
+  061cd6362d1e33b9 3-4,37-38,42,76-116,167,172,180-182,385-386,831-834,843
+apps/cli/src/constants.ts
+  061cd6362d1e33b9 25-29
+packages/orchestrator/tests/execute-browser-flow.test.ts
+  061cd6362d1e33b9 105-108,125,134,147-148,155
+packages/orchestrator/tests/plan-browser-flow.test.ts
+  061cd6362d1e33b9 26-29,118,121
+packages/orchestrator/src/plan-browser-flow.ts
+  061cd6362d1e33b9 26-30,38,111-113,118
+packages/orchestrator/src/execute-browser-flow.ts
+  061cd6362d1e33b9 1-3,18-20,25,36,59,66,75,82,105-120,221,227,232,269,348,365
+apps/cli/src/plan-review-screen.tsx
+  061cd6362d1e33b9 5-6,10,13-14,19,21-23,28-30,34,65-85,113-123,136-148,188-189,193-198
+apps/cli/src/utils/save-flow.ts
+  061cd6362d1e33b9 1-195
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.11",
+  "base_commit_sha": "07d3ceeef3bf47ecb8447e4c675fad2b83614fce",
+  "prompts": {
+    "061cd6362d1e33b9": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "72a4daf8-0ada-4a40-90c5-46fa94c62cd6",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 634,
+      "total_deletions": 35,
+      "accepted_lines": 618,
+      "overriden_lines": 0
+    }
+  }
+}
