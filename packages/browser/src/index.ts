@@ -5,6 +5,7 @@ export { snapshot } from "./snapshot";
 export { annotatedScreenshot } from "./annotated-screenshot";
 export { diffSnapshots } from "./diff";
 export { saveVideo } from "./save-video";
+export { waitForNavigationSettle } from "./utils/wait-for-settle";
 export {
   CookieJar,
   detectBrowserProfiles,

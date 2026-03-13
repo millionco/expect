@@ -7,6 +7,8 @@ import { snapshot } from "./snapshot";
 import { annotatedScreenshot } from "./annotated-screenshot";
 import { diffSnapshots } from "./diff";
 import { saveVideo } from "./save-video";
+import type { SnapshotResult } from "./types";
+import { waitForNavigationSettle } from "./utils/wait-for-settle";
 
 interface ConsoleEntry {
   type: string;
@@ -73,6 +75,16 @@ const jsonResult = (data: unknown) => textResult(JSON.stringify(data, null, 2));
 const imageResult = (base64: string) => ({
   content: [{ type: "image" as const, data: base64, mimeType: "image/png" }],
 });
+
+const actAndSnapshot = async (action: (before: SnapshotResult) => Promise<void>) => {
+  const page = requirePage();
+  const urlBefore = page.url();
+  const before = await snapshot(page);
+  await action(before);
+  await waitForNavigationSettle(page, urlBefore);
+  const after = await snapshot(page);
+  return jsonResult({ tree: after.tree, refs: after.refs, stats: after.stats });
+};
 
 export const createBrowserMcpServer = () => {
   const server = new McpServer({
@@ -165,13 +177,10 @@ export const createBrowserMcpServer = () => {
         ref: z.string().describe("Element ref (e.g. e1, e2)"),
       },
     },
-    async ({ ref }) => {
-      const page = requirePage();
-      const before = await snapshot(page);
-      await before.locator(ref).click();
-      const after = await snapshot(page);
-      return jsonResult({ tree: after.tree, refs: after.refs, stats: after.stats });
-    },
+    async ({ ref }) =>
+      actAndSnapshot(async (before) => {
+        await before.locator(ref).click();
+      }),
   );
 
   server.registerTool(
@@ -184,13 +193,10 @@ export const createBrowserMcpServer = () => {
         value: z.string().describe("Value to fill"),
       },
     },
-    async ({ ref, value }) => {
-      const page = requirePage();
-      const before = await snapshot(page);
-      await before.locator(ref).fill(value);
-      const after = await snapshot(page);
-      return jsonResult({ tree: after.tree, refs: after.refs, stats: after.stats });
-    },
+    async ({ ref, value }) =>
+      actAndSnapshot(async (before) => {
+        await before.locator(ref).fill(value);
+      }),
   );
 
   server.registerTool(
@@ -204,13 +210,10 @@ export const createBrowserMcpServer = () => {
         text: z.string().describe("Text to type"),
       },
     },
-    async ({ ref, text }) => {
-      const page = requirePage();
-      const before = await snapshot(page);
-      await before.locator(ref).pressSequentially(text);
-      const after = await snapshot(page);
-      return jsonResult({ tree: after.tree, refs: after.refs, stats: after.stats });
-    },
+    async ({ ref, text }) =>
+      actAndSnapshot(async (before) => {
+        await before.locator(ref).pressSequentially(text);
+      }),
   );
 
   server.registerTool(
@@ -223,13 +226,10 @@ export const createBrowserMcpServer = () => {
         value: z.string().describe("Option value to select"),
       },
     },
-    async ({ ref, value }) => {
-      const page = requirePage();
-      const before = await snapshot(page);
-      await before.locator(ref).selectOption(value);
-      const after = await snapshot(page);
-      return jsonResult({ tree: after.tree, refs: after.refs, stats: after.stats });
-    },
+    async ({ ref, value }) =>
+      actAndSnapshot(async (before) => {
+        await before.locator(ref).selectOption(value);
+      }),
   );
 
   server.registerTool(
@@ -241,13 +241,10 @@ export const createBrowserMcpServer = () => {
         ref: z.string().describe("Element ref (e.g. e1, e2)"),
       },
     },
-    async ({ ref }) => {
-      const page = requirePage();
-      const before = await snapshot(page);
-      await before.locator(ref).hover();
-      const after = await snapshot(page);
-      return jsonResult({ tree: after.tree, refs: after.refs, stats: after.stats });
-    },
+    async ({ ref }) =>
+      actAndSnapshot(async (before) => {
+        await before.locator(ref).hover();
+      }),
   );
 
   server.registerTool(

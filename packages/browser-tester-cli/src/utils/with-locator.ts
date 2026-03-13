@@ -1,4 +1,8 @@
-import { snapshot as takeSnapshot, diffSnapshots } from "@browser-tester/browser";
+import {
+  snapshot as takeSnapshot,
+  diffSnapshots,
+  waitForNavigationSettle,
+} from "@browser-tester/browser";
 import type { Locator } from "playwright";
 import pc from "picocolors";
 import { formatOutput } from "./format-output";
@@ -15,8 +19,10 @@ export const withLocator = async (
   await withPage(url, options, async (page) => {
     const snapshotOptions = { timeout: options.timeout };
     const before = await takeSnapshot(page, snapshotOptions);
+    const urlBefore = page.url();
 
     await action(before.locator(ref));
+    await waitForNavigationSettle(page, urlBefore);
 
     const after = await takeSnapshot(page, snapshotOptions);
 

@@ -41,5 +41,8 @@ export const CONTENT_ROLES = new Set([
   "navigation",
 ]);
 
+export const NAVIGATION_DETECT_DELAY_MS = 100;
+export const POST_NAVIGATION_SETTLE_MS = 500;
+
 export const ESTIMATED_CHARS_PER_TOKEN = 4;
 export const MAX_ELEMENT_TEXT_LENGTH = 100;
