@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { PROFILE_BROWSER_CONFIGS } from "../src/cdp/constants.js";
-import { getUserDataDir } from "../src/cdp/detector.js";
+import { PROFILE_BROWSER_CONFIGS } from "../src/profiles/constants.js";
+import { getUserDataDir } from "../src/profiles/detector.js";
 import { CHROMIUM_SQLITE_CONFIGS } from "../src/sqlite/constants.js";
 import { SUPPORTED_BROWSERS } from "../src/sqlite/extract.js";
 import type { ChromiumBrowser } from "../src/types.js";

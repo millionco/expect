@@ -3,11 +3,8 @@ export { extractChromiumCookies } from "./sqlite/chromium.js";
 export { extractFirefoxCookies } from "./sqlite/firefox.js";
 export { extractSafariCookies } from "./sqlite/safari.js";
 
-export {
-  extractAllProfileCookies,
-  extractProfileCookies,
-} from "./cdp/extract.js";
-export { detectBrowserProfiles } from "./cdp/detector.js";
+export { extractAllProfileCookies, extractProfileCookies } from "./profiles/extract.js";
+export { detectBrowserProfiles } from "./profiles/detector.js";
 
 export { CookieJar } from "./jar.js";
 export { toCookieHeader } from "./utils/format-cookie-header.js";

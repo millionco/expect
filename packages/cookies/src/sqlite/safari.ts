@@ -1,8 +1,9 @@
 import { readFileSync } from "node:fs";
 import { homedir, platform } from "node:os";
 import path from "node:path";
-import type { Cookie, ExtractResult } from "../types.js";
 import { getEpochSeconds } from "@browser-tester/utils";
+import { SAFARI_COOKIE_RELATIVE_PATHS } from "../constants.js";
+import type { Cookie, ExtractResult } from "../types.js";
 import { formatWarning } from "../utils/format-warning.js";
 import { hostMatchesAny } from "../utils/host-matching.js";
 import { stripLeadingDot } from "../utils/strip-leading-dot.js";
@@ -27,21 +28,9 @@ import {
 
 const resolveBinaryCookiesPath = (): string | null => {
   const home = homedir();
-  const candidates = [
-    path.join(home, "Library", "Cookies", "Cookies.binarycookies"),
-    path.join(
-      home,
-      "Library",
-      "Containers",
-      "com.apple.Safari",
-      "Data",
-      "Library",
-      "Cookies",
-      "Cookies.binarycookies",
-    ),
-  ];
 
-  for (const candidate of candidates) {
+  for (const relativePath of SAFARI_COOKIE_RELATIVE_PATHS) {
+    const candidate = path.join(home, relativePath, "Cookies.binarycookies");
     try {
       readFileSync(candidate, { flag: "r" });
       return candidate;

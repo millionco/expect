@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PROFILE_BROWSER_CONFIGS } from "../src/cdp/constants.js";
+import { PROFILE_BROWSER_CONFIGS } from "../src/profiles/constants.js";
 import { browserDisplayNameToKey } from "../src/utils/browser-name-map.js";
 
 describe("browserDisplayNameToKey", () => {

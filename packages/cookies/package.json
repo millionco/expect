@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@browser-tester/utils": "workspace:*",
+    "default-browser": "^5.5.0",
     "ws": "^8.18.0"
   },
   "devDependencies": {

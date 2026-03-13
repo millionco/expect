@@ -12,7 +12,7 @@ import type {
 import { copyDir, formatError, sleep } from "@browser-tester/utils";
 import { browserDisplayNameToKey } from "../utils/browser-name-map.js";
 import { normalizeSameSite } from "../utils/normalize-same-site.js";
-import { getCookiesFromBrowser } from "./client.js";
+import { getCookiesFromBrowser } from "./cdp-client.js";
 import {
   BROWSER_KILL_DELAY_MS,
   BROWSER_STARTUP_DELAY_MS,
@@ -65,7 +65,7 @@ const toProfileCookie = (rawCookie: CdpRawCookie, profile: BrowserProfile): Cook
   browser: browserDisplayNameToKey(profile.browser.name) ?? "chrome",
 });
 
-export const extractProfileCookies = async (
+export const extractChromiumProfileCookies = async (
   options: ExtractProfileOptions,
 ): Promise<ExtractResult> => {
   const { profile } = options;
@@ -118,19 +118,4 @@ export const extractProfileCookies = async (
       // HACK: temp dir cleanup failure is non-fatal
     }
   }
-};
-
-export const extractAllProfileCookies = async (
-  profiles: BrowserProfile[],
-): Promise<ExtractResult> => {
-  const allCookies: Cookie[] = [];
-  const allWarnings: string[] = [];
-
-  for (const profile of profiles) {
-    const result = await extractProfileCookies({ profile });
-    allCookies.push(...result.cookies);
-    allWarnings.push(...result.warnings);
-  }
-
-  return { cookies: allCookies, warnings: allWarnings };
 };

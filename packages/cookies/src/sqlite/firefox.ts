@@ -1,32 +1,16 @@
 import { existsSync, readdirSync, rmSync } from "node:fs";
 import { homedir, platform } from "node:os";
 import path from "node:path";
-import { MAX_UNIX_EPOCH_SECONDS } from "../constants.js";
-import type { Cookie, ExtractResult } from "../types.js";
 import { getEpochSeconds } from "@browser-tester/utils";
+import type { Cookie, ExtractResult } from "../types.js";
 import { copyDatabaseToTemp } from "../utils/copy-database.js";
 import { formatWarning } from "../utils/format-warning.js";
 import { normalizeSameSite } from "../utils/normalize-same-site.js";
+import { parseFirefoxExpiry } from "../utils/parse-firefox-expiry.js";
 import { buildHostWhereClause, sqliteBool } from "../utils/sql.js";
+import { stringField } from "../utils/string-field.js";
 import { stripLeadingDot } from "../utils/strip-leading-dot.js";
 import { querySqlite } from "./adapter.js";
-
-const parseFirefoxExpiry = (value: unknown): number | undefined => {
-  let expirySeconds: number;
-  if (typeof value === "bigint") {
-    expirySeconds = Number(value);
-  } else if (typeof value === "string") {
-    expirySeconds = Number(value);
-    if (!Number.isFinite(expirySeconds)) return undefined;
-  } else if (typeof value === "number") {
-    expirySeconds = value;
-  } else {
-    return undefined;
-  }
-  if (Number.isNaN(expirySeconds) || expirySeconds <= 0 || expirySeconds > MAX_UNIX_EPOCH_SECONDS)
-    return undefined;
-  return Math.round(expirySeconds);
-};
 
 const resolveCookieDbPath = (): string | null => {
   const home = homedir();
@@ -104,9 +88,9 @@ export const extractFirefoxCookies = async (
     const cookies: Cookie[] = [];
 
     for (const cookieRow of cookieRows) {
-      const cookieName = typeof cookieRow.name === "string" ? cookieRow.name : null;
-      const cookieValue = typeof cookieRow.value === "string" ? cookieRow.value : null;
-      const cookieHost = typeof cookieRow.host === "string" ? cookieRow.host : null;
+      const cookieName = stringField(cookieRow.name);
+      const cookieValue = stringField(cookieRow.value);
+      const cookieHost = stringField(cookieRow.host);
 
       if (!cookieName || cookieValue === null || !cookieHost) continue;
       if (allowlist && !allowlist.has(cookieName)) continue;
@@ -119,7 +103,7 @@ export const extractFirefoxCookies = async (
         name: cookieName,
         value: cookieValue,
         domain: stripLeadingDot(cookieHost),
-        path: (typeof cookieRow.path === "string" ? cookieRow.path : "") || "/",
+        path: stringField(cookieRow.path) || "/",
         expires,
         secure: sqliteBool(cookieRow.isSecure),
         httpOnly: sqliteBool(cookieRow.isHttpOnly),

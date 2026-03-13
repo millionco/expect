@@ -13,12 +13,11 @@ import type { CreatePageOptions, CreatePageResult } from "./types";
 
 const extractDefaultBrowserCookies = async (
   url: string,
-  defaultBrowser: BrowserKey | null
+  defaultBrowser: BrowserKey | null,
 ): Promise<Cookie[]> => {
   if (defaultBrowser) {
     const profiles = detectBrowserProfiles().filter(
-      (profile) =>
-        browserDisplayNameToKey(profile.browser.name) === defaultBrowser
+      (profile) => browserDisplayNameToKey(profile.browser.name) === defaultBrowser,
     );
 
     if (profiles.length > 0) {
@@ -34,7 +33,7 @@ const extractDefaultBrowserCookies = async (
 
 export const createPage = async (
   url: string,
-  options: CreatePageOptions = {}
+  options: CreatePageOptions = {},
 ): Promise<CreatePageResult> => {
   const browser = await chromium.launch({
     headless: !options.headed,
@@ -48,7 +47,7 @@ export const createPage = async (
     if (options.cookies) {
       const cookies = Array.isArray(options.cookies)
         ? options.cookies
-        : await extractDefaultBrowserCookies(url, detectDefaultBrowser());
+        : await extractDefaultBrowserCookies(url, await detectDefaultBrowser());
       await injectCookies(context, cookies);
     }
 

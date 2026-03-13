@@ -4,7 +4,17 @@ import path from "node:path";
 import { execCommand } from "@browser-tester/utils";
 import type { BrowserInfo, BrowserProfile, LocalStateProfile } from "../types.js";
 import { naturalCompare } from "../utils/natural-sort.js";
-import { PROFILE_BROWSER_CONFIGS } from "./constants.js";
+import { parseProfilesIni } from "../utils/parse-profiles-ini.js";
+import { SAFARI_COOKIE_RELATIVE_PATHS } from "../constants.js";
+import {
+  FIREFOX_EXECUTABLE_DARWIN,
+  FIREFOX_LINUX_PATHS,
+  FIREFOX_WIN32_PATHS,
+  PROFILE_BROWSER_CONFIGS,
+  SAFARI_EXECUTABLE,
+} from "./constants.js";
+
+const findFirstExisting = (paths: string[]): string | null => paths.find(existsSync) ?? null;
 
 const loadProfileNamesFromLocalState = (userDataDir: string): Record<string, LocalStateProfile> => {
   const localStatePath = path.join(userDataDir, "Local State");
@@ -111,16 +121,13 @@ const detectBrowsersLinux = (): BrowserInfo[] => {
   const browsers: BrowserInfo[] = [];
   for (const config of PROFILE_BROWSER_CONFIGS) {
     const binaryName = config.linuxUserDataPath.split("/").pop() ?? config.linuxUserDataPath;
-    const searchPaths = [
+    const executablePath = findFirstExisting([
       `/usr/bin/${binaryName}`,
       `/usr/local/bin/${binaryName}`,
       `/snap/bin/${binaryName}`,
-    ];
-    for (const executablePath of searchPaths) {
-      if (existsSync(executablePath)) {
-        browsers.push({ name: config.info.name, executablePath });
-        break;
-      }
+    ]);
+    if (executablePath) {
+      browsers.push({ name: config.info.name, executablePath });
     }
   }
   return browsers;
@@ -154,24 +161,116 @@ const detectBrowsersWin32 = (): BrowserInfo[] => {
       }
     }
 
-    let found = false;
-    for (const win32RelativePath of config.win32ExecutablePaths) {
-      const candidates = [
-        path.join(programFiles, win32RelativePath),
-        path.join(programFilesX86, win32RelativePath),
-        path.join(localAppData, win32RelativePath),
-      ];
-      for (const candidate of candidates) {
-        if (existsSync(candidate)) {
-          browsers.push({ name: config.info.name, executablePath: candidate });
-          found = true;
-          break;
-        }
-      }
-      if (found) break;
+    const candidates = config.win32ExecutablePaths.flatMap((relativePath) => [
+      path.join(programFiles, relativePath),
+      path.join(programFilesX86, relativePath),
+      path.join(localAppData, relativePath),
+    ]);
+    const executablePath = findFirstExisting(candidates);
+    if (executablePath) {
+      browsers.push({ name: config.info.name, executablePath });
     }
   }
   return browsers;
+};
+
+const getFirefoxDataDir = (currentPlatform: string): string | null => {
+  const home = homedir();
+  switch (currentPlatform) {
+    case "darwin":
+      return path.join(home, "Library", "Application Support", "Firefox");
+    case "linux":
+      return path.join(home, ".mozilla", "firefox");
+    case "win32":
+      return path.join(home, "AppData", "Roaming", "Mozilla", "Firefox");
+    default:
+      return null;
+  }
+};
+
+const detectFirefoxExecutable = (currentPlatform: string): string | null => {
+  if (currentPlatform === "darwin") {
+    return existsSync(FIREFOX_EXECUTABLE_DARWIN) ? FIREFOX_EXECUTABLE_DARWIN : null;
+  }
+
+  if (currentPlatform === "linux") {
+    return findFirstExisting(FIREFOX_LINUX_PATHS);
+  }
+
+  if (currentPlatform === "win32") {
+    const programFiles = process.env["ProgramFiles"] ?? "C:\\Program Files";
+    const programFilesX86 = process.env["ProgramFiles(x86)"] ?? "C:\\Program Files (x86)";
+    const candidates = FIREFOX_WIN32_PATHS.flatMap((relativePath) => [
+      path.join(programFiles, relativePath),
+      path.join(programFilesX86, relativePath),
+    ]);
+    return findFirstExisting(candidates);
+  }
+
+  return null;
+};
+
+const detectFirefoxProfiles = (currentPlatform: string): BrowserProfile[] => {
+  const executablePath = detectFirefoxExecutable(currentPlatform);
+  if (!executablePath) return [];
+
+  const dataDir = getFirefoxDataDir(currentPlatform);
+  if (!dataDir) return [];
+
+  const iniPath = path.join(dataDir, "profiles.ini");
+  if (!existsSync(iniPath)) return [];
+
+  let iniContent: string;
+  try {
+    iniContent = readFileSync(iniPath, "utf-8");
+  } catch {
+    return [];
+  }
+
+  const parsedProfiles = parseProfilesIni(iniContent);
+  const browser: BrowserInfo = { name: "Firefox", executablePath };
+  const profiles: BrowserProfile[] = [];
+
+  for (const parsed of parsedProfiles) {
+    const profilePath = parsed.isRelative ? path.join(dataDir, parsed.path) : parsed.path;
+
+    const cookiesPath = path.join(profilePath, "cookies.sqlite");
+    if (!existsSync(cookiesPath)) continue;
+
+    profiles.push({
+      profileName: path.basename(profilePath),
+      profilePath,
+      displayName: parsed.name,
+      browser,
+    });
+  }
+
+  return profiles;
+};
+
+const detectSafariProfiles = (currentPlatform: string): BrowserProfile[] => {
+  if (currentPlatform !== "darwin") return [];
+  if (!existsSync(SAFARI_EXECUTABLE)) return [];
+
+  const home = homedir();
+  const browser: BrowserInfo = { name: "Safari", executablePath: SAFARI_EXECUTABLE };
+
+  for (const relativePath of SAFARI_COOKIE_RELATIVE_PATHS) {
+    const cookieDir = path.join(home, relativePath);
+    const cookieFile = path.join(cookieDir, "Cookies.binarycookies");
+    if (existsSync(cookieFile)) {
+      return [
+        {
+          profileName: "Default",
+          profilePath: cookieDir,
+          displayName: "Default",
+          browser,
+        },
+      ];
+    }
+  }
+
+  return [];
 };
 
 export const detectBrowserProfiles = (): BrowserProfile[] => {
@@ -199,6 +298,9 @@ export const detectBrowserProfiles = (): BrowserProfile[] => {
     const profiles = detectProfilesForBrowser(browser, userDataDir);
     allProfiles.push(...profiles);
   }
+
+  allProfiles.push(...detectFirefoxProfiles(currentPlatform));
+  allProfiles.push(...detectSafariProfiles(currentPlatform));
 
   return allProfiles;
 };

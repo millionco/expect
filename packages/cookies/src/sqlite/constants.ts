@@ -1,10 +1,5 @@
 import type { ChromiumBrowser } from "../types.js";
 
-export const CHROME_EPOCH_THRESHOLD = 10_000_000_000_000;
-export const CHROME_EPOCH_MICROSECONDS = 1_000_000;
-export const CHROME_EPOCH_OFFSET_SECONDS = 11_644_473_600;
-export const MILLISECOND_THRESHOLD = 10_000_000_000;
-
 export const MAC_EPOCH_DELTA_SECONDS = 978_307_200;
 export const BINARY_COOKIE_PAGE_HEADER = 0x00000100;
 

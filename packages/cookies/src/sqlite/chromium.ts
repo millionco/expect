@@ -8,6 +8,7 @@ import { formatWarning } from "../utils/format-warning.js";
 import { normalizeExpiration } from "../utils/normalize-expiration.js";
 import { normalizeSameSite } from "../utils/normalize-same-site.js";
 import { buildHostWhereClause, sqliteBool } from "../utils/sql.js";
+import { stringField } from "../utils/string-field.js";
 import { stripLeadingDot } from "../utils/strip-leading-dot.js";
 import {
   CHROMIUM_META_VERSION_HASH_PREFIX,
@@ -128,7 +129,13 @@ export const extractChromiumCookies = async (
     const metaVersion = await readMetaVersion(tempDatabasePath);
     const stripHashPrefix = metaVersion >= CHROMIUM_META_VERSION_HASH_PREFIX;
 
-    const decryptValue = await buildDecryptor(browser, stripHashPrefix, options.timeoutMs, warnings, options.onKeychainAccess);
+    const decryptValue = await buildDecryptor(
+      browser,
+      stripHashPrefix,
+      options.timeoutMs,
+      warnings,
+      options.onKeychainAccess,
+    );
     if (!decryptValue) return { cookies: [], warnings };
 
     const sql =
@@ -142,14 +149,14 @@ export const extractChromiumCookies = async (
     const cookies: Cookie[] = [];
 
     for (const cookieRow of cookieRows) {
-      const cookieName = typeof cookieRow.name === "string" ? cookieRow.name : null;
+      const cookieName = stringField(cookieRow.name);
       if (!cookieName) continue;
       if (allowlist && !allowlist.has(cookieName)) continue;
 
-      const hostKey = typeof cookieRow.host_key === "string" ? cookieRow.host_key : null;
+      const hostKey = stringField(cookieRow.host_key);
       if (!hostKey) continue;
 
-      let cookieValue = typeof cookieRow.value === "string" ? cookieRow.value : null;
+      let cookieValue = stringField(cookieRow.value);
       if (!cookieValue || cookieValue.length === 0) {
         const encrypted =
           cookieRow.encrypted_value instanceof Uint8Array ? cookieRow.encrypted_value : null;
@@ -158,11 +165,12 @@ export const extractChromiumCookies = async (
       }
       if (cookieValue === null) continue;
 
+      const rawExpiry = cookieRow.expires_utc;
       const expires = normalizeExpiration(
-        typeof cookieRow.expires_utc === "number" ||
-          typeof cookieRow.expires_utc === "bigint" ||
-          typeof cookieRow.expires_utc === "string"
-          ? cookieRow.expires_utc
+        typeof rawExpiry === "number" ||
+          typeof rawExpiry === "bigint" ||
+          typeof rawExpiry === "string"
+          ? rawExpiry
           : undefined,
       );
 
@@ -172,7 +180,7 @@ export const extractChromiumCookies = async (
         name: cookieName,
         value: cookieValue,
         domain: stripLeadingDot(hostKey),
-        path: (typeof cookieRow.path === "string" ? cookieRow.path : "") || "/",
+        path: stringField(cookieRow.path) || "/",
         expires,
         secure: sqliteBool(cookieRow.is_secure),
         httpOnly: sqliteBool(cookieRow.is_httponly),

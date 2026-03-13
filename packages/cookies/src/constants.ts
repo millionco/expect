@@ -6,10 +6,16 @@ export const SAME_SITE_LAX = 1;
 export const SAME_SITE_STRICT = 2;
 export const MAX_UNIX_EPOCH_SECONDS = 253_402_300_799;
 
+export const CHROME_EPOCH_THRESHOLD = 10_000_000_000_000;
+export const CHROME_EPOCH_MICROSECONDS = 1_000_000;
+export const CHROME_EPOCH_OFFSET_SECONDS = 11_644_473_600;
+export const MILLISECOND_THRESHOLD = 10_000_000_000;
+
 export const BUNDLE_ID_TO_BROWSER: Record<string, Browser> = {
   "com.google.chrome": "chrome",
   "com.brave.browser": "brave",
   "com.microsoft.edgemac": "edge",
+  "com.microsoft.edge": "edge",
   "org.chromium.chromium": "chromium",
   "com.vivaldi.vivaldi": "vivaldi",
   "com.operasoftware.opera": "opera",
@@ -54,20 +60,7 @@ export const DESKTOP_FILE_TO_BROWSER: Record<string, Browser> = {
   dia: "dia",
 };
 
-export const PROG_ID_PREFIX_TO_BROWSER: Record<string, Browser> = {
-  ChromeHTML: "chrome",
-  BraveHTML: "brave",
-  MSEdgeHTM: "edge",
-  ChromiumHTM: "chromium",
-  VivaldiHTM: "vivaldi",
-  OperaStable: "opera",
-  FirefoxURL: "firefox",
-  FirefoxHTML: "firefox",
-  ArcHTM: "arc",
-};
-
-export const WINDOWS_HTTPS_REGISTRY_PATH =
-  "HKCU\\Software\\Microsoft\\Windows\\Shell\\Associations\\UrlAssociations\\https\\UserChoice";
-
-export const DARWIN_LAUNCH_SERVICES_PLIST =
-  "Library/Preferences/com.apple.LaunchServices/com.apple.launchservices.secure.plist";
+export const SAFARI_COOKIE_RELATIVE_PATHS = [
+  "Library/Cookies",
+  "Library/Containers/com.apple.Safari/Data/Library/Cookies",
+];

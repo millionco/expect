@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { detectBrowserProfiles } from "../src/cdp/detector.js";
-import { extractAllProfileCookies, extractProfileCookies } from "../src/cdp/extract.js";
+import { detectBrowserProfiles } from "../src/profiles/detector.js";
+import { extractAllProfileCookies, extractProfileCookies } from "../src/profiles/extract.js";
 
 const INTEGRATION_TIMEOUT_MS = 30_000;
 

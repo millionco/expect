@@ -1,5 +1,17 @@
 import type { BrowserInfo } from "../types.js";
 
+export const FIREFOX_EXECUTABLE_DARWIN = "/Applications/Firefox.app/Contents/MacOS/firefox";
+
+export const FIREFOX_LINUX_PATHS = [
+  "/usr/bin/firefox",
+  "/usr/local/bin/firefox",
+  "/snap/bin/firefox",
+];
+
+export const FIREFOX_WIN32_PATHS = ["Mozilla Firefox\\firefox.exe"];
+
+export const SAFARI_EXECUTABLE = "/Applications/Safari.app/Contents/MacOS/Safari";
+
 export const CDP_RETRY_COUNT = 10;
 export const CDP_RETRY_DELAY_MS = 1_000;
 export const CDP_LOCAL_PORT = 9222;

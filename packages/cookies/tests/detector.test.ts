@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { detectBrowserProfiles } from "../src/cdp/detector.js";
+import { detectBrowserProfiles } from "../src/profiles/detector.js";
 
 describe("detectBrowserProfiles", () => {
   it("returns an array", () => {

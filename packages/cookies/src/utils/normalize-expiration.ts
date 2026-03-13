@@ -1,11 +1,11 @@
 import { MS_PER_SECOND } from "@browser-tester/utils";
-import { MAX_UNIX_EPOCH_SECONDS } from "../constants.js";
 import {
   CHROME_EPOCH_MICROSECONDS,
   CHROME_EPOCH_OFFSET_SECONDS,
   CHROME_EPOCH_THRESHOLD,
+  MAX_UNIX_EPOCH_SECONDS,
   MILLISECOND_THRESHOLD,
-} from "../sqlite/constants.js";
+} from "../constants.js";
 
 const clamp = (value: number): number | undefined =>
   value > 0 && value <= MAX_UNIX_EPOCH_SECONDS ? Math.round(value) : undefined;

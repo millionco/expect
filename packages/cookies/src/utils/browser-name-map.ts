@@ -19,6 +19,8 @@ const DISPLAY_NAME_TO_BROWSER: Record<string, Browser> = {
   Blisk: "blisk",
   Helium: "helium",
   Dia: "dia",
+  Firefox: "firefox",
+  Safari: "safari",
 };
 
 export const browserDisplayNameToKey = (displayName: string): Browser | undefined =>
