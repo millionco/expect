@@ -44,20 +44,16 @@ export const BranchSwitcherScreen = ({ onSelect }: BranchSwitcherScreenProps) =>
   const [localBranches] = useState(() => fetchLocalBranches());
   const [remoteBranches, setRemoteBranches] = useState<RemoteBranch[]>([]);
   const [isLoadingRemote, setIsLoadingRemote] = useState(true);
-  const [hasLoadedRemote, setHasLoadedRemote] = useState(false);
+  const [hasFetchedRemote, setHasFetchedRemote] = useState(false);
 
   useEffect(() => {
-    if (activeTab !== "remote" || hasLoadedRemote) return;
-    setHasLoadedRemote(true);
-    let cancelled = false;
+    if (activeTab !== "remote" || hasFetchedRemote) return;
+    setHasFetchedRemote(true);
     fetchRemoteBranches().then((branches) => {
-      if (!cancelled) {
-        setRemoteBranches(branches);
-        setIsLoadingRemote(false);
-      }
+      setRemoteBranches(branches);
+      setIsLoadingRemote(false);
     });
-    return () => { cancelled = true; };
-  }, [activeTab, hasLoadedRemote]);
+  }, [activeTab, hasFetchedRemote]);
 
   const filteredLocalBranches = useMemo(() => {
     if (!searchQuery) return localBranches;

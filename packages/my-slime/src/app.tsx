@@ -3,6 +3,7 @@ import { Box, Text, useInput } from "ink";
 import { COLORS } from "./constants.js";
 import { MenuItem } from "./menu-item.js";
 import { BranchSwitcherScreen } from "./branch-switcher-screen.js";
+import { CommitPickerScreen } from "./commit-picker-screen.js";
 import { ColoredLogo } from "./colored-logo.js";
 import { Spinner } from "./spinner.js";
 import {
@@ -13,12 +14,16 @@ import {
   type DiffStats,
 } from "./utils/get-git-state.js";
 import { switchBranch } from "./utils/switch-branch.js";
+import type { Commit } from "./utils/fetch-commits.js";
 
-type Screen = "main" | "switch-branch";
+type Screen = "main" | "switch-branch" | "select-commit";
+
+type MenuAction = "test-unstaged" | "test-branch" | "select-commit" | "select-branch";
 
 interface ScopeMenuOption {
   label: string;
   detail: string;
+  action: MenuAction;
   diffStats?: DiffStats;
 }
 
@@ -31,32 +36,35 @@ const buildMenuOptions = (scope: TestScope, gitState: GitState): ScopeMenuOption
         {
           label: "Test unstaged changes",
           detail: "",
+          action: "test-unstaged",
           diffStats: gitState.diffStats ?? undefined,
         },
       ];
       if (gitState.isOnMain) {
-        options.push({ label: "Select a commit to test", detail: "" });
+        options.push({ label: "Select a commit to test", detail: "", action: "select-commit" });
       } else if (gitState.hasBranchCommits) {
         options.push({
           label: "Test entire branch",
           detail: `(${gitState.currentBranch})`,
+          action: "test-branch",
           diffStats: gitState.branchDiffStats ?? undefined,
         });
       }
       return options;
     }
     case "select-commit":
-      return [{ label: "Select a commit to test", detail: "" }];
+      return [{ label: "Select a commit to test", detail: "", action: "select-commit" }];
     case "select-branch":
-      return [{ label: "Select a branch to test", detail: "" }];
+      return [{ label: "Select a branch to test", detail: "", action: "select-branch" }];
     case "entire-branch":
       return [
         {
           label: "Test entire branch",
           detail: `(${gitState.currentBranch})`,
+          action: "test-branch",
           diffStats: gitState.branchDiffStats ?? undefined,
         },
-        { label: "Select a commit to test", detail: "" },
+        { label: "Select a commit to test", detail: "", action: "select-commit" },
       ];
   }
 };
@@ -96,7 +104,21 @@ export const App = () => {
     if (input === "b" && showSwitchBranch) {
       setScreen("switch-branch");
     }
+
+    if (key.return && menuOptions.length > 0) {
+      const selected = menuOptions[selectedIndex];
+      if (selected.action === "select-commit") {
+        setScreen("select-commit");
+      }
+      if (selected.action === "select-branch") {
+        setScreen("switch-branch");
+      }
+    }
   });
+
+  const handleCommitSelect = (_commit: Commit) => {
+    setScreen("main");
+  };
 
   const handleBranchSwitch = (branch: string) => {
     const success = switchBranch(branch);
@@ -114,6 +136,10 @@ export const App = () => {
         <Spinner message="Checking git state..." />
       </Box>
     );
+  }
+
+  if (screen === "select-commit") {
+    return <CommitPickerScreen onSelect={handleCommitSelect} />;
   }
 
   if (screen === "switch-branch") {
