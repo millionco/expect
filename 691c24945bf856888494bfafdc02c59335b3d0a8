@@ -1,0 +1,23 @@
+packages/cli/src/commands/screenshot.ts
+  33c009adb1394905 1,7-8,15-23,25-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.10",
+  "base_commit_sha": "691c24945bf856888494bfafdc02c59335b3d0a8",
+  "prompts": {
+    "33c009adb1394905": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f43d0802-6699-4f94-bdad-7d9ac8531528",
+        "model": "claude-4.6-opus-max-thinking-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 14,
+      "total_deletions": 3,
+      "accepted_lines": 14,
+      "overriden_lines": 0
+    }
+  }
+}
