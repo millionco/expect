@@ -1,0 +1,31 @@
+packages/agent/src/claude.ts
+  909d3153da41820b 79,107,141-142,145,152
+packages/agent/src/types.ts
+  909d3153da41820b 18
+packages/orchestrator/src/execute-browser-flow.ts
+  909d3153da41820b 6,74,80
+packages/orchestrator/src/plan-browser-flow.ts
+  909d3153da41820b 5,51
+packages/orchestrator/src/constants.ts
+  909d3153da41820b 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.11",
+  "base_commit_sha": "a969ce39d0c6387412bd72979a63d746ee7b7465",
+  "prompts": {
+    "909d3153da41820b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "2a1309b2-509f-4b76-8a7b-e792c32b3ed2",
+        "model": "composer-1.5"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 19,
+      "total_deletions": 14,
+      "accepted_lines": 13,
+      "overriden_lines": 0
+    }
+  }
+}
