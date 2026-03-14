@@ -142,8 +142,6 @@ const buildQueryOptions = (
   const resolvedModel = settings.model ?? "claude-opus-4-6";
   const supportsEffort = !resolvedModel.toLowerCase().includes("sonnet");
   const explicitExecutablePath = resolveClaudeExecutablePath();
-  /** @note(rasmus): strip CLAUDECODE so the subprocess doesn't think it's nested inside another coding agent */
-  const env = Struct.omit(settings.env ?? {}, "CLAUDECODE");
   const queryOptions = {
     model: resolvedModel,
     maxTurns: settings.maxTurns ?? DEFAULT_CLAUDE_MAX_TURNS,
@@ -152,7 +150,8 @@ const buildQueryOptions = (
       settings.permissionMode === "bypassPermissions" ? true : undefined,
     permissionMode: settings.permissionMode ?? "bypassPermissions",
     abortController,
-    env,
+    /** @note(rasmus): strip CLAUDECODE so the subprocess doesn't think it's nested inside another coding agent */
+    ...(settings.env ? { env: Struct.omit(settings.env, "CLAUDECODE") } : {}),
     ...(settings.effort && supportsEffort ? { effort: settings.effort } : {}),
     ...(systemPrompt ? { appendSystemPrompt: systemPrompt } : {}),
     ...(settings.sessionId ? { resume: settings.sessionId } : {}),
