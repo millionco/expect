@@ -16,7 +16,6 @@ import {
   COMMIT_SELECTOR_WIDTH,
   SECTION_INDENT,
   STEP_ID_COLUMN_WIDTH,
-  STEP_ROUTE_COLUMN_WIDTH,
 } from "../constants.js";
 
 type Section = "details" | "assumptions" | "cookies" | "steps";
@@ -40,21 +39,25 @@ interface PlanStepRowProps {
   onClick: () => void;
 }
 
-const PlanStepRow = ({ step, selected, titleColumnWidth, onClick }: PlanStepRowProps) => {
+const PlanStepRow = ({
+  step,
+  selected,
+  titleColumnWidth,
+  onClick,
+}: PlanStepRowProps) => {
   const COLORS = useColors();
   return (
     <Clickable onClick={onClick}>
       <Box flexDirection="column" marginTop={0}>
         <Text>
-          <Text color={selected ? COLORS.PRIMARY : COLORS.DIM}>{selected ? "  ❯ " : "    "}</Text>
+          <Text color={selected ? COLORS.PRIMARY : COLORS.DIM}>
+            {selected ? "  ❯ " : "    "}
+          </Text>
           <Text color={COLORS.PURPLE} bold={selected}>
             {step.id.padEnd(STEP_ID_COLUMN_WIDTH)}
           </Text>
           <Text color={selected ? COLORS.TEXT : COLORS.DIM} bold={selected}>
-            {truncateText(step.title, titleColumnWidth - 1).padEnd(titleColumnWidth)}
-          </Text>
-          <Text color={COLORS.CYAN}>
-            {truncateText(step.routeHint || "—", STEP_ROUTE_COLUMN_WIDTH)}
+            {truncateText(step.title, titleColumnWidth - 1)}
           </Text>
         </Text>
         {selected ? (
@@ -87,7 +90,9 @@ export const PlanReviewScreen = () => {
   const approvePlan = useAppStore((state) => state.approvePlan);
   const loadSavedFlows = useAppStore((state) => state.loadSavedFlows);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
+    assumptions: true,
+  });
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingValue, setEditingValue] = useState("");
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -96,15 +101,12 @@ export const PlanReviewScreen = () => {
 
   if (!plan || !resolvedTarget) return null;
 
-  const editingStep = editingIndex === null ? null : (plan.steps[editingIndex] ?? null);
+  const editingStep =
+    editingIndex === null ? null : plan.steps[editingIndex] ?? null;
   const cookiesEnabled = (environment ?? {}).cookies === true;
 
   const titleColumnWidth =
-    columns -
-    COMMIT_SELECTOR_WIDTH -
-    STEP_ID_COLUMN_WIDTH -
-    STEP_ROUTE_COLUMN_WIDTH -
-    SECTION_INDENT;
+    columns - COMMIT_SELECTOR_WIDTH - STEP_ID_COLUMN_WIDTH - SECTION_INDENT;
 
   const items: NavigableItem[] = useMemo(() => {
     const result: NavigableItem[] = [];
@@ -143,7 +145,9 @@ export const PlanReviewScreen = () => {
         updatePlan({
           ...plan,
           steps: plan.steps.map((step, index) =>
-            index === editingIndex ? { ...step, instruction: editingValue.trim() } : step,
+            index === editingIndex
+              ? { ...step, instruction: editingValue.trim() }
+              : step
           ),
         });
         setEditingIndex(null);
@@ -186,11 +190,17 @@ export const PlanReviewScreen = () => {
         environment: environment ?? {},
       })
         .then((result) => {
-          setSaveMessage(`Saved ${result.flowPath} and updated ${result.directoryPath}`);
+          setSaveMessage(
+            `Saved ${result.flowPath} and updated ${result.directoryPath}`
+          );
           void loadSavedFlows();
         })
         .catch((caughtError) => {
-          setSaveError(caughtError instanceof Error ? caughtError.message : "Failed to save flow.");
+          setSaveError(
+            caughtError instanceof Error
+              ? caughtError.message
+              : "Failed to save flow."
+          );
         })
         .finally(() => {
           setSaving(false);
@@ -262,12 +272,18 @@ export const PlanReviewScreen = () => {
               </Text>
               <Clickable
                 onClick={() =>
-                  updateEnvironment({ ...(environment ?? {}), cookies: !cookiesEnabled })
+                  updateEnvironment({
+                    ...(environment ?? {}),
+                    cookies: !cookiesEnabled,
+                  })
                 }
               >
                 <Text color={COLORS.DIM}>
                   {"sync    "}
-                  <Text color={cookiesEnabled ? COLORS.GREEN : COLORS.TEXT} bold={cookiesEnabled}>
+                  <Text
+                    color={cookiesEnabled ? COLORS.GREEN : COLORS.TEXT}
+                    bold={cookiesEnabled}
+                  >
                     {cookiesEnabled ? "on" : "off"}
                   </Text>
                   <Text color={COLORS.DIM}> (c to toggle)</Text>
@@ -297,11 +313,11 @@ export const PlanReviewScreen = () => {
           <Text color={COLORS.DIM}>
             {"    "}
             {"ID".padEnd(STEP_ID_COLUMN_WIDTH)}
-            {"Instruction".padEnd(titleColumnWidth)}
-            {"Route"}
+            {"Instruction"}
           </Text>
           {plan.steps.map((step, index) => {
-            const selected = currentItem?.kind === "step" && currentItem.stepIndex === index;
+            const selected =
+              currentItem?.kind === "step" && currentItem.stepIndex === index;
             return (
               <PlanStepRow
                 key={step.id}
@@ -310,7 +326,7 @@ export const PlanReviewScreen = () => {
                 titleColumnWidth={titleColumnWidth}
                 onClick={() => {
                   const itemIndex = items.findIndex(
-                    (item) => item.kind === "step" && item.stepIndex === index,
+                    (item) => item.kind === "step" && item.stepIndex === index
                   );
                   if (itemIndex >= 0) setSelectedIndex(itemIndex);
                 }}
@@ -330,7 +346,9 @@ export const PlanReviewScreen = () => {
             <Input
               focus
               value={editingValue}
-              onChange={(nextValue) => setEditingValue(stripMouseSequences(nextValue))}
+              onChange={(nextValue) =>
+                setEditingValue(stripMouseSequences(nextValue))
+              }
             />
           </Box>
         </Box>
