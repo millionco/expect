@@ -2,7 +2,6 @@ import { Box, Text } from "ink";
 import { useStdoutDimensions } from "../hooks/use-stdout-dimensions.js";
 import stringWidth from "string-width";
 import { useColors, useThemeContext } from "./theme-context.js";
-import { STATUSBAR_TRAILING_PADDING } from "../constants.js";
 import { HintBar, HINT_SEPARATOR, type HintSegment } from "./ui/hint-bar.js";
 import { useAppStore, type Screen } from "../store.js";
 
@@ -39,26 +38,26 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
         { key: "↑↓", label: "nav" },
         { key: "tab", label: "local/remote" },
         { key: "/", label: "search" },
-        { key: "enter", label: "select", cta: true },
         { key: "esc", label: "back", cta: true, onClick: goBack },
+        { key: "enter", label: "select", color: COLORS.GREEN, cta: true },
       ];
     case "select-commit":
       return [
         { key: "↑↓", label: "nav" },
         { key: "/", label: "search" },
-        { key: "enter", label: "select", cta: true },
         { key: "esc", label: "back", cta: true, onClick: goBack },
+        { key: "enter", label: "select", color: COLORS.GREEN, cta: true },
       ];
     case "saved-flow-picker":
       return [
         { key: "↑↓", label: "nav" },
-        { key: "enter", label: "select", cta: true },
         { key: "esc", label: "back", cta: true, onClick: goBack },
+        { key: "enter", label: "select", color: COLORS.GREEN, cta: true },
       ];
     case "flow-input":
       return [
-        { key: "enter", label: "submit", cta: true },
         { key: "esc", label: "back", cta: true, onClick: goBack },
+        { key: "enter", label: "submit", color: COLORS.GREEN, cta: true },
       ];
     case "planning":
       return [{ key: "esc", label: "cancel", cta: true, onClick: goBack }];
@@ -66,8 +65,15 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
       return [
         { key: "↑↓", label: "nav" },
         { key: "tab", label: "fold" },
-        { key: "e", label: "edit" },
-        { key: "s", label: "save" },
+        {
+          key: "esc",
+          label: "cancel",
+          color: COLORS.RED,
+          cta: true,
+          onClick: goBack,
+        },
+        { key: "e", label: "edit", cta: true },
+        { key: "s", label: "save", color: COLORS.GREEN, cta: true },
         {
           key: "a",
           label: "approve",
@@ -77,7 +83,6 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
             if (generatedPlan) approvePlan(generatedPlan);
           },
         },
-        { key: "esc", label: "back", color: COLORS.RED, cta: true, onClick: goBack },
       ];
     case "testing":
       return [];
@@ -85,8 +90,8 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
       return [
         { key: "↑↓", label: "nav" },
         { key: "tab", label: "light/dark" },
-        { key: "enter", label: "select", cta: true },
         { key: "esc", label: "cancel", cta: true, onClick: goBack },
+        { key: "enter", label: "select", color: COLORS.GREEN, cta: true },
       ];
     default:
       return [];
@@ -115,14 +120,14 @@ export const Modeline = () => {
   const branchLabel = ` ${gitState.currentBranch} `;
   const keybindText = getHintText(keybinds);
   const actionPills = actions
-    .map((action) => `[${action.key} ${action.label}]`)
-    .join("  ");
-  const actionWidth = actions.length > 0 ? stringWidth(actionPills) + 2 : 0;
+    .map((action) => ` ${action.key} ${action.label} `)
+    .join(" ");
+  const actionWidth = actions.length > 0 ? stringWidth(actionPills) : 0;
   const leftWidth = stringWidth(branchLabel) + stringWidth(keybindText);
-  const totalUsed = leftWidth + actionWidth + STATUSBAR_TRAILING_PADDING;
-  const remainingSpace = Math.max(0, columns - totalUsed);
-  const leftGap = Math.ceil(remainingSpace / 2);
-  const rightGap = remainingSpace - leftGap;
+  const ctaCenter = Math.floor(columns / 2);
+  const ctaStart = ctaCenter - Math.floor(actionWidth / 2);
+  const leftGap = Math.max(0, ctaStart - leftWidth - 1);
+  const rightGap = Math.max(0, columns - leftWidth - leftGap - actionWidth - 2);
 
   return (
     <Box flexDirection="column">
@@ -139,13 +144,15 @@ export const Modeline = () => {
         <Text>{" ".repeat(leftGap)}</Text>
         {actions.map((action, index) => (
           <Text key={action.key + action.label}>
-            {index > 0 ? "  " : ""}
-            <Text color={action.color ?? theme.border}>{"["}</Text>
-            <Text color={action.color ?? theme.primary} bold>
-              {action.key}
+            {index > 0 ? " " : ""}
+            <Text
+              backgroundColor={action.color ?? theme.border}
+              color="#000000"
+              bold
+            >
+              {" "}
+              {action.key} {action.label}{" "}
             </Text>
-            <Text color={action.color ?? theme.textMuted}> {action.label}</Text>
-            <Text color={action.color ?? theme.border}>{"]"}</Text>
           </Text>
         ))}
         <Text>{" ".repeat(rightGap)}</Text>
