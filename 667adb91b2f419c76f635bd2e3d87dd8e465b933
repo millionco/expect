@@ -1,0 +1,91 @@
+apps/cli/src/utils/save-flow.ts
+  d5f8af0be32afb4a 12,15,72-81,124-130
+packages/orchestrator/src/execute-browser-flow.ts
+  401d4b6880017edb 16,250,311-328
+packages/cookies/tests/profile-extract.test.ts
+  eb4946270c95d592 5,25,27,40,68-70,102,104
+apps/cli/src/commit-picker-screen.tsx
+  d5f8af0be32afb4a 11,63
+apps/cli/src/utils/format-browser-tool-call.ts
+  401d4b6880017edb 2,115,117-132
+apps/cli/src/constants.ts
+  d5f8af0be32afb4a 28,30
+apps/cli/src/utils/load-saved-flow.ts
+  d5f8af0be32afb4a 1-26
+packages/orchestrator/tests/execute-browser-flow.test.ts
+  401d4b6880017edb 1-2,12-13,28-34,38-42,92-93,176-186,188-265
+packages/orchestrator/src/constants.ts
+  401d4b6880017edb 15-16
+packages/cookies/src/profiles/constants.ts
+  eb4946270c95d592 189
+apps/cli/src/utils/saved-flow-file.ts
+  d5f8af0be32afb4a 1-101
+apps/cli/src/saved-flow-picker-screen.tsx
+  d5f8af0be32afb4a 1-60,62-129
+packages/orchestrator/src/utils/save-browser-image-result.ts
+  401d4b6880017edb 1-3,5-108
+apps/cli/src/app.tsx
+  d5f8af0be32afb4a 9,63,72-75,103-104
+apps/cli/src/utils/list-saved-flows.ts
+  d5f8af0be32afb4a 1-58
+apps/cli/src/store.ts
+  d5f8af0be32afb4a 9-11,14-15,22,40-42,45,50-51,78-80,84-88,91-94,97-114,130-131,136-164,166-167,171-204,214-215,247-248
+apps/cli/src/plan-review-screen.tsx
+  d5f8af0be32afb4a 16,79
+apps/cli/src/utils/browser-agent.ts
+  d5f8af0be32afb4a 44,63-72,76
+apps/cli/src/testing-screen.tsx
+  401d4b6880017edb 51-52,54
+apps/cli/src/main-menu.tsx
+  d5f8af0be32afb4a 73,75,84-88,110-119,172-174,283
+packages/cookies/tests/browser-configs.test.ts
+  eb4946270c95d592 52-56
+packages/cookies/src/profiles/cdp-extract.ts
+  eb4946270c95d592 2,15,29,35,51,53,67-68,72-78,82-84,113
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.11",
+  "base_commit_sha": "667adb91b2f419c76f635bd2e3d87dd8e465b933",
+  "prompts": {
+    "401d4b6880017edb": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a92c445c-96b4-4d1b-b259-0c7a03c72823",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 271,
+      "total_deletions": 29,
+      "accepted_lines": 259,
+      "overriden_lines": 2
+    },
+    "d5f8af0be32afb4a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e42d3980-d29f-4da1-98c6-c906bb546d2d",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 763,
+      "total_deletions": 321,
+      "accepted_lines": 492,
+      "overriden_lines": 2
+    },
+    "eb4946270c95d592": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "15f60b92-b4ac-4bad-a1a5-e82b9e845fb1",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 40,
+      "total_deletions": 27,
+      "accepted_lines": 37,
+      "overriden_lines": 0
+    }
+  }
+}
