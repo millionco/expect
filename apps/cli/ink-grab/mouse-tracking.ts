@@ -30,9 +30,6 @@ const BRACKET = 0x5b;
 const UPPER_M = 0x4d;
 const LOWER_M = 0x6d;
 const LESS_THAN = 0x3c;
-const ZERO = 0x30;
-const NINE = 0x39;
-const SEMICOLON = 0x3b;
 const CTRL_C = 0x03;
 
 const decodeButton = (value: number): MouseEvent => {
@@ -107,11 +104,7 @@ export class MouseTracking extends EventEmitter<MouseTrackingEvents> {
         continue;
       }
 
-      if (
-        byte !== ESC ||
-        index >= data.length - 2 ||
-        data[index + 1] !== BRACKET
-      ) {
+      if (byte !== ESC || index >= data.length - 2 || data[index + 1] !== BRACKET) {
         continue;
       }
 
@@ -153,11 +146,7 @@ export class MouseTracking extends EventEmitter<MouseTrackingEvents> {
     if (index >= data.length) return null;
 
     const isDown = raw[raw.length - 1] === UPPER_M;
-    const content = Buffer.from(raw)
-      .toString("ascii")
-      .slice(1, -1)
-      .split(";")
-      .map(Number);
+    const content = Buffer.from(raw).toString("ascii").slice(1, -1).split(";").map(Number);
 
     if (content.length < 3) return null;
 

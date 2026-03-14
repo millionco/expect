@@ -22,9 +22,13 @@ export const SourceInspector = ({ children }: SourceInspectorProps) => {
   if (IS_PRODUCTION) return <>{children}</>;
 
   const rootRef = useRef<DOMElement>(null);
+  const buttonRef = useRef<DOMElement>(null);
+  const modeRef = useRef<InspectorMode>("idle");
   const [mode, setMode] = useState<InspectorMode>("idle");
   const [elementInfo, setElementInfo] = useState<ElementInfo | null>(null);
   const [copied, setCopied] = useState(false);
+
+  modeRef.current = mode;
 
   useEffect(() => {
     if (copied) {
@@ -34,15 +38,39 @@ export const SourceInspector = ({ children }: SourceInspectorProps) => {
   }, [copied]);
 
   useEffect(() => {
-    if (mode !== "picking") return;
-
     let cancelled = false;
     const mouse = createMouseTracking();
 
     mouse.on("click", (_press, release) => {
       if (cancelled || !rootRef.current) return;
-      const element = hitTest(rootRef.current, release.x - 1, release.y - 1);
+
+      const clickX = release.x - 1;
+      const clickY = release.y - 1;
+
+      if (modeRef.current === "idle") {
+        if (buttonRef.current) {
+          const buttonHit = hitTest(buttonRef.current, clickX, clickY);
+          if (buttonHit) {
+            setElementInfo(null);
+            setCopied(false);
+            setMode("picking");
+          }
+        }
+        return;
+      }
+
+      if (buttonRef.current) {
+        const buttonHit = hitTest(buttonRef.current, clickX, clickY);
+        if (buttonHit) {
+          setMode("idle");
+          setElementInfo(null);
+          return;
+        }
+      }
+
+      const element = hitTest(rootRef.current, clickX, clickY);
       if (!element) return;
+
       void resolveElementInfo(element).then((info) => {
         if (!cancelled) setElementInfo(info);
       });
@@ -54,17 +82,6 @@ export const SourceInspector = ({ children }: SourceInspectorProps) => {
       cancelled = true;
       mouse.stop();
     };
-  }, [mode]);
-
-  const handleToggle = useCallback(() => {
-    setMode((current) => {
-      if (current === "idle") {
-        setElementInfo(null);
-        setCopied(false);
-        return "picking";
-      }
-      return "idle";
-    });
   }, []);
 
   const handleCopy = useCallback(() => {
@@ -78,15 +95,6 @@ export const SourceInspector = ({ children }: SourceInspectorProps) => {
   }, [elementInfo]);
 
   useInput((input, key) => {
-    // HACK: Option+C sends ç on macOS when terminal has "Option as Meta" disabled
-    const isOptC = input === "c" && key.meta;
-    const isOptCFallback = input === "ç";
-
-    if (isOptC || isOptCFallback) {
-      handleToggle();
-      return;
-    }
-
     if (mode === "picking") {
       if (key.escape) {
         setMode("idle");
@@ -104,20 +112,19 @@ export const SourceInspector = ({ children }: SourceInspectorProps) => {
     <Box flexDirection="column" ref={rootRef}>
       {children}
 
-      {mode === "idle" ? (
-        <Box justifyContent="flex-end" paddingX={1}>
-          <Text dimColor>⌥C inspect</Text>
-        </Box>
-      ) : null}
+      <Box justifyContent="flex-end" paddingX={1} ref={buttonRef}>
+        <Text dimColor inverse={mode === "picking"}>
+          {mode === "idle" ? " 🔍 inspect " : " ✕ exit inspect "}
+        </Text>
+      </Box>
 
       {mode === "picking" ? (
         <Box flexDirection="column" paddingX={1}>
-          <Text dimColor>Click an element to inspect · esc exit</Text>
           {elementInfo ? (
-            <Box marginTop={1}>
-              <SourcePanel info={elementInfo} copied={copied} />
-            </Box>
-          ) : null}
+            <SourcePanel info={elementInfo} copied={copied} />
+          ) : (
+            <Text dimColor>Click an element to inspect</Text>
+          )}
         </Box>
       ) : null}
     </Box>
