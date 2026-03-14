@@ -1,12 +1,19 @@
 import { useMemo, useState } from "react";
 import { Box, Text, useInput } from "ink";
-import figures from "figures";
 import TextInput from "ink-text-input";
 import { useColors } from "./theme-context.js";
 import { saveFlow } from "../utils/save-flow.js";
 import { useAppStore } from "../store.js";
+import { truncateText } from "../utils/truncate-text.js";
+import { useStdoutDimensions } from "../hooks/use-stdout-dimensions.js";
+import {
+  COMMIT_SELECTOR_WIDTH,
+  STEP_ID_COLUMN_WIDTH,
+  STEP_ROUTE_COLUMN_WIDTH,
+} from "../constants.js";
 
 export const PlanReviewScreen = () => {
+  const [columns] = useStdoutDimensions();
   const COLORS = useColors();
   const plan = useAppStore((state) => state.generatedPlan);
   const environment = useAppStore((state) => state.browserEnvironment);
@@ -30,6 +37,13 @@ export const PlanReviewScreen = () => {
   );
   const editingStep = editingIndex === null ? null : (plan.steps[editingIndex] ?? null);
   const cookiesEnabled = (environment ?? {}).cookies === true;
+
+  const titleColumnWidth =
+    columns -
+    COMMIT_SELECTOR_WIDTH -
+    STEP_ID_COLUMN_WIDTH -
+    STEP_ROUTE_COLUMN_WIDTH -
+    4;
 
   useInput((input, key) => {
     if (editingStep) {
@@ -92,26 +106,49 @@ export const PlanReviewScreen = () => {
   });
 
   return (
-    <Box flexDirection="column" width="100%" paddingX={2} paddingY={1}>
+    <Box flexDirection="column" width="100%" paddingX={1} paddingY={1}>
       <Text bold color={COLORS.TEXT}>
         Review browser plan
       </Text>
       <Text color={COLORS.DIM}>{plan.title}</Text>
 
-      <Box
-        marginTop={1}
-        borderStyle="single"
-        borderTop
-        borderBottom={false}
-        borderLeft={false}
-        borderRight={false}
-        borderColor={COLORS.DIVIDER}
-      />
-
       <Box flexDirection="column" marginTop={1}>
-        <Text color={COLORS.TEXT}>{plan.rationale}</Text>
-        <Text color={COLORS.DIM}>Target: {plan.targetSummary}</Text>
+        <Text color={COLORS.DIM}>
+          <Text color={COLORS.TEXT} bold>rationale</Text>  {plan.rationale}
+        </Text>
+        <Text color={COLORS.DIM}>
+          <Text color={COLORS.TEXT} bold>target</Text>     {plan.targetSummary}
+        </Text>
       </Box>
+
+      {plan.assumptions.length > 0 ? (
+        <Box flexDirection="column" marginTop={1}>
+          <Text bold color={COLORS.YELLOW}>
+            Assumptions ({plan.assumptions.length})
+          </Text>
+          {plan.assumptions.map((assumption) => (
+            <Text key={assumption} color={COLORS.DIM}>
+              {"  "}- {assumption}
+            </Text>
+          ))}
+        </Box>
+      ) : null}
+
+      {plan.cookieSync.required ? (
+        <Box flexDirection="column" marginTop={1}>
+          <Text bold color={cookiesEnabled ? COLORS.GREEN : COLORS.YELLOW}>
+            Cookie sync
+          </Text>
+          <Text color={COLORS.DIM}>  {plan.cookieSync.reason}</Text>
+          <Text>
+            {"  "}
+            <Text color={cookiesEnabled ? COLORS.GREEN : COLORS.DIM} bold={cookiesEnabled}>
+              sync local cookies: {cookiesEnabled ? "on" : "off"}
+            </Text>
+            <Text color={COLORS.DIM}> (c to toggle)</Text>
+          </Text>
+        </Box>
+      ) : null}
 
       {saveMessage ? (
         <Box marginTop={1}>
@@ -125,74 +162,62 @@ export const PlanReviewScreen = () => {
         </Box>
       ) : null}
 
-      {plan.assumptions.length > 0 ? (
-        <Box flexDirection="column" marginTop={1}>
-          <Text color={COLORS.YELLOW}>Assumptions</Text>
-          {plan.assumptions.map((assumption) => (
-            <Text key={assumption} color={COLORS.DIM}>
-              - {assumption}
-            </Text>
-          ))}
-        </Box>
-      ) : null}
-
-      {plan.cookieSync.required ? (
-        <Box
-          flexDirection="column"
-          marginTop={1}
-          borderStyle="round"
-          borderColor={cookiesEnabled ? COLORS.GREEN : COLORS.YELLOW}
-          paddingX={1}
-        >
-          <Text color={cookiesEnabled ? COLORS.GREEN : COLORS.YELLOW}>Cookie sync required</Text>
-          <Text color={COLORS.DIM}>{plan.cookieSync.reason}</Text>
-          <Text color={cookiesEnabled ? COLORS.GREEN : COLORS.TEXT}>
-            Sync local browser cookies: {cookiesEnabled ? "On" : "Off"}
-          </Text>
-        </Box>
-      ) : null}
-
       <Box flexDirection="column" marginTop={1}>
-        {plan.steps.map((step, index) => (
-          <Text key={step.id} color={index === selectedIndex ? COLORS.SELECTION : COLORS.TEXT}>
-            {index === selectedIndex ? figures.pointer : " "} {step.id} {step.title}
-          </Text>
-        ))}
+        <Text bold color={COLORS.TEXT}>
+          Steps ({plan.steps.length})
+        </Text>
+        <Text color={COLORS.DIM}>
+          {"  "}
+          {"ID".padEnd(STEP_ID_COLUMN_WIDTH)}
+          {"Instruction".padEnd(titleColumnWidth)}
+          {"Route"}
+        </Text>
+        {plan.steps.map((step, index) => {
+          const isSelected = index === selectedIndex;
+          return (
+            <Box key={step.id} flexDirection="column" marginTop={0}>
+              <Text>
+                <Text color={isSelected ? COLORS.ORANGE : COLORS.DIM}>
+                  {isSelected ? "❯ " : "  "}
+                </Text>
+                <Text color={COLORS.PURPLE} bold={isSelected}>
+                  {step.id.padEnd(STEP_ID_COLUMN_WIDTH)}
+                </Text>
+                <Text color={isSelected ? COLORS.TEXT : COLORS.DIM} bold={isSelected}>
+                  {truncateText(step.title, titleColumnWidth - 1).padEnd(titleColumnWidth)}
+                </Text>
+                <Text color={COLORS.CYAN}>
+                  {truncateText(step.routeHint || "—", STEP_ROUTE_COLUMN_WIDTH)}
+                </Text>
+              </Text>
+              {isSelected ? (
+                <>
+                  <Text>
+                    {"".padEnd(COMMIT_SELECTOR_WIDTH + STEP_ID_COLUMN_WIDTH)}
+                    <Text color={COLORS.TEXT}>instruction</Text>
+                    <Text color={COLORS.DIM}>  {step.instruction}</Text>
+                  </Text>
+                  <Text>
+                    {"".padEnd(COMMIT_SELECTOR_WIDTH + STEP_ID_COLUMN_WIDTH)}
+                    <Text color={COLORS.TEXT}>expected</Text>
+                    <Text color={COLORS.DIM}>     {step.expectedOutcome}</Text>
+                  </Text>
+                </>
+              ) : null}
+            </Box>
+          );
+        })}
       </Box>
-
-      {selectedStep ? (
-        <Box
-          flexDirection="column"
-          marginTop={1}
-          borderStyle="round"
-          borderColor={COLORS.BORDER}
-          paddingX={1}
-        >
-          <Text color={COLORS.TEXT}>Instruction: {selectedStep.instruction}</Text>
-          <Text color={COLORS.DIM}>Expected: {selectedStep.expectedOutcome}</Text>
-          {selectedStep.routeHint ? (
-            <Text color={COLORS.DIM}>Route: {selectedStep.routeHint}</Text>
-          ) : null}
-        </Box>
-      ) : null}
 
       {editingStep ? (
         <Box flexDirection="column" marginTop={1}>
-          <Text color={COLORS.YELLOW}>Edit instruction for {editingStep.id}</Text>
-          <Box borderStyle="round" borderColor={COLORS.BORDER} paddingX={2}>
+          <Text bold color={COLORS.YELLOW}>Editing {editingStep.id}</Text>
+          <Box marginTop={0}>
+            <Text color={COLORS.DIM}>/</Text>
             <TextInput focus value={editingValue} onChange={setEditingValue} />
           </Box>
-          <Text color={COLORS.DIM}>Enter save · Esc cancel</Text>
         </Box>
-      ) : (
-        <Box marginTop={1}>
-          <Text color={COLORS.DIM}>
-            ↑/↓ navigate · e edit step
-            {plan.cookieSync.required ? " · c toggle cookie sync" : ""}
-            {" · "}s save flow · a approve and run · Esc back
-          </Text>
-        </Box>
-      )}
+      ) : null}
 
       {saving ? (
         <Box marginTop={1}>

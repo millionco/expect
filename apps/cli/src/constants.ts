@@ -25,3 +25,5 @@ export const COMMIT_DATE_COLUMN_WIDTH = 14;
 export const BRANCH_NAME_COLUMN_WIDTH = 32;
 export const BRANCH_AUTHOR_COLUMN_WIDTH = 16;
 export const BRANCH_VISIBLE_COUNT = 15;
+export const STEP_ID_COLUMN_WIDTH = 5;
+export const STEP_ROUTE_COLUMN_WIDTH = 24;
