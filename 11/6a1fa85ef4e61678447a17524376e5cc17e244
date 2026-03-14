@@ -1,0 +1,67 @@
+packages/supervisor/tests/execute-browser-flow.test.ts
+  8b7a52bd17c7f041 10,141-178
+packages/supervisor/src/execute-browser-flow.ts
+  8b7a52bd17c7f041 5,10,28-72,76-83,98
+apps/cli/src/components/testing-screen.tsx
+  f64595b8ee0c5a7f 26-44,47-48,72-75,78,117-118,125,127-135,159-164,183,190,210-214,236,280
+  d9a7383150697c68 6,8,15,123-124,137-151,157,165-166,257
+apps/cli/src/utils/format-elapsed-time.ts
+  d9a7383150697c68 1-18
+packages/supervisor/src/constants.ts
+  8b7a52bd17c7f041 13
+packages/supervisor/tests/browser-mcp-config.test.ts
+  8b7a52bd17c7f041 5,22-49
+packages/mcp/src/server.ts
+  8b7a52bd17c7f041 105
+apps/cli/src/utils/format-browser-tool-call.ts
+  f64595b8ee0c5a7f 4-5,11-14,35-39,41-46,61-63,65-68,70-74,76-84,100,102,104,110,112,155-269,271-272
+apps/cli/src/constants.ts
+  f64595b8ee0c5a7f 9
+  d9a7383150697c68 10-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "116a1fa85ef4e61678447a17524376e5cc17e244",
+  "prompts": {
+    "8b7a52bd17c7f041": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "94486148-cbb0-4f76-918a-eaa20f255b9e",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 560,
+      "total_deletions": 219,
+      "accepted_lines": 126,
+      "overriden_lines": 0
+    },
+    "d9a7383150697c68": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "57ce6850-ec23-44de-ba83-e749c782179c",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 48,
+      "total_deletions": 2,
+      "accepted_lines": 45,
+      "overriden_lines": 0
+    },
+    "f64595b8ee0c5a7f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5bec5484-d7fb-466b-9ee3-ef3515c6273a",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 237,
+      "total_deletions": 24,
+      "accepted_lines": 214,
+      "overriden_lines": 0
+    }
+  }
+}
