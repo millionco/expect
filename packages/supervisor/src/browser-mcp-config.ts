@@ -1,9 +1,12 @@
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { DEFAULT_BROWSER_MCP_SERVER_NAME } from "./constants.js";
 import type { AgentProviderSettings, McpServerConfig } from "@browser-tester/agent";
 
-const require = createRequire(import.meta.url);
+const require = createRequire(
+  typeof __filename !== "undefined" ? __filename : fileURLToPath(import.meta.url),
+);
 
 export const BROWSER_TESTER_VIDEO_OUTPUT_ENV_NAME = "BROWSER_TESTER_VIDEO_OUTPUT_PATH";
 
