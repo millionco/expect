@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
-import { COLUMN_PADDING, SEARCH_PLACEHOLDER, VISIBLE_COMMIT_COUNT } from "./constants.js";
+import { COLUMN_PADDING, VISIBLE_COMMIT_COUNT } from "./constants.js";
 import { useColors } from "./theme-context.js";
 import { fetchCommits } from "./utils/fetch-commits.js";
 import { useAppStore } from "./store.js";
@@ -12,6 +12,7 @@ export const CommitPickerScreen = () => {
   const [commits] = useState(() => fetchCommits());
   const [searchQuery, setSearchQuery] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [isSearching, setIsSearching] = useState(false);
 
   const filteredCommits = useMemo(() => {
     if (!searchQuery) return commits;
@@ -26,6 +27,11 @@ export const CommitPickerScreen = () => {
 
   const maxHashWidth = useMemo(
     () => Math.max(...filteredCommits.map((commit) => commit.shortHash.length), 0) + COLUMN_PADDING,
+    [filteredCommits],
+  );
+
+  const maxDateWidth = useMemo(
+    () => Math.max(...filteredCommits.map((commit) => commit.relativeDate.length), 0),
     [filteredCommits],
   );
 
@@ -44,64 +50,82 @@ export const CommitPickerScreen = () => {
   }, []);
 
   useInput((input, key) => {
-    if (key.downArrow || (key.ctrl && input === "n")) {
+    if (isSearching) {
+      if (key.escape) {
+        setIsSearching(false);
+      }
+      return;
+    }
+
+    if (key.downArrow || input === "j" || (key.ctrl && input === "n")) {
       setHighlightedIndex((previous) => Math.min(filteredCommits.length - 1, previous + 1));
     }
-    if (key.upArrow || (key.ctrl && input === "p")) {
+    if (key.upArrow || input === "k" || (key.ctrl && input === "p")) {
       setHighlightedIndex((previous) => Math.max(0, previous - 1));
     }
     if (key.return && filteredCommits.length > 0) {
       selectCommit(filteredCommits[highlightedIndex]);
     }
+    if (input === "/") {
+      setIsSearching(true);
+    }
   });
 
   return (
-    <Box flexDirection="column" width="100%" paddingX={2} paddingY={1}>
-      <Text color={COLORS.TEXT}>
-        <Text bold>Select a commit to test</Text>
-        <Text color={COLORS.DIM}> ({filteredCommits.length})</Text>
+    <Box flexDirection="column" width="100%" paddingX={1} paddingY={1}>
+      <Text bold color={COLORS.TEXT}>
+        Recent commits
+      </Text>
+      <Text color={COLORS.DIM}>
+        {filteredCommits.length} commits
+        {searchQuery ? ` matching "${searchQuery}"` : ""}
       </Text>
 
-      <Box
-        marginTop={1}
-        borderStyle="single"
-        borderTop
-        borderBottom={false}
-        borderLeft={false}
-        borderRight={false}
-        borderColor={COLORS.DIVIDER}
-      />
-
-      <Box flexDirection="column" marginTop={1} height={VISIBLE_COMMIT_COUNT} overflow="hidden">
+      <Box marginTop={1} flexDirection="column" height={VISIBLE_COMMIT_COUNT} overflow="hidden">
         {visibleCommits.map((commit, index) => {
           const actualIndex = index + scrollOffset;
+          const isSelected = actualIndex === highlightedIndex;
           return (
-            <Text
-              key={commit.hash}
-              color={actualIndex === highlightedIndex ? COLORS.SELECTION : COLORS.TEXT}
-            >
-              {actualIndex === highlightedIndex ? "➤ " : "  "}
-              <Text color={COLORS.YELLOW}>{commit.shortHash.padEnd(maxHashWidth)}</Text>
-              <Text color={actualIndex === highlightedIndex ? COLORS.SELECTION : COLORS.TEXT}>
+            <Text key={commit.hash}>
+              <Text color={isSelected ? COLORS.ORANGE : COLORS.DIM}>
+                {isSelected ? "❯ " : "  "}
+              </Text>
+              <Text color={COLORS.PURPLE}>{commit.shortHash.padEnd(maxHashWidth)}</Text>
+              <Text color={isSelected ? COLORS.TEXT : COLORS.DIM} bold={isSelected}>
                 {commit.subject}
               </Text>
-              <Text color={COLORS.DIM}> {commit.relativeDate}</Text>
+              <Text color={COLORS.DIM}>
+                {"  "}
+                {commit.relativeDate.padStart(maxDateWidth)}
+              </Text>
             </Text>
           );
         })}
-        {filteredCommits.length === 0 && <Text color={COLORS.DIM}>No matching commits</Text>}
+        {filteredCommits.length === 0 && (
+          <Text color={COLORS.DIM}>No matching commits</Text>
+        )}
       </Box>
 
-      <Box marginTop={2} borderStyle="round" borderColor={COLORS.BORDER} paddingX={2}>
-        <TextInput
-          focus
-          placeholder={SEARCH_PLACEHOLDER}
-          value={searchQuery}
-          onChange={handleInput}
-        />
-      </Box>
+      {isSearching ? (
+        <Box marginTop={1}>
+          <Text color={COLORS.DIM}>/</Text>
+          <TextInput
+            focus
+            value={searchQuery}
+            onChange={handleInput}
+          />
+        </Box>
+      ) : searchQuery ? (
+        <Box marginTop={1}>
+          <Text color={COLORS.DIM}>/{searchQuery}</Text>
+        </Box>
+      ) : null}
 
-      <Text color={COLORS.DIM}>↑/↓ navigate · Enter select · Esc back</Text>
+      <Box marginTop={1}>
+        <Text color={COLORS.DIM}>
+          ↑↓ navigate · enter select · / search · esc back
+        </Text>
+      </Box>
     </Box>
   );
 };
