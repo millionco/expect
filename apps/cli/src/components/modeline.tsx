@@ -13,7 +13,7 @@ const SCREEN_HINTS: Record<Screen, string> = {
   "saved-flow-picker": "↑↓ nav · enter select · esc back",
   "flow-input": "enter submit · esc back",
   planning: "esc cancel",
-  "review-plan": "↑↓ nav · e edit · s save · a approve · esc back",
+  "review-plan": "↑↓ nav · tab fold · e edit · s save · a approve · esc back",
   testing: "",
   theme: "↑↓ nav · tab light/dark · enter select · esc cancel",
 };
