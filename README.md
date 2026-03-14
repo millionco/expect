@@ -16,7 +16,7 @@ rasmus:
 
 - doesn't work using `CLAUDECODE=1`
 - editing plan doesn't work
-- prompts / nothing is saved 
+- prompts / nothing is saved
   - when user goes through the flow of writing tasks to try out, nothing is saved, not the prompt, not the tests results, nothing.
 - test out alternatives to get intuition (agent-browser)
 - make packages/cookies and packages/browser robust
@@ -30,9 +30,9 @@ rasmus:
 
 aiden:
 
-- fix clicking states
-- refactor our frontend stuff to have reusable components
-- add onboarding stuff (website, helptext)
+- [x] fix clicking states
+- [x] refactor our frontend stuff to have reusable components
+- [ ]add onboarding stuff (website, helptext)
 
 ---
 

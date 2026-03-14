@@ -18,6 +18,7 @@ const MOUSE_ENABLE = "\x1b[?1003h\x1b[?1006h";
 const MOUSE_DISABLE = "\x1b[?1003l\x1b[?1006l";
 const CURSOR_QUERY = "\x1b[6n";
 const CALIBRATION_DELAY_MS = 100;
+const TEXT_PREVIEW_MAX_CHARS = 50;
 
 const INK_INTERNAL_NAMES = new Set([
   "Box", "Text", "Static", "Transform", "Newline", "Spacer",
@@ -59,6 +60,24 @@ const isDOMElement = (node: unknown): node is DOMElement =>
   "nodeName" in node &&
   "childNodes" in node &&
   Array.isArray((node as DOMElement).childNodes);
+
+const collectTextContent = (node: DOMElement): string => {
+  const parts: string[] = [];
+  for (const child of node.childNodes) {
+    if (isDOMElement(child)) {
+      parts.push(collectTextContent(child));
+    } else if ("nodeValue" in child && typeof child.nodeValue === "string") {
+      parts.push(child.nodeValue);
+    }
+  }
+  return parts.join("");
+};
+
+const truncatePreview = (text: string, maxLength: number): string => {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, maxLength - 1)}…`;
+};
 
 const findDeepestElement = (
   node: DOMElement, absoluteX: number, absoluteY: number, targetX: number, targetY: number,
@@ -143,17 +162,21 @@ const formatSource = (frame: StackFrame): string => {
 
 const resolveInkElement = async (node: DOMElement): Promise<string> => {
   const tagName = node.nodeName ?? "";
+  const textPreview = truncatePreview(collectTextContent(node), TEXT_PREVIEW_MAX_CHARS);
+  const previewSuffix = textPreview ? ` "${textPreview}"` : "";
   for (const root of getFiberRoots()) {
     const fiber = findFiberForNode(root.current, node);
     if (!fiber) continue;
     const component = findNearestUserComponent(fiber);
-    if (!component) return `<${tagName}>`;
+    if (!component) return `<${tagName}>${previewSuffix}`;
     const rawStack = await getOwnerStack(component.fiber, true, localFetch);
     const symbolicated = await symbolicateStack(stripFileProtocol(rawStack), true, localFetch);
     const sourceFrame = symbolicated.find((frame) => frame.fileName && isSourceFile(frame.fileName));
-    return sourceFrame ? `<${component.name}> ${formatSource(sourceFrame)}` : `<${component.name}> (${tagName})`;
+    return sourceFrame
+      ? `<${component.name}>${previewSuffix} ${formatSource(sourceFrame)}`
+      : `<${component.name}>${previewSuffix} (${tagName})`;
   }
-  return `<${tagName}>`;
+  return `<${tagName}>${previewSuffix}`;
 };
 
 const copyToClipboard = (text: string): void => {

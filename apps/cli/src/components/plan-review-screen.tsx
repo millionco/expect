@@ -1,15 +1,16 @@
 import { useMemo, useState } from "react";
 import { Box, Text, useInput } from "ink";
-import figures from "figures";
 import { Input } from "./ui/input.js";
 import { useColors } from "./theme-context.js";
 import { stripMouseSequences } from "../hooks/mouse-context.js";
 import { Clickable } from "./ui/clickable.js";
+import { Collapsible } from "./ui/collapsible.js";
 import { saveFlow } from "../utils/save-flow.js";
 import { useAppStore } from "../store.js";
 import { truncateText } from "../utils/truncate-text.js";
 import { useStdoutDimensions } from "../hooks/use-stdout-dimensions.js";
 import { ScreenHeading } from "./ui/screen-heading.js";
+import { ErrorMessage } from "./ui/error-message.js";
 import type { BrowserFlowPlan } from "@browser-tester/supervisor";
 import {
   COMMIT_SELECTOR_WIDTH,
@@ -125,6 +126,13 @@ export const PlanReviewScreen = () => {
 
   const currentItem = items[selectedIndex];
 
+  const toggleSection = (section: Section) => {
+    setCollapsed((previous) => ({
+      ...previous,
+      [section]: !previous[section],
+    }));
+  };
+
   useInput((input, key) => {
     if (editingStep) {
       if (key.escape) {
@@ -152,10 +160,7 @@ export const PlanReviewScreen = () => {
     }
 
     if (key.tab && currentItem?.kind === "section") {
-      setCollapsed((previous) => ({
-        ...previous,
-        [currentItem.section]: !previous[currentItem.section],
-      }));
+      toggleSection(currentItem.section);
     }
 
     if (input === "e" && currentItem?.kind === "step") {
@@ -196,30 +201,20 @@ export const PlanReviewScreen = () => {
     }
   });
 
-  const sectionLabel = (section: Section, label: string, count?: number) => {
-    const isSelected = currentItem?.kind === "section" && currentItem.section === section;
-    const isCollapsed = Boolean(collapsed[section]);
-    const arrow = isCollapsed ? figures.triangleRight : figures.triangleDown;
-    const countSuffix = count !== undefined ? ` (${count})` : "";
-    return (
-      <Text>
-        <Text color={isSelected ? COLORS.ORANGE : COLORS.DIM}>{isSelected ? "❯ " : "  "}</Text>
-        <Text color={isSelected ? COLORS.TEXT : COLORS.DIM}>{arrow} </Text>
-        <Text bold color={isSelected ? COLORS.TEXT : COLORS.DIM}>
-          {label}
-          {countSuffix}
-        </Text>
-      </Text>
-    );
-  };
+  const isSectionSelected = (section: Section) =>
+    currentItem?.kind === "section" && currentItem.section === section;
 
   return (
     <Box flexDirection="column" width="100%" paddingX={1} paddingY={1}>
       <ScreenHeading title="Review browser plan" subtitle={plan.title} />
 
       <Box flexDirection="column" marginTop={1}>
-        {sectionLabel("details", "Details")}
-        {!collapsed["details"] ? (
+        <Collapsible
+          label="Details"
+          selected={isSectionSelected("details")}
+          open={!collapsed["details"]}
+          onToggle={() => toggleSection("details")}
+        >
           <Box flexDirection="column" marginLeft={SECTION_INDENT}>
             <Text color={COLORS.DIM}>
               {"rationale  "}
@@ -230,27 +225,36 @@ export const PlanReviewScreen = () => {
               <Text color={COLORS.TEXT}>{plan.targetSummary}</Text>
             </Text>
           </Box>
-        ) : null}
+        </Collapsible>
       </Box>
 
       {plan.assumptions.length > 0 ? (
         <Box flexDirection="column" marginTop={1}>
-          {sectionLabel("assumptions", "Assumptions", plan.assumptions.length)}
-          {!collapsed["assumptions"]
-            ? plan.assumptions.map((assumption) => (
-                <Text key={assumption} color={COLORS.DIM}>
-                  {"    "}
-                  <Text color={COLORS.TEXT}>{assumption}</Text>
-                </Text>
-              ))
-            : null}
+          <Collapsible
+            label="Assumptions"
+            count={plan.assumptions.length}
+            selected={isSectionSelected("assumptions")}
+            open={!collapsed["assumptions"]}
+            onToggle={() => toggleSection("assumptions")}
+          >
+            {plan.assumptions.map((assumption) => (
+              <Text key={assumption} color={COLORS.DIM}>
+                {"    "}
+                <Text color={COLORS.TEXT}>{assumption}</Text>
+              </Text>
+            ))}
+          </Collapsible>
         </Box>
       ) : null}
 
       {plan.cookieSync.required ? (
         <Box flexDirection="column" marginTop={1}>
-          {sectionLabel("cookies", "Cookie sync")}
-          {!collapsed["cookies"] ? (
+          <Collapsible
+            label="Cookie sync"
+            selected={isSectionSelected("cookies")}
+            open={!collapsed["cookies"]}
+            onToggle={() => toggleSection("cookies")}
+          >
             <Box flexDirection="column" marginLeft={SECTION_INDENT}>
               <Text color={COLORS.DIM}>
                 {"reason  "}
@@ -270,7 +274,7 @@ export const PlanReviewScreen = () => {
                 </Text>
               </Clickable>
             </Box>
-          ) : null}
+          </Collapsible>
         </Box>
       ) : null}
 
@@ -280,41 +284,40 @@ export const PlanReviewScreen = () => {
         </Box>
       ) : null}
 
-      {saveError ? (
-        <Box marginTop={1}>
-          <Text color={COLORS.RED}>{saveError}</Text>
-        </Box>
-      ) : null}
+      <ErrorMessage message={saveError} />
 
       <Box flexDirection="column" marginTop={1}>
-        {sectionLabel("steps", "Steps", plan.steps.length)}
-        {!collapsed["steps"] ? (
-          <>
-            <Text color={COLORS.DIM}>
-              {"    "}
-              {"ID".padEnd(STEP_ID_COLUMN_WIDTH)}
-              {"Instruction".padEnd(titleColumnWidth)}
-              {"Route"}
-            </Text>
-            {plan.steps.map((step, index) => {
-              const selected = currentItem?.kind === "step" && currentItem.stepIndex === index;
-              return (
-                <PlanStepRow
-                  key={step.id}
-                  step={step}
-                  selected={selected}
-                  titleColumnWidth={titleColumnWidth}
-                  onClick={() => {
-                    const itemIndex = items.findIndex(
-                      (item) => item.kind === "step" && item.stepIndex === index,
-                    );
-                    if (itemIndex >= 0) setSelectedIndex(itemIndex);
-                  }}
-                />
-              );
-            })}
-          </>
-        ) : null}
+        <Collapsible
+          label="Steps"
+          count={plan.steps.length}
+          selected={isSectionSelected("steps")}
+          open={!collapsed["steps"]}
+          onToggle={() => toggleSection("steps")}
+        >
+          <Text color={COLORS.DIM}>
+            {"    "}
+            {"ID".padEnd(STEP_ID_COLUMN_WIDTH)}
+            {"Instruction".padEnd(titleColumnWidth)}
+            {"Route"}
+          </Text>
+          {plan.steps.map((step, index) => {
+            const selected = currentItem?.kind === "step" && currentItem.stepIndex === index;
+            return (
+              <PlanStepRow
+                key={step.id}
+                step={step}
+                selected={selected}
+                titleColumnWidth={titleColumnWidth}
+                onClick={() => {
+                  const itemIndex = items.findIndex(
+                    (item) => item.kind === "step" && item.stepIndex === index,
+                  );
+                  if (itemIndex >= 0) setSelectedIndex(itemIndex);
+                }}
+              />
+            );
+          })}
+        </Collapsible>
       </Box>
 
       {editingStep ? (

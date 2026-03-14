@@ -20,6 +20,7 @@ import {
 import { extractScreenshotPath } from "../utils/extract-screenshot-path.js";
 import { Image } from "./ui/image.js";
 import { FileLink } from "./ui/file-link.js";
+import { ErrorMessage } from "./ui/error-message.js";
 
 interface TestingLine {
   text: string;
@@ -307,11 +308,7 @@ export const TestingScreen = () => {
         <Image key={screenshotPath} src={screenshotPath} alt={`Screenshot: ${screenshotPath}`} />
       ))}
 
-      {error && (
-        <Box marginTop={1}>
-          <Text color={COLORS.RED}>Error: {error}</Text>
-        </Box>
-      )}
+      <ErrorMessage message={error ? `Error: ${error}` : null} />
 
       <Box marginTop={1}>
         <Text color={COLORS.DIM}>

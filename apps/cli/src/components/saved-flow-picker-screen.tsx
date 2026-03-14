@@ -6,6 +6,7 @@ import { useColors } from "./theme-context.js";
 import { useAppStore } from "../store.js";
 import { loadSavedFlow } from "../utils/load-saved-flow.js";
 import { ScreenHeading } from "./ui/screen-heading.js";
+import { ErrorMessage } from "./ui/error-message.js";
 
 const ACTION_LABELS = {
   "test-unstaged": "Test unstaged changes",
@@ -114,11 +115,7 @@ export const SavedFlowPickerScreen = () => {
         ) : null}
       </Box>
 
-      {loadingError ? (
-        <Box marginTop={1}>
-          <Text color={COLORS.RED}>{loadingError}</Text>
-        </Box>
-      ) : null}
+      <ErrorMessage message={loadingError} />
     </Box>
   );
 };
