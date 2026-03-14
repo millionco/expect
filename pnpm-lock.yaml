@@ -38,6 +38,9 @@ importers:
       commander:
         specifier: ^13.1.0
         version: 13.1.0
+      detect-terminal:
+        specifier: ^2.0.0
+        version: 2.0.0
       element-source:
         specifier: ^0.0.4
         version: 0.0.4(@types/react@19.2.14)(react@19.2.4)
@@ -1868,6 +1871,9 @@ packages:
   detect-libc@2.1.2:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
+
+  detect-terminal@2.0.0:
+    resolution: {integrity: sha512-94Pxgtl45fB4DAfC/dmSNQglU0En4iAmMm5kn8iycZ3lnxWBtWpW622T7WkPEomN9rn7P8LDQbQjPIoyerZW0g==}
 
   dir-glob@3.0.1:
     resolution: {integrity: sha512-WkrWp9GR4KXfKGYzOLmTuGVi1UWFfws377n9cc55/tb6DuqyF6pcQ5AbiHEshaDpY9v6oaSr2XCDidGmMwdzIA==}
@@ -4454,6 +4460,8 @@ snapshots:
   detect-indent@6.1.0: {}
 
   detect-libc@2.1.2: {}
+
+  detect-terminal@2.0.0: {}
 
   dir-glob@3.0.1:
     dependencies:

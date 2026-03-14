@@ -29,6 +29,7 @@
     "@types/react": "^19.2.14",
     "cli-truncate": "^5.2.0",
     "commander": "^13.1.0",
+    "detect-terminal": "^2.0.0",
     "element-source": "^0.0.4",
     "figures": "^6.1.0",
     "ink": "^6.0.0",

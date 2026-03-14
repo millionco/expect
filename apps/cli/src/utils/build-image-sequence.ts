@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
+import { detectTerminal } from "detect-terminal";
 import {
   supportsKittyImages,
   supportsItermImages,
@@ -15,11 +16,8 @@ const BELL = "\x07";
 const APPLICATION_PROGRAM_COMMAND = `${ESCAPE}_`;
 const STRING_TERMINATOR = `${ESCAPE}\\`;
 
-const IS_TMUX = Boolean(
-  process.env.TERM?.startsWith("screen") ||
-    process.env.TERM?.startsWith("tmux") ||
-    process.env.TMUX,
-);
+const detectedTerminal = detectTerminal();
+const IS_TMUX = detectedTerminal === "tmux" || detectedTerminal === "screen";
 
 const wrapForTmux = (sequence: string): string => {
   if (!IS_TMUX) return sequence;
