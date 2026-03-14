@@ -7,8 +7,10 @@ export default defineConfig({
   dts: true,
   clean: true,
   sourcemap: true,
+  platform: "node",
   banner: { js: "#!/usr/bin/env node" },
   noExternal: [/^@browser-tester\//],
+  external: ["playwright", "playwright-core", "chromium-bidi", "sqlite", "ws"],
   esbuildPlugins: [reactCompilerPlugin()],
   esbuildOptions(options) {
     options.inject = [...(options.inject ?? []), "./ink-grab/inject-hook.js"];
