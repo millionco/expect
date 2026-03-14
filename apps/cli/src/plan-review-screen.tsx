@@ -2,27 +2,17 @@ import { useMemo, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
 import { useColors } from "./theme-context.js";
-import type { BrowserEnvironmentHints, BrowserFlowPlan } from "@browser-tester/orchestrator";
-import type { SaveFlowResult } from "./utils/save-flow.js";
+import { saveFlow } from "./utils/save-flow.js";
+import { useAppStore } from "./store.js";
 
-interface PlanReviewScreenProps {
-  plan: BrowserFlowPlan;
-  environment: BrowserEnvironmentHints;
-  onApprove: (plan: BrowserFlowPlan) => void;
-  onChange: (plan: BrowserFlowPlan) => void;
-  onEnvironmentChange: (environment: BrowserEnvironmentHints) => void;
-  onSave: (plan: BrowserFlowPlan) => Promise<SaveFlowResult>;
-}
-
-export const PlanReviewScreen = ({
-  plan,
-  environment,
-  onApprove,
-  onChange,
-  onEnvironmentChange,
-  onSave,
-}: PlanReviewScreenProps) => {
+export const PlanReviewScreen = () => {
   const COLORS = useColors();
+  const plan = useAppStore((state) => state.generatedPlan);
+  const environment = useAppStore((state) => state.browserEnvironment);
+  const resolvedTarget = useAppStore((state) => state.resolvedTarget);
+  const updatePlan = useAppStore((state) => state.updatePlan);
+  const updateEnvironment = useAppStore((state) => state.updateEnvironment);
+  const approvePlan = useAppStore((state) => state.approvePlan);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingValue, setEditingValue] = useState("");
@@ -30,12 +20,14 @@ export const PlanReviewScreen = ({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  if (!plan || !resolvedTarget) return null;
+
   const selectedStep = useMemo(
     () => plan.steps[selectedIndex] ?? null,
     [plan.steps, selectedIndex],
   );
   const editingStep = editingIndex === null ? null : (plan.steps[editingIndex] ?? null);
-  const cookiesEnabled = environment.cookies === true;
+  const cookiesEnabled = (environment ?? {}).cookies === true;
 
   useInput((input, key) => {
     if (editingStep) {
@@ -44,7 +36,7 @@ export const PlanReviewScreen = ({
         setEditingValue("");
       }
       if (key.return && editingValue.trim()) {
-        onChange({
+        updatePlan({
           ...plan,
           steps: plan.steps.map((step, index) =>
             index === editingIndex ? { ...step, instruction: editingValue.trim() } : step,
@@ -67,8 +59,8 @@ export const PlanReviewScreen = ({
       setEditingValue(selectedStep.instruction);
     }
     if (input === "c" && plan.cookieSync.required) {
-      onEnvironmentChange({
-        ...environment,
+      updateEnvironment({
+        ...(environment ?? {}),
         cookies: !cookiesEnabled,
       });
     }
@@ -76,7 +68,11 @@ export const PlanReviewScreen = ({
       setSaveError(null);
       setSaveMessage(null);
       setSaving(true);
-      void onSave(plan)
+      void saveFlow({
+        target: resolvedTarget,
+        plan,
+        environment: environment ?? {},
+      })
         .then((result) => {
           setSaveMessage(`Saved ${result.flowPath} and updated ${result.directoryPath}`);
         })
@@ -88,7 +84,7 @@ export const PlanReviewScreen = ({
         });
     }
     if (input === "a") {
-      onApprove(plan);
+      approvePlan(plan);
     }
   });
 

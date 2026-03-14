@@ -3,13 +3,11 @@ import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
 import { COLUMN_PADDING, SEARCH_PLACEHOLDER, VISIBLE_COMMIT_COUNT } from "./constants.js";
 import { useColors } from "./theme-context.js";
-import { fetchCommits, type Commit } from "./utils/fetch-commits.js";
+import { fetchCommits } from "./utils/fetch-commits.js";
+import { useAppStore } from "./store.js";
 
-interface CommitPickerScreenProps {
-  onSelect: (commit: Commit) => void;
-}
-
-export const CommitPickerScreen = ({ onSelect }: CommitPickerScreenProps) => {
+export const CommitPickerScreen = () => {
+  const selectCommit = useAppStore((state) => state.selectCommit);
   const COLORS = useColors();
   const [commits] = useState(() => fetchCommits());
   const [searchQuery, setSearchQuery] = useState("");
@@ -53,7 +51,7 @@ export const CommitPickerScreen = ({ onSelect }: CommitPickerScreenProps) => {
       setHighlightedIndex((previous) => Math.max(0, previous - 1));
     }
     if (key.return && filteredCommits.length > 0) {
-      onSelect(filteredCommits[highlightedIndex]);
+      selectCommit(filteredCommits[highlightedIndex]);
     }
   });
 

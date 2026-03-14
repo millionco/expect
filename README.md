@@ -1,10 +1,10 @@
 ## 3/13 notes
 
-* @Aiden Bai to finalize the core testing experience for the March 23rd product launch. [1:08:26]
-* @Rasmus Gustafsson to take ownership of browser package development and implementation. [1:04:04]
-* Publish initial package on NPM using a personal account. [1:10:09]
-* Prepare marketing materials highlighting the tool's ability to catch potential code issues. [1:07:33]
-* Schedule follow-up meeting to review MVP progress. [1:10:25]
+- @Aiden Bai to finalize the core testing experience for the March 23rd product launch. [1:08:26]
+- @Rasmus Gustafsson to take ownership of browser package development and implementation. [1:04:04]
+- Publish initial package on NPM using a personal account. [1:10:09]
+- Prepare marketing materials highlighting the tool's ability to catch potential code issues. [1:07:33]
+- Schedule follow-up meeting to review MVP progress. [1:10:25]
 
 ### Testing the browser CLI
 

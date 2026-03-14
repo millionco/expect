@@ -8,6 +8,7 @@ import {
   type TestTarget,
 } from "@browser-tester/orchestrator";
 import type { Commit } from "./fetch-commits.js";
+import type { TestTargetSelection } from "@browser-tester/orchestrator";
 
 export type TestAction = "test-unstaged" | "test-branch" | "select-commit";
 
@@ -15,7 +16,6 @@ interface GenerateBrowserPlanOptions {
   action: TestAction;
   commit?: Commit;
   userInstruction: string;
-  environmentOverrides?: BrowserEnvironmentHints;
 }
 
 interface GenerateBrowserPlanResult {
@@ -41,31 +41,23 @@ const parseBooleanEnvironmentValue = (value: string | undefined): boolean | unde
   return undefined;
 };
 
-const mergeBrowserEnvironment = (
-  baseEnvironment: BrowserEnvironmentHints,
-  environmentOverrides: BrowserEnvironmentHints | undefined,
-): BrowserEnvironmentHints => ({
-  ...baseEnvironment,
-  ...(environmentOverrides ?? {}),
-});
-
-export const getBrowserEnvironment = (): BrowserEnvironmentHints => ({
+const getBrowserEnvironment = (): BrowserEnvironmentHints => ({
   baseUrl: process.env.BROWSER_TESTER_BASE_URL,
   headed: parseBooleanEnvironmentValue(process.env.BROWSER_TESTER_HEADED),
   cookies: parseBooleanEnvironmentValue(process.env.BROWSER_TESTER_COOKIES),
 });
 
-const createSelection = (action: TestAction, commit?: Commit) => {
+const createSelection = (action: TestAction, commit?: Commit): TestTargetSelection => {
   if (action === "select-commit") {
     return {
       action,
       commitHash: commit?.hash,
       commitShortHash: commit?.shortHash,
       commitSubject: commit?.subject,
-    } as const;
+    };
   }
 
-  return { action } as const;
+  return { action };
 };
 
 export const generateBrowserPlan = async (
@@ -74,10 +66,7 @@ export const generateBrowserPlan = async (
   const target = resolveTestTarget({
     selection: createSelection(options.action, options.commit),
   });
-  const environment = mergeBrowserEnvironment(
-    getBrowserEnvironment(),
-    options.environmentOverrides,
-  );
+  const environment = getBrowserEnvironment();
   const plan = await planBrowserFlow({
     target,
     userInstruction: options.userInstruction,

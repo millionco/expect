@@ -10,8 +10,6 @@ export const AUTOMATED_ENVIRONMENT_VARIABLES = [
   "AMI",
 ];
 
-export const SELECTED_INDICATOR = "❯";
-
 export const SEARCH_PLACEHOLDER = "Search ...";
 
 export const GIT_TIMEOUT_MS = 5000;
@@ -29,3 +27,8 @@ export const FLOW_DIRECTORY_INDEX_FILE_NAME = "directory.md";
 export const FLOW_DESCRIPTION_CHAR_LIMIT = 120;
 export const THEME_PICKER_VISIBLE_COUNT = 20;
 export const FRAME_CONTENT_PADDING = 6;
+export const MENU_ITEM_PREFIX_WIDTH = 2;
+export const FRAME_TITLE_DECORATION_WIDTH = 4;
+export const STATUSBAR_BRANCH_PADDING = 2;
+export const STATUSBAR_TRAILING_PADDING = 3;
+export const TESTING_SELECT_TRUNCATION_LIMIT = 24;

@@ -78,13 +78,6 @@ export interface BrowserEnvironmentHints {
   baseUrl?: string;
   headed?: boolean;
   cookies?: boolean;
-  liveChrome?: boolean;
-  liveChromeConnectionMode?: "prompt" | "cdp";
-  liveChromeCdpEndpoint?: string;
-  liveChromeTabMode?: "attach" | "new";
-  liveChromeTabUrlMatch?: string;
-  liveChromeTabTitleMatch?: string;
-  liveChromeTabIndex?: number;
 }
 
 export interface PlanBrowserFlowOptions {

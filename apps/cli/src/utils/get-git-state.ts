@@ -38,9 +38,9 @@ const parseDiffShortstat = (shortstat: string): DiffStats | null => {
   if (!filesMatch) return null;
 
   return {
-    filesChanged: parseInt(filesMatch[1], 10),
-    additions: additionsMatch ? parseInt(additionsMatch[1], 10) : 0,
-    deletions: deletionsMatch ? parseInt(deletionsMatch[1], 10) : 0,
+    filesChanged: Number.parseInt(filesMatch[1], 10),
+    additions: additionsMatch ? Number.parseInt(additionsMatch[1], 10) : 0,
+    deletions: deletionsMatch ? Number.parseInt(deletionsMatch[1], 10) : 0,
   };
 };
 
@@ -65,7 +65,7 @@ const getUntrackedStats = (): { fileCount: number; lineCount: number } => {
   let lineCount = 0;
   if (lineOutput) {
     const match = lineOutput.match(/(\d+)/);
-    if (match) lineCount = parseInt(match[1], 10);
+    if (match) lineCount = Number.parseInt(match[1], 10);
   }
 
   return { fileCount: files.length, lineCount };
@@ -99,7 +99,7 @@ export const getGitState = (): GitState => {
     const mainBranch = getMainBranchName();
     if (mainBranch) {
       const commitCount = execGit(`git rev-list --count ${mainBranch}..HEAD`);
-      hasBranchCommits = Boolean(commitCount && parseInt(commitCount, 10) > 0);
+      hasBranchCommits = Boolean(commitCount && Number.parseInt(commitCount, 10) > 0);
       const branchShortstat = execGit(`git diff ${mainBranch}...HEAD --shortstat`);
       branchDiffStats = branchShortstat ? parseDiffShortstat(branchShortstat) : null;
     }

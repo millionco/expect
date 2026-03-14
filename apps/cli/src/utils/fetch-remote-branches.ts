@@ -45,10 +45,10 @@ export const fetchRemoteBranches = async (): Promise<RemoteBranch[]> => {
   const [openPrs, mergedPrs] = await Promise.all([fetchPrs("open"), fetchPrs("merged")]);
   const allPrs = [...openPrs, ...mergedPrs];
 
-  const prByBranch = new Map<string, GhPr>();
-  for (const pr of allPrs) {
-    if (!prByBranch.has(pr.headRefName)) {
-      prByBranch.set(pr.headRefName, pr);
+  const pullRequestByBranch = new Map<string, GhPr>();
+  for (const pullRequest of allPrs) {
+    if (!pullRequestByBranch.has(pullRequest.headRefName)) {
+      pullRequestByBranch.set(pullRequest.headRefName, pullRequest);
     }
   }
 
@@ -63,20 +63,20 @@ export const fetchRemoteBranches = async (): Promise<RemoteBranch[]> => {
       .map((ref) => ref.replace(/^origin\//, ""));
 
     return remoteBranches.map((name) => {
-      const pr = prByBranch.get(name);
+      const pullRequest = pullRequestByBranch.get(name);
       return {
         name,
-        author: pr?.author.login ?? "",
-        prNumber: pr?.number ?? null,
-        prStatus: pr ? normalizePrStatus(pr.state, pr.isDraft) : null,
+        author: pullRequest?.author.login ?? "",
+        prNumber: pullRequest?.number ?? null,
+        prStatus: pullRequest ? normalizePrStatus(pullRequest.state, pullRequest.isDraft) : null,
       };
     });
   } catch {
-    return Array.from(prByBranch.values()).map((pr) => ({
-      name: pr.headRefName,
-      author: pr.author.login,
-      prNumber: pr.number,
-      prStatus: normalizePrStatus(pr.state, pr.isDraft),
+    return Array.from(pullRequestByBranch.values()).map((pullRequest) => ({
+      name: pullRequest.headRefName,
+      author: pullRequest.author.login,
+      prNumber: pullRequest.number,
+      prStatus: normalizePrStatus(pullRequest.state, pullRequest.isDraft),
     }));
   }
 };

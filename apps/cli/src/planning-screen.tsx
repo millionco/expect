@@ -1,13 +1,12 @@
 import { Box, Text } from "ink";
 import { useColors } from "./theme-context.js";
 import { Spinner } from "./spinner.js";
+import { useAppStore } from "./store.js";
 
-interface PlanningScreenProps {
-  userInstruction: string;
-}
-
-export const PlanningScreen = ({ userInstruction }: PlanningScreenProps) => {
+export const PlanningScreen = () => {
   const COLORS = useColors();
+  const flowInstruction = useAppStore((state) => state.flowInstruction);
+
   return (
     <Box flexDirection="column" width="100%" paddingX={2} paddingY={1}>
       <Text bold color={COLORS.TEXT}>
@@ -23,7 +22,7 @@ export const PlanningScreen = ({ userInstruction }: PlanningScreenProps) => {
         borderColor={COLORS.DIVIDER}
       />
       <Box marginTop={1}>
-        <Text color={COLORS.DIM}>{userInstruction}</Text>
+        <Text color={COLORS.DIM}>{flowInstruction}</Text>
       </Box>
       <Box marginTop={1}>
         <Spinner message="Planning with scope-aware git context..." />

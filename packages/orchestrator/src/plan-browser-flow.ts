@@ -104,17 +104,6 @@ const buildPlanningPrompt = (options: PlanBrowserFlowOptions): string => {
     `- Base URL: ${environment?.baseUrl ?? "not provided"}`,
     `- Headed mode: ${environment?.headed === true ? "yes" : "no or not specified"}`,
     `- Reuse browser cookies: ${environment?.cookies === true ? "yes" : "no or not specified"}`,
-    `- Live Chrome mode: ${environment?.liveChrome === true ? "yes" : "no or not specified"}`,
-    `- Live Chrome connection mode: ${environment?.liveChromeConnectionMode ?? "default or not specified"}`,
-    `- Live Chrome CDP endpoint: ${environment?.liveChromeCdpEndpoint ?? "default or not specified"}`,
-    `- Live Chrome tab mode: ${environment?.liveChromeTabMode ?? "new or not specified"}`,
-    `- Live Chrome tab URL match: ${environment?.liveChromeTabUrlMatch ?? "not specified"}`,
-    `- Live Chrome tab title match: ${environment?.liveChromeTabTitleMatch ?? "not specified"}`,
-    `- Live Chrome tab index: ${
-      typeof environment?.liveChromeTabIndex === "number"
-        ? String(environment.liveChromeTabIndex)
-        : "not specified"
-    }`,
     "",
     "Requirements:",
     "- Make the plan meaningfully different depending on whether the target is unstaged, branch, or commit.",
@@ -124,12 +113,8 @@ const buildPlanningPrompt = (options: PlanBrowserFlowOptions): string => {
     "- Decide whether syncing browser cookies is required to execute the flow reliably.",
     "- Set cookieSync.required to true when the flow likely needs an authenticated user session, account state, org access, or non-public app data.",
     "- Set cookieSync.required to false for public or clearly unauthenticated flows, and explain the decision in cookieSync.reason.",
-    "- If live Chrome mode is enabled, shape the plan around the provided tab-mode hint.",
-    "- If live Chrome connection mode is prompt, assume the run should reuse the user's existing signed-in Chrome session after Chrome shows a permission prompt.",
-    "- In live Chrome attach mode, prefer continuing the relevant in-progress user workflow on an existing tab when that is the safest way to verify the change.",
-    "- In live Chrome new-tab mode, prefer opening a fresh tab inside the existing browser session for a cleaner and more predictable path.",
     "- Keep the plan concise and high signal.",
-    "- Use a maximum of 8 steps.",
+    `- Use a maximum of ${PLANNER_MAX_STEP_COUNT} steps.`,
     "",
     "Return a JSON object with this exact shape:",
     '{"title":"string","rationale":"string","targetSummary":"string","assumptions":["string"],"riskAreas":["string"],"targetUrls":["string"],"cookieSync":{"required":true,"reason":"string"},"steps":[{"id":"optional string","title":"string","instruction":"string","expectedOutcome":"string","routeHint":"optional string","changedFileEvidence":["string"]}]}',

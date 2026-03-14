@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
@@ -76,13 +83,24 @@ export const App = () => {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4">
-              <Button variant="outline" size="sm" onClick={() => setCounter((previous) => previous - 1)}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCounter((previous) => previous - 1)}
+              >
                 -
               </Button>
-              <span className="text-2xl font-semibold tabular-nums w-16 text-center" data-testid="counter-value">
+              <span
+                className="text-2xl font-semibold tabular-nums w-16 text-center"
+                data-testid="counter-value"
+              >
                 {counter}
               </span>
-              <Button variant="outline" size="sm" onClick={() => setCounter((previous) => previous + 1)}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCounter((previous) => previous + 1)}
+              >
                 +
               </Button>
             </div>
@@ -111,7 +129,10 @@ export const App = () => {
             </div>
             <ul className="space-y-2">
               {tasks.map((task) => (
-                <li key={task.id} className="flex items-center justify-between rounded-lg border px-4 py-3">
+                <li
+                  key={task.id}
+                  className="flex items-center justify-between rounded-lg border px-4 py-3"
+                >
                   <div className="flex items-center gap-3">
                     {editingId === task.id ? (
                       <Input
@@ -129,7 +150,11 @@ export const App = () => {
                   </div>
                   <div className="flex gap-1">
                     {editingId !== task.id && (
-                      <Button variant="ghost" size="sm" onClick={() => startEditing(task.id, task.title)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => startEditing(task.id, task.title)}
+                      >
                         Rename
                       </Button>
                     )}

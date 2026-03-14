@@ -1,4 +1,4 @@
-import type { BrowserEnvironmentHints, BrowserRunEvent } from "@browser-tester/orchestrator";
+import type { BrowserRunEvent } from "@browser-tester/orchestrator";
 import { VERSION } from "../constants.js";
 import { fetchCommits } from "./fetch-commits.js";
 import { getGitState, getRecommendedScope } from "./get-git-state.js";
@@ -15,39 +15,6 @@ const DEFAULT_INSTRUCTIONS: Record<TestAction, string> = {
   "test-branch": "Test all branch changes in the browser and verify they work correctly.",
   "select-commit":
     "Test the selected commit's changes in the browser and verify they work correctly.",
-};
-
-const resolveLiveChromeConnectionMode = (
-  environment: BrowserEnvironmentHints,
-): "prompt" | "cdp" | undefined => {
-  if (environment.liveChrome !== true) return undefined;
-  if (environment.liveChromeConnectionMode) return environment.liveChromeConnectionMode;
-  return environment.liveChromeCdpEndpoint ? "cdp" : "prompt";
-};
-
-const formatLiveChromeMode = (environment: BrowserEnvironmentHints): string | null => {
-  if (environment.liveChrome !== true) return null;
-
-  const liveChromeConnectionMode = resolveLiveChromeConnectionMode(environment);
-  const tabMode =
-    environment.liveChromeTabMode === "attach" ? "attach existing tab" : "open new tab";
-  const selectionHints = [
-    environment.liveChromeTabUrlMatch
-      ? `url contains "${environment.liveChromeTabUrlMatch}"`
-      : null,
-    environment.liveChromeTabTitleMatch
-      ? `title contains "${environment.liveChromeTabTitleMatch}"`
-      : null,
-    typeof environment.liveChromeTabIndex === "number"
-      ? `tab index ${environment.liveChromeTabIndex}`
-      : null,
-  ].filter((value): value is string => value !== null);
-
-  if (liveChromeConnectionMode === "prompt") {
-    return `Live Chrome mode: ${tabMode} by requesting access to your existing Chrome session${selectionHints.length > 0 ? ` (${selectionHints.join(", ")})` : ""}`;
-  }
-
-  return `Live Chrome mode: ${tabMode} via ${environment.liveChromeCdpEndpoint ?? "auto-detect from your Chrome profile"}${selectionHints.length > 0 ? ` (${selectionHints.join(", ")})` : ""}`;
 };
 
 const formatRunEvent = (event: BrowserRunEvent): string | null => {
@@ -76,15 +43,7 @@ const formatRunEvent = (event: BrowserRunEvent): string | null => {
 const formatErrorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
-interface RunTestOptions {
-  environmentOverrides?: BrowserEnvironmentHints;
-}
-
-export const runTest = async (
-  action: TestAction,
-  commitHash?: string,
-  options: RunTestOptions = {},
-): Promise<void> => {
+export const runTest = async (action: TestAction, commitHash?: string): Promise<void> => {
   const gitState = getGitState();
 
   let commit;
@@ -110,22 +69,7 @@ export const runTest = async (
       action,
       commit,
       userInstruction: DEFAULT_INSTRUCTIONS[action],
-      environmentOverrides: options.environmentOverrides,
     });
-
-    const liveChromeMode = formatLiveChromeMode(environment);
-    if (liveChromeMode) {
-      console.error(`${liveChromeMode}`);
-      if (resolveLiveChromeConnectionMode(environment) === "prompt") {
-        console.error(
-          "Enable remote debugging in chrome://inspect/#remote-debugging and allow Chrome's permission prompt when it appears.\n",
-        );
-      } else {
-        console.error(
-          "Chrome remote debugging must already be enabled in chrome://inspect/#remote-debugging.\n",
-        );
-      }
-    }
 
     console.error(`Plan: ${plan.title} (${plan.steps.length} steps)\n`);
 
@@ -141,9 +85,9 @@ export const runTest = async (
   }
 };
 
-export const autoDetectAndTest = async (options: RunTestOptions = {}): Promise<void> => {
+export const autoDetectAndTest = async (): Promise<void> => {
   const gitState = getGitState();
   const scope = getRecommendedScope(gitState);
   const action: TestAction = scope === "unstaged-changes" ? "test-unstaged" : "test-branch";
-  await runTest(action, undefined, options);
+  await runTest(action);
 };

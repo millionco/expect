@@ -16,11 +16,7 @@ const normalizeJsonCandidate = (input: string): string => {
 
   if (!looksEscaped) return trimmedInput;
 
-  return trimmedInput
-    .replace(/\\n/g, "\n")
-    .replace(/\\"/g, '"')
-    .replace(/\\\\/g, "\\")
-    .trim();
+  return trimmedInput.replace(/\\n/g, "\n").replace(/\\"/g, '"').replace(/\\\\/g, "\\").trim();
 };
 
 const extractBalancedJsonObject = (input: string): string | null => {
@@ -44,7 +40,7 @@ const extractBalancedJsonObject = (input: string): string | null => {
       continue;
     }
 
-    if (currentCharacter === "\"") {
+    if (currentCharacter === '"') {
       isInsideString = !isInsideString;
       continue;
     }

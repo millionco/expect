@@ -4,12 +4,9 @@ import { THEMES, type ThemeDefinition } from "./themes.js";
 import { useColors, useThemeContext } from "./theme-context.js";
 import { THEME_PICKER_VISIBLE_COUNT } from "./constants.js";
 import { saveThemeName } from "./utils/load-theme.js";
+import { useAppStore } from "./store.js";
 
 type VariantFilter = "light" | "dark";
-
-interface ThemePickerScreenProps {
-  onBack: () => void;
-}
 
 const ALL_THEME_NAMES = Object.keys(THEMES);
 
@@ -25,9 +22,10 @@ const ThemeSwatch = ({ theme }: { theme: ThemeDefinition }) => (
 const filterThemes = (filter: VariantFilter): string[] =>
   ALL_THEME_NAMES.filter((name) => THEMES[name]?.variant === filter);
 
-export const ThemePickerScreen = ({ onBack }: ThemePickerScreenProps) => {
+export const ThemePickerScreen = () => {
+  const navigateTo = useAppStore((state) => state.navigateTo);
   const { themeName, setTheme } = useThemeContext();
-  const colors = useColors();
+  const COLORS = useColors();
   const [previousTheme] = useState(themeName);
   const currentVariant = THEMES[themeName]?.variant ?? "dark";
   const [variantFilter, setVariantFilter] = useState<VariantFilter>(currentVariant);
@@ -71,11 +69,11 @@ export const ThemePickerScreen = ({ onBack }: ThemePickerScreenProps) => {
     if (key.return) {
       const selected = filteredThemeNames[selectedIndex];
       if (selected) saveThemeName(selected);
-      onBack();
+      navigateTo("main");
     }
     if (key.escape) {
       setTheme(previousTheme);
-      onBack();
+      navigateTo("main");
     }
   });
 
@@ -83,13 +81,13 @@ export const ThemePickerScreen = ({ onBack }: ThemePickerScreenProps) => {
 
   return (
     <Box flexDirection="column" width="100%" paddingX={1} paddingY={1}>
-      <Text bold color={colors.TEXT || undefined}>
+      <Text bold color={COLORS.TEXT || undefined}>
         Select theme
       </Text>
-      <Text color={colors.DIM}>
+      <Text color={COLORS.DIM}>
         {filteredThemeNames.length} themes{" "}
-        <Text color={colors.TEXT || undefined}>[{filterLabel}]</Text>{" "}
-        (<Text color={colors.TEXT || undefined}>{"\u21E5"} tab</Text> to filter)
+        <Text color={COLORS.TEXT || undefined}>[{filterLabel}]</Text> (
+        <Text color={COLORS.TEXT || undefined}>{"\u21E5"} tab</Text> to filter)
       </Text>
 
       <Box
@@ -105,12 +103,12 @@ export const ThemePickerScreen = ({ onBack }: ThemePickerScreenProps) => {
           const isSelected = actualIndex === selectedIndex;
           return (
             <Text key={name}>
-              <Text color={isSelected ? colors.ORANGE : colors.DIM}>
+              <Text color={isSelected ? COLORS.ORANGE : COLORS.DIM}>
                 {isSelected ? "❯ " : "  "}
               </Text>
               <ThemeSwatch theme={theme} />
               <Text> </Text>
-              <Text color={isSelected ? undefined : colors.DIM} bold={isSelected}>
+              <Text color={isSelected ? undefined : COLORS.DIM} bold={isSelected}>
                 {theme.name}
               </Text>
             </Text>
@@ -119,7 +117,7 @@ export const ThemePickerScreen = ({ onBack }: ThemePickerScreenProps) => {
       </Box>
 
       <Box marginTop={1}>
-        <Text color={colors.DIM}>
+        <Text color={COLORS.DIM}>
           {"\u2191/\u2193"} navigate {"\u00B7"} Enter select {"\u00B7"} Esc cancel
         </Text>
       </Box>

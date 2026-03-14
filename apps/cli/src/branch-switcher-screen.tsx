@@ -7,12 +7,9 @@ import { fetchLocalBranches } from "./utils/fetch-local-branches.js";
 import { fetchRemoteBranches, type RemoteBranch } from "./utils/fetch-remote-branches.js";
 import { Spinner } from "./spinner.js";
 import { PrFilterBar, PR_FILTERS, type PrFilter } from "./pr-filter.js";
+import { useAppStore } from "./store.js";
 
 type Tab = "local" | "remote";
-
-interface BranchSwitcherScreenProps {
-  onSelect: (branch: string) => void;
-}
 
 const PrBadge = ({ branch }: { branch: RemoteBranch }) => {
   const COLORS = useColors();
@@ -35,7 +32,8 @@ const matchesFilter = (branch: RemoteBranch, filter: PrFilter): boolean => {
   return branch.prStatus === filter;
 };
 
-export const BranchSwitcherScreen = ({ onSelect }: BranchSwitcherScreenProps) => {
+export const BranchSwitcherScreen = () => {
+  const storeSwitchBranch = useAppStore((state) => state.switchBranch);
   const COLORS = useColors();
   const [activeTab, setActiveTab] = useState<Tab>("local");
   const [searchQuery, setSearchQuery] = useState("");
@@ -124,10 +122,10 @@ export const BranchSwitcherScreen = ({ onSelect }: BranchSwitcherScreenProps) =>
 
     if (key.return) {
       if (activeTab === "local" && filteredLocalBranches.length > 0) {
-        onSelect(filteredLocalBranches[highlightedIndex]);
+        storeSwitchBranch(filteredLocalBranches[highlightedIndex]);
       }
       if (activeTab === "remote" && filteredRemoteBranches.length > 0) {
-        onSelect(filteredRemoteBranches[highlightedIndex].name);
+        storeSwitchBranch(filteredRemoteBranches[highlightedIndex].name);
       }
     }
   });

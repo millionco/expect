@@ -6,58 +6,71 @@ import { ThemeProvider } from "./theme-context.js";
 import { loadThemeName } from "./utils/load-theme.js";
 import { isAutomatedEnvironment } from "./utils/is-automated-environment.js";
 import { autoDetectAndTest, runTest } from "./utils/run-test.js";
-import { addLiveChromeOptions, resolveLiveChromeEnvironment } from "./utils/live-chrome-options.js";
+import { fetchCommits } from "./utils/fetch-commits.js";
+import { useAppStore } from "./store.js";
 
 const program = new Command()
   .name("testie")
   .description("AI-powered browser testing for your changes")
   .version(VERSION, "-v, --version");
 
-const resolveCommandEnvironment = (command: Command) =>
-  resolveLiveChromeEnvironment(command.optsWithGlobals());
-
-addLiveChromeOptions(program);
-
-addLiveChromeOptions(program.command("unstaged"))
-  .description("Test unstaged changes")
-  .action((_options, command: Command) =>
-    runTest("test-unstaged", undefined, {
-      environmentOverrides: resolveCommandEnvironment(command),
-    }),
-  );
-
-addLiveChromeOptions(program.command("branch"))
-  .description("Test entire branch diff against main")
-  .action((_options, command: Command) =>
-    runTest("test-branch", undefined, {
-      environmentOverrides: resolveCommandEnvironment(command),
-    }),
-  );
-
-addLiveChromeOptions(program.command("commit"))
-  .description("Test a specific commit")
-  .argument("[hash]", "commit hash")
-  .action((hash: string | undefined, _options, command: Command) =>
-    runTest("select-commit", hash, {
-      environmentOverrides: resolveCommandEnvironment(command),
-    }),
-  );
-
-program.action((_, command: Command) => {
-  const environmentOverrides = resolveCommandEnvironment(command);
-  if (environmentOverrides.liveChrome === true) {
-    return autoDetectAndTest({ environmentOverrides });
-  }
-
-  if (isAutomatedEnvironment() || !process.stdin.isTTY) {
-    return autoDetectAndTest({ environmentOverrides });
-  }
+const renderApp = () => {
   const initialTheme = loadThemeName() ?? undefined;
   render(
     <ThemeProvider initialTheme={initialTheme}>
       <App />
     </ThemeProvider>,
   );
+};
+
+program
+  .command("unstaged")
+  .description("Test unstaged changes")
+  .action(() => {
+    if (isAutomatedEnvironment() || !process.stdin.isTTY) {
+      return runTest("test-unstaged");
+    }
+    useAppStore.setState({ testAction: "test-unstaged", screen: "flow-input" });
+    renderApp();
+  });
+
+program
+  .command("branch")
+  .description("Test entire branch diff against main")
+  .action(() => {
+    if (isAutomatedEnvironment() || !process.stdin.isTTY) {
+      return runTest("test-branch");
+    }
+    useAppStore.setState({ testAction: "test-branch", screen: "flow-input" });
+    renderApp();
+  });
+
+program
+  .command("commit")
+  .description("Test a specific commit")
+  .argument("[hash]", "commit hash")
+  .action((hash: string | undefined) => {
+    if (isAutomatedEnvironment() || !process.stdin.isTTY) {
+      return runTest("select-commit", hash);
+    }
+    const initialCommit = hash
+      ? fetchCommits().find(
+          (candidate) => candidate.shortHash === hash || candidate.hash.startsWith(hash),
+        )
+      : undefined;
+    useAppStore.setState({
+      testAction: "select-commit",
+      selectedCommit: initialCommit ?? null,
+      screen: initialCommit ? "flow-input" : "select-commit",
+    });
+    renderApp();
+  });
+
+program.action(() => {
+  if (isAutomatedEnvironment() || !process.stdin.isTTY) {
+    return autoDetectAndTest();
+  }
+  renderApp();
 });
 
 program.parse();

@@ -96,7 +96,8 @@ export const getUnstagedChangedFiles = (cwd: string): ChangedFile[] => {
   const mergedFiles = [...trackedFiles];
 
   for (const untrackedFile of untrackedFiles) {
-    if (!mergedFiles.some((file) => file.path === untrackedFile.path)) mergedFiles.push(untrackedFile);
+    if (!mergedFiles.some((file) => file.path === untrackedFile.path))
+      mergedFiles.push(untrackedFile);
   }
 
   return mergedFiles.slice(0, CHANGED_FILE_LIMIT);

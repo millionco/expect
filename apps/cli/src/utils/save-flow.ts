@@ -11,6 +11,7 @@ import {
   FLOW_DIRECTORY_NAME,
 } from "../constants.js";
 import { slugify } from "./slugify.js";
+import { truncateText } from "./truncate-text.js";
 
 interface SaveFlowOptions {
   target: TestTarget;
@@ -32,9 +33,6 @@ interface SavedFlowMetadata {
 
 const FLOW_FRONTMATTER_PATTERN = /^---\n([\s\S]*?)\n---/;
 const FRONTMATTER_LINE_PATTERN = /^([a-z]+):\s*(.+)$/gm;
-
-const truncateText = (value: string, limit: number): string =>
-  value.length <= limit ? value : `${value.slice(0, Math.max(0, limit - 1))}…`;
 
 const normalizeWhitespace = (value: string): string => value.trim().replace(/\s+/g, " ");
 
@@ -148,14 +146,15 @@ const parseSavedFlowMetadata = (content: string): SavedFlowMetadata | null => {
   return { title, description, slug };
 };
 
-const formatDirectoryContent = (entries: SavedFlowMetadata[]): string => [
-  "# Saved Flows",
-  "",
-  ...(entries.length > 0
-    ? entries.map((entry) => `- [${entry.title}](./${entry.slug}.md) - ${entry.description}`)
-    : ["No saved flows yet."]),
-  "",
-].join("\n");
+const formatDirectoryContent = (entries: SavedFlowMetadata[]): string =>
+  [
+    "# Saved Flows",
+    "",
+    ...(entries.length > 0
+      ? entries.map((entry) => `- [${entry.title}](./${entry.slug}.md) - ${entry.description}`)
+      : ["No saved flows yet."]),
+    "",
+  ].join("\n");
 
 export const saveFlow = async (options: SaveFlowOptions): Promise<SaveFlowResult> => {
   const slug = slugify(options.plan.title);
@@ -168,9 +167,7 @@ export const saveFlow = async (options: SaveFlowOptions): Promise<SaveFlowResult
   await writeFile(flowFilePath, formatFlowFileContent(options, slug, description), "utf8");
 
   const flowFileNames = (await readdir(flowDirectoryPath))
-    .filter(
-      (fileName) => fileName.endsWith(".md") && fileName !== FLOW_DIRECTORY_INDEX_FILE_NAME,
-    )
+    .filter((fileName) => fileName.endsWith(".md") && fileName !== FLOW_DIRECTORY_INDEX_FILE_NAME)
     .sort((leftValue, rightValue) => leftValue.localeCompare(rightValue));
 
   const directoryEntries = (

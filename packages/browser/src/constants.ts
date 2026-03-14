@@ -7,13 +7,6 @@ export const HEADLESS_CHROMIUM_ARGS = [
   "--use-angle=swiftshader",
   "--ignore-gpu-blocklist",
 ];
-export const LIVE_CHROME_REMOTE_DEBUGGING_HELP_URL = "chrome://inspect/#remote-debugging";
-export const LIVE_CHROME_MACOS_USER_DATA_DIR_SEGMENTS = [
-  "Library",
-  "Application Support",
-  "Google",
-  "Chrome",
-];
 
 export const INTERACTIVE_ROLES = new Set([
   "button",

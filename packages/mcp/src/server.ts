@@ -12,7 +12,7 @@ import {
   saveVideo,
   waitForNavigationSettle,
 } from "@browser-tester/browser";
-import type { CreatePageOptions, SnapshotResult } from "@browser-tester/browser";
+import type { SnapshotResult } from "@browser-tester/browser";
 
 interface ConsoleEntry {
   type: string;
@@ -36,25 +36,15 @@ interface BrowserSession {
   networkRequests: NetworkEntry[];
   videoOutputPath?: string;
   savedVideoPath?: string | null;
-  ownsBrowser: boolean;
-  ownsPages: Set<Page>;
   trackedPages: Set<Page>;
 }
 
 interface ClosedSessionResult {
   savedVideoPath: string | null;
-  ownsBrowser: boolean;
-  closedOwnedPages: number;
 }
 
 let session: BrowserSession | null = null;
 const VIDEO_OUTPUT_ENV_NAME = "BROWSER_TESTER_VIDEO_OUTPUT_PATH";
-const LIVE_CHROME_ENV_NAME = "BROWSER_TESTER_LIVE_CHROME";
-const LIVE_CHROME_CDP_ENDPOINT_ENV_NAME = "BROWSER_TESTER_LIVE_CHROME_CDP_ENDPOINT";
-const LIVE_CHROME_TAB_MODE_ENV_NAME = "BROWSER_TESTER_LIVE_CHROME_TAB_MODE";
-const LIVE_CHROME_TAB_URL_MATCH_ENV_NAME = "BROWSER_TESTER_LIVE_CHROME_TAB_URL_MATCH";
-const LIVE_CHROME_TAB_TITLE_MATCH_ENV_NAME = "BROWSER_TESTER_LIVE_CHROME_TAB_TITLE_MATCH";
-const LIVE_CHROME_TAB_INDEX_ENV_NAME = "BROWSER_TESTER_LIVE_CHROME_TAB_INDEX";
 
 const setupPageTracking = (page: Page, browserSession: BrowserSession) => {
   if (browserSession.trackedPages.has(page)) return;
@@ -95,8 +85,6 @@ const saveSessionVideo = async (
   browserSession: BrowserSession,
   outputPath?: string,
 ): Promise<string | null> => {
-  if (!browserSession.ownsBrowser) return null;
-
   const resolvedOutputPath = outputPath ?? browserSession.videoOutputPath;
   if (!resolvedOutputPath) return null;
   if (browserSession.savedVideoPath) return browserSession.savedVideoPath;
@@ -107,32 +95,14 @@ const saveSessionVideo = async (
   return savedVideoPath;
 };
 
-const closeOwnedPages = async (browserSession: BrowserSession): Promise<number> => {
-  if (browserSession.ownsBrowser) return 0;
-
-  let closedOwnedPages = 0;
-  for (const page of browserSession.ownsPages) {
-    if (page.isClosed()) continue;
-    await page.close();
-    closedOwnedPages += 1;
-  }
-
-  return closedOwnedPages;
-};
-
 const closeSession = async (outputPath?: string): Promise<ClosedSessionResult | null> => {
   if (!session) return null;
 
   const activeSession = session;
   session = null;
   const savedVideoPath = await saveSessionVideo(activeSession, outputPath);
-  const closedOwnedPages = await closeOwnedPages(activeSession);
   await activeSession.browser.close();
-  return {
-    savedVideoPath,
-    ownsBrowser: activeSession.ownsBrowser,
-    closedOwnedPages,
-  };
+  return { savedVideoPath };
 };
 
 let cleanupRegistered = false;
@@ -162,77 +132,6 @@ const imageResult = (base64: string) => ({
   content: [{ type: "image" as const, data: base64, mimeType: "image/png" }],
 });
 
-type LiveChromeConnectionOptions = Pick<
-  CreatePageOptions,
-  "liveChrome" | "cdpEndpoint" | "tabMode" | "tabUrlMatch" | "tabTitleMatch" | "tabIndex"
->;
-
-const parseBooleanEnvironmentValue = (value: string | undefined): boolean | undefined => {
-  if (!value) return undefined;
-  const normalizedValue = value.trim().toLowerCase();
-  if (normalizedValue === "true" || normalizedValue === "1" || normalizedValue === "yes") {
-    return true;
-  }
-  if (normalizedValue === "false" || normalizedValue === "0" || normalizedValue === "no") {
-    return false;
-  }
-  return undefined;
-};
-
-const parseNumberEnvironmentValue = (value: string | undefined): number | undefined => {
-  if (!value) return undefined;
-  const parsedValue = Number.parseInt(value, 10);
-  return Number.isInteger(parsedValue) ? parsedValue : undefined;
-};
-
-const readConfiguredLiveChromeOptions = (): LiveChromeConnectionOptions => {
-  const tabMode = process.env[LIVE_CHROME_TAB_MODE_ENV_NAME];
-
-  return {
-    liveChrome: parseBooleanEnvironmentValue(process.env[LIVE_CHROME_ENV_NAME]),
-    cdpEndpoint: process.env[LIVE_CHROME_CDP_ENDPOINT_ENV_NAME],
-    tabMode: tabMode === "attach" || tabMode === "new" ? tabMode : undefined,
-    tabUrlMatch: process.env[LIVE_CHROME_TAB_URL_MATCH_ENV_NAME],
-    tabTitleMatch: process.env[LIVE_CHROME_TAB_TITLE_MATCH_ENV_NAME],
-    tabIndex: parseNumberEnvironmentValue(process.env[LIVE_CHROME_TAB_INDEX_ENV_NAME]),
-  };
-};
-
-const resolveLiveChromeOptions = (
-  toolOptions: LiveChromeConnectionOptions,
-  overrides: Partial<LiveChromeConnectionOptions> = {},
-): LiveChromeConnectionOptions => {
-  const configuredOptions = readConfiguredLiveChromeOptions();
-
-  return {
-    liveChrome: toolOptions.liveChrome ?? overrides.liveChrome ?? configuredOptions.liveChrome,
-    cdpEndpoint: toolOptions.cdpEndpoint ?? overrides.cdpEndpoint ?? configuredOptions.cdpEndpoint,
-    tabMode: toolOptions.tabMode ?? overrides.tabMode ?? configuredOptions.tabMode,
-    tabUrlMatch: toolOptions.tabUrlMatch ?? overrides.tabUrlMatch ?? configuredOptions.tabUrlMatch,
-    tabTitleMatch:
-      toolOptions.tabTitleMatch ?? overrides.tabTitleMatch ?? configuredOptions.tabTitleMatch,
-    tabIndex: toolOptions.tabIndex ?? overrides.tabIndex ?? configuredOptions.tabIndex,
-  };
-};
-
-const liveChromeInputSchema = {
-  liveChrome: z
-    .boolean()
-    .optional()
-    .describe("Connect to an existing Chrome session over CDP instead of launching a new browser"),
-  cdpEndpoint: z
-    .string()
-    .optional()
-    .describe("Chrome DevTools Protocol endpoint, for example http://127.0.0.1:9222"),
-  tabMode: z
-    .enum(["attach", "new"])
-    .optional()
-    .describe("Attach to an existing tab or open a new tab in the live Chrome session"),
-  tabUrlMatch: z.string().optional().describe("Attach to a tab whose URL includes this text"),
-  tabTitleMatch: z.string().optional().describe("Attach to a tab whose title includes this text"),
-  tabIndex: z.number().optional().describe("Attach to a tab by index from tab_list"),
-};
-
 const actAndSnapshot = async (action: (before: SnapshotResult) => Promise<void>) => {
   const page = requirePage();
   const urlBefore = page.url();
@@ -253,7 +152,7 @@ export const createBrowserMcpServer = () => {
     "open",
     {
       title: "Open URL",
-      description: "Navigate to a URL, launching a browser or connecting to live Chrome if needed.",
+      description: "Navigate to a URL, launching a browser if needed.",
       inputSchema: {
         url: z.string().describe("URL to navigate to"),
         headed: z.boolean().optional().describe("Show browser window"),
@@ -265,116 +164,34 @@ export const createBrowserMcpServer = () => {
           .enum(["load", "domcontentloaded", "networkidle", "commit"])
           .optional()
           .describe("Wait strategy"),
-        ...liveChromeInputSchema,
       },
     },
-    async ({
-      url,
-      headed,
-      cookies,
-      waitUntil,
-      liveChrome,
-      cdpEndpoint,
-      tabMode,
-      tabUrlMatch,
-      tabTitleMatch,
-      tabIndex,
-    }) => {
+    async ({ url, headed, cookies, waitUntil }) => {
       if (session) {
         await session.page.goto(url, { waitUntil: waitUntil ?? "load" });
         return textResult(`Navigated to ${url}`);
       }
 
-      const liveChromeOptions = resolveLiveChromeOptions({
-        liveChrome,
-        cdpEndpoint,
-        tabMode,
-        tabUrlMatch,
-        tabTitleMatch,
-        tabIndex,
-      });
       const videoOutputPath = process.env[VIDEO_OUTPUT_ENV_NAME];
       const pageResult = await createPage(url, {
         headed,
         cookies,
         waitUntil,
         video: videoOutputPath ? { dir: dirname(videoOutputPath) } : undefined,
-        ...liveChromeOptions,
       });
-      const { browser, context, page, ownsBrowser, ownsPage } = pageResult;
+      const { browser, context, page } = pageResult;
       session = {
         browser,
         context,
         page,
         consoleMessages: [],
         networkRequests: [],
-        videoOutputPath: ownsBrowser ? videoOutputPath : undefined,
+        videoOutputPath,
         savedVideoPath: null,
-        ownsBrowser,
-        ownsPages: ownsPage ? new Set([page]) : new Set(),
         trackedPages: new Set(),
       };
       setupPageTracking(page, session);
-      if (!ownsBrowser) {
-        const action = ownsPage ? "opened a new tab" : "attached to an existing tab";
-        return textResult(`Connected to live Chrome and ${action}: ${page.url() || url}`);
-      }
       return textResult(`Opened ${url}`);
-    },
-  );
-
-  server.registerTool(
-    "attach",
-    {
-      title: "Attach Live Chrome Tab",
-      description:
-        "Attach to an existing tab in a live Chrome session over CDP without launching a new browser.",
-      inputSchema: {
-        cdpEndpoint: z
-          .string()
-          .optional()
-          .describe("Chrome DevTools Protocol endpoint, for example http://127.0.0.1:9222"),
-        tabUrlMatch: z.string().optional().describe("Attach to a tab whose URL includes this text"),
-        tabTitleMatch: z
-          .string()
-          .optional()
-          .describe("Attach to a tab whose title includes this text"),
-        tabIndex: z.number().optional().describe("Attach to a tab by index from tab_list"),
-      },
-    },
-    async ({ cdpEndpoint, tabUrlMatch, tabTitleMatch, tabIndex }) => {
-      if (session) {
-        return textResult(
-          "A browser session is already open. Close it before attaching to live Chrome.",
-        );
-      }
-
-      const liveChromeOptions = resolveLiveChromeOptions(
-        {
-          cdpEndpoint,
-          tabUrlMatch,
-          tabTitleMatch,
-          tabIndex,
-        },
-        { liveChrome: true, tabMode: "attach" },
-      );
-      const pageResult = await createPage(undefined, {
-        ...liveChromeOptions,
-      });
-      const { browser, context, page, ownsBrowser, ownsPage } = pageResult;
-      session = {
-        browser,
-        context,
-        page,
-        consoleMessages: [],
-        networkRequests: [],
-        savedVideoPath: null,
-        ownsBrowser,
-        ownsPages: ownsPage ? new Set([page]) : new Set(),
-        trackedPages: new Set(),
-      };
-      setupPageTracking(page, session);
-      return textResult(`Attached to live Chrome tab: ${page.url()}`);
     },
   );
 
@@ -575,9 +392,6 @@ export const createBrowserMcpServer = () => {
     },
     async ({ outputPath }) => {
       if (!session) return textResult("No browser open.");
-      if (!session.ownsBrowser) {
-        return textResult("Video saving is unavailable in live Chrome mode.");
-      }
       const result = await closeSession(outputPath);
       if (!result || !result.savedVideoPath)
         return textResult(
@@ -825,7 +639,6 @@ export const createBrowserMcpServer = () => {
           url: tabPage.url(),
           title: await tabPage.title(),
           active: tabPage === session!.page,
-          ownedBySession: session!.ownsPages.has(tabPage),
         })),
       );
       return jsonResult(tabs);
@@ -845,7 +658,6 @@ export const createBrowserMcpServer = () => {
       if (!session) return textResult("No browser open.");
       const newPage = await session.context.newPage();
       if (url) await newPage.goto(url);
-      session.ownsPages.add(newPage);
       setupPageTracking(newPage, session);
       session.page = newPage;
       return textResult(`New tab created${url ? ` at ${url}` : ""}`);
@@ -892,14 +704,8 @@ export const createBrowserMcpServer = () => {
         return textResult(`Invalid tab index ${targetIndex}.`);
       }
       const targetPage = pages[targetIndex];
-      if (!session.ownsBrowser && !session.ownsPages.has(targetPage)) {
-        return textResult(
-          "Refusing to close a user-owned tab in live Chrome mode. Close it in Chrome directly if needed.",
-        );
-      }
       const wasActive = targetPage === session.page;
       await targetPage.close();
-      session.ownsPages.delete(targetPage);
       session.trackedPages.delete(targetPage);
 
       const remainingPages = session.context.pages();
@@ -1037,18 +843,10 @@ export const createBrowserMcpServer = () => {
       if (!session) return textResult("No browser open.");
       const closeResult = await closeSession();
       if (!closeResult) return textResult("No browser open.");
-      if (closeResult.ownsBrowser) {
-        if (closeResult.savedVideoPath) {
-          return textResult(`Browser closed. Video saved to ${closeResult.savedVideoPath}`);
-        }
-        return textResult("Browser closed.");
+      if (closeResult.savedVideoPath) {
+        return textResult(`Browser closed. Video saved to ${closeResult.savedVideoPath}`);
       }
-      if (closeResult.closedOwnedPages > 0) {
-        return textResult(
-          `Disconnected from live Chrome. Closed ${closeResult.closedOwnedPages} browser-tester tab(s).`,
-        );
-      }
-      return textResult("Disconnected from live Chrome.");
+      return textResult("Browser closed.");
     },
   );
 
