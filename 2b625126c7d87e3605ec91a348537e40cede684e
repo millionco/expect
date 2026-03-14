@@ -1,0 +1,37 @@
+packages/agent/src/utils/serialize-tool-result.ts
+  8417fe1f269334f5 1-17
+packages/supervisor/src/execute-browser-flow.ts
+  8417fe1f269334f5 27,266
+apps/cli/src/components/testing-screen.tsx
+  8417fe1f269334f5 36,55-59,93,111,117,247,272,325
+packages/supervisor/tests/execute-browser-flow.test.ts
+  8417fe1f269334f5 306-380
+packages/supervisor/src/utils/serialize-tool-result.ts
+  8417fe1f269334f5 1-17
+packages/agent/tests/claude.test.ts
+  8417fe1f269334f5 127-147,304-320
+packages/agent/src/provider-shared.ts
+  8417fe1f269334f5 3,67-68,126-127
+apps/cli/src/utils/format-browser-tool-call.ts
+  8417fe1f269334f5 283-285,296
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "2b625126c7d87e3605ec91a348537e40cede684e",
+  "prompts": {
+    "8417fe1f269334f5": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1e0fca53-19b0-4756-87a5-e2bd0f203598",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 179,
+      "total_deletions": 13,
+      "accepted_lines": 174,
+      "overriden_lines": 0
+    }
+  }
+}
