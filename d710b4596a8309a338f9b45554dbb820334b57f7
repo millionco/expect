@@ -1,0 +1,23 @@
+packages/browser/tests/create-page.test.ts
+  eb4946270c95d592 1-133
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.11",
+  "base_commit_sha": "d710b4596a8309a338f9b45554dbb820334b57f7",
+  "prompts": {
+    "eb4946270c95d592": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "15f60b92-b4ac-4bad-a1a5-e82b9e845fb1",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 133,
+      "total_deletions": 0,
+      "accepted_lines": 133,
+      "overriden_lines": 0
+    }
+  }
+}
