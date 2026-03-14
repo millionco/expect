@@ -1,0 +1,63 @@
+packages/browser/src/constants.ts
+  d4a2e0081b6cd282 4-5
+packages/agent/src/claude.ts
+  ab7dbeca30dc1fe1 23,145,157
+apps/cli/src/utils/format-browser-tool-call.ts
+  8417fe1f269334f5 14-17,280,294-296
+packages/agent/src/utils/build-claude-process-env.ts
+  ab7dbeca30dc1fe1 1-27
+packages/browser/src/create-page.ts
+  d4a2e0081b6cd282 11-13,40,42-52
+packages/browser/tests/create-page.test.ts
+  d4a2e0081b6cd282 3,135-201
+packages/agent/tests/claude.test.ts
+  ab7dbeca30dc1fe1 11,14-17,19-20,38,46,151-206
+apps/cli/src/components/testing-screen.tsx
+  8417fe1f269334f5 30,48-53,81,83,92-95,103-107,109-114,153,266,318
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "a461b945cb77e979911b7c5f57ff17cebe5dd8eb",
+  "prompts": {
+    "8417fe1f269334f5": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1e0fca53-19b0-4756-87a5-e2bd0f203598",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 35,
+      "total_deletions": 9,
+      "accepted_lines": 35,
+      "overriden_lines": 0
+    },
+    "ab7dbeca30dc1fe1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "0d371860-a9fe-433e-96c1-521c1d3ff6c1",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 97,
+      "total_deletions": 4,
+      "accepted_lines": 95,
+      "overriden_lines": 0
+    },
+    "d4a2e0081b6cd282": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "172a310b-bbe0-481e-83b3-2d5cc6768447",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 90,
+      "total_deletions": 3,
+      "accepted_lines": 85,
+      "overriden_lines": 0
+    }
+  }
+}
