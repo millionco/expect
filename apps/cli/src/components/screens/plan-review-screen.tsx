@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import { Input } from "../ui/input.js";
 import { useColors } from "../theme-context.js";
@@ -108,6 +108,7 @@ export const PlanReviewScreen = () => {
   const testAction = useAppStore((state) => state.testAction);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
+    details: true,
     assumptions: true,
   });
   const [editingState, setEditingState] = useState<EditingState>(null);
@@ -152,6 +153,18 @@ export const PlanReviewScreen = () => {
     }
     return result;
   }, [cookieSyncIsRequired, plan, collapsed]);
+
+  const [hasInitializedSelection, setHasInitializedSelection] = useState(false);
+  useEffect(() => {
+    if (hasInitializedSelection) return;
+    const firstStepIndex = items.findIndex(
+      (item) => item.kind === "step" && item.stepIndex === 0
+    );
+    if (firstStepIndex >= 0) {
+      setSelectedIndex(firstStepIndex);
+      setHasInitializedSelection(true);
+    }
+  }, [items, hasInitializedSelection]);
 
   const currentItem = items[selectedIndex];
 
