@@ -1,0 +1,59 @@
+apps/cli/src/components/ui/changes-warning-panel.tsx
+  3e79637547f919de 1-44
+packages/supervisor/src/index.ts
+  3e79637547f919de 3,7-10,27-31
+packages/supervisor/src/events.ts
+  3e79637547f919de 63
+apps/cli/src/components/screens/plan-review-screen.tsx
+  3e79637547f919de 89,103,175-191,385-401
+packages/supervisor/src/github-comment.ts
+  3e79637547f919de 1-118,120-174
+apps/cli/src/components/app.tsx
+  3e79637547f919de 14,89,109-110
+apps/cli/src/components/ui/modeline.tsx
+  3e79637547f919de 19,89,125-133
+apps/cli/src/utils/copy-to-clipboard.ts
+  3e79637547f919de 1-10
+packages/supervisor/src/constants.ts
+  3e79637547f919de 5-11,13,29-34
+packages/supervisor/src/execute-browser-flow.ts
+  3e79637547f919de 15,192-193,198-199,208,210,227,233,241,246-247,252,258-259,263,269-270,291,296,303-304,307,313-314,332-340,342-343,346,351-353,359-368,370-371,373-375,378-386
+apps/cli/src/utils/run-test.ts
+  3e79637547f919de 5,111,114-116,122-132
+packages/supervisor/src/create-browser-run-report.ts
+  3e79637547f919de 1-2,4-486,488-580,582-656
+packages/supervisor/src/types.ts
+  3e79637547f919de 79-126
+packages/supervisor/tests/execute-browser-flow.test.ts
+  3e79637547f919de 209,211,216-225,316-323
+apps/cli/src/components/screens/results-screen.tsx
+  3e79637547f919de 1-111,113-304
+apps/cli/src/store.ts
+  3e79637547f919de 6,31,52,75,85,125,148-153,290-294
+apps/cli/src/utils/format-diff-stats.ts
+  3e79637547f919de 1-7
+apps/cli/src/components/screens/testing-screen.tsx
+  3e79637547f919de 143,219,221-223,260
+apps/cli/src/components/screens/main-menu-screen.tsx
+  3e79637547f919de 9,98-99,176-183
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "8b98aeb8e397952b7f0091ca4a4e4bd76d79f2d6",
+  "prompts": {
+    "3e79637547f919de": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "915667d5-2071-4e2b-bbf6-bd4347f44184",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 2958,
+      "total_deletions": 384,
+      "accepted_lines": 2602,
+      "overriden_lines": 6
+    }
+  }
+}
