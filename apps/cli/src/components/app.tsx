@@ -14,7 +14,11 @@ import { ThemePickerScreen } from "./screens/theme-picker-screen.js";
 import { MainMenu } from "./screens/main-menu-screen.js";
 import { Modeline } from "./ui/modeline.js";
 import { InkGrab } from "../../ink-grab/index.js";
-import { generateBrowserPlan } from "../utils/browser-agent.js";
+import {
+  resolveBrowserTarget,
+  getBrowserEnvironment,
+} from "../utils/browser-agent.js";
+import { planBrowserFlow } from "@browser-tester/supervisor";
 import { useAppStore } from "../store.js";
 
 const usePlanningEffect = () => {
@@ -39,23 +43,43 @@ const usePlanningEffect = () => {
       return;
 
     let isCancelled = false;
+    const setStatus = (status: string) => {
+      if (!isCancelled) useAppStore.setState({ planningStatus: status });
+    };
 
-    void generateBrowserPlan({
-      action: testAction,
-      commit: selectedCommit ?? undefined,
-      userInstruction: flowInstruction,
-      environmentOverrides,
-    })
-      .then((result) => {
-        if (!isCancelled) completePlanning(result);
-      })
-      .catch((caughtError) => {
-        if (!isCancelled) {
-          failPlanning(
-            caughtError instanceof Error ? caughtError.message : "Unknown error"
-          );
-        }
+    const run = async () => {
+      setStatus("Resolving git diff and changed files...");
+      const target = resolveBrowserTarget({
+        action: testAction,
+        commit: selectedCommit ?? undefined,
       });
+      if (isCancelled) return;
+
+      const environment = getBrowserEnvironment(environmentOverrides);
+
+      setStatus(`Reading ${target.changedFiles.length} changed files...`);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      if (isCancelled) return;
+
+      setStatus("Waiting for Claude to generate plan...");
+      const plan = await planBrowserFlow({
+        target,
+        userInstruction: flowInstruction,
+        environment,
+      });
+      if (isCancelled) return;
+
+      setStatus("Plan received. Finalizing...");
+      completePlanning({ target, plan, environment });
+    };
+
+    void run().catch((caughtError) => {
+      if (!isCancelled) {
+        failPlanning(
+          caughtError instanceof Error ? caughtError.message : "Unknown error"
+        );
+      }
+    });
 
     return () => {
       isCancelled = true;

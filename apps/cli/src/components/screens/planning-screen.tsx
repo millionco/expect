@@ -18,6 +18,7 @@ export const PlanningScreen = () => {
   const COLORS = useColors();
   const flowInstruction = useAppStore((state) => state.flowInstruction);
   const testAction = useAppStore((state) => state.testAction);
+  const planningStatus = useAppStore((state) => state.planningStatus);
   const [startTime] = useState(() => Date.now());
   const [elapsed, setElapsed] = useState(0);
 
@@ -46,7 +47,7 @@ export const PlanningScreen = () => {
       </Box>
 
       <Box marginTop={1}>
-        <Spinner message="Generating browser plan..." />
+        <Spinner message={planningStatus ?? "Generating browser plan..."} />
         <Text color={COLORS.DIM}> {formatElapsedTime(elapsed)}</Text>
       </Box>
     </Box>
