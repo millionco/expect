@@ -1,0 +1,47 @@
+packages/supervisor/src/memory/record-run.ts
+  e38d6329e29d2822 1-15
+packages/supervisor/src/memory/create-run-memory.ts
+  e38d6329e29d2822 1-48
+packages/supervisor/src/constants.ts
+  e38d6329e29d2822 43-60
+packages/supervisor/src/plan-browser-flow.ts
+  e38d6329e29d2822 15,116,152-158,207-214
+packages/supervisor/src/execute-browser-flow.ts
+  e38d6329e29d2822 26,132,189-195,229-236,238-239
+packages/supervisor/src/memory/memory-store.ts
+  e38d6329e29d2822 3-14,16-17,19-20,23-36,38,40-47,50-57,59-63,66-74,76-89,92-97,99-106,109-113
+packages/supervisor/src/memory/retrieve-executor-memory.ts
+  e38d6329e29d2822 2-53,55-67
+packages/supervisor/src/memory/retrieve-planner-memory.ts
+  e38d6329e29d2822 1-95
+packages/supervisor/src/memory/promote-memories.ts
+  e38d6329e29d2822 1-199,201-214,216-282
+packages/supervisor/src/memory/types.ts
+  e38d6329e29d2822 1-92
+packages/supervisor/src/memory/index.ts
+  e38d6329e29d2822 1-18
+packages/supervisor/src/index.ts
+  e38d6329e29d2822 22-35
+packages/supervisor/src/utils/prioritize-planning-files.ts
+  e38d6329e29d2822 29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "80fbd773c8a0b03c049cef17ae1c26394ab45be5",
+  "prompts": {
+    "e38d6329e29d2822": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4f42edaa-af83-4db4-ac65-664af158b780",
+        "model": "claude-4.6-opus-max-thinking-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 817,
+      "total_deletions": 8,
+      "accepted_lines": 776,
+      "overriden_lines": 22
+    }
+  }
+}
