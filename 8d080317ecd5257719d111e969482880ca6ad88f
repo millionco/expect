@@ -1,0 +1,131 @@
+archive/live-view-experiment/files/packages/mcp/src/live-view-server.ts
+  c7a90b98ea7ab68c 1-210
+apps/cli/src/utils/supports-inline-images.ts
+  c58fb33045b21dc2 1,4-5,7-9,11-13
+apps/cli/src/components/screens/saved-flow-picker-screen.tsx
+  ec2c0036191624da 13
+archive/live-view-experiment/files/packages/mcp/src/constants.ts
+  c7a90b98ea7ab68c 1-4
+archive/live-view-experiment/files/apps/cli/src/components/ui/url-link.tsx
+  c7a90b98ea7ab68c 1-13
+apps/cli/src/components/ui/modeline.tsx
+  ec2c0036191624da 13-15,84-96,104-114,116-119,123-128,147,165
+  a10bb832948dbbd3 72-73
+apps/cli/src/components/ui/input.tsx
+  a10bb832948dbbd3 9-10,74-75,147-148,155-156
+apps/cli/src/components/ui/image.tsx
+  c58fb33045b21dc2 5,30
+apps/cli/src/components/screens/testing-screen.tsx
+  c7a90b98ea7ab68c 332
+  bd9f7d3013572c8f 157-158,173-176,206-207,246,259-279,286-290,320-331,333-341,361,389-394,396-397
+archive/live-view-experiment/files/packages/supervisor/src/utils/resolve-live-view-url.ts
+  c7a90b98ea7ab68c 1-46
+apps/cli/src/components/screens/planning-screen.tsx
+  ec2c0036191624da 9
+apps/cli/src/components/screens/plan-review-screen.tsx
+  ec2c0036191624da 29-39,47,49-50,61,94,100,109-111,113-114,119,121,132,144,146,149-150,154,157-167,169,172,190,194-197,199-200,227,238-266,287,297-301,303,315-316,322-329,344-345,350-355,387,397,400,402-406,411
+apps/cli/src/components/app.tsx
+  ec2c0036191624da 10,131-132
+apps/cli/src/constants.ts
+  a10bb832948dbbd3 16
+apps/cli/src/store.ts
+  a10bb832948dbbd3 9,39,93-101,109,242,245,249
+  ec2c0036191624da 28,70-71,139-141,268-274
+apps/cli/src/components/screens/cookie-sync-confirm-screen.tsx
+  ec2c0036191624da 1-133
+apps/cli/src/index.tsx
+  ec2c0036191624da 102
+archive/live-view-experiment/README.md
+  c7a90b98ea7ab68c 1-66
+apps/cli/src/components/screens/main-menu-screen.tsx
+  ec2c0036191624da 10,21,25-37,41,45,69-70,72-75,95,100-101,107,109-112,114-115,117,144-145
+  a10bb832948dbbd3 71
+apps/cli/src/components/screens/flow-input-screen.tsx
+  a10bb832948dbbd3 2,22,25-27,30-71,75-76,93,96,101-103,105-108,114-120
+  ec2c0036191624da 12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "8d080317ecd5257719d111e969482880ca6ad88f",
+  "prompts": {
+    "004171b6978321da": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "0794d233-3d6b-49b3-9182-06b1962dca06",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 92,
+      "total_deletions": 3,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    },
+    "a10bb832948dbbd3": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "77c7ab1f-fa62-475d-bf4e-263e66f6e017",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 311,
+      "total_deletions": 221,
+      "accepted_lines": 102,
+      "overriden_lines": 0
+    },
+    "bd9f7d3013572c8f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d8e26ac7-918c-4cac-9602-9f8aac72dc75",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 75,
+      "total_deletions": 7,
+      "accepted_lines": 67,
+      "overriden_lines": 0
+    },
+    "c58fb33045b21dc2": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1362184e-bd6b-4349-91ec-b540330f5950",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 11,
+      "total_deletions": 9,
+      "accepted_lines": 11,
+      "overriden_lines": 0
+    },
+    "c7a90b98ea7ab68c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "da2474e7-0467-4112-a752-b07d1f0afd41",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 710,
+      "total_deletions": 40,
+      "accepted_lines": 669,
+      "overriden_lines": 0
+    },
+    "ec2c0036191624da": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b97ed962-be4b-49fc-8ebb-182f41247c76",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 427,
+      "total_deletions": 192,
+      "accepted_lines": 352,
+      "overriden_lines": 1
+    }
+  }
+}
