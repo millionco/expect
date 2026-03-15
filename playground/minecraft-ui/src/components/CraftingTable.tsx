@@ -18,11 +18,6 @@ const SLOT_INNER = 16 * S;
 const GUI_W = 176 * S;
 const GUI_H = 166 * S;
 
-const ITEM_NAMES: Record<string, string> = {
-  oak_log: "Oak Log",
-  oak_planks: "Oak Planks",
-};
-
 // ─── Texture paths (real Minecraft Beta 1.6 textures) ───
 const BLOCK_TEXTURE_PATHS: Record<
   string,
@@ -178,6 +173,7 @@ function Slot({
   onRightClick: () => void;
   large?: boolean;
 }) {
+  const [hovered, setHovered] = useState(false);
   const size = large ? SLOT + 8 * S : SLOT;
   const border = large ? 2 * S : S;
 
@@ -188,6 +184,8 @@ function Slot({
         e.preventDefault();
         onRightClick();
       }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         width: size,
         height: size,
@@ -203,6 +201,17 @@ function Slot({
         justifyContent: "center",
       }}
     >
+      {hovered && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundColor: "rgba(255, 255, 255, 0.4)",
+            zIndex: 10,
+            pointerEvents: "none",
+          }}
+        />
+      )}
       {item && textures[item.id] && (
         <>
           <img
@@ -224,7 +233,7 @@ function Slot({
                 right: 1 * S,
                 color: "#FFF",
                 fontSize: 8 * S,
-                fontFamily: "Minecraft, monospace",
+                fontFamily: "monospace",
                 fontWeight: "bold",
                 textShadow: `${S}px ${S}px 0 #3F3F3F`,
                 lineHeight: 1,
@@ -236,34 +245,6 @@ function Slot({
           )}
         </>
       )}
-    </div>
-  );
-}
-
-// ─── Tooltip ─────────────────────────────────────────────
-function Tooltip({ item, x, y }: { item: ItemStack; x: number; y: number }) {
-  if (!item) return null;
-  const name = ITEM_NAMES[item.id] || item.id;
-  return (
-    <div
-      style={{
-        position: "fixed",
-        left: x + 12,
-        top: y - 12,
-        background: "#100010",
-        border: `${S}px solid #250066`,
-        borderTop: `${S}px solid #5000FF`,
-        borderLeft: `${S}px solid #5000FF`,
-        color: "#FFF",
-        padding: `${2 * S}px ${4 * S}px`,
-        fontSize: 8 * S,
-        fontFamily: "Minecraft, monospace",
-        pointerEvents: "none",
-        zIndex: 2000,
-        whiteSpace: "nowrap",
-      }}
-    >
-      {name}
     </div>
   );
 }
@@ -286,7 +267,6 @@ export default function CraftingTable() {
   const [craftingOutput, setCraftingOutput] = useState<ItemStack>(null);
   const [heldItem, setHeldItem] = useState<ItemStack>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [hoveredItem, setHoveredItem] = useState<ItemStack>(null);
 
   // Load real textures and create 3D isometric renders
   useEffect(() => {
@@ -487,8 +467,6 @@ export default function CraftingTable() {
                   left: (30 + col * 18) * S,
                   top: (17 + row * 18) * S,
                 }}
-                onMouseEnter={() => setHoveredItem(craftingGrid[idx])}
-                onMouseLeave={() => setHoveredItem(null)}
               >
                 <Slot
                   item={craftingGrid[idx]}
@@ -523,8 +501,6 @@ export default function CraftingTable() {
             left: 124 * S,
             top: 31 * S,
           }}
-          onMouseEnter={() => setHoveredItem(craftingOutput)}
-          onMouseLeave={() => setHoveredItem(null)}
         >
           <Slot
             item={craftingOutput}
@@ -547,8 +523,6 @@ export default function CraftingTable() {
                   left: (8 + col * 18) * S,
                   top: (84 + row * 18) * S,
                 }}
-                onMouseEnter={() => setHoveredItem(inventory[idx])}
-                onMouseLeave={() => setHoveredItem(null)}
               >
                 <Slot
                   item={inventory[idx]}
@@ -574,8 +548,6 @@ export default function CraftingTable() {
                 left: (8 + col * 18) * S,
                 top: 142 * S,
               }}
-              onMouseEnter={() => setHoveredItem(inventory[idx])}
-              onMouseLeave={() => setHoveredItem(null)}
             >
               <Slot
                 item={inventory[idx]}
@@ -617,7 +589,7 @@ export default function CraftingTable() {
                 right: 1 * S,
                 color: "#FFF",
                 fontSize: 8 * S,
-                fontFamily: "Minecraft, monospace",
+                fontFamily: "monospace",
                 fontWeight: "bold",
                 textShadow: `${S}px ${S}px 0 #3F3F3F`,
                 lineHeight: 1,
@@ -629,10 +601,6 @@ export default function CraftingTable() {
         </div>
       )}
 
-      {/* Tooltip */}
-      {!heldItem && hoveredItem && (
-        <Tooltip item={hoveredItem} x={mousePos.x} y={mousePos.y} />
-      )}
     </div>
   );
 }
