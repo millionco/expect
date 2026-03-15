@@ -22,6 +22,6 @@ export const PROJECTS: Project[] = [
     agentPrompt: "npx -y testie@latest -m 'test my current changes' -y",
     skillInstall: "npx skills add millionco/testie/testie-cli",
     githubUrl: "https://github.com/millionco/testie",
-    docsUrl: "#",
+    docsUrl: "https://github.com/millionco/testie#readme",
   },
 ];
