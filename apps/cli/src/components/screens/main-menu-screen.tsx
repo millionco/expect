@@ -198,7 +198,10 @@ export const MainMenu = () => {
       </Box>
 
       {showSuggestion ? (
-        <Text color={COLORS.DIM}>{"  ←→ cycle suggestions"}</Text>
+        <Text color={COLORS.DIM}>
+          {"  ←→ cycle suggestions "}[
+          {(suggestionIndex % FLOW_PRESETS.length) + 1}/{FLOW_PRESETS.length}]
+        </Text>
       ) : null}
 
       <ErrorMessage message={errorMessage} />

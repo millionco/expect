@@ -46,4 +46,9 @@ export const CLICK_SUPPORT_ENABLED =
 export const FLOW_PRESETS: readonly string[] = [
   "Verify these changes work as expected",
   "Check for regressions in related features",
+  "Test the main user flow end to end",
+  "Smoke test the homepage and key pages",
+  "Verify form submissions and validation",
+  "Check authentication and protected routes",
+  "Test responsive layout on mobile viewport",
 ];
