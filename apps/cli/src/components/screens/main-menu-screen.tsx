@@ -154,7 +154,9 @@ export const MainMenu = () => {
           <Input
             focus={focus === "input"}
             multiline
-            placeholder="Go through onboarding, click Import Projects, verify the list appears..."
+            placeholder={`${
+              currentSuggestion ?? "Describe what to test..."
+            }  [tab]`}
             value={value}
             onSubmit={submit}
             onUpArrowAtTop={() => setFocus("branch")}
@@ -166,16 +168,6 @@ export const MainMenu = () => {
           />
         </Box>
       </Box>
-
-      {showSuggestion ? (
-        <Box marginTop={0}>
-          <Text color={COLORS.DIM}>
-            {"  "}tab <Text color={COLORS.TEXT}>{currentSuggestion}</Text>
-            {"  "}
-            <Text color={COLORS.DIM}>←→ cycle</Text>
-          </Text>
-        </Box>
-      ) : null}
 
       <ErrorMessage message={errorMessage} />
 
