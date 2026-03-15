@@ -1,0 +1,42 @@
+packages/supervisor/tests/execute-browser-flow.test.ts
+  3b693dc190794edc 205-206
+packages/supervisor/src/execute-browser-flow.ts
+  3b693dc190794edc 137,147-168
+packages/supervisor/tests/plan-browser-flow.test.ts
+  3b693dc190794edc 114,120
+packages/supervisor/src/plan-browser-flow.ts
+  3b693dc190794edc 85-113,130-132,151-153,158,163-164,171
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "48c30b38f1a5cdb2f9174000318b5db7360bf04c",
+  "prompts": {
+    "3b693dc190794edc": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4b39c599-d7fc-4ed0-a53d-f11851c56672",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 745,
+      "total_deletions": 844,
+      "accepted_lines": 512,
+      "overriden_lines": 5
+    },
+    "8bd58e37c4e7369d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "969a33d7-46dd-4169-a90c-4e4f212b7632",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 929,
+      "total_deletions": 41,
+      "accepted_lines": 350,
+      "overriden_lines": 0
+    }
+  }
+}
