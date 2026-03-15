@@ -26,13 +26,14 @@ export const FlowInputScreen = () => {
   const flowInstructionHistory = useAppStore((state) => state.flowInstructionHistory);
   const submitFlowInstruction = useAppStore((state) => state.submitFlowInstruction);
 
-  const [inputMode, setInputMode] = useState<"presets" | "custom">("presets");
-  const [presetIndex, setPresetIndex] = useState(0);
+  const [presetIndex, setPresetIndex] = useState<number | null>(null);
   const [value, setValue] = useState(flowInstruction);
   const [inputInstanceKey, setInputInstanceKey] = useState(0);
   const [historyIndex, setHistoryIndex] = useState<number | null>(null);
   const [historyDraftValue, setHistoryDraftValue] = useState(flowInstruction);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const inputFocused = presetIndex === null;
 
   const updateValue = (nextValue: string) => {
     setValue(nextValue);
@@ -71,6 +72,16 @@ export const FlowInputScreen = () => {
     updateValue(flowInstructionHistory[nextIndex] ?? historyDraftValue);
   };
 
+  const moveToPresets = () => {
+    setPresetIndex(FLOW_PRESETS.length - 1);
+    if (errorMessage) setErrorMessage(null);
+  };
+
+  const moveToInput = () => {
+    setPresetIndex(null);
+    if (errorMessage) setErrorMessage(null);
+  };
+
   const submitValue = (nextValue: string) => {
     const trimmedValue = nextValue.trim();
 
@@ -84,26 +95,28 @@ export const FlowInputScreen = () => {
 
   useInput(
     (input, key) => {
-      if (key.tab) {
-        setInputMode(inputMode === "presets" ? "custom" : "presets");
-        if (errorMessage) setErrorMessage(null);
+      if (presetIndex === null) return;
+
+      if (key.upArrow || key.leftArrow) {
+        if (presetIndex > 0) {
+          setPresetIndex(presetIndex - 1);
+        }
         return;
       }
-
-      if (inputMode !== "presets") return;
-
-      if (key.downArrow || input === "j") {
-        setPresetIndex((previous) => Math.min(FLOW_PRESETS.length - 1, previous + 1));
-      }
-      if (key.upArrow || input === "k") {
-        setPresetIndex((previous) => Math.max(0, previous - 1));
+      if (key.downArrow || key.rightArrow) {
+        if (presetIndex < FLOW_PRESETS.length - 1) {
+          setPresetIndex(presetIndex + 1);
+        } else {
+          moveToInput();
+        }
+        return;
       }
       if (key.return) {
         const selected = FLOW_PRESETS[presetIndex];
         if (selected) submitFlowInstruction(selected);
       }
     },
-    { isActive: true },
+    { isActive: presetIndex !== null },
   );
 
   if (!testAction) return null;
@@ -135,75 +148,58 @@ export const FlowInputScreen = () => {
         </Box>
       ) : null}
 
-      <Box flexDirection="column" marginTop={1}>
-        <Text color={COLORS.DIM}>
-          {"  "}Quick picks {inputMode === "presets" ? <Text color={COLORS.PRIMARY}>●</Text> : null}
-        </Text>
-        <Box flexDirection="column" marginTop={0}>
-          {FLOW_PRESETS.map((preset, index) => {
-            const isSelected = inputMode === "presets" && index === presetIndex;
-            return (
-              <Clickable key={preset} onClick={() => submitFlowInstruction(preset)}>
-                {isSelected ? (
-                  <Text>
-                    <Text color={COLORS.PRIMARY}>{"  ▸ "}</Text>
-                    <Text color={COLORS.PRIMARY} bold>
-                      {preset}
-                    </Text>
-                  </Text>
-                ) : (
-                  <Text color={COLORS.DIM}>
-                    {"    "}
-                    {preset}
-                  </Text>
-                )}
-              </Clickable>
-            );
-          })}
-        </Box>
+      <Box
+        marginTop={1}
+        borderStyle="round"
+        borderColor={inputFocused ? COLORS.PRIMARY : COLORS.BORDER}
+        paddingX={2}
+      >
+        <Text color={COLORS.PRIMARY}>{"❯ "}</Text>
+        <Input
+          key={`flow-input-${inputInstanceKey}`}
+          focus={inputFocused}
+          multiline
+          placeholder="Describe what to test..."
+          value={value}
+          onSubmit={submitValue}
+          onUpArrowAtTop={moveToPresets}
+          onDownArrowAtBottom={recallNextInstruction}
+          onChange={(nextValue) => {
+            const sanitizedValue = stripMouseSequences(nextValue);
+            setHistoryIndex(null);
+            setHistoryDraftValue(sanitizedValue);
+            setValue(sanitizedValue);
+            if (errorMessage) setErrorMessage(null);
+          }}
+        />
       </Box>
 
-      <Box flexDirection="column" marginTop={1}>
-        <Text color={COLORS.DIM}>
-          {"  "}Or write your own{" "}
-          {inputMode === "custom" ? <Text color={COLORS.PRIMARY}>●</Text> : null}
-        </Text>
-        <Box
-          marginTop={0}
-          borderStyle="round"
-          borderColor={inputMode === "custom" ? COLORS.PRIMARY : COLORS.BORDER}
-          paddingX={2}
-        >
-          <Text color={COLORS.PRIMARY}>{"❯ "}</Text>
-          <Input
-            key={`flow-input-${inputInstanceKey}`}
-            focus={inputMode === "custom"}
-            multiline
-            placeholder="Describe what to test..."
-            value={value}
-            onSubmit={submitValue}
-            onUpArrowAtTop={recallPreviousInstruction}
-            onDownArrowAtBottom={recallNextInstruction}
-            onChange={(nextValue) => {
-              const sanitizedValue = stripMouseSequences(nextValue);
-              setHistoryIndex(null);
-              setHistoryDraftValue(sanitizedValue);
-              setValue(sanitizedValue);
-              if (errorMessage) setErrorMessage(null);
-            }}
-          />
-        </Box>
+      <Box flexDirection="row" marginTop={1} gap={1}>
+        {FLOW_PRESETS.map((preset, index) => {
+          const isSelected = presetIndex === index;
+          return (
+            <Clickable key={preset} fullWidth={false} onClick={() => submitFlowInstruction(preset)}>
+              <Box
+                borderStyle="round"
+                borderColor={isSelected ? COLORS.PRIMARY : COLORS.BORDER}
+                paddingX={1}
+              >
+                <Text color={isSelected ? COLORS.PRIMARY : COLORS.DIM} bold={isSelected}>
+                  {preset}
+                </Text>
+              </Box>
+            </Clickable>
+          );
+        })}
       </Box>
 
       <Box marginTop={1}>
         <Text color={COLORS.DIM}>
-          {inputMode === "presets"
-            ? "Press ↑/↓ to browse, Enter to select."
+          {presetIndex !== null
+            ? "Press ←/→ to browse suggestions, ↓ to go back to input, Enter to select."
             : historyIndex === null
-              ? "Use ↑/↓ on the first or last line to recall previous inputs."
-              : `Browsing previous inputs ${historyIndex + 1}/${flowInstructionHistory.length}.`}{" "}
-          Press <Text color={COLORS.PRIMARY}>Tab</Text> to{" "}
-          {inputMode === "presets" ? "write your own" : "see quick picks"}.
+              ? "Press Shift+Enter for a new line."
+              : `Browsing previous inputs ${historyIndex + 1}/${flowInstructionHistory.length}.`}
         </Text>
       </Box>
 

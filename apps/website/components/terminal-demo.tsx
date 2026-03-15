@@ -2,11 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "motion/react";
-import {
-  DEMO_CHAR_INTERVAL_MS,
-  DEMO_LINE_PAUSE_MS,
-  DEMO_PROMPT_PAUSE_MS,
-} from "@/constants";
+import { DEMO_CHAR_INTERVAL_MS, DEMO_LINE_PAUSE_MS, DEMO_PROMPT_PAUSE_MS } from "@/constants";
 
 type LineStyle = "prompt" | "muted" | "default" | "success" | "fail";
 
@@ -28,7 +24,7 @@ interface CommandOutput {
 }
 
 const COMMANDS: Record<string, CommandOutput> = {
-  "testie": {
+  testie: {
     lines: [
       { text: "◆ 3 changed files detected", style: "default" },
       { text: "  src/cart.tsx  src/checkout.tsx  src/api/orders.ts", style: "muted" },
@@ -139,7 +135,7 @@ const COMMANDS: Record<string, CommandOutput> = {
       { text: "  -h, --help        display help", style: "muted" },
     ],
   },
-  "clear": { lines: [] },
+  clear: { lines: [] },
 };
 
 const AUTO_DEMO_COMMAND = "testie unstaged";
@@ -180,7 +176,10 @@ export const TerminalDemo = () => {
         const isSection = line.text.startsWith("◆");
         const delay = isSection ? DEMO_PROMPT_PAUSE_MS : DEMO_LINE_PAUSE_MS;
 
-        timeoutRef.current = setTimeout(nextLine, line.text === "" ? DEMO_LINE_PAUSE_MS / 2 : delay);
+        timeoutRef.current = setTimeout(
+          nextLine,
+          line.text === "" ? DEMO_LINE_PAUSE_MS / 2 : delay,
+        );
       };
 
       timeoutRef.current = setTimeout(nextLine, DEMO_LINE_PAUSE_MS);

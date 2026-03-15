@@ -21,7 +21,10 @@ const Home = () => {
       </main>
       <footer className="mt-auto flex w-full max-w-lg items-center justify-between px-6 py-12 text-caption font-medium leading-5.75">
         <div className="flex items-center gap-5.75">
-          <Link href="https://github.com/millionco/testie#readme" className="text-muted-foreground transition-none hover:text-foreground">
+          <Link
+            href="https://github.com/millionco/testie#readme"
+            className="text-muted-foreground transition-none hover:text-foreground"
+          >
             Docs
           </Link>
         </div>
@@ -32,7 +35,10 @@ const Home = () => {
           >
             GitHub
           </Link>
-          <Link href="https://x.com/AidenYBai" className="text-muted-foreground transition-none hover:text-foreground">
+          <Link
+            href="https://x.com/AidenYBai"
+            className="text-muted-foreground transition-none hover:text-foreground"
+          >
             X
           </Link>
           <ThemeToggle />

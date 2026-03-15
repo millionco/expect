@@ -54,8 +54,8 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
       ];
     case "flow-input":
       return [
-        { key: "↑↓", label: "nav" },
-        { key: "tab", label: "presets/custom" },
+        { key: "↑↓←→", label: "nav" },
+        { key: "shift+enter", label: "newline" },
         { key: "esc", label: "back", cta: true, onClick: goBack },
         { key: "enter", label: "submit", color: COLORS.PRIMARY, cta: true },
       ];

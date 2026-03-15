@@ -36,9 +36,6 @@ export const CLICK_SUPPORT_ENABLED =
   process.env.SUPPORT_CLICK === "true" || process.env.SUPPORT_CLICK === "1";
 
 export const FLOW_PRESETS: readonly string[] = [
-  "Test the main user flow affected by these changes",
-  "Verify changed pages load correctly with no broken UI",
-  "Test form inputs, validation, and submission",
-  "Check authentication: login, session, and logout",
-  "Navigate the app and verify routing works end to end",
+  "Verify these changes work as expected",
+  "Check for regressions in related features",
 ];
