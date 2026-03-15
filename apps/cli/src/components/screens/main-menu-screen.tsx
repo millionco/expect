@@ -11,6 +11,7 @@ import { Clickable } from "../ui/clickable.js";
 import { Input } from "../ui/input.js";
 import { ErrorMessage } from "../ui/error-message.js";
 import { stripMouseSequences } from "../../hooks/mouse-context.js";
+import { FLOW_PRESETS } from "../../constants.js";
 
 const getTestAction = (gitState: GitState): TestAction => {
   const scope = getRecommendedScope(gitState);
@@ -35,6 +36,7 @@ export const MainMenu = () => {
   const navigateTo = useAppStore((state) => state.navigateTo);
   const checkedOutBranch = useAppStore((state) => state.checkedOutBranch);
   const [value, setValue] = useState("");
+  const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [focus, setFocus] = useState<FocusArea>(
     checkedOutBranch ? "input" : "branch"
@@ -62,6 +64,10 @@ export const MainMenu = () => {
     submitFlowInstruction(trimmed);
   };
 
+  const showSuggestion =
+    focus === "input" && value === "" && FLOW_PRESETS.length > 0;
+  const currentSuggestion = FLOW_PRESETS[suggestionIndex % FLOW_PRESETS.length];
+
   useInput(
     (_input, key) => {
       if (focus === "branch") {
@@ -86,6 +92,27 @@ export const MainMenu = () => {
       }
     },
     { isActive: focus !== "input" }
+  );
+
+  useInput(
+    (_input, key) => {
+      if (!showSuggestion) return;
+      if (key.rightArrow) {
+        setSuggestionIndex((previous) => (previous + 1) % FLOW_PRESETS.length);
+        return;
+      }
+      if (key.leftArrow) {
+        setSuggestionIndex(
+          (previous) =>
+            (previous - 1 + FLOW_PRESETS.length) % FLOW_PRESETS.length
+        );
+        return;
+      }
+      if (key.tab && currentSuggestion) {
+        setValue(currentSuggestion);
+      }
+    },
+    { isActive: focus === "input" }
   );
 
   return (
@@ -139,6 +166,16 @@ export const MainMenu = () => {
           />
         </Box>
       </Box>
+
+      {showSuggestion ? (
+        <Box marginTop={0}>
+          <Text color={COLORS.DIM}>
+            {"  "}tab <Text color={COLORS.TEXT}>{currentSuggestion}</Text>
+            {"  "}
+            <Text color={COLORS.DIM}>←→ cycle</Text>
+          </Text>
+        </Box>
+      ) : null}
 
       <ErrorMessage message={errorMessage} />
 
