@@ -74,6 +74,18 @@ const commandExists = (command: string): boolean => {
   }
 };
 
+const ffmpegFilterAvailable = (filterName: string): boolean => {
+  try {
+    const output = execFileSync("ffmpeg", ["-hide_banner", "-filters"], {
+      encoding: "utf-8",
+      stdio: "pipe",
+    });
+    return output.includes(filterName);
+  } catch {
+    return false;
+  }
+};
+
 const normalizeText = (value: string): string => value.trim().toLowerCase();
 
 const matchesRiskArea = (riskArea: string, texts: string[]): boolean => {
@@ -207,9 +219,9 @@ const isInterestingToolName = (toolName: string): boolean => {
   return !ignoredSuffixes.some((suffix) => toolName.endsWith(suffix));
 };
 
-const escapeFilterText = (text: string): string => text.replaceAll("'", "''");
+export const escapeFilterText = (text: string): string => text.replaceAll("'", "''");
 
-const buildStepTitleOverlayFilter = (title: string): string => {
+export const buildStepTitleOverlayFilter = (title: string): string => {
   const escapedTitle = escapeFilterText(title);
   return [
     `drawbox=x=0:y=0:w=iw:h=${HIGHLIGHT_OVERLAY_HEIGHT_PX}:color=black@${HIGHLIGHT_OVERLAY_OPACITY}:t=fill`,
@@ -217,7 +229,7 @@ const buildStepTitleOverlayFilter = (title: string): string => {
   ].join(",");
 };
 
-const getHighlightWindows = (events: BrowserRunEvent[]): TimeWindow[] => {
+export const getHighlightWindows = (events: BrowserRunEvent[]): TimeWindow[] => {
   const runStartedAt =
     events.find((event) => event.type === "run-started")?.timestamp ?? Date.now();
   const lastTimestamp = events.at(-1)?.timestamp ?? runStartedAt + MIN_RUN_DURATION_MS;
@@ -300,6 +312,7 @@ const createHighlightVideo = (rawVideoPath: string | undefined, events: BrowserR
     };
   }
 
+  const canDrawText = ffmpegFilterAvailable("drawtext");
   const temporaryDirectoryPath = mkdtempSync(join(tmpdir(), "browser-tester-highlight-"));
   const highlightVideoPath = join(dirname(resolve(rawVideoPath)), HIGHLIGHT_VIDEO_FILE_NAME);
 
@@ -318,7 +331,7 @@ const createHighlightVideo = (rawVideoPath: string | undefined, events: BrowserR
         rawVideoPath,
       ];
 
-      if (window.title) {
+      if (window.title && canDrawText) {
         ffmpegArguments.push("-vf", buildStepTitleOverlayFilter(window.title));
       }
 
