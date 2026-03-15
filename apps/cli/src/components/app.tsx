@@ -3,7 +3,6 @@ import { Box, Text, useInput } from "ink";
 import { MouseProvider } from "../hooks/mouse-context.js";
 import { useColors } from "./theme-context.js";
 import { PrPickerScreen } from "./screens/pr-picker-screen.js";
-import { FlowInputScreen } from "./screens/flow-input-screen.js";
 import { PlanningScreen } from "./screens/planning-screen.js";
 import { PlanReviewScreen } from "./screens/plan-review-screen.js";
 import { CookieSyncConfirmScreen } from "./screens/cookie-sync-confirm-screen.js";
@@ -198,8 +197,6 @@ export const App = () => {
         return <ThemePickerScreen />;
       case "select-pr":
         return <PrPickerScreen />;
-      case "flow-input":
-        return <FlowInputScreen />;
       case "saved-flow-picker":
         return <SavedFlowPickerScreen />;
       case "planning":

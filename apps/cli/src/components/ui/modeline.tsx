@@ -52,13 +52,6 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
         { key: "esc", label: "back", cta: true, onClick: goBack },
         { key: "enter", label: "select", color: COLORS.PRIMARY, cta: true },
       ];
-    case "flow-input":
-      return [
-        { key: "↑↓←→", label: "nav" },
-        { key: "shift+enter", label: "newline" },
-        { key: "esc", label: "back", cta: true, onClick: goBack },
-        { key: "enter", label: "submit", color: COLORS.PRIMARY, cta: true },
-      ];
     case "planning":
       return [{ key: "esc", label: "cancel", cta: true, onClick: goBack }];
     case "review-plan":

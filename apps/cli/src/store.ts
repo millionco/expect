@@ -25,7 +25,6 @@ export type Screen =
   | "main"
   | "select-pr"
   | "saved-flow-picker"
-  | "flow-input"
   | "planning"
   | "review-plan"
   | "cookie-sync-confirm"
@@ -154,12 +153,11 @@ export const useAppStore = create<AppStore>((set) => ({
     set((state) => {
       if (state.screen === "review-plan") {
         return {
-          screen:
-            state.planOrigin === "saved" ? "saved-flow-picker" : "flow-input",
+          screen: state.planOrigin === "saved" ? "saved-flow-picker" : "main",
         };
       }
       if (state.screen === "planning") {
-        return { screen: "flow-input" };
+        return { screen: "main" };
       }
       if (state.screen === "cookie-sync-confirm") {
         return { screen: "review-plan" };
@@ -194,7 +192,7 @@ export const useAppStore = create<AppStore>((set) => ({
       testAction: action,
       selectedCommit: null,
       planOrigin: null,
-      screen: "flow-input",
+      screen: "main",
     }),
 
   selectCommit: (commit) =>
@@ -222,7 +220,7 @@ export const useAppStore = create<AppStore>((set) => ({
         testAction: "select-commit",
         selectedCommit: commit,
         planOrigin: null,
-        screen: "flow-input",
+        screen: "main",
       };
     }),
 

@@ -8,7 +8,10 @@ import { isRunningInAgent } from "./utils/is-running-in-agent.js";
 import { getCommitSummary } from "@browser-tester/supervisor";
 import { autoDetectAndTest, runTest } from "./utils/run-test.js";
 import { useAppStore, type Screen } from "./store.js";
-import { resolveTestRunConfig, type TestRunConfig } from "./utils/test-run-config.js";
+import {
+  resolveTestRunConfig,
+  type TestRunConfig,
+} from "./utils/test-run-config.js";
 import {
   getBrowserEnvironment,
   resolveBrowserTarget,
@@ -20,10 +23,16 @@ const program = new Command()
   .name("testie")
   .description("AI-powered browser testing for your changes")
   .version(VERSION, "-v, --version")
-  .option("-m, --message <instruction>", "natural language instruction for what to test")
+  .option(
+    "-m, --message <instruction>",
+    "natural language instruction for what to test"
+  )
   .option("-f, --flow <slug>", "reuse a saved flow by its slug")
   .option("-y, --yes", "skip plan review and run immediately")
-  .option("--base-url <url>", "browser base URL (overrides BROWSER_TESTER_BASE_URL)")
+  .option(
+    "--base-url <url>",
+    "browser base URL (overrides BROWSER_TESTER_BASE_URL)"
+  )
   .option("--headed", "run browser visibly instead of headless")
   .option("--cookies", "sync cookies from your browser profile")
   .option("--no-cookies", "disable cookie sync")
@@ -39,7 +48,7 @@ Examples:
 Environment variables:
   BROWSER_TESTER_BASE_URL     base URL for the browser (e.g. http://localhost:3000)
   BROWSER_TESTER_HEADED       run headed by default (true | 1)
-  BROWSER_TESTER_COOKIES      enable cookie sync by default (true | 1)`,
+  BROWSER_TESTER_COOKIES      enable cookie sync by default (true | 1)`
   );
 
 const isHeadless = () => isRunningInAgent() || !process.stdin.isTTY;
@@ -51,26 +60,31 @@ const renderApp = () => {
   const instance = render(
     <ThemeProvider initialTheme={initialTheme}>
       <App />
-    </ThemeProvider>,
+    </ThemeProvider>
   );
   process.stdout.on("resize", () => {
     instance.clear();
   });
 };
 
-const resolveInitialScreen = (config: TestRunConfig, hasSavedFlow: boolean): Screen => {
+const resolveInitialScreen = (
+  config: TestRunConfig,
+  hasSavedFlow: boolean
+): Screen => {
   if (hasSavedFlow) return config.autoRun ? "testing" : "review-plan";
   if (config.message) return "planning";
-  return "flow-input";
+  return "main";
 };
 
 const seedStoreFromConfig = async (config: TestRunConfig): Promise<void> => {
   const resolvedCommit =
     config.action === "select-commit" && config.commitHash
-      ? (getCommitSummary(process.cwd(), config.commitHash) ?? null)
+      ? getCommitSummary(process.cwd(), config.commitHash) ?? null
       : null;
 
-  const savedFlow = config.flowSlug ? await loadSavedFlowBySlug(config.flowSlug) : null;
+  const savedFlow = config.flowSlug
+    ? await loadSavedFlowBySlug(config.flowSlug)
+    : null;
 
   const screen = resolveInitialScreen(config, Boolean(savedFlow));
 
@@ -119,7 +133,12 @@ program
 program.action(async () => {
   const config = resolveTestRunConfig("test-unstaged", program.opts());
   if (isHeadless()) return autoDetectAndTest(config);
-  if (config.message || config.flowSlug || config.autoRun || config.environmentOverrides) {
+  if (
+    config.message ||
+    config.flowSlug ||
+    config.autoRun ||
+    config.environmentOverrides
+  ) {
     await seedStoreFromConfig(config);
   }
   renderApp();
