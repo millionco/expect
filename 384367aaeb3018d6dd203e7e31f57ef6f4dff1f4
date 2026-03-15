@@ -1,0 +1,52 @@
+apps/cli/src/components/screens/flow-input-screen.tsx
+  5ed3280d269e3ce4 76,100-104,167-168,201
+apps/cli/src/utils/remove-saved-flow.ts
+  a2306f0c26aae659 1-8
+apps/cli/src/utils/list-saved-flows.ts
+  a2306f0c26aae659 1,12,19-20,30,53-54,56-57,68-69
+apps/cli/src/utils/load-saved-flow.ts
+  a2306f0c26aae659 1,13,22
+apps/cli/src/constants.ts
+  a2306f0c26aae659 13-20
+apps/cli/src/utils/format-time-ago.ts
+  a2306f0c26aae659 1-53
+apps/cli/src/components/screens/saved-flow-picker-screen.tsx
+  a2306f0c26aae659 1,7,9,25,28-29,32-40,54,72-87,92-100,103,107,112-115,134-135,153-155,173-197
+apps/cli/src/utils/save-flow.ts
+  a2306f0c26aae659 15-16,126
+apps/cli/src/utils/sync-saved-flow-directory.ts
+  a2306f0c26aae659 1-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "384367aaeb3018d6dd203e7e31f57ef6f4dff1f4",
+  "prompts": {
+    "5ed3280d269e3ce4": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "7930cfe8-e5f6-416c-8cba-f8bce86a7ac0",
+        "model": "claude-4.6-opus-max-thinking-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 10,
+      "total_deletions": 8,
+      "accepted_lines": 9,
+      "overriden_lines": 0
+    },
+    "a2306f0c26aae659": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "58887e77-8baa-4f8f-918a-5fe90f894387",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 236,
+      "total_deletions": 66,
+      "accepted_lines": 227,
+      "overriden_lines": 1
+    }
+  }
+}
