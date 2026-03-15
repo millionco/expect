@@ -1,0 +1,27 @@
+apps/cli/src/constants.ts
+  5ed3280d269e3ce4 39-40
+apps/cli/src/components/screens/flow-input-screen.tsx
+  5ed3280d269e3ce4 29,36-37,75-82,98,100-103,106-112,119,151,153-174,177-182,184-185,187-188,190-193,198-199,201-202
+apps/cli/src/components/ui/modeline.tsx
+  5ed3280d269e3ce4 57-58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "43d6fbcda36c10dd74f69506e5ce9f11e31fbefa",
+  "prompts": {
+    "5ed3280d269e3ce4": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "7930cfe8-e5f6-416c-8cba-f8bce86a7ac0",
+        "model": "claude-4.6-opus-max-thinking-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 76,
+      "total_deletions": 83,
+      "accepted_lines": 72,
+      "overriden_lines": 0
+    }
+  }
+}
