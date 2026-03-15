@@ -8,11 +8,17 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { PROJECTS } from "@/lib/projects";
 import { COPY_FEEDBACK_DURATION_MS } from "@/constants";
 
+const TAB_TEXT: Record<string, (project: (typeof PROJECTS)[0]) => string> = {
+  command: (project) => project.command,
+  agent: (project) => project.agentPrompt,
+  skill: (project) => project.skillInstall,
+};
+
 export const CommandDisplay = () => {
   const [activeTab, setActiveTab] = useState("command");
   const [copied, setCopied] = useState(false);
   const project = PROJECTS[0];
-  const commandText = activeTab === "command" ? project.command : project.agentPrompt;
+  const commandText = TAB_TEXT[activeTab]?.(project) ?? "";
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -20,8 +26,7 @@ export const CommandDisplay = () => {
   };
 
   const copyCommand = () => {
-    const text = activeTab === "command" ? project.command : project.agentPrompt;
-    navigator.clipboard.writeText(text);
+    navigator.clipboard.writeText(commandText);
     setCopied(true);
     setTimeout(() => setCopied(false), COPY_FEEDBACK_DURATION_MS);
   };
@@ -30,7 +35,8 @@ export const CommandDisplay = () => {
     <div className="flex w-full flex-col gap-3">
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList variant="line">
-          <TabsTrigger value="command">Command line</TabsTrigger>
+          <TabsTrigger value="command">Command</TabsTrigger>
+          <TabsTrigger value="skill">Install skill</TabsTrigger>
           <TabsTrigger value="agent">Agent prompt</TabsTrigger>
         </TabsList>
       </Tabs>

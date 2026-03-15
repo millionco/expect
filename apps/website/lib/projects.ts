@@ -4,6 +4,7 @@ interface Project {
   features: string[];
   command: string;
   agentPrompt: string;
+  skillInstall: string;
   githubUrl: string;
   docsUrl: string;
 }
@@ -18,7 +19,8 @@ export const PROJECTS: Project[] = [
       "just your git diff",
     ],
     command: "npx testie@latest",
-    agentPrompt: "Run testie to test my current changes",
+    agentPrompt: "npx -y testie@latest -m 'test my current changes' -y",
+    skillInstall: "npx skills add millionco/testie/testie-cli",
     githubUrl: "https://github.com/millionco/testie",
     docsUrl: "#",
   },
