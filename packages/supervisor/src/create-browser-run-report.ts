@@ -5,6 +5,10 @@ import { tmpdir } from "node:os";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
+  HIGHLIGHT_OVERLAY_FONT_SIZE_PX,
+  HIGHLIGHT_OVERLAY_HEIGHT_PX,
+  HIGHLIGHT_OVERLAY_OPACITY,
+  HIGHLIGHT_OVERLAY_PADDING_X_PX,
   HIGHLIGHT_VIDEO_FILE_NAME,
   HIGHLIGHT_WINDOW_LEADING_MS,
   HIGHLIGHT_WINDOW_MERGE_GAP_MS,
@@ -41,6 +45,7 @@ interface CreateBrowserRunReportOptions {
 interface TimeWindow {
   startMs: number;
   endMs: number;
+  title?: string;
 }
 
 interface RedactionBox {
@@ -202,39 +207,59 @@ const isInterestingToolName = (toolName: string): boolean => {
   return !ignoredSuffixes.some((suffix) => toolName.endsWith(suffix));
 };
 
+const escapeFilterText = (text: string): string => text.replaceAll("'", "''");
+
+const buildStepTitleOverlayFilter = (title: string): string => {
+  const escapedTitle = escapeFilterText(title);
+  return [
+    `drawbox=x=0:y=0:w=iw:h=${HIGHLIGHT_OVERLAY_HEIGHT_PX}:color=black@${HIGHLIGHT_OVERLAY_OPACITY}:t=fill`,
+    `drawtext=text='${escapedTitle}':fontsize=${HIGHLIGHT_OVERLAY_FONT_SIZE_PX}:fontcolor=white:x=${HIGHLIGHT_OVERLAY_PADDING_X_PX}:y=(${HIGHLIGHT_OVERLAY_HEIGHT_PX}-text_h)/2`,
+  ].join(",");
+};
+
 const getHighlightWindows = (events: BrowserRunEvent[]): TimeWindow[] => {
   const runStartedAt =
     events.find((event) => event.type === "run-started")?.timestamp ?? Date.now();
   const lastTimestamp = events.at(-1)?.timestamp ?? runStartedAt + MIN_RUN_DURATION_MS;
   const runDurationMs = Math.max(lastTimestamp - runStartedAt, MIN_RUN_DURATION_MS);
-  const interestingTimestamps = events
-    .filter((event) => {
-      if (event.type === "step-started" || event.type === "step-completed") return true;
-      if (event.type === "assertion-failed") return true;
-      if (event.type === "tool-call") return isInterestingToolName(event.toolName);
-      return false;
-    })
-    .map((event) => Math.max(0, event.timestamp - runStartedAt));
 
-  if (interestingTimestamps.length === 0) {
-    return [
-      {
-        startMs: 0,
-        endMs: runDurationMs,
-      },
-    ];
+  let currentStepTitle: string | undefined;
+  const interestingMoments: Array<{ timestampMs: number; title?: string }> = [];
+
+  for (const event of events) {
+    if (event.type === "step-started") {
+      currentStepTitle = event.title;
+    }
+
+    const isInteresting =
+      event.type === "step-started" ||
+      event.type === "step-completed" ||
+      event.type === "assertion-failed" ||
+      (event.type === "tool-call" && isInterestingToolName(event.toolName));
+
+    if (isInteresting) {
+      interestingMoments.push({
+        timestampMs: Math.max(0, event.timestamp - runStartedAt),
+        title: currentStepTitle,
+      });
+    }
   }
 
-  const windows = interestingTimestamps
-    .map((timestamp) => ({
-      startMs: Math.max(0, timestamp - HIGHLIGHT_WINDOW_LEADING_MS),
+  if (interestingMoments.length === 0) {
+    return [{ startMs: 0, endMs: runDurationMs }];
+  }
+
+  const windows = interestingMoments
+    .map((moment) => ({
+      startMs: Math.max(0, moment.timestampMs - HIGHLIGHT_WINDOW_LEADING_MS),
       endMs: Math.min(
         runDurationMs,
         Math.max(
-          timestamp + HIGHLIGHT_WINDOW_TRAILING_MS,
-          timestamp + HIGHLIGHT_WINDOW_MIN_DURATION_MS,
+          moment.timestampMs + HIGHLIGHT_WINDOW_TRAILING_MS,
+          moment.timestampMs + HIGHLIGHT_WINDOW_MIN_DURATION_MS,
         ),
       ),
+      title: moment.title,
     }))
     .sort((leftWindow, rightWindow) => leftWindow.startMs - rightWindow.startMs);
 
@@ -243,6 +268,7 @@ const getHighlightWindows = (events: BrowserRunEvent[]): TimeWindow[] => {
     const previousWindow = mergedWindows.at(-1);
     if (previousWindow && window.startMs <= previousWindow.endMs + HIGHLIGHT_WINDOW_MERGE_GAP_MS) {
       previousWindow.endMs = Math.max(previousWindow.endMs, window.endMs);
+      previousWindow.title ??= window.title;
       continue;
     }
     mergedWindows.push(window);
@@ -282,24 +308,22 @@ const createHighlightVideo = (rawVideoPath: string | undefined, events: BrowserR
 
     windows.forEach((window, index) => {
       const segmentPath = join(temporaryDirectoryPath, `segment-${index}.webm`);
-      execFileSync(
-        "ffmpeg",
-        [
-          "-y",
-          "-ss",
-          String(window.startMs / 1000),
-          "-to",
-          String(window.endMs / 1000),
-          "-i",
-          rawVideoPath,
-          "-c:v",
-          "libvpx-vp9",
-          "-c:a",
-          "libopus",
-          segmentPath,
-        ],
-        { stdio: "pipe" },
-      );
+      const ffmpegArguments = [
+        "-y",
+        "-ss",
+        String(window.startMs / 1000),
+        "-to",
+        String(window.endMs / 1000),
+        "-i",
+        rawVideoPath,
+      ];
+
+      if (window.title) {
+        ffmpegArguments.push("-vf", buildStepTitleOverlayFilter(window.title));
+      }
+
+      ffmpegArguments.push("-c:v", "libvpx-vp9", "-c:a", "libopus", segmentPath);
+      execFileSync("ffmpeg", ffmpegArguments, { stdio: "pipe" });
       segmentPaths.push(segmentPath);
     });
 

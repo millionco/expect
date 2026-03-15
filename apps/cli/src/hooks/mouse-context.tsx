@@ -77,6 +77,7 @@ export const MouseProvider = ({ children }: { children: React.ReactNode }) => {
 export const useMouse = (): MouseContextValue => useContext(MouseContext);
 
 // oxlint-disable-next-line no-control-regex
-const SGR_MOUSE_GARBAGE = /\u001b?\[?<?(\d+;)*\d+[Mm]?/g;
+const SGR_MOUSE_GARBAGE = /\u001b\[?<?(\d+;)*\d+[Mm]?|\[<(\d+;)*\d+[Mm]?/g;
 
-export const stripMouseSequences = (value: string): string => value.replace(SGR_MOUSE_GARBAGE, "");
+export const stripMouseSequences = (value: string): string =>
+  CLICK_SUPPORT_ENABLED ? value.replace(SGR_MOUSE_GARBAGE, "") : value;

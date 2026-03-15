@@ -15,6 +15,7 @@ const execGit = (cwd: string, command: string): string => {
     return execSync(command, {
       cwd,
       encoding: "utf-8",
+      stdio: "pipe",
       timeout: GIT_TIMEOUT_MS,
     }).trim();
   } catch {
