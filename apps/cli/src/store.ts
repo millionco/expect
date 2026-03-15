@@ -47,6 +47,7 @@ interface AppStore {
   browserEnvironment: BrowserEnvironmentHints | null;
   environmentOverrides: EnvironmentOverrides | undefined;
   planningError: string | null;
+  planningToolCalls: string[];
   planOrigin: "generated" | "saved" | null;
   savedFlowSummaries: SavedFlowSummary[];
   pendingSavedFlow: LoadedSavedFlow | null;
@@ -127,6 +128,7 @@ export const useAppStore = create<AppStore>((set) => ({
   browserEnvironment: null,
   environmentOverrides: undefined,
   planningError: null,
+  planningToolCalls: [],
   planOrigin: null,
   savedFlowSummaries: [],
   pendingSavedFlow: null,

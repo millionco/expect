@@ -34,6 +34,7 @@ export type {
   DiffStats,
   ExecuteBrowserFlowOptions,
   PlanBrowserFlowOptions,
+  PlanningEvent,
   PlanStep,
   ResolveTestTargetOptions,
   TestTarget,

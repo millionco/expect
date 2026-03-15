@@ -161,14 +161,25 @@ export const planBrowserFlow = async (
 ): Promise<BrowserFlowPlan> => {
   const prompt = buildPlanningPrompt(options);
   const model = createPlannerModel(options);
-  const response = await model.doGenerate({
+  const { stream } = await model.doStream({
     prompt: [{ role: "user", content: [{ type: "text", text: prompt }] }],
   });
 
-  const text = response.content
-    .filter((part) => part.type === "text")
-    .map((part) => part.text)
-    .join("\n");
+  const textParts: string[] = [];
+  const reader = stream.getReader();
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (value.type === "text-delta") {
+      textParts.push(value.delta);
+    }
+    if (value.type === "tool-call" && options.onEvent) {
+      options.onEvent({ type: "tool-call", toolName: value.toolName });
+    }
+  }
+
+  const text = textParts.join("");
   const parsedPlan = parsePlanJson(JSON.parse(extractJsonObject(text)));
 
   return {

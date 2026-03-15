@@ -18,6 +18,7 @@ export const PlanningScreen = () => {
   const COLORS = useColors();
   const flowInstruction = useAppStore((state) => state.flowInstruction);
   const testAction = useAppStore((state) => state.testAction);
+  const toolCalls = useAppStore((state) => state.planningToolCalls);
   const [startTime] = useState(() => Date.now());
   const [elapsed, setElapsed] = useState(0);
 
@@ -45,9 +46,21 @@ export const PlanningScreen = () => {
         <Text color={COLORS.DIM}>{flowInstruction}</Text>
       </Box>
 
-      <Box marginTop={1}>
-        <Spinner message="Waiting for Claude to generate plan..." />
-        <Text color={COLORS.DIM}> {formatElapsedTime(elapsed)}</Text>
+      <Box marginTop={1} flexDirection="column">
+        <Box>
+          <Spinner message="Waiting for Claude to generate plan..." />
+          <Text color={COLORS.DIM}> {formatElapsedTime(elapsed)}</Text>
+        </Box>
+        {toolCalls.length > 0 ? (
+          <Box marginTop={1} flexDirection="column">
+            {toolCalls.map((toolName, index) => (
+              <Text key={`${toolName}-${index}`} color={COLORS.DIM}>
+                {"  "}
+                <Text color={COLORS.CYAN}>{toolName}</Text>
+              </Text>
+            ))}
+          </Box>
+        ) : null}
       </Box>
     </Box>
   );

@@ -130,6 +130,11 @@ export interface BrowserEnvironmentHints {
   cookies?: boolean;
 }
 
+export interface PlanningEvent {
+  type: "tool-call";
+  toolName: string;
+}
+
 export interface PlanBrowserFlowOptions {
   target: TestTarget;
   userInstruction: string;
@@ -137,6 +142,7 @@ export interface PlanBrowserFlowOptions {
   provider?: AgentProvider;
   providerSettings?: AgentProviderSettings;
   model?: LanguageModelV3;
+  onEvent?: (event: PlanningEvent) => void;
 }
 
 export interface ExecuteBrowserFlowOptions {

@@ -28,12 +28,20 @@ const usePlanningEffect = () => {
   const testAction = useAppStore((state) => state.testAction);
   const flowInstruction = useAppStore((state) => state.flowInstruction);
   const selectedCommit = useAppStore((state) => state.selectedCommit);
-  const environmentOverrides = useAppStore((state) => state.environmentOverrides);
+  const environmentOverrides = useAppStore(
+    (state) => state.environmentOverrides
+  );
   const completePlanning = useAppStore((state) => state.completePlanning);
   const failPlanning = useAppStore((state) => state.failPlanning);
 
   useEffect(() => {
-    if (screen !== "planning" || !gitState || !testAction || !flowInstruction.trim()) return;
+    if (
+      screen !== "planning" ||
+      !gitState ||
+      !testAction ||
+      !flowInstruction.trim()
+    )
+      return;
 
     let isCancelled = false;
 
@@ -45,10 +53,20 @@ const usePlanningEffect = () => {
       if (isCancelled) return;
 
       const environment = getBrowserEnvironment(environmentOverrides);
+      useAppStore.setState({ planningToolCalls: [] });
       const plan = await planBrowserFlow({
         target,
         userInstruction: flowInstruction,
         environment,
+        onEvent: (event) => {
+          if (isCancelled) return;
+          if (event.type === "tool-call") {
+            const current = useAppStore.getState().planningToolCalls;
+            useAppStore.setState({
+              planningToolCalls: [...current, event.toolName],
+            });
+          }
+        },
       });
       if (isCancelled) return;
 
@@ -103,7 +121,12 @@ export const App = () => {
     if (key.escape && screen !== "main" && screen !== "review-plan") {
       goBack();
     }
-    if (input === "t" && screen !== "theme" && screen !== "flow-input" && screen !== "select-pr") {
+    if (
+      input === "t" &&
+      screen !== "theme" &&
+      screen !== "flow-input" &&
+      screen !== "select-pr"
+    ) {
       navigateTo("theme");
     }
   });
