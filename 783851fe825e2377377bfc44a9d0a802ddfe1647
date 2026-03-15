@@ -1,0 +1,35 @@
+apps/cli/src/components/screens/testing-screen.tsx
+  5ed3280d269e3ce4 145,309-324
+apps/cli/src/components/ui/modeline.tsx
+  5ed3280d269e3ce4 57-58
+apps/cli/src/components/app.tsx
+  5ed3280d269e3ce4 21,88-145,164
+apps/cli/src/components/screens/main-menu-screen.tsx
+  5ed3280d269e3ce4 30,84,86,117,121-122,144-145,215-231
+apps/cli/src/constants.ts
+  5ed3280d269e3ce4 37-44
+apps/cli/src/components/screens/flow-input-screen.tsx
+  5ed3280d269e3ce4 2,10-11,28-30,85-107,138-164,166-172,174,180,182,194-195,200-202,204-206
+apps/cli/src/store.ts
+  5ed3280d269e3ce4 56-57,70,93,111,138-139,263
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "783851fe825e2377377bfc44a9d0a802ddfe1647",
+  "prompts": {
+    "5ed3280d269e3ce4": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "7930cfe8-e5f6-416c-8cba-f8bce86a7ac0",
+        "model": "claude-4.6-opus-max-thinking-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 267,
+      "total_deletions": 147,
+      "accepted_lines": 196,
+      "overriden_lines": 0
+    }
+  }
+}
