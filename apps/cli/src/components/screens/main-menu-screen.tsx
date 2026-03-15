@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { Box, Text, useInput } from "ink";
-import figures from "figures";
 import { useColors } from "../theme-context.js";
 import { Clickable } from "../ui/clickable.js";
 import { MenuItem } from "../ui/menu-item.js";
@@ -107,11 +106,17 @@ export const MainMenu = () => {
   return (
     <Box flexDirection="column" width="100%" paddingX={1} paddingY={1}>
       <Box flexDirection="column" marginBottom={1}>
-        <Text bold color={COLORS.TEXT}>
-          browser-tester
+        <Text color={COLORS.DIM}>{"═".repeat(40)}</Text>
+        <Text bold color={COLORS.PRIMARY}>
+          {"  BROWSER-TESTER v0.1"}
         </Text>
+        <Text color={COLORS.DIM}>{"  AI-Powered Browser Testing System"}</Text>
+        <Text color={COLORS.DIM}>{"═".repeat(40)}</Text>
         <Text color={COLORS.DIM}>
-          AI-powered browser testing for your changes
+          {"  BRANCH "}
+          <Text color={COLORS.TEXT}>{gitState.currentBranch}</Text>
+          {"  STATUS "}
+          <Text color={COLORS.GREEN}>[READY]</Text>
         </Text>
       </Box>
 
@@ -143,19 +148,19 @@ export const MainMenu = () => {
         <Clickable onClick={toggleAutoRun}>
           {selectedIndex === autoRunIndex ? (
             <Text>
-              <Text color={COLORS.PRIMARY}>{figures.pointer} </Text>
+              <Text color={COLORS.PRIMARY}>{"▸ "}</Text>
               <Text color={COLORS.PRIMARY} bold>
-                auto-run after planning: {autoRunAfterPlanning ? "yes" : "no"}
+                AUTO-RUN{" "}
+              </Text>
+              <Text color={autoRunAfterPlanning ? COLORS.GREEN : COLORS.DIM}>
+                {autoRunAfterPlanning ? "[ON]" : "[OFF]"}
               </Text>
             </Text>
           ) : (
-            <Text color={autoRunAfterPlanning ? COLORS.TEXT : COLORS.DIM}>
-              {"  "}auto-run after planning:{" "}
-              <Text
-                color={autoRunAfterPlanning ? COLORS.GREEN : COLORS.DIM}
-                bold={autoRunAfterPlanning}
-              >
-                {autoRunAfterPlanning ? "yes" : "no"}
+            <Text color={COLORS.DIM}>
+              {"  "}AUTO-RUN{" "}
+              <Text color={autoRunAfterPlanning ? COLORS.GREEN : COLORS.DIM}>
+                {autoRunAfterPlanning ? "[ON]" : "[OFF]"}
               </Text>
             </Text>
           )}

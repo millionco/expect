@@ -12,20 +12,18 @@ export const ScreenHeading = ({ title, subtitle }: ScreenHeadingProps) => {
   const [columns] = useStdoutDimensions();
   const { theme } = useThemeContext();
 
+  const bracketTitle = `[ ${title.toUpperCase()} ]`;
   const subtitleContent = subtitle ? `  ${subtitle}` : "";
-  const textWidth = stringWidth(title) + stringWidth(subtitleContent);
-  const lineWidth = Math.max(0, columns - textWidth - 3);
+  const textWidth = stringWidth(bracketTitle) + stringWidth(subtitleContent);
+  const lineWidth = Math.max(0, columns - textWidth - 2);
 
   return (
     <Text>
       <Text bold color={theme.text}>
-        {title}
+        {bracketTitle}
       </Text>
       {subtitle ? <Text color={theme.textMuted}>{subtitleContent}</Text> : null}
-      <Text color={theme.border}>
-        {" "}
-        {" ─".repeat(Math.ceil(lineWidth / 2)).slice(0, lineWidth)}
-      </Text>
+      <Text color={theme.border}>{"═".repeat(lineWidth)}</Text>
     </Text>
   );
 };

@@ -130,7 +130,7 @@ export const Modeline = () => {
 
   return (
     <Box flexDirection="column">
-      <Text color={theme.border}>{"─".repeat(columns)}</Text>
+      <Text color={theme.border}>{"═".repeat(columns)}</Text>
       <Box paddingX={1}>
         {actions.map((action, index) => {
           const pill = (

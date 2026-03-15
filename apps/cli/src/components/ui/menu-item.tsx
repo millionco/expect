@@ -1,5 +1,4 @@
 import { Text } from "ink";
-import figures from "figures";
 import { useColors } from "../theme-context.js";
 import type { DiffStats } from "@browser-tester/supervisor";
 
@@ -25,18 +24,18 @@ export const MenuItem = ({
   if (isSelected) {
     return (
       <Text>
-        <Text color={COLORS.PRIMARY}>{figures.pointer} </Text>
+        <Text color={COLORS.PRIMARY}>{"▸ "}</Text>
         <Text color={COLORS.PRIMARY} bold>
           {label}
-          {diffStats ? (
-            <Text color={COLORS.PRIMARY}>
-              {" "}
-              +{diffStats.additions} -{diffStats.deletions}
-            </Text>
-          ) : null}
-          {recommended ? " (recommended)" : ""}
-          {hint ? ` (${hint})` : ""}
         </Text>
+        {diffStats ? (
+          <Text color={COLORS.DIM}>
+            {" "}
+            +{diffStats.additions} -{diffStats.deletions}
+          </Text>
+        ) : null}
+        {recommended ? <Text color={COLORS.DIM}> [recommended]</Text> : null}
+        {hint ? <Text color={COLORS.DIM}> [{hint}]</Text> : null}
       </Text>
     );
   }

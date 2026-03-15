@@ -22,7 +22,7 @@ export const Collapsible = ({
 }: CollapsibleProps) => {
   const COLORS = useColors();
   const contentColor = selected ? COLORS.TEXT : COLORS.DIM;
-  const arrow = open ? "▾" : "▸";
+  const indicator = open ? "[-]" : "[+]";
   const countSuffix = count !== undefined ? ` (${count})` : "";
 
   return (
@@ -30,11 +30,11 @@ export const Collapsible = ({
       <Clickable onClick={onToggle}>
         <Text>
           <Text color={selected ? COLORS.PRIMARY : COLORS.DIM}>
-            {selected ? "❯ " : "  "}
+            {selected ? "  ▸ " : "    "}
           </Text>
-          <Text color={contentColor}>{arrow} </Text>
+          <Text color={contentColor}>{indicator} </Text>
           <Text bold={selected} color={contentColor}>
-            {label}
+            {label.toUpperCase()}
             {countSuffix}
           </Text>
         </Text>

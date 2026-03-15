@@ -29,7 +29,6 @@ type NavigableItem = SectionItem | StepItem;
 interface PlanStepRowProps {
   step: BrowserFlowPlan["steps"][number];
   stepNumber: number;
-  totalSteps: number;
   selected: boolean;
   onClick: () => void;
 }
@@ -37,26 +36,23 @@ interface PlanStepRowProps {
 const PlanStepRow = ({
   step,
   stepNumber,
-  totalSteps,
   selected,
   onClick,
 }: PlanStepRowProps) => {
   const COLORS = useColors();
-  const marker = selected ? "❯" : "·";
-  const counter = `${stepNumber}/${totalSteps}`;
+  const stepLabel = String(stepNumber).padStart(2, "0");
 
   return (
     <Clickable onClick={onClick}>
       <Box flexDirection="column">
         <Text>
           <Text color={selected ? COLORS.PRIMARY : COLORS.DIM}>
-            {"  "}
-            {marker}{" "}
+            {selected ? "  ▸ " : "    "}
           </Text>
+          <Text color={COLORS.DIM}>[{stepLabel}] </Text>
           <Text color={selected ? COLORS.PRIMARY : COLORS.DIM} bold={selected}>
             {step.title}
           </Text>
-          <Text color={COLORS.DIM}> {counter}</Text>
         </Text>
         {selected ? (
           <Box
@@ -320,7 +316,6 @@ export const PlanReviewScreen = () => {
                 key={step.id}
                 step={step}
                 stepNumber={index + 1}
-                totalSteps={plan.steps.length}
                 selected={selected}
                 onClick={() => {
                   const itemIndex = items.findIndex(
