@@ -12,10 +12,68 @@ const SLOT_INNER = 16 * S;
 const GUI_W = 176 * S;
 const GUI_H = 166 * S;
 
-// ─── Item icon paths (flat textures) ───
-const ITEM_ICONS: Record<string, string> = {
-  oak_log: "/textures/oak_log_side.png",
-  oak_planks: "/textures/oak_planks.png",
+// ─── Texture paths ───
+const BLOCK_TEXTURE_PATHS: Record<
+  string,
+  { top: string; side: string; front: string }
+> = {
+  oak_log: {
+    top: "/textures/oak_log_top.png",
+    side: "/textures/oak_log_side.png",
+    front: "/textures/oak_log_side.png",
+  },
+  oak_planks: {
+    top: "/textures/oak_planks.png",
+    side: "/textures/oak_planks.png",
+    front: "/textures/oak_planks.png",
+  },
+};
+
+type BlockTextures = {
+  top: HTMLImageElement;
+  side: HTMLImageElement;
+  front: HTMLImageElement;
+};
+
+const loadImage = (src: string): Promise<HTMLImageElement> =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+
+const renderIsometricBlock = (textures: BlockTextures): string => {
+  const canvas = document.createElement("canvas");
+  const size = 64;
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+  ctx.imageSmoothingEnabled = false;
+
+  const f = 2;
+
+  ctx.save();
+  ctx.setTransform(f, f * 0.5, 0, f, 0, 16);
+  ctx.drawImage(textures.side, 0, 0, 16, 16);
+  ctx.fillStyle = "rgba(0,0,0,0.2)";
+  ctx.fillRect(0, 0, 16, 16);
+  ctx.restore();
+
+  ctx.save();
+  ctx.setTransform(-f, f * 0.5, 0, f, 64, 16);
+  ctx.drawImage(textures.front, 0, 0, 16, 16);
+  ctx.fillStyle = "rgba(0,0,0,0.4)";
+  ctx.fillRect(0, 0, 16, 16);
+  ctx.restore();
+
+  ctx.save();
+  ctx.setTransform(f, f * 0.5, -f, f * 0.5, 32, 0);
+  ctx.drawImage(textures.top, 0, 0, 16, 16);
+  ctx.restore();
+
+  return canvas.toDataURL();
 };
 
 // Dirt background uses the real texture from /textures/dirt.png
@@ -171,8 +229,25 @@ function Slot({
 
 // ─── Main Component ─────────────────────────────────────
 export default function CraftingTable() {
-  const itemIcons = ITEM_ICONS;
-  const ready = true;
+  const [itemIcons, setItemIcons] = useState<Record<string, string>>({});
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      const icons: Record<string, string> = {};
+      for (const [blockId, paths] of Object.entries(BLOCK_TEXTURE_PATHS)) {
+        const [top, side, front] = await Promise.all([
+          loadImage(paths.top),
+          loadImage(paths.side),
+          loadImage(paths.front),
+        ]);
+        icons[blockId] = renderIsometricBlock({ top, side, front });
+      }
+      setItemIcons(icons);
+      setReady(true);
+    };
+    load();
+  }, []);
 
   // Inventory: 36 slots (0-26 = main, 27-35 = hotbar)
   const [inventory, setInventory] = useState<ItemStack[]>(() => {
