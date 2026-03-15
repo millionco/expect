@@ -19,9 +19,7 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
   const latestRunReport = useAppStore((state) => state.latestRunReport);
   switch (screen) {
     case "main": {
-      const hints: HintSegment[] = [
-        { key: "t", label: "theme", onClick: () => navigateTo("theme") },
-      ];
+      const hints: HintSegment[] = [{ key: "shift+enter", label: "newline" }];
       if (savedFlowSummaries.length > 0) {
         hints.push({
           key: "r",
@@ -29,7 +27,6 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
           onClick: () => navigateTo("saved-flow-picker"),
         });
       }
-      hints.push({ key: "↑↓", label: "nav" });
       hints.push({
         key: "enter",
         label: "submit",
