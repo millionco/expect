@@ -26,6 +26,7 @@
   "dependencies": {
     "@browser-tester/mcp": "workspace:*",
     "@browser-tester/supervisor": "workspace:*",
+    "@types/prompts": "^2.4.9",
     "@types/react": "^19.2.14",
     "cli-truncate": "^5.2.0",
     "commander": "^13.1.0",
@@ -36,7 +37,9 @@
     "ink-link": "^5.0.0",
     "ink-spinner": "^5.0.0",
     "ink-text-input": "^6.0.0",
+    "picocolors": "^1.1.1",
     "pretty-ms": "^9.3.0",
+    "prompts": "^2.4.2",
     "react": "^19.2.4",
     "string-width": "^8.2.0",
     "supports-terminal-graphics": "^0.1.0",

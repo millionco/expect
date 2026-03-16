@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Text, useInput } from "ink";
-import chalk from "chalk";
+import pc from "picocolors";
 
 interface InputProps {
   readonly value: string;
@@ -97,30 +97,30 @@ export const Input = ({
   const cursorActualWidth = highlightPastedText ? cursorWidth : 0;
   const value = mask ? mask.repeat(originalValue.length) : originalValue;
   let renderedValue = value;
-  let renderedPlaceholder = placeholder ? chalk.grey(placeholder) : undefined;
+  let renderedPlaceholder = placeholder ? pc.gray(placeholder) : undefined;
 
   if (showCursor && focus) {
     renderedPlaceholder =
       placeholder.length > 0
-        ? chalk.inverse(placeholder[0]) + chalk.grey(placeholder.slice(1))
-        : chalk.inverse(" ");
+        ? pc.inverse(placeholder[0]!) + pc.gray(placeholder.slice(1))
+        : pc.inverse(" ");
 
-    renderedValue = value.length > 0 ? "" : chalk.inverse(" ");
+    renderedValue = value.length > 0 ? "" : pc.inverse(" ");
 
     let characterIndex = 0;
     for (const character of value) {
       const isAtCursor =
         characterIndex >= cursorOffset - cursorActualWidth && characterIndex <= cursorOffset;
       if (isAtCursor && character === "\n") {
-        renderedValue += chalk.inverse(" ") + "\n";
+        renderedValue += pc.inverse(" ") + "\n";
       } else {
-        renderedValue += isAtCursor ? chalk.inverse(character) : character;
+        renderedValue += isAtCursor ? pc.inverse(character) : character;
       }
       characterIndex++;
     }
 
     if (value.length > 0 && cursorOffset === value.length) {
-      renderedValue += chalk.inverse(" ");
+      renderedValue += pc.inverse(" ");
     }
   }
 

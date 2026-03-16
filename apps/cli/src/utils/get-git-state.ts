@@ -1,9 +1,11 @@
-import type { DiffStats } from "@browser-tester/supervisor";
+import type { ChangedFile, DiffStats } from "@browser-tester/supervisor";
 import {
+  getBranchChangedFiles,
   getBranchCommits,
   getBranchDiffStats,
   getCurrentBranchName,
   getMainBranchName,
+  getUnstagedChangedFiles,
   getUnstagedDiffStats,
   isInsideGitRepo,
 } from "@browser-tester/supervisor";
@@ -17,6 +19,7 @@ export interface GitState {
   branchCommitCount: number;
   diffStats: DiffStats | null;
   branchDiffStats: DiffStats | null;
+  changedFiles: ChangedFile[];
 }
 
 export type TestScope = "unstaged-changes" | "entire-branch" | "default";
@@ -34,6 +37,7 @@ export const getGitState = (): GitState => {
       branchCommitCount: 0,
       diffStats: null,
       branchDiffStats: null,
+      changedFiles: [],
     };
   }
 
@@ -45,9 +49,16 @@ export const getGitState = (): GitState => {
 
   let branchDiffStats: DiffStats | null = null;
   let branchCommitCount = 0;
+  let changedFiles: ChangedFile[] = [];
   if (!isOnMain && mainBranch) {
     branchCommitCount = getBranchCommits(cwd, mainBranch).length;
     branchDiffStats = getBranchDiffStats(cwd, mainBranch);
+  }
+
+  if (hasUnstagedChanges) {
+    changedFiles = getUnstagedChangedFiles(cwd);
+  } else if (branchCommitCount > 0 && mainBranch) {
+    changedFiles = getBranchChangedFiles(cwd, mainBranch);
   }
 
   return {
@@ -59,6 +70,7 @@ export const getGitState = (): GitState => {
     branchCommitCount,
     diffStats,
     branchDiffStats,
+    changedFiles,
   };
 };
 

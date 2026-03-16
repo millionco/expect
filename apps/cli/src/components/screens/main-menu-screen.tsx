@@ -9,6 +9,7 @@ import { Input } from "../ui/input.js";
 import { ErrorMessage } from "../ui/error-message.js";
 import { stripMouseSequences } from "../../hooks/mouse-context.js";
 import { FLOW_PRESETS } from "../../constants.js";
+import { UntestedChangesBanner } from "../ui/untested-changes-banner.js";
 
 interface ScopeOption {
   label: string;
@@ -189,6 +190,8 @@ export const MainMenu = () => {
         </Text>
         <Text color={COLORS.DIM}>arrow keys or tab to navigate sections</Text>
       </Box>
+
+      <UntestedChangesBanner />
 
       {hasScope ? (
         <>

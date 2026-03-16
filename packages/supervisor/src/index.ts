@@ -10,12 +10,14 @@ export {
 } from "./github-comment.js";
 export {
   checkoutBranch,
+  getBranchChangedFiles,
   getBranchCommits,
   getBranchDiffStats,
   getCommitSummary,
   getCurrentBranchName,
   getLocalBranches,
   getMainBranchName,
+  getUnstagedChangedFiles,
   getUnstagedDiffStats,
   isInsideGitRepo,
 } from "./git.js";

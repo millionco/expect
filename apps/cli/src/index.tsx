@@ -7,6 +7,7 @@ import { loadThemeName } from "./utils/load-theme.js";
 import { isRunningInAgent } from "@browser-tester/supervisor";
 import { getCommitSummary } from "@browser-tester/supervisor";
 import { autoDetectAndTest, runTest } from "./utils/run-test.js";
+import { runHealthcheckHeadless, runHealthcheckInteractive } from "./utils/run-healthcheck.js";
 import { useAppStore, type Screen } from "./store.js";
 import { resolveTestRunConfig, type TestRunConfig } from "./utils/test-run-config.js";
 import {
@@ -107,6 +108,22 @@ const createCommandAction =
     await seedStoreFromConfig(config);
     renderApp();
   };
+
+program
+  .command("healthcheck")
+  .description("check for untested changes")
+  .action(async () => {
+    if (isHeadless()) {
+      runHealthcheckHeadless();
+      return;
+    }
+    const { shouldTest, scope } = await runHealthcheckInteractive();
+    if (!shouldTest) return;
+    const action = scope === "entire-branch" ? "test-branch" : "test-unstaged";
+    const config = resolveTestRunConfig(action, program.opts());
+    await seedStoreFromConfig(config);
+    renderApp();
+  });
 
 program
   .command("unstaged")
