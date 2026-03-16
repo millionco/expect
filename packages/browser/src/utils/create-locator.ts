@@ -9,10 +9,7 @@ export const createLocator = (page: Page, refs: RefMap) =>
     const entry = refs[ref];
     if (!entry) {
       return yield* Effect.fail(
-        new RefNotFoundError({
-          ref,
-          availableRefs: Object.keys(refs),
-        }),
+        new RefNotFoundError({ ref, availableRefs: Object.keys(refs) }),
       );
     }
     return resolveLocator(page, entry);

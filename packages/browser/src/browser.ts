@@ -9,7 +9,7 @@ import type { Browser as BrowserKey, BrowserProfile, Cookie } from "@browser-tes
 import { tmpdir } from "node:os";
 import { chromium } from "playwright";
 import type { Locator, Page } from "playwright";
-import { Effect, Layer, ServiceMap } from "effect";
+import { Effect, Layer, Option, ServiceMap } from "effect";
 import {
   CONTENT_ROLES,
   DEFAULT_VIDEO_HEIGHT_PX,
@@ -36,7 +36,6 @@ import { RUNTIME_SCRIPT } from "./generated/runtime-script";
 import type {
   AnnotatedScreenshotOptions,
   Annotation,
-  AriaRole,
   CreatePageOptions,
   RefMap,
   SnapshotOptions,
@@ -137,8 +136,7 @@ const appendCursorInteractiveElements = Effect.fn("Browser.appendCursorInteracti
 
     const ref = `${REF_PREFIX}${++refCount}`;
     refs[ref] = {
-      // HACK: "clickable" is a synthetic role not in Playwright's AriaRole union
-      role: "clickable" as AriaRole,
+      role: "clickable",
       name: element.text,
       selector: element.selector,
     };
@@ -250,16 +248,17 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
         if (options.maxDepth !== undefined && getIndentLevel(line) > options.maxDepth) continue;
 
         const parsed = parseAriaLine(line);
-        if (!parsed) {
+        if (Option.isNone(parsed)) {
           if (!options.interactive) filteredLines.push(line);
           continue;
         }
 
-        if (options.interactive && !INTERACTIVE_ROLES.has(parsed.role)) continue;
+        const { role, name } = parsed.value;
+        if (options.interactive && !INTERACTIVE_ROLES.has(role)) continue;
 
-        if (shouldAssignRef(parsed.role, parsed.name, options.interactive)) {
+        if (shouldAssignRef(role, name, options.interactive)) {
           const ref = `${REF_PREFIX}${++refCount}`;
-          refs[ref] = { role: parsed.role, name: parsed.name };
+          refs[ref] = { role, name };
           filteredLines.push(`${line} [ref=${ref}]`);
         } else {
           filteredLines.push(line);

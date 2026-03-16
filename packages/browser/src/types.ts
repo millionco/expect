@@ -15,7 +15,7 @@ export interface SnapshotOptions {
 }
 
 export interface RefEntry {
-  role: AriaRole;
+  role: string;
   name: string;
   nth?: number;
   selector?: string;
@@ -41,7 +41,7 @@ export interface SnapshotResult {
 }
 
 export interface ParsedAriaLine {
-  role: AriaRole;
+  role: string;
   name: string;
 }
 
