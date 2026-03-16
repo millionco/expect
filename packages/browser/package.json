@@ -15,7 +15,8 @@
     }
   },
   "scripts": {
-    "build": "vp pack",
+    "build:runtime": "node scripts/build-runtime.js",
+    "build": "pnpm build:runtime && vp pack",
     "dev": "vp pack --watch",
     "lint": "vp lint && tsc --noEmit",
     "test": "vp test run",
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
+    "esbuild": "^0.25.0",
     "typescript": "^5.7.0"
   }
 }

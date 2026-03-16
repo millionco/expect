@@ -30,6 +30,7 @@ import { getIndentLevel } from "./utils/get-indent-level";
 import { parseAriaLine } from "./utils/parse-aria-line";
 import { resolveNthDuplicates } from "./utils/resolve-nth-duplicates";
 import { computeSnapshotStats } from "./utils/snapshot-stats";
+import { RUNTIME_SCRIPT } from "./generated/runtime-script";
 import type {
   AnnotatedScreenshotOptions,
   Annotation,
@@ -155,41 +156,7 @@ const appendCursorInteractiveElements = Effect.fn("Browser.appendCursorInteracti
 const injectOverlayLabels = (page: Page, labels: Array<{ label: number; x: number; y: number }>) =>
   Effect.promise(() =>
     page.evaluate(
-      ({
-        containerId,
-        items,
-      }: {
-        containerId: string;
-        items: Array<{ label: number; x: number; y: number }>;
-      }) => {
-        const container = document.createElement("div");
-        container.id = containerId;
-        container.style.position = "absolute";
-        container.style.top = "0";
-        container.style.left = "0";
-        container.style.zIndex = "2147483647";
-        container.style.pointerEvents = "none";
-
-        for (const item of items) {
-          const badge = document.createElement("div");
-          badge.textContent = `[${item.label}]`;
-          badge.style.position = "absolute";
-          badge.style.left = `${item.x}px`;
-          badge.style.top = `${item.y}px`;
-          badge.style.background = "rgba(255, 0, 0, 0.85)";
-          badge.style.color = "white";
-          badge.style.fontSize = "11px";
-          badge.style.fontFamily = "monospace";
-          badge.style.fontWeight = "bold";
-          badge.style.padding = "1px 3px";
-          badge.style.borderRadius = "3px";
-          badge.style.lineHeight = "1.2";
-          badge.style.whiteSpace = "nowrap";
-          container.appendChild(badge);
-        }
-
-        document.body.appendChild(container);
-      },
+      ({ containerId, items }) => __browserTesterRuntime.injectOverlayLabels(containerId, items),
       { containerId: OVERLAY_CONTAINER_ID, items: labels },
     ),
   );
@@ -225,6 +192,8 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
             ),
           catch: toBrowserLaunchError,
         });
+
+        yield* Effect.promise(() => context.addInitScript(RUNTIME_SCRIPT));
 
         if (options.cookies) {
           const cookies: Cookie[] = Array.isArray(options.cookies)
@@ -367,9 +336,10 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
           Effect.map((screenshotBuffer) => ({ screenshot: screenshotBuffer, annotations })),
         ),
         Effect.tryPromise(() =>
-          page.evaluate((containerId: string) => {
-            document.getElementById(containerId)?.remove();
-          }, OVERLAY_CONTAINER_ID),
+          page.evaluate(
+            (containerId) => __browserTesterRuntime.removeOverlay(containerId),
+            OVERLAY_CONTAINER_ID,
+          ),
         ).pipe(Effect.ignore),
       );
     });

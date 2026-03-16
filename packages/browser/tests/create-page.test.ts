@@ -11,6 +11,7 @@ const {
   launchMock,
   newContextMock,
   addCookiesMock,
+  addInitScriptMock,
   newPageMock,
   gotoMock,
   closeMock,
@@ -23,6 +24,7 @@ const {
   launchMock: vi.fn(),
   newContextMock: vi.fn(),
   addCookiesMock: vi.fn(),
+  addInitScriptMock: vi.fn(),
   newPageMock: vi.fn(),
   gotoMock: vi.fn(),
   closeMock: vi.fn(),
@@ -76,7 +78,12 @@ describe("Browser.createPage cookie reuse", () => {
     gotoMock.mockResolvedValue(undefined);
     newPageMock.mockResolvedValue({ goto: gotoMock });
     addCookiesMock.mockResolvedValue(undefined);
-    newContextMock.mockResolvedValue({ newPage: newPageMock, addCookies: addCookiesMock });
+    addInitScriptMock.mockResolvedValue(undefined);
+    newContextMock.mockResolvedValue({
+      newPage: newPageMock,
+      addCookies: addCookiesMock,
+      addInitScript: addInitScriptMock,
+    });
     closeMock.mockResolvedValue(undefined);
     launchMock.mockResolvedValue({
       newContext: newContextMock,
@@ -133,7 +140,8 @@ describe("Browser.createPage video recording", () => {
 
     gotoMock.mockResolvedValue(undefined);
     newPageMock.mockResolvedValue({ goto: gotoMock });
-    newContextMock.mockResolvedValue({ newPage: newPageMock });
+    addInitScriptMock.mockResolvedValue(undefined);
+    newContextMock.mockResolvedValue({ newPage: newPageMock, addInitScript: addInitScriptMock });
     closeMock.mockResolvedValue(undefined);
     launchMock.mockResolvedValue({
       newContext: newContextMock,
