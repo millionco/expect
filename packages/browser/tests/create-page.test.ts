@@ -1,5 +1,4 @@
 import type { BrowserProfile, Cookie } from "@browser-tester/cookies";
-import { Effect } from "effect";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_VIDEO_HEIGHT_PX, DEFAULT_VIDEO_WIDTH_PX } from "../src/constants";
 
@@ -43,7 +42,7 @@ vi.mock("playwright", () => ({
   },
 }));
 
-import { Browser } from "../src/browser";
+import { runBrowser } from "../src/browser";
 
 const testCookies: Cookie[] = [
   Cookie.make({
@@ -69,14 +68,6 @@ const fallbackCookies: Cookie[] = [
     browser: "helium",
   },
 ];
-
-const runWithBrowser = <A>(effect: (browser: Browser) => Effect.Effect<A, unknown>) =>
-  Effect.runPromise(
-    Effect.gen(function* () {
-      const browser = yield* Browser;
-      return yield* effect(browser);
-    }).pipe(Effect.provide(Browser.layer)),
-  );
 
 describe("Browser.createPage cookie reuse", () => {
   beforeEach(() => {
@@ -105,7 +96,7 @@ describe("Browser.createPage cookie reuse", () => {
   });
 
   it("uses the preferred profile cookies before sqlite fallback for the default browser", async () => {
-    await runWithBrowser((browser) => browser.createPage("https://github.com", { cookies: true }));
+    await runBrowser((browser) => browser.createPage("https://github.com", { cookies: true }));
 
     expect(detectDefaultBrowserMock).toHaveBeenCalledOnce();
     expect(detectBrowserProfilesMock).toHaveBeenCalledWith({
@@ -126,7 +117,7 @@ describe("Browser.createPage cookie reuse", () => {
       warnings: ["no cookies found in profile: You"],
     });
 
-    await runWithBrowser((browser) => browser.createPage("https://github.com", { cookies: true }));
+    await runBrowser((browser) => browser.createPage("https://github.com", { cookies: true }));
 
     expect(extractCookiesMock).toHaveBeenCalledWith({
       url: "https://github.com",
@@ -151,7 +142,7 @@ describe("Browser.createPage video recording", () => {
   });
 
   it("uses the default HD recording size when video is enabled", async () => {
-    await runWithBrowser((browser) => browser.createPage("https://example.com", { video: true }));
+    await runBrowser((browser) => browser.createPage("https://example.com", { video: true }));
 
     expect(newContextMock).toHaveBeenCalledWith({
       recordVideo: {
@@ -165,7 +156,7 @@ describe("Browser.createPage video recording", () => {
   });
 
   it("preserves an explicit recording size", async () => {
-    await runWithBrowser((browser) =>
+    await runBrowser((browser) =>
       browser.createPage("https://example.com", {
         video: {
           dir: "/tmp/videos",
@@ -189,7 +180,7 @@ describe("Browser.createPage video recording", () => {
   });
 
   it("fills in the default recording size when only a directory is provided", async () => {
-    await runWithBrowser((browser) =>
+    await runBrowser((browser) =>
       browser.createPage("https://example.com", {
         video: {
           dir: "/tmp/videos",
