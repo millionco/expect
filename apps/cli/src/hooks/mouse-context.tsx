@@ -24,10 +24,8 @@ const MouseContext = createContext<MouseContextValue>(NOOP_CONTEXT);
 const MOUSE_ENABLE = "\u001b[?1003l\u001b[?1002l\u001b[?1000h\u001b[?1006h";
 const MOUSE_DISABLE = "\u001b[?1000l\u001b[?1006l\u001b[?1003l\u001b[?1002l";
 // oxlint-disable-next-line no-control-regex
-const SGR_MOUSE_SEQUENCE = /\x1b\[<(\d+);(\d+);(\d+)([Mm])/g;
-// oxlint-disable-next-line no-control-regex
-const PARTIAL_TERMINAL_SEQUENCE =
-  /\x1b\[[\d;?<>=]*[A-Za-z~]|\[<[\d;]+[Mm]|\[\d+;\d+R|\[\?[\d;]+[a-z]/g;
+const ALL_TERMINAL_SEQUENCES =
+  /\x1b\[<(\d+);(\d+);(\d+)([Mm])|\x1b\[[\d;?<>=]*[A-Za-z~]|\[<[\d;]+[Mm]|\[\d+;\d+R|\[\?[\d;]+[a-z]/g;
 
 export const MouseProvider = ({ children }: { children: React.ReactNode }) => {
   if (!CLICK_SUPPORT_ENABLED) return <>{children}</>;
@@ -43,18 +41,20 @@ export const MouseProvider = ({ children }: { children: React.ReactNode }) => {
       if (event === "data") {
         const text = typeof eventArgs[0] === "string" ? eventArgs[0] : String(eventArgs[0]);
 
-        for (const match of text.matchAll(SGR_MOUSE_SEQUENCE)) {
-          if (match[1] === "0") {
-            for (const handler of handlersRef.current) {
-              handler(
-                { x: Number(match[2]), y: Number(match[3]) },
-                match[4] === "M" ? "press" : "release",
-              );
+        const cleaned = text.replace(
+          ALL_TERMINAL_SEQUENCES,
+          (_match, buttonCode, xCoord, yCoord, terminator) => {
+            if (buttonCode === "0") {
+              for (const handler of handlersRef.current) {
+                handler(
+                  { x: Number(xCoord), y: Number(yCoord) },
+                  terminator === "M" ? "press" : "release",
+                );
+              }
             }
-          }
-        }
-
-        const cleaned = text.replace(SGR_MOUSE_SEQUENCE, "").replace(PARTIAL_TERMINAL_SEQUENCE, "");
+            return "";
+          },
+        );
         if (cleaned.length === 0) return true;
         return originalEmit(event, cleaned);
       }
@@ -81,7 +81,7 @@ export const useMouse = (): MouseContextValue => useContext(MouseContext);
 
 const TERMINAL_RESPONSE_GARBAGE =
   // oxlint-disable-next-line no-control-regex
-  /\x1b\[[\d;?<>=]*[A-Za-z~]|\[<[\d;]+[Mm]?|\[\?[\d;]+[a-z]|\[\d+;\d+R/g;
+  /\x1b\[[\d;?<>=]*[A-Za-z~]|\[<[\d;]+[Mm]|\[\?[\d;]+[a-z]|\[\d+;\d+R/g;
 
 export const stripMouseSequences = (value: string): string =>
   CLICK_SUPPORT_ENABLED ? value.replace(TERMINAL_RESPONSE_GARBAGE, "") : value;
