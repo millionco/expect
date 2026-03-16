@@ -7,7 +7,7 @@ import { Input } from "../ui/input.js";
 import { ErrorMessage } from "../ui/error-message.js";
 import { ContextPicker } from "../ui/context-picker.js";
 import { stripMouseSequences } from "../../hooks/mouse-context.js";
-import { FLOW_PRESETS } from "../../constants.js";
+import { getFlowSuggestions } from "../../utils/get-flow-suggestions.js";
 import {
   buildLocalContextOptions,
   fetchRemoteContextOptions,
@@ -82,6 +82,11 @@ export const MainMenu = () => {
   }, [gitState, localOptions]);
 
   const activeContext = selectedContext ?? defaultContext;
+  const suggestions = useMemo(() => getFlowSuggestions(activeContext, gitState), [activeContext, gitState]);
+
+  useEffect(() => {
+    setSuggestionIndex(0);
+  }, [suggestions]);
 
   const openPicker = useCallback(() => {
     setPickerOpen(true);
@@ -176,8 +181,8 @@ export const MainMenu = () => {
   );
 
   const showSuggestion =
-    focus === "input" && value === "" && !pickerOpen && FLOW_PRESETS.length > 0;
-  const currentSuggestion = FLOW_PRESETS[suggestionIndex % FLOW_PRESETS.length];
+    focus === "input" && value === "" && !pickerOpen && suggestions.length > 0;
+  const currentSuggestion = suggestions[suggestionIndex % suggestions.length];
 
   const focusAreas: FocusArea[] = ["input", "auto-run"];
   const focusNext = () => {
@@ -233,12 +238,12 @@ export const MainMenu = () => {
       }
       if (!showSuggestion) return;
       if (key.rightArrow) {
-        setSuggestionIndex((previous) => (previous + 1) % FLOW_PRESETS.length);
+        setSuggestionIndex((previous) => (previous + 1) % suggestions.length);
         return;
       }
       if (key.leftArrow) {
         setSuggestionIndex(
-          (previous) => (previous - 1 + FLOW_PRESETS.length) % FLOW_PRESETS.length,
+          (previous) => (previous - 1 + suggestions.length) % suggestions.length,
         );
         return;
       }
@@ -278,8 +283,8 @@ export const MainMenu = () => {
           </Clickable>
           {showSuggestion && !pickerOpen ? (
             <Text color={COLORS.DIM}>
-              {"←→ cycle suggestions "}[{(suggestionIndex % FLOW_PRESETS.length) + 1}/
-              {FLOW_PRESETS.length}]
+              {"←→ cycle suggestions "}[{(suggestionIndex % suggestions.length) + 1}/
+              {suggestions.length}]
             </Text>
           ) : null}
         </Box>
