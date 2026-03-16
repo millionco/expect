@@ -1,5 +1,9 @@
 import { Effect } from "effect";
-import { INTERACTIVE_ROLES, MAX_ELEMENT_TEXT_LENGTH } from "../constants";
+import {
+  INTERACTIVE_ROLES,
+  MAX_CURSOR_INTERACTIVE_ELEMENTS,
+  MAX_ELEMENT_TEXT_LENGTH,
+} from "../constants";
 import type { Page } from "playwright";
 import { evaluateRuntime } from "./evaluate-runtime";
 
@@ -16,5 +20,6 @@ export const findCursorInteractive = Effect.fn("findCursorInteractive")(function
     MAX_ELEMENT_TEXT_LENGTH,
     [...INTERACTIVE_ROLES],
     INTERACTIVE_HTML_TAGS,
+    MAX_CURSOR_INTERACTIVE_ELEMENTS,
   );
 });

@@ -17,6 +17,7 @@ import {
   HEADLESS_CHROMIUM_ARGS,
   INTERACTIVE_ROLES,
   NAVIGATION_DETECT_DELAY_MS,
+  OVERLAY_CONTAINER_ID,
   POST_NAVIGATION_SETTLE_MS,
   REF_PREFIX,
   SNAPSHOT_TIMEOUT_MS,
@@ -41,8 +42,6 @@ import type {
   SnapshotOptions,
   VideoOptions,
 } from "./types";
-
-const OVERLAY_CONTAINER_ID = "__browser_tester_annotation_overlay__";
 
 const shouldAssignRef = (role: string, name: string, interactive?: boolean): boolean => {
   if (INTERACTIVE_ROLES.has(role)) return true;
@@ -170,7 +169,7 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
           chromium.launch({
             headless: !options.headed,
             executablePath: options.executablePath,
-            args: HEADLESS_CHROMIUM_ARGS,
+            args: options.headed ? [] : HEADLESS_CHROMIUM_ARGS,
           }),
         catch: toBrowserLaunchError,
       });

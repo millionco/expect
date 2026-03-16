@@ -9,6 +9,7 @@ interface BrowserTesterRuntime {
     maxTextLength: number,
     interactiveRoles: string[],
     interactiveTags: string[],
+    maxResults: number,
   ) => Array<{ selector: string; text: string; reason: string }>;
 }
 

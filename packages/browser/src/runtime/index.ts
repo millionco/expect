@@ -51,6 +51,7 @@ export const findCursorInteractiveElements = (
   maxTextLength: number,
   interactiveRoles: string[],
   interactiveTags: string[],
+  maxResults: number,
 ): CursorInteractiveResult[] => {
   const interactiveRoleSet = new Set(interactiveRoles);
   const interactiveTagSet = new Set(interactiveTags);
@@ -96,6 +97,8 @@ export const findCursorInteractiveElements = (
       text,
       reason: reasons.join(", "),
     });
+
+    if (results.length >= maxResults) break;
   }
 
   return results;
