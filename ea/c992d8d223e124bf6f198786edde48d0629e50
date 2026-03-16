@@ -1,0 +1,25 @@
+packages/supervisor/src/plan-browser-flow.ts
+  d0ee8cde5a8586d8 2,54-56,59,61,67-77
+packages/supervisor/tests/plan-browser-flow.test.ts
+  d0ee8cde5a8586d8 3-4,94-104
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "eac992d8d223e124bf6f198786edde48d0629e50",
+  "prompts": {
+    "d0ee8cde5a8586d8": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "102c8a1c-6d3a-4224-abf0-e17578862a61",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 32,
+      "total_deletions": 13,
+      "accepted_lines": 30,
+      "overriden_lines": 0
+    }
+  }
+}
