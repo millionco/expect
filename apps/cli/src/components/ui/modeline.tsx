@@ -16,14 +16,18 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
   const requestPlanApproval = useAppStore((state) => state.requestPlanApproval);
   const approvePlan = useAppStore((state) => state.approvePlan);
   const generatedPlan = useAppStore((state) => state.generatedPlan);
+  const autoRunAfterPlanning = useAppStore((state) => state.autoRunAfterPlanning);
   const savedFlowSummaries = useAppStore((state) => state.savedFlowSummaries);
   const latestRunReport = useAppStore((state) => state.latestRunReport);
   const liveViewUrl = useAppStore((state) => state.liveViewUrl);
   switch (screen) {
     case "main": {
       const hints: HintSegment[] = [
-        { key: "↑↓/tab", label: "navigate" },
-        { key: "shift+enter", label: "newline" },
+        {
+          key: "shift+tab",
+          label: `auto-run after planning ${autoRunAfterPlanning ? "on" : "off"}`,
+          color: autoRunAfterPlanning ? COLORS.GREEN : undefined,
+        },
       ];
       if (savedFlowSummaries.length > 0) {
         hints.push({
@@ -139,7 +143,7 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
 
 const getHintText = (segments: HintSegment[]): string =>
   segments.length > 0
-    ? ` ${segments.map((segment) => `${segment.label} ${segment.key}`).join(HINT_SEPARATOR)}`
+    ? ` ${segments.map((segment) => `${segment.label} [${segment.key}]`).join(HINT_SEPARATOR)}`
     : "";
 
 export const Modeline = () => {
@@ -157,7 +161,7 @@ export const Modeline = () => {
   const keybindText = getHintText(keybinds);
   const actionPills = actions
     .map((action) =>
-      action.color ? ` ${action.label} │ ${action.key} ` : `${action.label} ${action.key}`,
+      action.color ? ` ${action.label} [${action.key}] ` : `${action.label} [${action.key}]`,
     )
     .join("   ");
   const actionWidth = actions.length > 0 ? stringWidth(actionPills) : 0;
@@ -168,13 +172,13 @@ export const Modeline = () => {
     <Box flexDirection="column">
       {screen === "planning" || screen === "testing" ? (
         <TextShimmer
-          text={"─".repeat(columns)}
+          text={"-".repeat(columns)}
           baseColor={theme.border}
           highlightColor={theme.primary}
           speed={3}
         />
       ) : (
-        <Text color={theme.border}>{"─".repeat(columns)}</Text>
+        <Text color={theme.border}>{"-".repeat(columns)}</Text>
       )}
       <Box paddingX={1}>
         {actions.map((action, index) => {
@@ -184,13 +188,13 @@ export const Modeline = () => {
               {action.color ? (
                 <Text backgroundColor={action.color} color="#000000">
                   {" "}
-                  <Text bold>{action.label}</Text> │ <Text bold>{action.key}</Text>{" "}
+                  <Text bold>{action.label}</Text> <Text>[{action.key}]</Text>{" "}
                 </Text>
               ) : (
                 <Text>
                   <Text color={theme.textMuted}>{action.label} </Text>
                   <Text color={theme.primary} bold>
-                    {action.key}
+                    [{action.key}]
                   </Text>
                 </Text>
               )}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import { useAppStore } from "../../store.js";
 import { useColors } from "../theme-context.js";
@@ -7,6 +7,7 @@ import { Input } from "../ui/input.js";
 import { ErrorMessage } from "../ui/error-message.js";
 import { ContextPicker } from "../ui/context-picker.js";
 import { stripMouseSequences } from "../../hooks/mouse-context.js";
+import { generateFlowSuggestions } from "@browser-tester/supervisor";
 import { getFlowSuggestions } from "../../utils/get-flow-suggestions.js";
 import {
   buildLocalContextOptions,
@@ -14,12 +15,11 @@ import {
   filterContextOptions,
   type ContextOption,
 } from "../../utils/context-options.js";
-type FocusArea = "input" | "auto-run";
+type FocusArea = "input";
 
 export const MainMenu = () => {
   const COLORS = useColors();
   const gitState = useAppStore((state) => state.gitState);
-  const autoRunAfterPlanning = useAppStore((state) => state.autoRunAfterPlanning);
   const toggleAutoRun = useAppStore((state) => state.toggleAutoRun);
   const submitFlowInstruction = useAppStore((state) => state.submitFlowInstruction);
   const selectAction = useAppStore((state) => state.selectAction);
@@ -82,11 +82,48 @@ export const MainMenu = () => {
   }, [gitState, localOptions]);
 
   const activeContext = selectedContext ?? defaultContext;
-  const suggestions = useMemo(() => getFlowSuggestions(activeContext, gitState), [activeContext, gitState]);
+  const staticSuggestions = useMemo(() => getFlowSuggestions(activeContext, gitState), [activeContext, gitState]);
+  const [aiSuggestions, setAiSuggestions] = useState<readonly string[] | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const generationAbortRef = useRef<AbortController | null>(null);
+  const suggestions = aiSuggestions ?? staticSuggestions;
 
   useEffect(() => {
     setSuggestionIndex(0);
-  }, [suggestions]);
+    setAiSuggestions(null);
+    setIsGenerating(false);
+    generationAbortRef.current?.abort();
+    generationAbortRef.current = null;
+  }, [activeContext, gitState]);
+
+  const requestSuggestions = useCallback(() => {
+    if (!gitState || isGenerating) return;
+
+    generationAbortRef.current?.abort();
+    const abortController = new AbortController();
+    generationAbortRef.current = abortController;
+    setIsGenerating(true);
+
+    generateFlowSuggestions({
+      changedFiles: gitState.changedFiles,
+      currentBranch: gitState.currentBranch,
+      contextType: activeContext?.type ?? null,
+      contextLabel: activeContext?.label ?? null,
+      signal: abortController.signal,
+    })
+      .then((result) => {
+        if (!abortController.signal.aborted) {
+          setAiSuggestions(result);
+          setSuggestionIndex(0);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!abortController.signal.aborted) {
+          setIsGenerating(false);
+        }
+      });
+  }, [activeContext, gitState, isGenerating]);
 
   const openPicker = useCallback(() => {
     setPickerOpen(true);
@@ -184,41 +221,6 @@ export const MainMenu = () => {
     focus === "input" && value === "" && !pickerOpen && suggestions.length > 0;
   const currentSuggestion = suggestions[suggestionIndex % suggestions.length];
 
-  const focusAreas: FocusArea[] = ["input", "auto-run"];
-  const focusNext = () => {
-    const currentIndex = focusAreas.indexOf(focus);
-    const next = focusAreas[currentIndex + 1];
-    if (next) setFocus(next);
-  };
-  const focusPrevious = () => {
-    const currentIndex = focusAreas.indexOf(focus);
-    const previous = focusAreas[currentIndex - 1];
-    if (previous) setFocus(previous);
-  };
-
-  useInput(
-    (input, key) => {
-      if (pickerOpen) return;
-
-      if ((key.tab && !key.shift) || (key.ctrl && input === "n") || key.downArrow) {
-        focusNext();
-        return;
-      }
-      if ((key.tab && key.shift) || (key.ctrl && input === "p") || key.upArrow) {
-        focusPrevious();
-        return;
-      }
-
-      if (focus === "auto-run") {
-        if (key.return) {
-          toggleAutoRun();
-          return;
-        }
-      }
-    },
-    { isActive: focus !== "input" },
-  );
-
   useInput(
     (input, key) => {
       if (pickerOpen) return;
@@ -228,12 +230,8 @@ export const MainMenu = () => {
         setInputKey((previous) => previous + 1);
         return;
       }
-      if ((key.tab && !key.shift) || (key.ctrl && input === "n")) {
-        focusNext();
-        return;
-      }
-      if ((key.tab && key.shift) || (key.ctrl && input === "p")) {
-        focusPrevious();
+      if (key.tab && key.shift) {
+        toggleAutoRun();
         return;
       }
       if (!showSuggestion) return;
@@ -247,6 +245,10 @@ export const MainMenu = () => {
         );
         return;
       }
+      if (input === "g") {
+        requestSuggestions();
+        return;
+      }
     },
     { isActive: focus === "input" },
   );
@@ -255,10 +257,8 @@ export const MainMenu = () => {
 
   return (
     <Box flexDirection="column" width="100%" paddingX={1} paddingY={1}>
-      <Box flexDirection="column" marginBottom={1}>
-        <Text bold color={COLORS.TEXT}>
-          BROWSER-TESTER
-        </Text>
+      <Box marginBottom={1}>
+        <Text>{" "}</Text>
       </Box>
 
       <Box flexDirection="column">
@@ -283,13 +283,14 @@ export const MainMenu = () => {
           </Clickable>
           {showSuggestion && !pickerOpen ? (
             <Text color={COLORS.DIM}>
-              {"←→ cycle suggestions "}[{(suggestionIndex % suggestions.length) + 1}/
-              {suggestions.length}]
+              {"←→ cycle suggestions "}[{(suggestionIndex % suggestions.length) + 1}/{suggestions.length}]
+              {isGenerating ? " generating…" : ""}
             </Text>
           ) : null}
         </Box>
         <Clickable onClick={() => setFocus("input")}>
           <Box
+            marginTop={1}
             width="100%"
             borderStyle="single"
             borderColor={focus === "input" ? COLORS.PRIMARY : COLORS.BORDER}
@@ -303,7 +304,7 @@ export const MainMenu = () => {
               placeholder={`${currentSuggestion ?? "Describe what to test..."}  [tab]`}
               value={value}
               onSubmit={submit}
-              onDownArrowAtBottom={() => setFocus("auto-run")}
+              onDownArrowAtBottom={() => {}}
               onChange={handleInputChange}
             />
           </Box>
@@ -327,7 +328,7 @@ export const MainMenu = () => {
             />
           </Box>
         ) : (
-          <Box>
+          <Box marginTop={1}>
             <Text color={COLORS.DIM}>
               type <Text color={COLORS.PRIMARY}>@</Text> to set context
             </Text>
@@ -336,21 +337,6 @@ export const MainMenu = () => {
       </Box>
 
       <ErrorMessage message={errorMessage} />
-
-      <Box marginTop={1} flexDirection="column">
-        <Clickable onClick={toggleAutoRun}>
-          <Text color={focus === "auto-run" ? COLORS.PRIMARY : COLORS.DIM}>
-            {focus === "auto-run" ? "▸ " : "  "}
-            <Text bold={focus === "auto-run"}>auto-run after planning: </Text>
-            <Text
-              color={autoRunAfterPlanning ? COLORS.GREEN : COLORS.DIM}
-              bold={autoRunAfterPlanning}
-            >
-              {autoRunAfterPlanning ? "yes" : "no"}
-            </Text>
-          </Text>
-        </Clickable>
-      </Box>
     </Box>
   );
 };

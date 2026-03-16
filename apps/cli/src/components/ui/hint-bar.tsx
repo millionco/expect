@@ -29,7 +29,7 @@ const HintContent = ({
   <>
     <Text color={segment.color ?? mutedColor}>{segment.label} </Text>
     <Text color={segment.color ?? color} bold>
-      {segment.key}
+      [{segment.key}]
     </Text>
   </>
 );

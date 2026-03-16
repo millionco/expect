@@ -37,6 +37,7 @@ export type {
   RunMemoryRecord,
   RunMemoryStepOutcome,
 } from "./memory/index.js";
+export { generateFlowSuggestions } from "./generate-flow-suggestions.js";
 export { planBrowserFlow } from "./plan-browser-flow.js";
 export { formatDiffStats } from "./utils/format-diff-stats.js";
 export { isRunningInAgent } from "./utils/is-running-in-agent.js";
