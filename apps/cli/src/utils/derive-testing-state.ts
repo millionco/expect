@@ -44,14 +44,36 @@ export const deriveTestingState = (
   let activeStepStartedAt: number | null = null;
   let currentToolCallText: string | null = null;
   let runStatusLabel = "Testing";
+  let hasRunStarted = false;
+  let hasRunCompleted = false;
+
+  const activateNextPendingStep = (timestamp: number) => {
+    for (const planStep of plan.steps) {
+      const state = stepStateById.get(planStep.id);
+      if (state?.status === "pending") {
+        state.status = "active";
+        activeStepId = state.stepId;
+        activeStepStartedAt = timestamp;
+        currentToolCallText = null;
+        return;
+      }
+    }
+  };
 
   for (const event of events) {
     switch (event.type) {
+      case "run-started": {
+        hasRunStarted = true;
+        if (activeStepId === null) {
+          activateNextPendingStep(event.timestamp);
+        }
+        break;
+      }
       case "step-started": {
         if (activeStepId && activeStepId !== event.stepId) {
           const previousActiveStepState = stepStateById.get(activeStepId);
           if (previousActiveStepState?.status === "active") {
-            previousActiveStepState.status = "pending";
+            previousActiveStepState.status = "passed";
           }
         }
         const stepState = stepStateById.get(event.stepId);
@@ -74,6 +96,9 @@ export const deriveTestingState = (
             currentToolCallText = null;
           }
         }
+        if (activeStepId === null) {
+          activateNextPendingStep(event.timestamp);
+        }
         break;
       }
       case "assertion-failed": {
@@ -86,6 +111,9 @@ export const deriveTestingState = (
             activeStepStartedAt = null;
             currentToolCallText = null;
           }
+        }
+        if (activeStepId === null) {
+          activateNextPendingStep(event.timestamp);
         }
         break;
       }
@@ -100,6 +128,10 @@ export const deriveTestingState = (
         }
         break;
       }
+      case "run-completed": {
+        hasRunCompleted = true;
+        break;
+      }
       case "text": {
         if (RUN_STATUS_LABELS.has(event.text)) {
           runStatusLabel = event.text;
@@ -107,6 +139,10 @@ export const deriveTestingState = (
         break;
       }
     }
+  }
+
+  if (hasRunStarted && !hasRunCompleted && activeStepId === null) {
+    activateNextPendingStep(events[events.length - 1]?.timestamp ?? Date.now());
   }
 
   const steps = plan.steps.map(
