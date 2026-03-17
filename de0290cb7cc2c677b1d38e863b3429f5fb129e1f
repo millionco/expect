@@ -1,0 +1,25 @@
+packages/supervisor/tests/json.test.ts
+  9a59b0d21c5ea1e0 39-84
+packages/supervisor/src/json.ts
+  9a59b0d21c5ea1e0 3-6,26-68,130,137
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "de0290cb7cc2c677b1d38e863b3429f5fb129e1f",
+  "prompts": {
+    "9a59b0d21c5ea1e0": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "92414364-2b56-4d1e-95b6-4d9bef8dc590",
+        "model": "claude-4.6-opus-max-thinking-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 97,
+      "total_deletions": 2,
+      "accepted_lines": 97,
+      "overriden_lines": 0
+    }
+  }
+}
