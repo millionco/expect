@@ -1,0 +1,23 @@
+packages/supervisor/src/plan-browser-flow.ts
+  6a75c30ab125592a 20,243-247,249-253,255
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "c565aa997dafa01515d9e8597f8235a65263fd7f",
+  "prompts": {
+    "6a75c30ab125592a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "cb8b1d56-647a-4a52-b436-291338f141ac",
+        "model": "claude-4.6-opus-max-thinking-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 10,
+      "total_deletions": 4,
+      "accepted_lines": 12,
+      "overriden_lines": 1
+    }
+  }
+}
