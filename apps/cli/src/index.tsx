@@ -197,7 +197,16 @@ program
 program.action(async () => {
   const config = resolveTestRunConfig("test-changes", program.opts());
   if (isHeadless()) return autoDetectAndTest(config);
-  if (config.message || config.flowSlug || config.autoRun || config.environmentOverrides || config.planningProvider || config.executionProvider || config.planningModel || config.executionModel) {
+  if (
+    config.message ||
+    config.flowSlug ||
+    config.autoRun ||
+    config.environmentOverrides ||
+    config.planningProvider ||
+    config.executionProvider ||
+    config.planningModel ||
+    config.executionModel
+  ) {
     await seedStoreFromConfig(config);
   }
   renderApp();

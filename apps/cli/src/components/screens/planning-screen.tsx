@@ -91,7 +91,8 @@ const getStageIndex = (elapsed: number): number => {
 
 const FINAL_STAGE_DURATION_MS = 15000;
 const PROGRESS_TICK_MS = 100;
-const CYCLE_DURATION_MS = PLANNING_STAGES[PLANNING_STAGES.length - 1].after + FINAL_STAGE_DURATION_MS;
+const CYCLE_DURATION_MS =
+  PLANNING_STAGES[PLANNING_STAGES.length - 1].after + FINAL_STAGE_DURATION_MS;
 
 const getSmoothProgress = (elapsed: number): number => {
   const looped = elapsed % CYCLE_DURATION_MS;
@@ -144,7 +145,8 @@ export const PlanningScreen = () => {
         setCurrentLine(line.slice(0, charIndex));
         charIndex++;
         const jitter = Math.random() * TOKEN_JITTER_MS;
-        const charDelay = line[charIndex - 1] === " " ? BASE_TOKEN_MS + jitter * 2 : BASE_TOKEN_MS + jitter;
+        const charDelay =
+          line[charIndex - 1] === " " ? BASE_TOKEN_MS + jitter * 2 : BASE_TOKEN_MS + jitter;
         setTimeout(typeNextChar, charDelay);
       } else {
         const pause = BASE_PAUSE_MS + Math.random() * PAUSE_JITTER_MS;
@@ -183,7 +185,8 @@ export const PlanningScreen = () => {
           </Text>
         </Box>
         <Text color={COLORS.BORDER}>
-          {"TIP "}<Text color={COLORS.DIM}>{TIPS[tipIndex]}</Text>
+          {"TIP "}
+          <Text color={COLORS.DIM}>{TIPS[tipIndex]}</Text>
         </Text>
       </Box>
 
@@ -204,11 +207,16 @@ export const PlanningScreen = () => {
       <Box paddingX={1} marginTop={1} flexDirection="column">
         {completedLines.map((line, index) => (
           <Text key={index} color={COLORS.BORDER}>
-            {"│ "}<Text color={COLORS.DIM}>{line}</Text>
+            {"│ "}
+            <Text color={COLORS.DIM}>{line}</Text>
           </Text>
         ))}
         <Text color={COLORS.BORDER}>
-          {"│ "}<Text color={COLORS.DIM}>{currentLine}<Text color={COLORS.BORDER}>▌</Text></Text>
+          {"│ "}
+          <Text color={COLORS.DIM}>
+            {currentLine}
+            <Text color={COLORS.BORDER}>▌</Text>
+          </Text>
         </Text>
       </Box>
     </Box>

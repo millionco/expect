@@ -287,7 +287,10 @@ export const useAppStore = create<AppStore>((set) => ({
 
   submitFlowInstruction: (instruction) =>
     set((state) => {
-      const flowInstructionHistory = rememberFlowInstruction(state.flowInstructionHistory, instruction);
+      const flowInstructionHistory = rememberFlowInstruction(
+        state.flowInstructionHistory,
+        instruction,
+      );
 
       if (!state.testAction) {
         return {
@@ -314,7 +317,10 @@ export const useAppStore = create<AppStore>((set) => ({
           planningError: null,
           planOrigin: "generated",
           resolvedTarget,
-          generatedPlan: createDirectRunPlan({ userInstruction: instruction, target: resolvedTarget }),
+          generatedPlan: createDirectRunPlan({
+            userInstruction: instruction,
+            target: resolvedTarget,
+          }),
           browserEnvironment,
           screen: "testing",
         };

@@ -6,4 +6,3 @@ const StderrLoggerLayer = Layer.succeed(Logger.LogToStderr, true);
 export const McpRuntime = ManagedRuntime.make(
   McpSession.layer.pipe(Layer.provide(StderrLoggerLayer)),
 );
-

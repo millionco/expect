@@ -58,14 +58,21 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
     case "planning": {
       const planningHints: HintSegment[] = [];
       const provider = resolvedPlanningProvider ?? planningProvider;
-      const providerName = provider === "claude" ? "Claude" : provider === "codex" ? "Codex" : provider === "cursor" ? "Cursor" : null;
+      const providerName =
+        provider === "claude"
+          ? "Claude"
+          : provider === "codex"
+            ? "Codex"
+            : provider === "cursor"
+              ? "Cursor"
+              : null;
       if (providerName) {
-        planningHints.push({ key: providerName + (planningModel ? ` · ${planningModel}` : ""), label: "agent" });
+        planningHints.push({
+          key: providerName + (planningModel ? ` · ${planningModel}` : ""),
+          label: "agent",
+        });
       }
-      return [
-        ...planningHints,
-        { key: "esc", label: "cancel", cta: true, onClick: goBack },
-      ];
+      return [...planningHints, { key: "esc", label: "cancel", cta: true, onClick: goBack }];
     }
     case "review-plan":
       return [

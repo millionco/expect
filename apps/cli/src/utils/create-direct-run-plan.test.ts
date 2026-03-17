@@ -30,10 +30,7 @@ describe("createDirectRunPlan", () => {
     expect(plan.title).toContain("Direct run:");
     expect(plan.userInstruction).toContain("Test the login flow");
     expect(plan.cookieSync.required).toBe(false);
-    expect(plan.riskAreas).toEqual([
-      "apps/web/src/app.tsx",
-      "apps/web/src/routes/login.tsx",
-    ]);
+    expect(plan.riskAreas).toEqual(["apps/web/src/app.tsx", "apps/web/src/routes/login.tsx"]);
     expect(plan.steps).toEqual([
       {
         id: "step-1",
@@ -42,10 +39,7 @@ describe("createDirectRunPlan", () => {
           "Use the browser to carry out this instruction: Test the login flow and verify form errors still render correctly.",
         expectedOutcome:
           "The requested browser flow works as described, or any blocker is captured with evidence.",
-        changedFileEvidence: [
-          "apps/web/src/app.tsx",
-          "apps/web/src/routes/login.tsx",
-        ],
+        changedFileEvidence: ["apps/web/src/app.tsx", "apps/web/src/routes/login.tsx"],
       },
     ]);
   });

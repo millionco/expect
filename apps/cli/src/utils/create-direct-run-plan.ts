@@ -15,7 +15,9 @@ const truncateTitle = (instruction: string): string => {
 };
 
 const getChangedFileEvidence = (target: TestTarget): string[] =>
-  target.changedFiles.slice(0, DIRECT_RUN_CHANGED_FILE_LIMIT).map((changedFile) => changedFile.path);
+  target.changedFiles
+    .slice(0, DIRECT_RUN_CHANGED_FILE_LIMIT)
+    .map((changedFile) => changedFile.path);
 
 export const createDirectRunPlan = ({
   userInstruction,
