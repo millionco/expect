@@ -532,6 +532,10 @@ export const streamPlanBrowserFlow = Effect.fn("streamPlanBrowserFlow")(function
         if (part.type === "text-delta") {
           accumulatedText += part.delta;
         }
+
+        if (part.type === "error") {
+          process.stderr.write(`[plan-debug] stream error: ${JSON.stringify(part)}\n`);
+        }
       }
     },
     catch: (cause) => new PlanningError({ stage: "stream consumption", cause }),
