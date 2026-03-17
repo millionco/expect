@@ -3,24 +3,19 @@ import { Effect, Layer, ServiceMap } from "effect";
 import * as FileSystem from "effect/FileSystem";
 import type { PlatformError } from "effect/PlatformError";
 import { NodeServices } from "@effect/platform-node";
-import type {
-  BrowserEnvironmentHints,
-  BrowserFlowPlan,
-  TestTarget,
-} from "@browser-tester/supervisor";
-import cliTruncate from "cli-truncate";
+import type { BrowserEnvironmentHints, BrowserFlowPlan, TestTarget } from "./types.js";
 import {
   FLOW_DESCRIPTION_CHAR_LIMIT,
   FLOW_DIRECTORY_INDEX_FILE_NAME,
   SAVED_FLOW_FORMAT_VERSION,
-} from "../constants.js";
-import { getSavedFlowDirectoryPath } from "./get-saved-flow-directory-path.js";
+} from "./constants.js";
+import { getSavedFlowDirectoryPath } from "./utils/get-saved-flow-directory-path.js";
 import {
   formatSavedFlowFrontmatter,
   parseSavedFlowFile,
   type SavedFlowFileData,
 } from "./saved-flow-file.js";
-import { slugify } from "./slugify.js";
+import { slugify } from "./utils/slugify.js";
 import { FlowNotFoundError, FlowParseError, FlowStorageError } from "./flow-storage-errors.js";
 
 export interface SaveFlowOptions {
@@ -58,9 +53,15 @@ interface SavedFlowDirectoryEntry {
 
 const normalizeWhitespace = (value: string): string => value.trim().replace(/\s+/g, " ");
 
+const truncateDescription = (value: string, limit: number): string => {
+  const cleaned = normalizeWhitespace(value);
+  if (cleaned.length <= limit) return cleaned;
+  return cleaned.slice(0, limit - 1) + "…";
+};
+
 const createFlowDescription = (plan: BrowserFlowPlan): string =>
-  cliTruncate(
-    normalizeWhitespace(plan.targetSummary || plan.rationale || plan.userInstruction),
+  truncateDescription(
+    plan.targetSummary || plan.rationale || plan.userInstruction,
     FLOW_DESCRIPTION_CHAR_LIMIT,
   );
 
@@ -189,7 +190,7 @@ const getModifiedAtMs = (modifiedAt: unknown): number => {
 };
 const EMPTY_FLOW_FILE_NAMES: string[] = [];
 
-export class FlowStorage extends ServiceMap.Service<FlowStorage>()("@cli/FlowStorage", {
+export class FlowStorage extends ServiceMap.Service<FlowStorage>()("@supervisor/FlowStorage", {
   make: Effect.gen(function* () {
     const fileSystem = yield* FileSystem.FileSystem;
 

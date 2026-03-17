@@ -1,7 +1,6 @@
 export const VERSION = "0.0.1";
 
 export const TESTING_TOOL_TEXT_CHAR_LIMIT = 100;
-export const TESTING_TOOL_INPUT_CHAR_LIMIT = 60;
 export const TESTING_TIMER_UPDATE_INTERVAL_MS = 1000;
 export const SHIMMER_TICK_MS = 50;
 export const SHIMMER_GRADIENT_WIDTH = 16;
@@ -15,18 +14,9 @@ export const MS_PER_DAY = MS_PER_HOUR * HOURS_PER_DAY;
 export const DAYS_PER_WEEK = 7;
 export const DAYS_PER_MONTH = 30;
 export const MONTHS_PER_YEAR = 12;
-export const FLOW_DIRECTORY_NAME = "flows";
-export const FLOW_DIRECTORY_INDEX_FILE_NAME = "directory.md";
-export const FLOW_DESCRIPTION_CHAR_LIMIT = 120;
 export const FLOW_INPUT_HISTORY_LIMIT = 20;
-export const DIRECT_RUN_TITLE_CHAR_LIMIT = 60;
-export const DIRECT_RUN_CHANGED_FILE_LIMIT = 5;
-export const SAVED_FLOW_FORMAT_VERSION = 2;
-export const SAVED_FLOW_DIRECTORY_HASH_LENGTH = 12;
-export const SAVED_FLOW_DIRECTORY_FALLBACK_SEGMENT = "root";
 export const THEME_PICKER_VISIBLE_COUNT = 20;
 export const SAVED_FLOW_PICKER_VISIBLE_COUNT = 12;
-export const TESTING_SELECT_TRUNCATION_LIMIT = 24;
 export const PROGRESS_BAR_WIDTH = 20;
 export const COMMIT_SELECTOR_WIDTH = 2;
 export const COMMIT_AUTHOR_COLUMN_WIDTH = 16;
@@ -39,10 +29,6 @@ export const ALT_SCREEN_ON = "\u001b[?1049h\u001b[2J\u001b[H";
 export const ALT_SCREEN_OFF = "\u001b[?1049l";
 export const FALLBACK_TERMINAL_COLUMNS = 80;
 export const FALLBACK_TERMINAL_ROWS = 24;
-export const BROWSER_TOOL_PREFIX = "mcp__browser__";
-export const TESTIE_STATE_DIR = ".testie";
-export const TESTED_FINGERPRINT_FILE = "last-tested";
-export const GIT_FINGERPRINT_TIMEOUT_MS = 5000;
 export const LIVE_VIEW_READY_POLL_INTERVAL_MS = 1000;
 export const CLICK_SUPPORT_ENABLED =
   process.env.SUPPORT_CLICK === "true" || process.env.SUPPORT_CLICK === "1";

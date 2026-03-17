@@ -14,25 +14,34 @@ import { ResultsScreen } from "./screens/results-screen.js";
 import { ThemePickerScreen } from "./screens/theme-picker-screen.js";
 import { MainMenu } from "./screens/main-menu-screen.js";
 import { Modeline } from "./ui/modeline.js";
-import { resolveBrowserTarget, getBrowserEnvironment } from "../utils/browser-agent.js";
-import { planBrowserFlow, resolveAgentProvider } from "@browser-tester/supervisor";
-import { useAppStore } from "../store.js";
+import {
+  getBrowserEnvironment,
+  planBrowserFlow,
+  resolveBrowserTarget,
+  resolveAgentProvider,
+  saveFlow,
+} from "@browser-tester/supervisor";
+import { useNavigationStore } from "../stores/use-navigation.js";
+import { usePreferencesStore } from "../stores/use-preferences.js";
+import { useFlowSessionStore } from "../stores/use-flow-session.js";
+import { useGitState } from "../hooks/use-git-state.js";
+import { EMPTY_SAVED_FLOWS, useSavedFlows } from "../hooks/use-saved-flows.js";
+import { queryClient } from "../query-client.js";
 import { CliRuntime } from "../runtime.js";
-import { saveFlow } from "../utils/flow-storage.js";
 import { clearInkDisplay } from "../utils/clear-ink-display.js";
 import { useStdoutDimensions } from "../hooks/use-stdout-dimensions.js";
 
 const usePlanningEffect = () => {
-  const screen = useAppStore((state) => state.screen);
-  const gitState = useAppStore((state) => state.gitState);
-  const testAction = useAppStore((state) => state.testAction);
-  const flowInstruction = useAppStore((state) => state.flowInstruction);
-  const selectedCommit = useAppStore((state) => state.selectedCommit);
-  const environmentOverrides = useAppStore((state) => state.environmentOverrides);
-  const planningProvider = useAppStore((state) => state.planningProvider);
-  const planningModel = useAppStore((state) => state.planningModel);
-  const completePlanning = useAppStore((state) => state.completePlanning);
-  const failPlanning = useAppStore((state) => state.failPlanning);
+  const screen = useNavigationStore((state) => state.screen);
+  const { data: gitState } = useGitState();
+  const testAction = useFlowSessionStore((state) => state.testAction);
+  const flowInstruction = useFlowSessionStore((state) => state.flowInstruction);
+  const selectedCommit = useFlowSessionStore((state) => state.selectedCommit);
+  const environmentOverrides = usePreferencesStore((state) => state.environmentOverrides);
+  const planningProvider = usePreferencesStore((state) => state.planningProvider);
+  const planningModel = usePreferencesStore((state) => state.planningModel);
+  const completePlanning = useFlowSessionStore((state) => state.completePlanning);
+  const failPlanning = useFlowSessionStore((state) => state.failPlanning);
 
   useEffect(() => {
     if (screen !== "planning" || !gitState || !testAction || !flowInstruction.trim()) return;
@@ -42,13 +51,15 @@ const usePlanningEffect = () => {
       commit: selectedCommit ?? undefined,
     });
     const environment = getBrowserEnvironment(environmentOverrides);
-    useAppStore.setState({ resolvedTarget: target, resolvedPlanningProvider: null });
+    useFlowSessionStore.setState({ resolvedTarget: target, resolvedPlanningProvider: null });
 
     const planningFiber = Effect.runFork(
       resolveAgentProvider(planningProvider).pipe(
         Effect.tap((resolvedAgentProvider) =>
           Effect.sync(() =>
-            useAppStore.setState({ resolvedPlanningProvider: resolvedAgentProvider.provider }),
+            useFlowSessionStore.setState({
+              resolvedPlanningProvider: resolvedAgentProvider.provider,
+            }),
           ),
         ),
         Effect.flatMap(() =>
@@ -61,11 +72,9 @@ const usePlanningEffect = () => {
           }),
         ),
         Effect.tap((plan) => Effect.sync(() => completePlanning({ target, plan, environment }))),
-        Effect.catch((caughtError) =>
-          Effect.sync(() =>
-            failPlanning(caughtError instanceof Error ? caughtError.message : "Unknown error"),
-          ),
-        ),
+        Effect.catchTags({
+          PlanningError: (planningError) => Effect.sync(() => failPlanning(planningError.message)),
+        }),
       ),
     );
 
@@ -87,14 +96,13 @@ const usePlanningEffect = () => {
 };
 
 const useAutoSaveEffect = () => {
-  const screen = useAppStore((state) => state.screen);
-  const autoSaveFlows = useAppStore((state) => state.autoSaveFlows);
-  const autoSaveStatus = useAppStore((state) => state.autoSaveStatus);
-  const planOrigin = useAppStore((state) => state.planOrigin);
-  const resolvedTarget = useAppStore((state) => state.resolvedTarget);
-  const generatedPlan = useAppStore((state) => state.generatedPlan);
-  const browserEnvironment = useAppStore((state) => state.browserEnvironment);
-  const loadSavedFlows = useAppStore((state) => state.loadSavedFlows);
+  const screen = useNavigationStore((state) => state.screen);
+  const autoSaveFlows = usePreferencesStore((state) => state.autoSaveFlows);
+  const autoSaveStatus = useFlowSessionStore((state) => state.autoSaveStatus);
+  const planOrigin = useFlowSessionStore((state) => state.planOrigin);
+  const resolvedTarget = useFlowSessionStore((state) => state.resolvedTarget);
+  const generatedPlan = useFlowSessionStore((state) => state.generatedPlan);
+  const browserEnvironment = useFlowSessionStore((state) => state.browserEnvironment);
 
   useEffect(() => {
     if (
@@ -109,7 +117,7 @@ const useAutoSaveEffect = () => {
       return;
     }
 
-    useAppStore.setState({ autoSaveStatus: "saving" });
+    useFlowSessionStore.setState({ autoSaveStatus: "saving" });
 
     const saveFiber = CliRuntime.runFork(
       saveFlow({
@@ -119,11 +127,14 @@ const useAutoSaveEffect = () => {
       }).pipe(
         Effect.tap(() =>
           Effect.sync(() => {
-            useAppStore.setState({ autoSaveStatus: "saved" });
-            void loadSavedFlows();
+            useFlowSessionStore.setState({ autoSaveStatus: "saved" });
+            void queryClient.invalidateQueries({ queryKey: ["saved-flows"] });
           }),
         ),
-        Effect.catch(() => Effect.sync(() => useAppStore.setState({ autoSaveStatus: "error" }))),
+        Effect.catchTags({
+          FlowStorageError: () =>
+            Effect.sync(() => useFlowSessionStore.setState({ autoSaveStatus: "error" })),
+        }),
       ),
     );
 
@@ -135,7 +146,6 @@ const useAutoSaveEffect = () => {
     autoSaveStatus,
     browserEnvironment,
     generatedPlan,
-    loadSavedFlows,
     planOrigin,
     resolvedTarget,
     screen,
@@ -143,27 +153,16 @@ const useAutoSaveEffect = () => {
 };
 
 export const App = () => {
-  const screen = useAppStore((state) => state.screen);
-  const gitState = useAppStore((state) => state.gitState);
-  const loadGitState = useAppStore((state) => state.loadGitState);
-  const loadSavedFlows = useAppStore((state) => state.loadSavedFlows);
-  const goBack = useAppStore((state) => state.goBack);
-  const planningError = useAppStore((state) => state.planningError);
+  const screen = useNavigationStore((state) => state.screen);
+  const { data: gitState, isLoading: gitStateLoading } = useGitState();
+  const { data: savedFlowSummaries = EMPTY_SAVED_FLOWS } = useSavedFlows();
+  const goBack = useFlowSessionStore((state) => state.goBack);
+  const planningError = useFlowSessionStore((state) => state.planningError);
+  const navigateTo = useNavigationStore((state) => state.navigateTo);
   const COLORS = useColors();
-
-  useEffect(() => {
-    loadGitState();
-  }, [loadGitState]);
-
-  useEffect(() => {
-    void loadSavedFlows();
-  }, [loadSavedFlows]);
 
   usePlanningEffect();
   useAutoSaveEffect();
-
-  const navigateTo = useAppStore((state) => state.navigateTo);
-  const savedFlowSummaries = useAppStore((state) => state.savedFlowSummaries);
 
   const [, setRefreshTick] = useState(0);
   const [, rows] = useStdoutDimensions();
@@ -188,7 +187,7 @@ export const App = () => {
     }
   });
 
-  if (!gitState) {
+  if (gitStateLoading || !gitState) {
     return (
       <Box flexDirection="column" paddingX={2} paddingY={1}>
         <Spinner message="Checking git state..." />

@@ -5,7 +5,7 @@ import { useColors } from "../theme-context.js";
 import { Clickable } from "../ui/clickable.js";
 import { RuledBox } from "../ui/ruled-box.js";
 import { ScreenHeading } from "../ui/screen-heading.js";
-import { useAppStore } from "../../store.js";
+import { useFlowSessionStore } from "../../stores/use-flow-session.js";
 
 interface ConfirmOption {
   id: "enable-sync" | "run-without-sync";
@@ -28,10 +28,10 @@ const CONFIRM_OPTIONS: ConfirmOption[] = [
 
 export const CookieSyncConfirmScreen = () => {
   const COLORS = useColors();
-  const plan = useAppStore((state) => state.generatedPlan);
-  const environment = useAppStore((state) => state.browserEnvironment);
-  const updateEnvironment = useAppStore((state) => state.updateEnvironment);
-  const approvePlan = useAppStore((state) => state.approvePlan);
+  const plan = useFlowSessionStore((state) => state.generatedPlan);
+  const environment = useFlowSessionStore((state) => state.browserEnvironment);
+  const updateEnvironment = useFlowSessionStore((state) => state.updateEnvironment);
+  const approvePlan = useFlowSessionStore((state) => state.approvePlan);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   if (!plan) return null;

@@ -1,25 +1,24 @@
 import { Effect, Stream } from "effect";
 import {
   executeBrowserFlow,
+  generateBrowserPlan,
+  getBrowserEnvironment,
   getCommitSummary,
+  getGitState,
+  getRecommendedScope,
+  loadSavedFlowBySlug,
+  resolveBrowserTarget,
+  saveTestedFingerprint,
   type BrowserRunEvent,
   type BrowserRunReport,
   type CommitSummary,
+  type GenerateBrowserPlanResult,
+  type TestAction,
 } from "@browser-tester/supervisor";
 import figures from "figures";
 import { VERSION } from "../constants.js";
-import { getGitState, getRecommendedScope } from "./get-git-state.js";
-import {
-  generateBrowserPlan,
-  getBrowserEnvironment,
-  resolveBrowserTarget,
-  type GenerateBrowserPlanResult,
-  type TestAction,
-} from "./browser-agent.js";
 import { CliRuntime } from "../runtime.js";
 import type { TestRunConfig } from "./test-run-config.js";
-import { loadSavedFlowBySlug } from "./flow-storage.js";
-import { saveTestedFingerprint } from "./tested-state.js";
 
 const ACTION_LABELS: Record<TestAction, string> = {
   "test-unstaged": "unstaged changes",

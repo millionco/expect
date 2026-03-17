@@ -1,10 +1,6 @@
 import { Schema } from "effect";
-import type {
-  BrowserEnvironmentHints,
-  BrowserFlowPlan,
-  TestTarget,
-} from "@browser-tester/supervisor";
-import { SAVED_FLOW_FORMAT_VERSION } from "../constants.js";
+import type { BrowserEnvironmentHints, BrowserFlowPlan, TestTarget } from "./types.js";
+import { SAVED_FLOW_FORMAT_VERSION } from "./constants.js";
 
 export interface SavedFlowFileData {
   format_version: number;

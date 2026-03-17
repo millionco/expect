@@ -1,14 +1,13 @@
 import figures from "figures";
 import { Text } from "ink";
-import { useAppStore } from "../../store.js";
-import { formatFileCategories } from "../../utils/categorize-changed-files.js";
-import { getHealthcheckReport } from "../../utils/get-healthcheck-report.js";
+import { formatFileCategories, getHealthcheckReport } from "@browser-tester/supervisor";
+import { useGitState } from "../../hooks/use-git-state.js";
 import { useColors } from "../theme-context.js";
 import { RuledBox } from "./ruled-box.js";
 
 export const UntestedChangesBanner = () => {
   const COLORS = useColors();
-  const gitState = useAppStore((state) => state.gitState);
+  const { data: gitState } = useGitState();
 
   if (!gitState?.isGitRepo) return null;
 

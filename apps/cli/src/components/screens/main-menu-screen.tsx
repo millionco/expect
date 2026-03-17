@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Text, useInput } from "ink";
-import { useAppStore } from "../../store.js";
+import { useFlowSessionStore } from "../../stores/use-flow-session.js";
+import { usePreferencesStore } from "../../stores/use-preferences.js";
+import { useGitState } from "../../hooks/use-git-state.js";
 import { useColors } from "../theme-context.js";
 import { Clickable } from "../ui/clickable.js";
 import { Input } from "../ui/input.js";
@@ -24,15 +26,15 @@ type FocusArea = "input";
 export const MainMenu = () => {
   const COLORS = useColors();
   const [columns] = useStdoutDimensions();
-  const gitState = useAppStore((state) => state.gitState);
-  const toggleSkipPlanning = useAppStore((state) => state.toggleSkipPlanning);
-  const submitFlowInstruction = useAppStore((state) => state.submitFlowInstruction);
-  const selectAction = useAppStore((state) => state.selectAction);
-  const storeSelectContext = useAppStore((state) => state.selectContext);
-  const selectedContext = useAppStore((state) => state.selectedContext);
-  const switchBranch = useAppStore((state) => state.switchBranch);
-  const flowInstruction = useAppStore((state) => state.flowInstruction);
-  const planningProvider = useAppStore((state) => state.planningProvider);
+  const { data: gitState } = useGitState();
+  const toggleSkipPlanning = usePreferencesStore((state) => state.toggleSkipPlanning);
+  const submitFlowInstruction = useFlowSessionStore((state) => state.submitFlowInstruction);
+  const selectAction = useFlowSessionStore((state) => state.selectAction);
+  const storeSelectContext = useFlowSessionStore((state) => state.selectContext);
+  const selectedContext = useFlowSessionStore((state) => state.selectedContext);
+  const switchBranch = useFlowSessionStore((state) => state.switchBranch);
+  const flowInstruction = useFlowSessionStore((state) => state.flowInstruction);
+  const planningProvider = usePreferencesStore((state) => state.planningProvider);
 
   const [value, setValue] = useState(flowInstruction);
   const [inputKey, setInputKey] = useState(0);
@@ -99,7 +101,7 @@ export const MainMenu = () => {
 
   const activeContext = selectedContext ?? defaultContext;
   const staticSuggestions = useMemo(
-    () => getFlowSuggestions(activeContext, gitState),
+    () => getFlowSuggestions(activeContext, gitState ?? null),
     [activeContext, gitState],
   );
   const [aiSuggestions, setAiSuggestions] = useState<readonly string[] | null>(null);
@@ -182,7 +184,7 @@ export const MainMenu = () => {
 
       if (context?.action === "select-commit") {
         selectAction("select-commit");
-        useAppStore.setState({
+        useFlowSessionStore.setState({
           selectedCommit: context.commitHash
             ? {
                 hash: context.commitHash,

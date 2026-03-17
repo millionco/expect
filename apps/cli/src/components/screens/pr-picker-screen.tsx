@@ -19,7 +19,7 @@ import { Spinner } from "../ui/spinner.js";
 import cliTruncate from "cli-truncate";
 import { visualPadEnd } from "../../utils/visual-pad-end.js";
 import { useScrollableList } from "../../hooks/use-scrollable-list.js";
-import { useAppStore } from "../../store.js";
+import { useFlowSessionStore } from "../../stores/use-flow-session.js";
 import { ScreenHeading } from "../ui/screen-heading.js";
 
 type PrFilter = "recent" | "all" | "open" | "draft" | "merged" | "no-pr";
@@ -28,10 +28,10 @@ const PR_FILTERS: PrFilter[] = ["recent", "all", "open", "draft", "merged", "no-
 
 export const PrPickerScreen = () => {
   const [columns] = useStdoutDimensions();
-  const storeSwitchBranch = useAppStore((state) => state.switchBranch);
-  const checkoutError = useAppStore((state) => state.checkoutError);
-  const clearCheckoutError = useAppStore((state) => state.clearCheckoutError);
-  const generatedPlan = useAppStore((state) => state.generatedPlan);
+  const storeSwitchBranch = useFlowSessionStore((state) => state.switchBranch);
+  const checkoutError = useFlowSessionStore((state) => state.checkoutError);
+  const clearCheckoutError = useFlowSessionStore((state) => state.clearCheckoutError);
+  const generatedPlan = useFlowSessionStore((state) => state.generatedPlan);
   const COLORS = useColors();
   const [confirmBranch, setConfirmBranch] = useState<{
     name: string;

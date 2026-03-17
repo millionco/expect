@@ -13,7 +13,8 @@ import { useColors } from "../theme-context.js";
 import { RuledBox } from "../ui/ruled-box.js";
 import { Spinner } from "../ui/spinner.js";
 import { TextShimmer } from "../ui/text-shimmer.js";
-import { useAppStore } from "../../store.js";
+import { useFlowSessionStore } from "../../stores/use-flow-session.js";
+import { usePreferencesStore } from "../../stores/use-preferences.js";
 import { ScreenHeading } from "../ui/screen-heading.js";
 import cliTruncate from "cli-truncate";
 import { formatElapsedTime } from "../../utils/format-elapsed-time.js";
@@ -21,9 +22,8 @@ import { extractScreenshotPath } from "../../utils/extract-screenshot-path.js";
 import { Image } from "../ui/image.js";
 import { FileLink } from "../ui/file-link.js";
 import { ErrorMessage } from "../ui/error-message.js";
-import { deriveTestingState } from "../../utils/derive-testing-state.js";
+import { deriveTestingState, saveTestedFingerprint } from "@browser-tester/supervisor";
 import { openUrl } from "../../utils/open-url.js";
-import { saveTestedFingerprint } from "../../utils/tested-state.js";
 
 const TOOL_CALL_DISPLAY_MODE_COMPACT = "compact";
 const TOOL_CALL_DISPLAY_MODE_DETAILED = "detailed";
@@ -43,15 +43,15 @@ const getNextToolCallDisplayMode = (toolCallDisplayMode: string): string => {
 };
 
 export const TestingScreen = () => {
-  const target = useAppStore((state) => state.resolvedTarget);
-  const plan = useAppStore((state) => state.generatedPlan);
-  const environment = useAppStore((state) => state.browserEnvironment);
-  const executionProvider = useAppStore((state) => state.executionProvider);
-  const executionModel = useAppStore((state) => state.executionModel);
-  const completeTestingRun = useAppStore((state) => state.completeTestingRun);
-  const exitTesting = useAppStore((state) => state.exitTesting);
-  const liveViewUrl = useAppStore((state) => state.liveViewUrl);
-  const setLiveViewUrl = useAppStore((state) => state.setLiveViewUrl);
+  const target = useFlowSessionStore((state) => state.resolvedTarget);
+  const plan = useFlowSessionStore((state) => state.generatedPlan);
+  const environment = useFlowSessionStore((state) => state.browserEnvironment);
+  const executionProvider = usePreferencesStore((state) => state.executionProvider);
+  const executionModel = usePreferencesStore((state) => state.executionModel);
+  const completeTestingRun = useFlowSessionStore((state) => state.completeTestingRun);
+  const exitTesting = useFlowSessionStore((state) => state.exitTesting);
+  const liveViewUrl = useFlowSessionStore((state) => state.liveViewUrl);
+  const setLiveViewUrl = useFlowSessionStore((state) => state.setLiveViewUrl);
   const COLORS = useColors();
   const [events, setEvents] = useState<BrowserRunEvent[]>([]);
   const [running, setRunning] = useState(true);
@@ -127,7 +127,7 @@ export const TestingScreen = () => {
     setElapsedTimeMs(0);
     setShowCancelConfirmation(false);
     setExitRequested(false);
-    useAppStore.setState({ resolvedExecutionProvider: executionProvider ?? null });
+    useFlowSessionStore.setState({ resolvedExecutionProvider: executionProvider ?? null });
     runFiberRef.current = Effect.runFork(
       Stream.runForEach(
         executeBrowserFlow({

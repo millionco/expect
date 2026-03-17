@@ -1,4 +1,4 @@
-import type { ChangedFile, DiffStats } from "@browser-tester/supervisor";
+import type { ChangedFile, DiffStats } from "./types.js";
 import {
   getBranchCommits,
   getBranchDiffStats,
@@ -9,7 +9,7 @@ import {
   getUnstagedChangedFiles,
   getUnstagedDiffStats,
   isInsideGitRepo,
-} from "@browser-tester/supervisor";
+} from "./git.js";
 
 export interface GitState {
   isGitRepo: boolean;
@@ -28,9 +28,7 @@ export interface GitState {
 
 export type TestScope = "unstaged-changes" | "entire-branch" | "changes" | "default";
 
-export const getGitState = (): GitState => {
-  const cwd = process.cwd();
-
+export const getGitState = (cwd: string = process.cwd()): GitState => {
   if (!isInsideGitRepo(cwd)) {
     return {
       isGitRepo: false,

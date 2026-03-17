@@ -1,17 +1,21 @@
 import { Effect } from "effect";
-import {
-  planBrowserFlow,
-  resolveTestTarget,
-  type AgentProvider,
-  type BrowserEnvironmentHints,
-  type BrowserFlowPlan,
-  type CommitSummary,
-  type TestTarget,
-  type TestTargetSelection,
-} from "@browser-tester/supervisor";
-import type { EnvironmentOverrides } from "./test-run-config.js";
+import { planBrowserFlow } from "./plan-browser-flow.js";
+import { resolveTestTarget } from "./resolve-test-target.js";
+import type {
+  AgentProvider,
+  BrowserEnvironmentHints,
+  BrowserFlowPlan,
+  CommitSummary,
+  TestAction,
+  TestTarget,
+  TestTargetSelection,
+} from "./types.js";
 
-export type TestAction = "test-unstaged" | "test-branch" | "test-changes" | "select-commit";
+export interface EnvironmentOverrides {
+  baseUrl?: string;
+  headed?: boolean;
+  cookies?: boolean;
+}
 
 interface GenerateBrowserPlanOptions {
   action: TestAction;

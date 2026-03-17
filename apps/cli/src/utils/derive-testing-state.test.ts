@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import type { BrowserFlowPlan, BrowserRunEvent } from "@browser-tester/supervisor";
-import { deriveTestingState } from "./derive-testing-state.js";
+import { deriveTestingState } from "@browser-tester/supervisor";
 
 const plan: BrowserFlowPlan = {
   title: "Regression plan",
@@ -127,6 +127,7 @@ describe("deriveTestingState", () => {
       {
         type: "run-started",
         timestamp: 0,
+        planTitle: "Regression plan",
         liveViewUrl: undefined,
       },
       {

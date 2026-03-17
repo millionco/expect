@@ -6,7 +6,7 @@ import {
   GIT_FINGERPRINT_TIMEOUT_MS,
   TESTED_FINGERPRINT_FILE,
   TESTIE_STATE_DIR,
-} from "../constants.js";
+} from "./constants.js";
 
 const NULL_SEPARATOR = "\0";
 

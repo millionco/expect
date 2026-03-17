@@ -1,9 +1,9 @@
-import type { DiffStats } from "@browser-tester/supervisor";
-import { categorizeChangedFiles, type FileCategory } from "./categorize-changed-files.js";
+import type { DiffStats } from "./types.js";
+import { categorizeChangedFiles, type FileCategory } from "./utils/categorize-changed-files.js";
 import { type GitState, getRecommendedScope, type TestScope } from "./get-git-state.js";
 import { isCurrentStateTested } from "./tested-state.js";
 
-interface HealthcheckReport {
+export interface HealthcheckReport {
   hasUntestedChanges: boolean;
   scope: TestScope;
   changedLines: number;

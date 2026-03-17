@@ -25,8 +25,10 @@ export interface TestTargetBranch {
   main: string | null;
 }
 
+export type TestAction = "test-unstaged" | "test-branch" | "test-changes" | "select-commit";
+
 export interface TestTargetSelection {
-  action: "test-unstaged" | "test-branch" | "test-changes" | "select-commit";
+  action: TestAction;
   commitHash?: string;
   commitShortHash?: string;
   commitSubject?: string;

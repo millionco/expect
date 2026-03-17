@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import type { TestTarget } from "@browser-tester/supervisor";
-import { createDirectRunPlan } from "./create-direct-run-plan.js";
+import { createDirectRunPlan } from "@browser-tester/supervisor";
 
 const target: TestTarget = {
   scope: "changes",
@@ -29,7 +29,7 @@ describe("createDirectRunPlan", () => {
 
     expect(plan.title).toContain("Direct run:");
     expect(plan.userInstruction).toContain("Test the login flow");
-    expect(plan.cookieSync.required).toBe(false);
+    expect(plan.cookieSync.required).toBe(true);
     expect(plan.riskAreas).toEqual(["apps/web/src/app.tsx", "apps/web/src/routes/login.tsx"]);
     expect(plan.steps).toEqual([
       {

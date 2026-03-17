@@ -1,11 +1,6 @@
-import type { AgentProvider } from "@browser-tester/supervisor";
-import type { TestAction } from "./browser-agent.js";
+import type { AgentProvider, EnvironmentOverrides, TestAction } from "@browser-tester/supervisor";
 
-export interface EnvironmentOverrides {
-  baseUrl?: string;
-  headed?: boolean;
-  cookies?: boolean;
-}
+export type { EnvironmentOverrides } from "@browser-tester/supervisor";
 
 export interface TestRunConfig {
   action: TestAction;

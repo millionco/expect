@@ -1,5 +1,5 @@
-import type { ChangedFile } from "@browser-tester/supervisor";
 import { extname } from "node:path";
+import type { ChangedFile } from "../types.js";
 
 const COMPONENT_EXTENSIONS = new Set([".tsx", ".jsx"]);
 const STYLE_EXTENSIONS = new Set([".css", ".scss", ".sass", ".less", ".styl"]);
@@ -11,7 +11,7 @@ export interface FileCategory {
   count: number;
 }
 
-interface ChangedFileSummary {
+export interface ChangedFileSummary {
   categories: FileCategory[];
   totalWebFiles: number;
   totalFiles: number;

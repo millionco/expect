@@ -1,9 +1,8 @@
 import {
   BROWSER_TOOL_PREFIX,
-  TESTING_SELECT_TRUNCATION_LIMIT,
-  TESTING_TOOL_INPUT_CHAR_LIMIT,
+  TOOL_INPUT_CHAR_LIMIT,
+  SELECT_TRUNCATION_LIMIT,
 } from "../constants.js";
-import cliTruncate from "cli-truncate";
 
 interface BrowserToolCallFormatOptions {
   includeRelevantInputs?: boolean;
@@ -70,9 +69,15 @@ const readFirstPathOrUrl = (
 const readElementTarget = (input: Record<string, unknown> | null): string | null =>
   readFirstString(input, ["ref", "selector", "element", "target"]);
 
+const truncateToolText = (value: string, limit: number): string => {
+  const cleaned = value.replace(/\s+/g, " ").trim();
+  if (cleaned.length <= limit) return cleaned;
+  return cleaned.slice(0, limit - 1) + "…";
+};
+
 const formatInlineText = (value: string | null): string | null => {
   if (!value) return null;
-  return cliTruncate(value.replace(/\s+/g, " ").trim(), TESTING_TOOL_INPUT_CHAR_LIMIT);
+  return truncateToolText(value, TOOL_INPUT_CHAR_LIMIT);
 };
 
 const formatCompactBrowserToolCall = (
@@ -102,7 +107,7 @@ const formatCompactBrowserToolCall = (
     case "type_text":
       return "Type text";
     case "select":
-      return `Select ${cliTruncate(readString(parsedInput, "value") ?? "option", TESTING_SELECT_TRUNCATION_LIMIT)}`;
+      return `Select ${truncateToolText(readString(parsedInput, "value") ?? "option", SELECT_TRUNCATION_LIMIT)}`;
     case "hover":
       return `Hover ${readElementTarget(parsedInput) ?? "element"}`;
     case "wait": {
@@ -145,7 +150,7 @@ const formatCompactBrowserToolCall = (
     case "close_page":
       return `Close tab ${readNumber(parsedInput, "pageId") ?? ""}`.trim();
     default:
-      return cliTruncate(action.replaceAll("_", " "), TESTING_SELECT_TRUNCATION_LIMIT);
+      return truncateToolText(action.replaceAll("_", " "), SELECT_TRUNCATION_LIMIT);
   }
 };
 

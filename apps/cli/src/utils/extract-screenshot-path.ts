@@ -1,5 +1,4 @@
-import type { BrowserRunEvent } from "@browser-tester/supervisor";
-import { BROWSER_TOOL_PREFIX } from "../constants.js";
+import { BROWSER_TOOL_PREFIX, type BrowserRunEvent } from "@browser-tester/supervisor";
 
 const SCREENSHOT_TOOL_NAMES = new Set([
   `${BROWSER_TOOL_PREFIX}screenshot`,

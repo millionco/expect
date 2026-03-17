@@ -4,10 +4,12 @@ import figures from "figures";
 import { SAVED_FLOW_PICKER_VISIBLE_COUNT } from "../../constants.js";
 import { useColors } from "../theme-context.js";
 import { RuledBox } from "../ui/ruled-box.js";
-import { useAppStore } from "../../store.js";
+import { useFlowSessionStore } from "../../stores/use-flow-session.js";
+import { EMPTY_SAVED_FLOWS, useSavedFlows } from "../../hooks/use-saved-flows.js";
+import { queryClient } from "../../query-client.js";
 import { formatTimeAgo } from "../../utils/format-time-ago.js";
 import { CliRuntime } from "../../runtime.js";
-import { loadSavedFlow, removeSavedFlow } from "../../utils/flow-storage.js";
+import { loadSavedFlow, removeSavedFlow } from "@browser-tester/supervisor";
 import { ScreenHeading } from "../ui/screen-heading.js";
 import { ErrorMessage } from "../ui/error-message.js";
 import { Clickable } from "../ui/clickable.js";
@@ -21,10 +23,9 @@ const ACTION_LABELS: Record<string, string> = {
 
 export const SavedFlowPickerScreen = () => {
   const COLORS = useColors();
-  const testAction = useAppStore((state) => state.testAction);
-  const savedFlowSummaries = useAppStore((state) => state.savedFlowSummaries);
-  const applySavedFlow = useAppStore((state) => state.applySavedFlow);
-  const loadSavedFlows = useAppStore((state) => state.loadSavedFlows);
+  const testAction = useFlowSessionStore((state) => state.testAction);
+  const { data: savedFlowSummaries = EMPTY_SAVED_FLOWS } = useSavedFlows();
+  const applySavedFlow = useFlowSessionStore((state) => state.applySavedFlow);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [loadingFilePath, setLoadingFilePath] = useState<string | null>(null);
   const [deletingFilePath, setDeletingFilePath] = useState<string | null>(null);
@@ -79,7 +80,7 @@ export const SavedFlowPickerScreen = () => {
     setDeletingFilePath(selectedFlow.filePath);
 
     void CliRuntime.runPromise(removeSavedFlow(selectedFlow.filePath))
-      .then(() => loadSavedFlows())
+      .then(() => queryClient.invalidateQueries({ queryKey: ["saved-flows"] }))
       .catch((caughtError) => {
         setLoadingError(
           caughtError instanceof Error ? caughtError.message : "Failed to remove saved flow.",

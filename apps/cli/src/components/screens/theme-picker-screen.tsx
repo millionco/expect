@@ -7,7 +7,7 @@ import { Clickable } from "../ui/clickable.js";
 import { THEME_PICKER_VISIBLE_COUNT } from "../../constants.js";
 import { saveThemeName } from "../../utils/load-theme.js";
 import { useScrollableList } from "../../hooks/use-scrollable-list.js";
-import { useAppStore } from "../../store.js";
+import { useNavigationStore } from "../../stores/use-navigation.js";
 import { ScreenHeading } from "../ui/screen-heading.js";
 
 type VariantFilter = "light" | "dark";
@@ -27,8 +27,8 @@ const filterThemes = (filter: VariantFilter): string[] =>
   ALL_THEME_NAMES.filter((name) => THEMES[name]?.variant === filter);
 
 export const ThemePickerScreen = () => {
-  const navigateTo = useAppStore((state) => state.navigateTo);
-  const previousScreen = useAppStore((state) => state.previousScreen);
+  const navigateTo = useNavigationStore((state) => state.navigateTo);
+  const previousScreen = useNavigationStore((state) => state.previousScreen);
   const { themeName, setTheme } = useThemeContext();
   const COLORS = useColors();
   const [previousTheme] = useState(themeName);

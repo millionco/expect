@@ -85,6 +85,7 @@ const matchesRiskArea = (riskArea: string, texts: string[]): boolean => {
 const getStepResults = (
   plan: BrowserFlowPlan,
   events: BrowserRunEvent[],
+  completionEvent: Extract<BrowserRunEvent, { type: "run-completed" }>,
 ): BrowserRunStepResult[] => {
   const stepResultById = new Map<string, BrowserRunStepResult>();
 
@@ -116,6 +117,14 @@ const getStepResults = (
         status: "failed",
         summary: event.message,
       });
+    }
+  }
+
+  // HACK: direct runs don't emit per-step events, so infer step status from the overall run result
+  for (const stepResult of stepResultById.values()) {
+    if (stepResult.status === "not-run") {
+      stepResult.status = completionEvent.status === "passed" ? "passed" : "failed";
+      stepResult.summary = completionEvent.summary;
     }
   }
 
@@ -510,7 +519,7 @@ export const createBrowserRunReport = async (
   options: CreateBrowserRunReportOptions,
 ): Promise<BrowserRunReport> => {
   await options.onProgress?.("Analyzing results");
-  const stepResults = getStepResults(options.plan, options.events);
+  const stepResults = getStepResults(options.plan, options.events, options.completionEvent);
   const findings = getFindings(options.events, options.plan, options.completionEvent);
   const riskAreaSummary = getRiskAreaSummary(options.plan, stepResults, findings);
   await options.onProgress?.("Looking up pull request");

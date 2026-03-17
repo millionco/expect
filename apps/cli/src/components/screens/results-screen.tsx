@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url";
 import { Box, Text, useInput } from "ink";
 import Link from "ink-link";
 import { postPullRequestComment, type BrowserRunReport } from "@browser-tester/supervisor";
-import { useAppStore } from "../../store.js";
+import { useFlowSessionStore } from "../../stores/use-flow-session.js";
 import { copyToClipboard } from "../../utils/copy-to-clipboard.js";
 import { openUrl } from "../../utils/open-url.js";
 import { useColors } from "../theme-context.js";
@@ -61,8 +61,8 @@ const buildResultsClipboardText = (report: BrowserRunReport): string => {
 
 export const ResultsScreen = () => {
   const COLORS = useColors();
-  const latestRunReport = useAppStore((state) => state.latestRunReport);
-  const resolvedTarget = useAppStore((state) => state.resolvedTarget);
+  const latestRunReport = useFlowSessionStore((state) => state.latestRunReport);
+  const resolvedTarget = useFlowSessionStore((state) => state.resolvedTarget);
   const [isPostingComment, setIsPostingComment] = useState(false);
   const [clipboardStatusMessage, setClipboardStatusMessage] = useState<string | null>(null);
   const [clipboardError, setClipboardError] = useState<string | null>(null);

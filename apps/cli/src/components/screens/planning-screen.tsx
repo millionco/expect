@@ -5,7 +5,7 @@ import { Spinner } from "../ui/spinner.js";
 import { useColors } from "../theme-context.js";
 import { RuledBox } from "../ui/ruled-box.js";
 import { DotField } from "../ui/dot-field.js";
-import { useAppStore } from "../../store.js";
+import { useFlowSessionStore } from "../../stores/use-flow-session.js";
 import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions.js";
 import { formatElapsedTime } from "../../utils/format-elapsed-time.js";
 import { TESTING_TIMER_UPDATE_INTERVAL_MS } from "../../constants.js";
@@ -109,7 +109,7 @@ const getSmoothProgress = (elapsed: number): number => {
 export const PlanningScreen = () => {
   const COLORS = useColors();
   const [columns] = useStdoutDimensions();
-  const flowInstruction = useAppStore((state) => state.flowInstruction);
+  const flowInstruction = useFlowSessionStore((state) => state.flowInstruction);
   const [startTime] = useState(() => Date.now());
   const [elapsed, setElapsed] = useState(0);
   const [tipIndex] = useState(() => Math.floor(Math.random() * TIPS.length));

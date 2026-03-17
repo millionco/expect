@@ -2,26 +2,30 @@ import { Effect } from "effect";
 import { ensureSafeCurrentWorkingDirectory } from "@browser-tester/utils";
 import { Command, InvalidOptionArgumentError } from "commander";
 import { render } from "ink";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { App } from "./components/app.js";
 import { ALT_SCREEN_OFF, ALT_SCREEN_ON, VERSION } from "./constants.js";
 import { ThemeProvider } from "./components/theme-context.js";
 import { loadThemeName } from "./utils/load-theme.js";
-import { isRunningInAgent } from "@browser-tester/supervisor";
-import { getCommitSummary } from "@browser-tester/supervisor";
-import type { AgentProvider } from "@browser-tester/supervisor";
+import {
+  createDirectRunPlan,
+  getBrowserEnvironment,
+  getCommitSummary,
+  isRunningInAgent,
+  loadSavedFlowBySlug,
+  resolveBrowserTarget,
+  type AgentProvider,
+  type TestAction,
+} from "@browser-tester/supervisor";
 import { autoDetectAndTest, runTest } from "./utils/run-test.js";
 import { runHealthcheckHeadless, runHealthcheckInteractive } from "./utils/run-healthcheck.js";
-import { useAppStore, type Screen } from "./store.js";
+import { useNavigationStore, type Screen } from "./stores/use-navigation.js";
+import { usePreferencesStore } from "./stores/use-preferences.js";
+import { useFlowSessionStore } from "./stores/use-flow-session.js";
+import { queryClient } from "./query-client.js";
 import { resolveTestRunConfig, type TestRunConfig } from "./utils/test-run-config.js";
-import {
-  getBrowserEnvironment,
-  resolveBrowserTarget,
-  type TestAction,
-} from "./utils/browser-agent.js";
 import { CliRuntime } from "./runtime.js";
-import { loadSavedFlowBySlug } from "./utils/flow-storage.js";
 import { setInkInstance } from "./utils/clear-ink-display.js";
-import { createDirectRunPlan } from "./utils/create-direct-run-plan.js";
 
 const DEFAULT_SKIP_PLANNING = true;
 
@@ -84,9 +88,11 @@ const renderApp = () => {
   process.stdout.write(ALT_SCREEN_ON);
   process.on("exit", () => process.stdout.write(ALT_SCREEN_OFF));
   const instance = render(
-    <ThemeProvider initialTheme={initialTheme}>
-      <App />
-    </ThemeProvider>,
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider initialTheme={initialTheme}>
+        <App />
+      </ThemeProvider>
+    </QueryClientProvider>,
   );
   setInkInstance(instance);
 };
@@ -122,10 +128,8 @@ const seedStoreFromConfig = async (config: TestRunConfig): Promise<void> => {
 
   const screen = resolveInitialScreen(config, Boolean(savedFlow));
 
-  useAppStore.setState({
-    screen,
-    testAction: config.action,
-    selectedCommit: resolvedCommit,
+  useNavigationStore.setState({ screen });
+  usePreferencesStore.setState({
     autoRunAfterPlanning: config.autoRun ?? false,
     skipPlanning: DEFAULT_SKIP_PLANNING,
     planningProvider: config.planningProvider,
@@ -133,6 +137,10 @@ const seedStoreFromConfig = async (config: TestRunConfig): Promise<void> => {
     planningModel: config.planningModel,
     executionModel: config.executionModel,
     environmentOverrides: config.environmentOverrides,
+  });
+  useFlowSessionStore.setState({
+    testAction: config.action,
+    selectedCommit: resolvedCommit,
     ...(config.message && { flowInstruction: config.message }),
     ...(savedFlow && {
       generatedPlan: savedFlow.plan,
@@ -172,7 +180,7 @@ program
     }
     const { shouldTest, scope } = await runHealthcheckInteractive();
     if (!shouldTest) return;
-    const actionByScope: Record<string, import("./utils/browser-agent.js").TestAction> = {
+    const actionByScope: Record<string, TestAction> = {
       changes: "test-changes",
       "unstaged-changes": "test-unstaged",
       "entire-branch": "test-branch",

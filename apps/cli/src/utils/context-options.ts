@@ -2,11 +2,11 @@ import {
   fetchRemoteBranches,
   getBranchCommits,
   getPullRequestForBranch,
-  type RemoteBranch,
   type CommitSummary,
+  type RemoteBranch,
+  type TestAction,
 } from "@browser-tester/supervisor";
-import type { TestAction } from "./browser-agent.js";
-import type { GitState } from "./get-git-state.js";
+import type { GitState } from "@browser-tester/supervisor";
 
 export interface ContextOption {
   id: string;

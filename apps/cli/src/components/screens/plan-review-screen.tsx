@@ -8,9 +8,12 @@ import { RuledBox } from "../ui/ruled-box.js";
 import { FileLink } from "../ui/file-link.js";
 import { ContextPicker } from "../ui/context-picker.js";
 import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions.js";
-import { saveFlow } from "../../utils/flow-storage.js";
+import { saveFlow } from "@browser-tester/supervisor";
 import { CliRuntime } from "../../runtime.js";
-import { useAppStore } from "../../store.js";
+import { useFlowSessionStore } from "../../stores/use-flow-session.js";
+import { useNavigationStore } from "../../stores/use-navigation.js";
+import { useGitState } from "../../hooks/use-git-state.js";
+import { queryClient } from "../../query-client.js";
 import { ErrorMessage } from "../ui/error-message.js";
 import {
   buildLocalContextOptions,
@@ -33,21 +36,20 @@ type EditingState = StepEditingState | AssumptionsEditingState | null;
 export const PlanReviewScreen = () => {
   const COLORS = useColors();
   const [columns] = useStdoutDimensions();
-  const plan = useAppStore((state) => state.generatedPlan);
-  const environment = useAppStore((state) => state.browserEnvironment);
-  const resolvedTarget = useAppStore((state) => state.resolvedTarget);
-  const goBack = useAppStore((state) => state.goBack);
-  const updatePlan = useAppStore((state) => state.updatePlan);
-  const updateEnvironment = useAppStore((state) => state.updateEnvironment);
-  const requestPlanApproval = useAppStore((state) => state.requestPlanApproval);
-  const loadSavedFlows = useAppStore((state) => state.loadSavedFlows);
-  const flowInstruction = useAppStore((state) => state.flowInstruction);
-  const storeSelectContext = useAppStore((state) => state.selectContext);
-  const gitState = useAppStore((state) => state.gitState);
-  const navigateTo = useAppStore((state) => state.navigateTo);
-  const selectAction = useAppStore((state) => state.selectAction);
-  const submitFlowInstruction = useAppStore((state) => state.submitFlowInstruction);
-  const testAction = useAppStore((state) => state.testAction);
+  const plan = useFlowSessionStore((state) => state.generatedPlan);
+  const environment = useFlowSessionStore((state) => state.browserEnvironment);
+  const resolvedTarget = useFlowSessionStore((state) => state.resolvedTarget);
+  const goBack = useFlowSessionStore((state) => state.goBack);
+  const updatePlan = useFlowSessionStore((state) => state.updatePlan);
+  const updateEnvironment = useFlowSessionStore((state) => state.updateEnvironment);
+  const requestPlanApproval = useFlowSessionStore((state) => state.requestPlanApproval);
+  const flowInstruction = useFlowSessionStore((state) => state.flowInstruction);
+  const storeSelectContext = useFlowSessionStore((state) => state.selectContext);
+  const { data: gitState } = useGitState();
+  const navigateTo = useNavigationStore((state) => state.navigateTo);
+  const selectAction = useFlowSessionStore((state) => state.selectAction);
+  const submitFlowInstruction = useFlowSessionStore((state) => state.submitFlowInstruction);
+  const testAction = useFlowSessionStore((state) => state.testAction);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [editingState, setEditingState] = useState<EditingState>(null);
   const [editingValue, setEditingValue] = useState("");
@@ -323,7 +325,7 @@ export const PlanReviewScreen = () => {
             flowPath: result.flowPath,
             directoryPath: result.directoryPath,
           });
-          void loadSavedFlows();
+          void queryClient.invalidateQueries({ queryKey: ["saved-flows"] });
         })
         .catch((caughtError) => {
           setSaveError(caughtError instanceof Error ? caughtError.message : "Failed to save flow.");

@@ -1,9 +1,12 @@
 import readline from "node:readline";
 import figures from "figures";
 import pc from "picocolors";
-import { formatFileCategories } from "./categorize-changed-files.js";
-import { getGitState, type TestScope } from "./get-git-state.js";
-import { getHealthcheckReport } from "./get-healthcheck-report.js";
+import {
+  formatFileCategories,
+  getGitState,
+  getHealthcheckReport,
+  type TestScope,
+} from "@browser-tester/supervisor";
 import { VERSION } from "../constants.js";
 
 interface HealthcheckResult {
