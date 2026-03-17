@@ -1,4 +1,4 @@
-export const DEFAULT_AGENT_PROVIDER = "claude";
+export const DEFAULT_AGENT_PROVIDER = "codex";
 export const BROWSER_TEST_MODEL = "claude-sonnet-4-6";
 export const CODEX_PLANNER_MODEL = "gpt-5.3-codex-spark";
 export const VIDEO_DIRECTORY_PREFIX = "browser-tester-run-";

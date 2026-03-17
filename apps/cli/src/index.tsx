@@ -46,13 +46,13 @@ const program = new Command()
     "--planner <provider>",
     "agent for planning (claude, codex, cursor)",
     parseAgentProvider,
-    "cursor",
+    "codex",
   )
   .option(
     "--executor <provider>",
     "agent for execution (claude, codex, cursor)",
     parseAgentProvider,
-    "cursor",
+    "codex",
   )
   .option("--planning-model <model>", "specific model for the planning agent", "composer-1.5")
   .option("--execution-model <model>", "specific model for the execution agent", "composer-1.5")
