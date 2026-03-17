@@ -1,0 +1,79 @@
+packages/utils/tests/get-safe-current-working-directory.test.ts
+  031aa379f4aa3a24 1-40
+packages/supervisor/src/generate-flow-suggestions.ts
+  031aa379f4aa3a24 2,62
+packages/agent/src/codex.ts
+  031aa379f4aa3a24 9,125
+apps/cli/src/index.tsx
+  031aa379f4aa3a24 2,71
+packages/agent/tests/claude.test.ts
+  031aa379f4aa3a24 1-2,4,37-46,241-254
+apps/cli/package.json
+  031aa379f4aa3a24 28
+packages/utils/src/index.ts
+  031aa379f4aa3a24 17-20
+packages/agent/src/cursor.ts
+  031aa379f4aa3a24 10,210
+packages/supervisor/src/resolve-test-target.ts
+  031aa379f4aa3a24 19,29
+packages/agent/src/claude.ts
+  031aa379f4aa3a24 1,3-4,10,30,33,35,43-44,63,118,195,209-213
+apps/cli/src/utils/derive-testing-state.test.ts
+  e944d188dc2e88fd 1-121
+apps/cli/src/components/screens/testing-screen.tsx
+  e944d188dc2e88fd 70-71
+packages/supervisor/package.json
+  031aa379f4aa3a24 28
+apps/cli/src/utils/derive-testing-state.ts
+  e944d188dc2e88fd 51-56,73,86
+packages/utils/src/get-safe-current-working-directory.ts
+  031aa379f4aa3a24 1-48
+AGENTS.md
+  d970274ed1dcaf8f 463,465,467-475,479-480
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "1c6460ab2a368abf1cbcdcfdef4869135210ce77",
+  "prompts": {
+    "031aa379f4aa3a24": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "6c81bdd3-855b-4c60-8dfc-754f0c8b6ab1",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 152,
+      "total_deletions": 16,
+      "accepted_lines": 148,
+      "overriden_lines": 0
+    },
+    "d970274ed1dcaf8f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1289f1ee-3943-4008-ba04-0b630354bfa3",
+        "model": "claude-4.6-opus-max-thinking-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 16,
+      "total_deletions": 74,
+      "accepted_lines": 13,
+      "overriden_lines": 0
+    },
+    "e944d188dc2e88fd": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "11ca8443-195e-45f8-8932-da34cc6f5f31",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 131,
+      "total_deletions": 12,
+      "accepted_lines": 131,
+      "overriden_lines": 0
+    }
+  }
+}
