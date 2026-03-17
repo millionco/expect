@@ -1,0 +1,23 @@
+packages/browser/src/mcp/runtime.ts
+  3373825b766771fc 1,4-5,7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "5182411c616beb810479536dc1730a3045f815b4",
+  "prompts": {
+    "3373825b766771fc": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5bd8679c-43e8-4dc6-bbbb-97fe361db5a3",
+        "model": "claude-4.6-opus-max-thinking-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 202,
+      "total_deletions": 113,
+      "accepted_lines": 115,
+      "overriden_lines": 0
+    }
+  }
+}
