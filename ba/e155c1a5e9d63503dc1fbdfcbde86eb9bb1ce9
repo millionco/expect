@@ -1,0 +1,29 @@
+packages/supervisor/src/github-comment.ts
+  37b1d4285493f364 117
+apps/cli/src/components/screens/results-screen.tsx
+  37b1d4285493f364 262
+packages/supervisor/src/create-browser-run-report.ts
+  37b1d4285493f364 386-387
+apps/cli/src/components/ui/modeline.tsx
+  37b1d4285493f364 121
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "bae155c1a5e9d63503dc1fbdfcbde86eb9bb1ce9",
+  "prompts": {
+    "37b1d4285493f364": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b0716379-8b00-45f5-8e54-21f967e31779",
+        "model": "claude-4.6-opus-max-thinking-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 9,
+      "total_deletions": 179,
+      "accepted_lines": 5,
+      "overriden_lines": 0
+    }
+  }
+}
