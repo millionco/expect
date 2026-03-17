@@ -512,6 +512,7 @@ export const streamPlanBrowserFlow = Effect.fn("streamPlanBrowserFlow")(function
 
   let accumulatedText = "";
   let accumulatedReasoning = "";
+  const seenPartTypes = new Set<string>();
   const reader = streamResult.stream.getReader();
 
   yield* Effect.tryPromise({
@@ -521,8 +522,9 @@ export const streamPlanBrowserFlow = Effect.fn("streamPlanBrowserFlow")(function
         if (done) break;
 
         const part = value as LanguageModelV3StreamPart;
+        seenPartTypes.add(part.type);
 
-        if (part.type === "reasoning-delta" && part.delta) {
+        if (part.type === "reasoning-delta") {
           accumulatedReasoning += part.delta;
           onEvent({ kind: "thinking", text: part.delta });
         }
@@ -536,6 +538,17 @@ export const streamPlanBrowserFlow = Effect.fn("streamPlanBrowserFlow")(function
   });
 
   const textToParse = accumulatedText || accumulatedReasoning;
+
+  process.stderr.write(
+    `\n[plan-debug] text=${accumulatedText.length} reasoning=${accumulatedReasoning.length} partTypes=${[...seenPartTypes].join(",")}\n`,
+  );
+  if (accumulatedText.length > 0) {
+    process.stderr.write(`[plan-debug] textPreview: ${accumulatedText.slice(0, 300)}\n`);
+  }
+  if (accumulatedReasoning.length > 0) {
+    process.stderr.write(`[plan-debug] reasoningPreview: ${accumulatedReasoning.slice(0, 300)}\n`);
+  }
+
   const plan = yield* parsePlanFromText(textToParse, options);
   onEvent({ kind: "complete", plan });
   return plan;
