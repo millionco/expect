@@ -176,8 +176,9 @@ const extractCookieDependencyFact = (runs: RunMemoryRecord[]): EnvironmentFact |
   const noCookieSuccessRate =
     noCookieRuns.filter((run) => run.status === "passed").length / noCookieRuns.length;
 
-  if (cookieSuccessRate <= noCookieSuccessRate + MEMORY_COOKIE_ADVANTAGE_THRESHOLD)
+  if (cookieSuccessRate <= noCookieSuccessRate + MEMORY_COOKIE_ADVANTAGE_THRESHOLD) {
     return undefined;
+  }
 
   return {
     fact: "Cookie reuse significantly improves test reliability",

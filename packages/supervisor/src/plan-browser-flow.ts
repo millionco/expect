@@ -1,6 +1,6 @@
 import type { LanguageModelV3 } from "@ai-sdk/provider";
 import type { AgentProviderSettings } from "@browser-tester/agent";
-import { Effect, Option, Result, Schema } from "effect";
+import { Effect, Result, Schema } from "effect";
 import {
   BROWSER_TEST_MODEL,
   CODEX_PLANNER_MODEL,
@@ -13,9 +13,8 @@ import {
   STEP_ID_PAD_LENGTH,
 } from "./constants.js";
 import { createAgentModel } from "./create-agent-model.js";
-import { MemoryRetrievalError, PlanParseError, PlanningError } from "./errors.js";
+import { PlanParseError, PlanningError } from "./errors.js";
 import { extractJsonObject } from "./json.js";
-import { retrievePlannerMemory } from "./memory/retrieve-planner-memory.js";
 import type { PlanBrowserFlowOptions, PlanStep, TestTarget } from "./types.js";
 import { detectAuthError } from "./utils/detect-auth-error.js";
 import { formatDiffStats } from "./utils/format-diff-stats.js";
@@ -125,7 +124,7 @@ const formatScopePlanningStrategy = (target: TestTarget): string => {
   ].join("\n");
 };
 
-const buildPlanningPrompt = (options: PlanBrowserFlowOptions, memoryContext?: string): string => {
+const buildPlanningPrompt = (options: PlanBrowserFlowOptions): string => {
   const { target, userInstruction, environment } = options;
   const prioritizedFiles = prioritizePlanningFiles(target.changedFiles);
   const displayedFiles = prioritizedFiles.slice(0, PLANNER_CHANGED_FILE_LIMIT);
@@ -171,13 +170,6 @@ const buildPlanningPrompt = (options: PlanBrowserFlowOptions, memoryContext?: st
     `- Headed mode: ${environment?.headed === true ? "yes" : "no or not specified"}`,
     `- Reuse browser cookies: ${environment?.cookies === true ? "yes" : "no or not specified"}`,
     "",
-    ...(memoryContext
-      ? [
-          "Past testing experience (use to improve plan quality and avoid known pitfalls):",
-          memoryContext,
-          "",
-        ]
-      : []),
     "Scope strategy:",
     formatScopePlanningStrategy(target),
     "",
@@ -311,18 +303,7 @@ export const planBrowserFlow = Effect.fn("planBrowserFlow")(function* (
     scope: options.target.scope,
   });
 
-  const memoryContext = yield* Effect.try({
-    try: () =>
-      retrievePlannerMemory(options.target.cwd, {
-        instruction: options.userInstruction,
-      }),
-    catch: (cause) => new MemoryRetrievalError({ stage: "planner", cause }),
-  }).pipe(
-    Effect.map(Option.some),
-    Effect.catchTag("MemoryRetrievalError", () => Effect.succeed(Option.none<string>())),
-  );
-
-  const prompt = buildPlanningPrompt(options, Option.getOrUndefined(memoryContext));
+  const prompt = buildPlanningPrompt(options);
   const response = yield* resolvePlanningResponse(options, prompt);
 
   const text = response.content

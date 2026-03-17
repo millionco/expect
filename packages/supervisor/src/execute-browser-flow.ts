@@ -3,7 +3,7 @@ import * as os from "node:os";
 import path from "node:path";
 import type { LanguageModelV3, LanguageModelV3StreamPart } from "@ai-sdk/provider";
 import type { AgentProviderSettings } from "@browser-tester/agent";
-import { Effect, Option, Result, Stream } from "effect";
+import { Effect, Result, Stream } from "effect";
 import {
   BROWSER_TEST_MODEL,
   DEFAULT_AGENT_PROVIDER,
@@ -15,7 +15,7 @@ import {
 import { buildBrowserMcpSettings } from "./browser-mcp-config";
 import { createBrowserRunReport } from "./create-browser-run-report";
 import { createAgentModel } from "./create-agent-model";
-import { ExecutionError, MemoryRetrievalError } from "./errors";
+import { ExecutionError } from "./errors";
 import type { BrowserRunEvent } from "./events";
 import {
   buildStepMap,
@@ -25,7 +25,6 @@ import {
   parseTextDelta,
 } from "./parse-execution-stream.js";
 import type { ExecutionStreamContext, ExecutionStreamState } from "./parse-execution-stream.js";
-import { retrieveExecutorMemory } from "./memory/retrieve-executor-memory.js";
 import type { AgentProvider, ExecuteBrowserFlowOptions } from "./types.js";
 import { detectAuthError } from "./utils/detect-auth-error.js";
 import {
@@ -66,10 +65,7 @@ export const buildExecutionModelSettings = (
   });
 };
 
-const buildExecutionPrompt = (
-  options: ExecuteBrowserFlowOptions,
-  memoryContext?: string,
-): string => {
+const buildExecutionPrompt = (options: ExecuteBrowserFlowOptions): string => {
   const { plan, target, environment, browserMcpServerName, videoOutputPath } = options;
   const mcpName = browserMcpServerName ?? DEFAULT_BROWSER_MCP_SERVER_NAME;
 
@@ -155,13 +151,6 @@ const buildExecutionPrompt = (
     `- Current branch: ${target.branch.current}`,
     `- Main branch: ${target.branch.main ?? "unknown"}`,
     "",
-    ...(memoryContext
-      ? [
-          "Past experience with similar routes (use to anticipate issues and improve execution):",
-          memoryContext,
-          "",
-        ]
-      : []),
     "Approved plan:",
     `Title: ${plan.title}`,
     `Rationale: ${plan.rationale}`,
@@ -592,22 +581,7 @@ const buildExecutionStream = Effect.fn("executeBrowserFlow")(function* (
       try: () => resolveLiveViewUrl(),
       catch: (cause) => new ExecutionError({ stage: "resolve live view url", cause }),
     }).pipe(Effect.catchTag("ExecutionError", () => Effect.succeed(undefined))));
-  const memoryContext = yield* Effect.try({
-    try: () =>
-      retrieveExecutorMemory(options.target.cwd, {
-        targetUrls: options.plan.targetUrls,
-        steps: options.plan.steps,
-      }),
-    catch: (cause) => new MemoryRetrievalError({ stage: "executor", cause }),
-  }).pipe(
-    Effect.map(Option.some),
-    Effect.catchTag("MemoryRetrievalError", () => Effect.succeed(Option.none<string>())),
-  );
-
-  const prompt = buildExecutionPrompt(
-    { ...options, browserMcpServerName, videoOutputPath },
-    Option.getOrUndefined(memoryContext),
-  );
+  const prompt = buildExecutionPrompt({ ...options, browserMcpServerName, videoOutputPath });
   const abortController = new AbortController();
   const streamResult = yield* resolveExecutionStreamResult(
     options,

@@ -9,7 +9,13 @@ import type { MemoryIndex, PlannerMemoryContext } from "./types.js";
 const formatRouteMemories = (index: MemoryIndex): string[] => {
   const relevantRoutes = index.routes
     .filter((route) => route.requiresAuth || route.failureCount > 0)
-    .sort((a, b) => b.failureCount + b.successCount - (a.failureCount + a.successCount))
+    .sort((leftRoute, rightRoute) => {
+      return (
+        rightRoute.failureCount +
+        rightRoute.successCount -
+        (leftRoute.failureCount + leftRoute.successCount)
+      );
+    })
     .slice(0, MEMORY_MAX_PLANNER_ROUTES);
 
   return relevantRoutes.map((route) => {
@@ -62,7 +68,7 @@ const formatEnvironmentFacts = (index: MemoryIndex): string[] =>
 
 export const retrievePlannerMemory = (
   cwd: string,
-  _context: PlannerMemoryContext,
+  context: PlannerMemoryContext,
 ): string | undefined => {
   const index = readMemoryIndex(cwd);
   if (index.totalRuns === 0) return undefined;
@@ -79,7 +85,7 @@ export const retrievePlannerMemory = (
     sections.push(["Known route characteristics:", ...routeMemories].join("\n"));
   }
 
-  const flowMemories = formatFlowMemories(index, _context.instruction);
+  const flowMemories = formatFlowMemories(index, context.instruction);
   if (flowMemories.length > 0) {
     sections.push(["Previously tested flows:", ...flowMemories].join("\n"));
   }

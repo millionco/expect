@@ -26,13 +26,3 @@ export class ExecutionError extends Schema.ErrorClass<ExecutionError>("Execution
 }) {
   message = `Browser flow execution failed during ${this.stage}: ${formatCause(this.cause)}`;
 }
-
-export class MemoryRetrievalError extends Schema.ErrorClass<MemoryRetrievalError>(
-  "MemoryRetrievalError",
-)({
-  _tag: Schema.tag("MemoryRetrievalError"),
-  stage: Schema.NonEmptyString,
-  cause: Schema.Unknown,
-}) {
-  message = `Browser flow memory retrieval failed during ${this.stage}: ${formatCause(this.cause)}`;
-}

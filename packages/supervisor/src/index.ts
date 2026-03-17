@@ -1,7 +1,7 @@
 export { buildBrowserMcpSettings, getBrowserMcpEntrypoint } from "./browser-mcp-config.js";
 export { GIT_TIMEOUT_MS } from "./constants.js";
 export { createBrowserRunReport } from "./create-browser-run-report.js";
-export { ExecutionError, MemoryRetrievalError, PlanParseError, PlanningError } from "./errors.js";
+export { ExecutionError, PlanParseError, PlanningError } from "./errors.js";
 export type { BrowserRunEvent } from "./events.js";
 export { executeBrowserFlow } from "./execute-browser-flow.js";
 export {
@@ -24,20 +24,6 @@ export {
   getUnstagedDiffStats,
   isInsideGitRepo,
 } from "./git.js";
-export {
-  createRunMemory,
-  promoteMemories,
-  recordRun,
-  resolveMemoryDirectoryPath,
-  retrievePlannerMemory,
-  retrieveExecutorMemory,
-} from "./memory/index.js";
-export type {
-  CreateRunMemoryOptions,
-  MemoryIndex,
-  RunMemoryRecord,
-  RunMemoryStepOutcome,
-} from "./memory/index.js";
 export { generateFlowSuggestions } from "./generate-flow-suggestions.js";
 export { planBrowserFlow } from "./plan-browser-flow.js";
 export { formatDiffStats } from "./utils/format-diff-stats.js";
