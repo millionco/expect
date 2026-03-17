@@ -37,6 +37,8 @@ export {
   ClaudeResultSuccess,
   ClaudeResultError,
   ClaudeResultMessage,
+  ClaudeSystemEvent,
+  ClaudeRateLimitEvent,
   ClaudeStreamEvent,
   PROVIDER_ID,
   EMPTY_USAGE,

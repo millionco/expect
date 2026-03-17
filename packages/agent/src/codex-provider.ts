@@ -11,16 +11,17 @@ const prepareCodexThread = (options: AgentStreamOptions) => {
   const threadOptions = {
     workingDirectory: options.cwd,
     model: options.model,
+    skipGitRepoCheck: true,
   };
-  return options.sessionId.length > 0
-    ? codex.resumeThread(options.sessionId, threadOptions)
+  return Option.isSome(options.sessionId)
+    ? codex.resumeThread(options.sessionId.value, threadOptions)
     : codex.startThread(threadOptions);
 };
 
 const buildInput = (options: AgentStreamOptions): UserInput[] =>
-  options.systemPrompt.length > 0
+  Option.isSome(options.systemPrompt)
     ? [
-        { type: "text", text: options.systemPrompt },
+        { type: "text", text: options.systemPrompt.value },
         { type: "text", text: options.prompt },
       ]
     : [{ type: "text", text: options.prompt }];
@@ -52,7 +53,7 @@ export class CodexProvider extends ServiceMap.Service<
             catch: (cause) => new CodexRunError({ cause: String(cause) }),
           }),
         ).pipe(
-          Stream.mapEffect((rawEvent) => Schema.decodeUnknown(CodexThreadEvent)(rawEvent)),
+          Stream.mapEffect((rawEvent) => Schema.decodeUnknownEffect(CodexThreadEvent)(rawEvent)),
           Stream.map((event) => event.streamParts),
           Stream.filter(Option.isSome),
           Stream.flatMap((option) => Stream.fromIterable(option.value)),

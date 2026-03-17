@@ -9,7 +9,7 @@ export class McpServerConfig extends Schema.Class<McpServerConfig>("McpServerCon
 export class AgentStreamOptions extends Schema.Class<AgentStreamOptions>("AgentStreamOptions")({
   cwd: Schema.String,
   model: Schema.String,
-  sessionId: Schema.String,
+  sessionId: Schema.Option(Schema.String),
   prompt: Schema.String,
-  systemPrompt: Schema.String,
+  systemPrompt: Schema.Option(Schema.String),
 }) {}

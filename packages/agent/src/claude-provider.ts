@@ -41,8 +41,8 @@ const buildQueryOptions = (options: AgentStreamOptions) => {
     allowDangerouslySkipPermissions: true,
     permissionMode: "bypassPermissions" as const,
     debugFile: debugLogPath,
-    ...(options.sessionId.length > 0 ? { resume: options.sessionId } : {}),
-    ...(options.systemPrompt.length > 0 ? { appendSystemPrompt: options.systemPrompt } : {}),
+    ...(Option.isSome(options.sessionId) ? { resume: options.sessionId.value } : {}),
+    ...(Option.isSome(options.systemPrompt) ? { appendSystemPrompt: options.systemPrompt.value } : {}),
     env,
     ...(explicitExecutablePath ? { pathToClaudeCodeExecutable: explicitExecutablePath } : {}),
   };
@@ -69,7 +69,7 @@ export class ClaudeProvider extends ServiceMap.Service<
           claudeQuery,
           (cause) => new ClaudeQueryError({ cause: String(cause) }),
         ).pipe(
-          Stream.mapEffect((rawEvent) => Schema.decodeUnknown(ClaudeStreamEvent)(rawEvent)),
+          Stream.mapEffect((rawEvent) => Schema.decodeUnknownEffect(ClaudeStreamEvent)(rawEvent)),
           Stream.map((event) => event.streamParts),
           Stream.filter(Option.isSome),
           Stream.flatMap((option) => Stream.fromIterable(option.value)),

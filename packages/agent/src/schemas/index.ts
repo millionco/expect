@@ -34,6 +34,8 @@ export {
   ClaudeResultSuccess,
   ClaudeResultError,
   ClaudeResultMessage,
+  ClaudeSystemEvent,
+  ClaudeRateLimitEvent,
   ClaudeStreamEvent,
 } from "./claude-stream.js";
 
