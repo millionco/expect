@@ -109,14 +109,14 @@ describe("toActionError", () => {
   });
 
   describe("fallback", () => {
-    it("returns ActionTimeoutError for unrecognized errors", () => {
+    it("returns ActionUnknownError for unrecognized errors", () => {
       const result = toActionError(new Error("something unknown"), "e5");
-      expect(result._tag).toBe("ActionTimeoutError");
+      expect(result._tag).toBe("ActionUnknownError");
     });
 
     it("handles non-Error values", () => {
       const result = toActionError("raw string error", "e5");
-      expect(result._tag).toBe("ActionTimeoutError");
+      expect(result._tag).toBe("ActionUnknownError");
       expect(result.ref).toBe("e5");
     });
   });

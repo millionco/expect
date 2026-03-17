@@ -26,32 +26,28 @@ const {
 }));
 
 vi.mock("@browser-tester/cookies", async () => {
-  const { Context, Effect, Layer } = await import("effect");
+  const { Effect, Layer, ServiceMap } = await import("effect");
 
-  const BrowsersTag = Context.GenericTag<{
-    defaultBrowser: Effect.Effect<import("effect").Option.Option<unknown>>;
-    list: Effect.Effect<unknown[]>;
-    register: (source: unknown) => Effect.Effect<void>;
-  }>("@cookies/Browsers");
+  class Browsers extends ServiceMap.Service<Browsers>()("@cookies/Browsers", {
+    make: Effect.succeed({
+      defaultBrowser: () => Effect.suspend(() => defaultBrowserMock()),
+      list: Effect.suspend(() => browserListMock()),
+      register: () => Effect.void,
+    }),
+  }) {}
 
-  const CookiesTag = Context.GenericTag<{
-    extract: (profile: unknown) => Effect.Effect<unknown[]>;
-  }>("@cookies/Cookies");
-
-  const browsersLayer = Layer.succeed(BrowsersTag, {
-    defaultBrowser: Effect.suspend(() => defaultBrowserMock()),
-    list: Effect.suspend(() => browserListMock()),
-    register: () => Effect.void,
-  });
-
-  const cookiesLayer = Layer.succeed(CookiesTag, {
-    extract: (profile: unknown) => Effect.suspend(() => cookieExtractMock(profile)),
-  });
+  class Cookies extends ServiceMap.Service<Cookies>()("@cookies/Cookies", {
+    make: Effect.succeed({
+      extract: (profile: unknown) => Effect.suspend(() => cookieExtractMock(profile)),
+    }),
+  }) {
+    static layer = Layer.effect(this, this.make);
+  }
 
   return {
-    Browsers: BrowsersTag,
-    Cookies: Object.assign(CookiesTag, { layer: cookiesLayer }),
-    layerLive: browsersLayer,
+    Browsers,
+    Cookies,
+    layerLive: Layer.effect(Browsers, Browsers.make),
   };
 });
 
@@ -158,9 +154,10 @@ describe("Browser.createPage cookie reuse", () => {
   });
 
   it("falls back to other profiles when preferred profile extraction returns no cookies", async () => {
-    cookieExtractMock
-      .mockReturnValueOnce(Effect.succeed([]))
-      .mockReturnValue(Effect.succeed(fallbackCookies));
+    cookieExtractMock.mockImplementation((profile: unknown) => {
+      if (profile === heliumProfile) return Effect.succeed([]);
+      return Effect.succeed(fallbackCookies);
+    });
 
     await runBrowser((browser) => browser.createPage("https://github.com", { cookies: true }));
 

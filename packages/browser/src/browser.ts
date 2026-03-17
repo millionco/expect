@@ -371,9 +371,13 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
       urlBefore: string,
     ) {
       yield* Effect.tryPromise({
-        try: () => page.waitForTimeout(NAVIGATION_DETECT_DELAY_MS),
+        try: () =>
+          page.waitForURL((url) => url.toString() !== urlBefore, {
+            timeout: NAVIGATION_DETECT_DELAY_MS,
+            waitUntil: "commit",
+          }),
         catch: toBrowserLaunchError,
-      });
+      }).pipe(Effect.catchTag("BrowserLaunchError", () => Effect.void));
       if (page.url() !== urlBefore) {
         yield* Effect.tryPromise(() => page.waitForLoadState("domcontentloaded")).pipe(
           Effect.catchTag("UnknownError", () => Effect.void),
