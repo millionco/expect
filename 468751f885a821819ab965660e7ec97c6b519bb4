@@ -1,0 +1,23 @@
+apps/cli/src/utils/derive-testing-state.ts
+  497f92eac8b2921a 47-48,50-61,65-71,76,99-101,115-116,131-134,144-145
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "468751f885a821819ab965660e7ec97c6b519bb4",
+  "prompts": {
+    "497f92eac8b2921a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b00c9c91-6b1c-45f1-98eb-08345e6e7a28",
+        "model": "claude-4.6-opus-max-thinking-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 37,
+      "total_deletions": 1,
+      "accepted_lines": 37,
+      "overriden_lines": 0
+    }
+  }
+}
