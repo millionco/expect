@@ -1,0 +1,14 @@
+{
+  "name": "testie",
+  "version": "0.0.0",
+  "description": "testie",
+  "license": "MIT",
+  "files": [
+    "index.js"
+  ],
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  }
+}

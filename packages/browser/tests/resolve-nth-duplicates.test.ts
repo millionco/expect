@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import { resolveNthDuplicates } from "../src/utils/resolve-nth-duplicates";
 import type { RefMap } from "../src/types";
 

@@ -1,6 +1,0 @@
-{
-  "plugins": ["typescript", "react", "import"],
-  "rules": {
-    "require-yield": "off"
-  }
-}

@@ -1,18 +1,14 @@
-import type { Locator, Page } from "playwright";
+import { Effect } from "effect";
+import type { Page } from "playwright";
+import { RefNotFoundError } from "../errors";
 import type { RefMap } from "../types";
 import { resolveLocator } from "./resolve-locator";
 
-export const createLocator = (page: Page, refs: RefMap): ((ref: string) => Locator) => {
-  return (ref: string) => {
+export const createLocator = (page: Page, refs: RefMap) =>
+  Effect.fn("Browser.resolveRef")(function* (ref: string) {
     const entry = refs[ref];
     if (!entry) {
-      const available = Object.keys(refs);
-      const detail =
-        available.length === 0
-          ? "no refs available (page may be empty)"
-          : `available refs: ${available.join(", ")}`;
-      throw new Error(`Unknown ref "${ref}" (${detail})`);
+      return yield* new RefNotFoundError({ ref, availableRefs: Object.keys(refs) });
     }
     return resolveLocator(page, entry);
-  };
-};
+  });

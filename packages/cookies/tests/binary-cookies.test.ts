@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { parseBinaryCookies } from "../src/utils/binary-cookies.js";
 
@@ -114,7 +114,6 @@ describe("parseBinaryCookies", () => {
     expect(cookies[0].name).toBe("session");
     expect(cookies[0].value).toBe("abc123");
     expect(cookies[0].domain).toBe("example.com");
-    expect(cookies[0].browser).toBe("safari");
   });
 
   it("parses secure and httpOnly flags", () => {

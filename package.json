@@ -3,8 +3,8 @@
   "private": true,
   "license": "FSL-1.1-MIT",
   "scripts": {
-    "dev": "vp run -r dev",
-    "build": "vp run -r build",
+    "dev": "turbo dev",
+    "build": "turbo build",
     "lint": "vp lint",
     "lint:fix": "vp lint --fix",
     "format": "vp fmt",
@@ -19,6 +19,7 @@
   "devDependencies": {
     "@changesets/cli": "^2.27.0",
     "@voidzero-dev/vite-plus-core": "latest",
+    "turbo": "^2.8.17",
     "typescript": "^5.7.0",
     "vite-plus": "^0.1.12"
   },

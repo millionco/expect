@@ -1,4 +1,4 @@
-import { snapshot as takeSnapshot } from "@browser-tester/browser";
+import { runBrowser } from "@browser-tester/browser";
 import { Command } from "commander";
 import { formatOutput } from "../utils/format-output";
 import { normalizeUrl } from "../utils/normalize-url";
@@ -17,14 +17,16 @@ export const snapshot = addSharedOptions(
     .option("--cursor", "include cursor-interactive elements"),
 ).action(async (url: string, options) => {
   await withPage(normalizeUrl(url), options, async (page) => {
-    const result = await takeSnapshot(page, {
-      timeout: options.timeout,
-      interactive: options.interactive,
-      compact: options.compact,
-      maxDepth: options.maxDepth,
-      selector: options.selector,
-      cursor: options.cursor,
-    });
+    const result = await runBrowser((browser) =>
+      browser.snapshot(page, {
+        timeout: options.timeout,
+        interactive: options.interactive,
+        compact: options.compact,
+        maxDepth: options.maxDepth,
+        selector: options.selector,
+        cursor: options.cursor,
+      }),
+    );
 
     formatOutput({ tree: result.tree, refs: result.refs, stats: result.stats }, options);
   });

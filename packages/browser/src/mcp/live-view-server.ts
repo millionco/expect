@@ -88,12 +88,12 @@ export const startLiveViewServer = async ({
 
   const stopScreencast = async (): Promise<void> => {
     if (!cdpSession) return;
-    const session = cdpSession;
+    const activeCdpSession = cdpSession;
     cdpSession = null;
     screencastPage = null;
     try {
-      await session.send("Page.stopScreencast");
-      await session.detach();
+      await activeCdpSession.send("Page.stopScreencast");
+      await activeCdpSession.detach();
     } catch {
       // HACK: CDP session may already be detached if the page closed
     }
@@ -104,15 +104,15 @@ export const startLiveViewServer = async ({
     await stopScreencast();
 
     screencastPage = page;
-    const session = await page.context().newCDPSession(page);
-    cdpSession = session;
+    const cdp = await page.context().newCDPSession(page);
+    cdpSession = cdp;
 
-    session.on("Page.screencastFrame", (params: ScreencastFrameParams) => {
+    cdp.on("Page.screencastFrame", (params: ScreencastFrameParams) => {
       broadcastFrame(Buffer.from(params.data, "base64"));
-      session.send("Page.screencastFrameAck", { sessionId: params.sessionId }).catch(() => {});
+      cdp.send("Page.screencastFrameAck", { sessionId: params.sessionId }).catch(() => {});
     });
 
-    await session.send("Page.startScreencast", {
+    await cdp.send("Page.startScreencast", {
       format: "jpeg",
       quality: LIVE_VIEW_SCREENCAST_QUALITY,
       maxWidth: LIVE_VIEW_SCREENCAST_MAX_WIDTH_PX,

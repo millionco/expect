@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import type { LanguageModelV3, LanguageModelV3CallOptions } from "@ai-sdk/provider";
 import { BROWSER_TEST_MODEL } from "../src/constants.js";
 import { buildPlannerModelSettings, planBrowserFlow } from "../src/plan-browser-flow.js";

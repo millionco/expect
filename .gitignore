@@ -6,3 +6,4 @@ dist
 .turbo
 .testie
 tsup.config.bundled_*
+**/src/generated/

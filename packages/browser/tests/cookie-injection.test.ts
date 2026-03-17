@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vite-plus/test";
 import { chromium } from "playwright";
 import type { Browser, BrowserContext, Page } from "playwright";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { Cookie } from "@browser-tester/cookies";
-import { injectCookies } from "../src/inject-cookies";
-import { createPage } from "../src/create-page";
+import { injectCookies } from "./helpers/inject-cookies";
+import { createPage } from "./helpers/create-page";
 
 interface RecordedRequest {
   method: string;

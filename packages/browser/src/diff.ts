@@ -1,10 +1,4 @@
-export interface SnapshotDiff {
-  diff: string;
-  additions: number;
-  removals: number;
-  unchanged: number;
-  changed: boolean;
-}
+import type { SnapshotDiff } from "./types";
 
 interface DiffEdit {
   type: "equal" | "insert" | "delete";

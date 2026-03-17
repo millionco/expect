@@ -43,8 +43,8 @@ export class SqliteEngine extends ServiceMap.Service<
       Effect.acquireRelease(
         Effect.tryPromise({
           try: async () => {
-            const { Database } = await import(NODE_SQLITE_MODULE);
-            return new Database(databasePath, {
+            const { DatabaseSync } = await import(NODE_SQLITE_MODULE);
+            return new DatabaseSync(databasePath, {
               readOnly: true,
               readBigInts: true,
             }) as unknown as SqliteDatabase;

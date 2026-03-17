@@ -1,6 +1,6 @@
 import path from "node:path";
 import { writeFile } from "node:fs/promises";
-import { annotatedScreenshot } from "@browser-tester/browser";
+import { runBrowser } from "@browser-tester/browser";
 import { Command } from "commander";
 import { logger } from "../utils/logger";
 import { normalizeUrl } from "../utils/normalize-url";
@@ -25,11 +25,13 @@ export const screenshot = addSharedOptions(
 
   await withPage(normalizeUrl(url), options, async (page) => {
     if (options.annotate) {
-      const result = await annotatedScreenshot(page, {
-        timeout: options.timeout,
-        interactive: options.interactive,
-        fullPage: true,
-      });
+      const result = await runBrowser((browser) =>
+        browser.annotatedScreenshot(page, {
+          timeout: options.timeout,
+          interactive: options.interactive,
+          fullPage: true,
+        }),
+      );
       await writeFile(outputPath, result.screenshot);
       logger.success(`Annotated screenshot saved to ${outputPath}`);
       for (const annotation of result.annotations) {

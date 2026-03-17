@@ -1,20 +1,29 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { Effect } from "effect";
+import { describe, it, expect, beforeAll, afterAll } from "vite-plus/test";
 import { chromium } from "playwright";
-import type { Browser, Page } from "playwright";
-import { snapshot } from "../src/snapshot";
+import type { Browser as PlaywrightBrowser, Page } from "playwright";
+import { Browser } from "../src/browser";
+
+const run = <A>(effect: Effect.Effect<A, unknown>) => Effect.runPromise(effect);
+
+const snapshotPage = (page: Page, options = {}) =>
+  Effect.gen(function* () {
+    const browser = yield* Browser;
+    return yield* browser.snapshot(page, options);
+  }).pipe(Effect.provide(Browser.layer));
 
 describe("snapshot", () => {
-  let browser: Browser;
+  let playwrightBrowser: PlaywrightBrowser;
   let page: Page;
 
   beforeAll(async () => {
-    browser = await chromium.launch({ headless: true });
-    const context = await browser.newContext();
+    playwrightBrowser = await chromium.launch({ headless: true });
+    const context = await playwrightBrowser.newContext();
     page = await context.newPage();
   });
 
   afterAll(async () => {
-    await browser.close();
+    await playwrightBrowser.close();
   });
 
   describe("tree and refs", () => {
@@ -26,7 +35,7 @@ describe("snapshot", () => {
         </body></html>
       `);
 
-      const result = await snapshot(page);
+      const result = await run(snapshotPage(page));
       expect(result.tree).toContain("heading");
       expect(result.tree).toContain("Hello World");
       expect(result.tree).toContain("[ref=e1]");
@@ -43,7 +52,7 @@ describe("snapshot", () => {
         </body></html>
       `);
 
-      const result = await snapshot(page);
+      const result = await run(snapshotPage(page));
       expect(result.refs.e1).toBeDefined();
       expect(result.refs.e2).toBeDefined();
       expect(result.refs.e3).toBeDefined();
@@ -56,7 +65,7 @@ describe("snapshot", () => {
         </body></html>
       `);
 
-      const result = await snapshot(page);
+      const result = await run(snapshotPage(page));
       const buttonRef = Object.values(result.refs).find((entry) => entry.name === "Submit");
       expect(buttonRef).toBeDefined();
       expect(buttonRef?.role).toBe("button");
@@ -69,7 +78,7 @@ describe("snapshot", () => {
         </body></html>
       `);
 
-      const result = await snapshot(page);
+      const result = await run(snapshotPage(page));
       const buttonRef = Object.values(result.refs).find((entry) => entry.role === "button");
       expect(buttonRef).toBeDefined();
       expect(buttonRef?.name).toBe("");
@@ -86,7 +95,7 @@ describe("snapshot", () => {
         </body></html>
       `);
 
-      const result = await snapshot(page);
+      const result = await run(snapshotPage(page));
       const okButtons = Object.values(result.refs).filter(
         (entry) => entry.role === "button" && entry.name === "OK",
       );
@@ -103,7 +112,7 @@ describe("snapshot", () => {
         </body></html>
       `);
 
-      const result = await snapshot(page);
+      const result = await run(snapshotPage(page));
       for (const entry of Object.values(result.refs)) {
         expect(entry.nth).toBeUndefined();
       }
@@ -119,31 +128,31 @@ describe("snapshot", () => {
         </body></html>
       `);
 
-      const result = await snapshot(page);
+      const result = await run(snapshotPage(page));
       const buttonRefKey = Object.keys(result.refs).find(
         (key) => result.refs[key].name === "Click Me",
       );
       expect(buttonRefKey).toBeDefined();
 
-      const locator = result.locator(buttonRefKey!);
+      const locator = await run(result.locator(buttonRefKey!));
       const text = await locator.textContent();
       expect(text).toBe("Click Me");
     });
 
-    it("should throw on unknown ref with available refs", async () => {
+    it("should fail on unknown ref with available refs", async () => {
       await page.setContent(`
         <html><body>
           <button>OK</button>
         </body></html>
       `);
-      const result = await snapshot(page);
-      expect(() => result.locator("nonexistent")).toThrow("available refs: e1");
+      const result = await run(snapshotPage(page));
+      await expect(run(result.locator("nonexistent"))).rejects.toThrow("available refs: e1");
     });
 
-    it("should throw on unknown ref with empty page hint", async () => {
+    it("should fail on unknown ref with empty page hint", async () => {
       await page.setContent("<html><body></body></html>");
-      const result = await snapshot(page);
-      expect(() => result.locator("e1")).toThrow("no refs available");
+      const result = await run(snapshotPage(page));
+      await expect(run(result.locator("e1"))).rejects.toThrow("no refs available");
     });
 
     it("should click the correct element via ref", async () => {
@@ -153,11 +162,12 @@ describe("snapshot", () => {
         </body></html>
       `);
 
-      const result = await snapshot(page);
+      const result = await run(snapshotPage(page));
       const buttonRefKey = Object.keys(result.refs).find(
         (key) => result.refs[key].name === "Click Me",
       );
-      await result.locator(buttonRefKey!).click();
+      const locator = await run(result.locator(buttonRefKey!));
+      await locator.click();
       expect(await page.title()).toBe("clicked");
     });
 
@@ -170,14 +180,15 @@ describe("snapshot", () => {
         </body></html>
       `);
 
-      const result = await snapshot(page);
+      const result = await run(snapshotPage(page));
       const unnamedButtons = Object.entries(result.refs).filter(
         ([, entry]) => entry.role === "button" && !entry.name,
       );
       expect(unnamedButtons.length).toBe(1);
 
       const [refKey] = unnamedButtons[0];
-      await result.locator(refKey).click();
+      const locator = await run(result.locator(refKey));
+      await locator.click();
       expect(await page.title()).toBe("unnamed");
     });
 
@@ -189,13 +200,14 @@ describe("snapshot", () => {
         </body></html>
       `);
 
-      const result = await snapshot(page);
+      const result = await run(snapshotPage(page));
       const okButtons = Object.entries(result.refs).filter(
         ([, entry]) => entry.role === "button" && entry.name === "OK",
       );
       expect(okButtons.length).toBe(2);
 
-      await result.locator(okButtons[1][0]).click();
+      const locator = await run(result.locator(okButtons[1][0]));
+      await locator.click();
       expect(await page.title()).toBe("second");
     });
 
@@ -207,13 +219,14 @@ describe("snapshot", () => {
         </body></html>
       `);
 
-      const result = await snapshot(page);
+      const result = await run(snapshotPage(page));
       const inputRefKey = Object.keys(result.refs).find(
         (key) => result.refs[key].role === "textbox",
       );
       expect(inputRefKey).toBeDefined();
 
-      await result.locator(inputRefKey!).fill("test@example.com");
+      const locator = await run(result.locator(inputRefKey!));
+      await locator.fill("test@example.com");
       const value = await page.locator("#email").inputValue();
       expect(value).toBe("test@example.com");
     });
@@ -229,13 +242,14 @@ describe("snapshot", () => {
         </body></html>
       `);
 
-      const result = await snapshot(page);
+      const result = await run(snapshotPage(page));
       const selectRefKey = Object.keys(result.refs).find(
         (key) => result.refs[key].role === "combobox",
       );
       expect(selectRefKey).toBeDefined();
 
-      await result.locator(selectRefKey!).selectOption("blue");
+      const locator = await run(result.locator(selectRefKey!));
+      await locator.selectOption("blue");
       const value = await page.locator("#color").inputValue();
       expect(value).toBe("blue");
     });
@@ -244,7 +258,7 @@ describe("snapshot", () => {
   describe("timeout", () => {
     it("should accept a custom timeout", async () => {
       await page.setContent("<html><body><p>Hello</p></body></html>");
-      const result = await snapshot(page, { timeout: 5000 });
+      const result = await run(snapshotPage(page, { timeout: 5000 }));
       expect(result.tree).toContain("paragraph");
     });
   });
@@ -261,7 +275,7 @@ describe("snapshot", () => {
         </body></html>
       `);
 
-      const result = await snapshot(page, { interactive: true });
+      const result = await run(snapshotPage(page, { interactive: true }));
       const roles = Object.values(result.refs).map((entry) => entry.role);
       expect(roles).toContain("button");
       expect(roles).toContain("link");
@@ -278,7 +292,7 @@ describe("snapshot", () => {
         </body></html>
       `);
 
-      const result = await snapshot(page, { interactive: true });
+      const result = await run(snapshotPage(page, { interactive: true }));
       expect(result.tree).toBe("(no interactive elements)");
       expect(Object.keys(result.refs).length).toBe(0);
     });
@@ -291,7 +305,7 @@ describe("snapshot", () => {
         </body></html>
       `);
 
-      const result = await snapshot(page, { interactive: true });
+      const result = await run(snapshotPage(page, { interactive: true }));
       expect(result.tree).not.toContain("heading");
       expect(result.tree).toContain("button");
     });
@@ -309,8 +323,8 @@ describe("snapshot", () => {
         </body></html>
       `);
 
-      const full = await snapshot(page);
-      const compacted = await snapshot(page, { compact: true });
+      const full = await run(snapshotPage(page));
+      const compacted = await run(snapshotPage(page, { compact: true }));
       expect(compacted.tree.split("\n").length).toBeLessThanOrEqual(full.tree.split("\n").length);
       expect(compacted.tree).toContain("button");
       expect(compacted.tree).toContain("[ref=");
@@ -326,7 +340,7 @@ describe("snapshot", () => {
         </body></html>
       `);
 
-      const result = await snapshot(page, { compact: true });
+      const result = await run(snapshotPage(page, { compact: true }));
       expect(result.tree).toContain("navigation");
       expect(result.tree).toContain("link");
     });
@@ -345,8 +359,8 @@ describe("snapshot", () => {
         </body></html>
       `);
 
-      const shallow = await snapshot(page, { maxDepth: 1 });
-      const deep = await snapshot(page);
+      const shallow = await run(snapshotPage(page, { maxDepth: 1 }));
+      const deep = await run(snapshotPage(page));
       expect(shallow.tree.split("\n").length).toBeLessThan(deep.tree.split("\n").length);
     });
 
@@ -360,7 +374,7 @@ describe("snapshot", () => {
         </body></html>
       `);
 
-      const result = await snapshot(page, { maxDepth: 0 });
+      const result = await run(snapshotPage(page, { maxDepth: 0 }));
       for (const line of result.tree.split("\n")) {
         if (line.trim()) {
           expect(line).toMatch(/^- /);
@@ -383,7 +397,7 @@ describe("snapshot", () => {
         </body></html>
       `);
 
-      const result = await snapshot(page, { interactive: true, compact: true });
+      const result = await run(snapshotPage(page, { interactive: true, compact: true }));
       expect(result.tree).toContain("button");
       expect(result.tree).not.toContain("heading");
       expect(result.tree).not.toContain("paragraph");
@@ -402,7 +416,7 @@ describe("snapshot", () => {
         </body></html>
       `);
 
-      const result = await snapshot(page, { interactive: true, maxDepth: 0 });
+      const result = await run(snapshotPage(page, { interactive: true, maxDepth: 0 }));
       const roles = Object.values(result.refs).map((entry) => entry.role);
       expect(roles).toContain("button");
       expect(roles).not.toContain("link");
@@ -425,7 +439,7 @@ describe("snapshot", () => {
         </body></html>
       `);
 
-      const result = await snapshot(page, { compact: true, maxDepth: 2 });
+      const result = await run(snapshotPage(page, { compact: true, maxDepth: 2 }));
       expect(result.tree).toContain("navigation");
     });
 
@@ -448,11 +462,13 @@ describe("snapshot", () => {
         </body></html>
       `);
 
-      const result = await snapshot(page, {
-        interactive: true,
-        compact: true,
-        maxDepth: 1,
-      });
+      const result = await run(
+        snapshotPage(page, {
+          interactive: true,
+          compact: true,
+          maxDepth: 1,
+        }),
+      );
       expect(result.tree).not.toContain("heading");
       expect(result.tree).not.toContain("paragraph");
     });
@@ -460,153 +476,95 @@ describe("snapshot", () => {
 
   describe("diverse interactive roles", () => {
     it("should handle radio buttons", async () => {
-      await page.setContent(`
-        <html><body>
-          <fieldset>
-            <legend>Size</legend>
-            <label><input type="radio" name="size" value="s" /> Small</label>
-            <label><input type="radio" name="size" value="m" /> Medium</label>
-          </fieldset>
-        </body></html>
-      `);
-
-      const result = await snapshot(page, { interactive: true });
-      const roles = Object.values(result.refs).map((entry) => entry.role);
-      expect(roles).toContain("radio");
+      await page.setContent(
+        `<html><body><fieldset><legend>Size</legend><label><input type="radio" name="size" value="s" /> Small</label><label><input type="radio" name="size" value="m" /> Medium</label></fieldset></body></html>`,
+      );
+      const result = await run(snapshotPage(page, { interactive: true }));
+      expect(Object.values(result.refs).map((entry) => entry.role)).toContain("radio");
     });
 
     it("should handle checkboxes", async () => {
-      await page.setContent(`
-        <html><body>
-          <label><input type="checkbox" /> Accept terms</label>
-        </body></html>
-      `);
-
-      const result = await snapshot(page, { interactive: true });
-      const roles = Object.values(result.refs).map((entry) => entry.role);
-      expect(roles).toContain("checkbox");
+      await page.setContent(
+        `<html><body><label><input type="checkbox" /> Accept terms</label></body></html>`,
+      );
+      const result = await run(snapshotPage(page, { interactive: true }));
+      expect(Object.values(result.refs).map((entry) => entry.role)).toContain("checkbox");
     });
 
     it("should handle sliders", async () => {
-      await page.setContent(`
-        <html><body>
-          <label for="vol">Volume</label>
-          <input id="vol" type="range" min="0" max="100" />
-        </body></html>
-      `);
-
-      const result = await snapshot(page, { interactive: true });
-      const roles = Object.values(result.refs).map((entry) => entry.role);
-      expect(roles).toContain("slider");
+      await page.setContent(
+        `<html><body><label for="vol">Volume</label><input id="vol" type="range" min="0" max="100" /></body></html>`,
+      );
+      const result = await run(snapshotPage(page, { interactive: true }));
+      expect(Object.values(result.refs).map((entry) => entry.role)).toContain("slider");
     });
 
     it("should handle switch role", async () => {
-      await page.setContent(`
-        <html><body>
-          <button role="switch" aria-checked="false" aria-label="Dark mode">Toggle</button>
-        </body></html>
-      `);
-
-      const result = await snapshot(page, { interactive: true });
-      const roles = Object.values(result.refs).map((entry) => entry.role);
-      expect(roles).toContain("switch");
+      await page.setContent(
+        `<html><body><button role="switch" aria-checked="false" aria-label="Dark mode">Toggle</button></body></html>`,
+      );
+      const result = await run(snapshotPage(page, { interactive: true }));
+      expect(Object.values(result.refs).map((entry) => entry.role)).toContain("switch");
     });
 
     it("should handle tab role", async () => {
-      await page.setContent(`
-        <html><body>
-          <div role="tablist">
-            <button role="tab" aria-selected="true">Tab 1</button>
-            <button role="tab" aria-selected="false">Tab 2</button>
-          </div>
-        </body></html>
-      `);
-
-      const result = await snapshot(page, { interactive: true });
-      const tabs = Object.values(result.refs).filter((entry) => entry.role === "tab");
-      expect(tabs.length).toBe(2);
+      await page.setContent(
+        `<html><body><div role="tablist"><button role="tab" aria-selected="true">Tab 1</button><button role="tab" aria-selected="false">Tab 2</button></div></body></html>`,
+      );
+      const result = await run(snapshotPage(page, { interactive: true }));
+      expect(Object.values(result.refs).filter((entry) => entry.role === "tab").length).toBe(2);
     });
 
     it("should handle searchbox", async () => {
-      await page.setContent(`
-        <html><body>
-          <input type="search" aria-label="Search" />
-        </body></html>
-      `);
-
-      const result = await snapshot(page, { interactive: true });
-      const roles = Object.values(result.refs).map((entry) => entry.role);
-      expect(roles).toContain("searchbox");
+      await page.setContent(
+        `<html><body><input type="search" aria-label="Search" /></body></html>`,
+      );
+      const result = await run(snapshotPage(page, { interactive: true }));
+      expect(Object.values(result.refs).map((entry) => entry.role)).toContain("searchbox");
     });
 
     it("should handle spinbutton", async () => {
-      await page.setContent(`
-        <html><body>
-          <label for="qty">Quantity</label>
-          <input id="qty" type="number" />
-        </body></html>
-      `);
-
-      const result = await snapshot(page, { interactive: true });
-      const roles = Object.values(result.refs).map((entry) => entry.role);
-      expect(roles).toContain("spinbutton");
+      await page.setContent(
+        `<html><body><label for="qty">Quantity</label><input id="qty" type="number" /></body></html>`,
+      );
+      const result = await run(snapshotPage(page, { interactive: true }));
+      expect(Object.values(result.refs).map((entry) => entry.role)).toContain("spinbutton");
     });
   });
 
   describe("edge cases", () => {
     it("should handle a completely empty body", async () => {
       await page.setContent("<html><body></body></html>");
-
-      const result = await snapshot(page);
+      const result = await run(snapshotPage(page));
       expect(Object.keys(result.refs).length).toBe(0);
     });
 
     it("should handle elements with special characters in names", async () => {
-      await page.setContent(`
-        <html><body>
-          <button>Save &amp; Continue</button>
-        </body></html>
-      `);
-
-      const result = await snapshot(page);
+      await page.setContent(`<html><body><button>Save &amp; Continue</button></body></html>`);
+      const result = await run(snapshotPage(page));
       const entry = Object.values(result.refs).find((ref) => ref.role === "button");
       expect(entry).toBeDefined();
       expect(entry?.name).toContain("&");
     });
 
     it("should handle multiple nested forms", async () => {
-      await page.setContent(`
-        <html><body>
-          <form aria-label="Login">
-            <label for="user">Username</label>
-            <input id="user" type="text" />
-            <button type="submit">Login</button>
-          </form>
-          <form aria-label="Search">
-            <input type="search" aria-label="Query" />
-            <button type="submit">Search</button>
-          </form>
-        </body></html>
-      `);
-
-      const result = await snapshot(page);
-      const buttons = Object.values(result.refs).filter((entry) => entry.role === "button");
-      expect(buttons.length).toBe(2);
-
-      const inputs = Object.values(result.refs).filter(
-        (entry) => entry.role === "textbox" || entry.role === "searchbox",
+      await page.setContent(
+        `<html><body><form aria-label="Login"><label for="user">Username</label><input id="user" type="text" /><button type="submit">Login</button></form><form aria-label="Search"><input type="search" aria-label="Query" /><button type="submit">Search</button></form></body></html>`,
       );
-      expect(inputs.length).toBe(2);
+      const result = await run(snapshotPage(page));
+      expect(Object.values(result.refs).filter((entry) => entry.role === "button").length).toBe(2);
+      expect(
+        Object.values(result.refs).filter(
+          (entry) => entry.role === "textbox" || entry.role === "searchbox",
+        ).length,
+      ).toBe(2);
     });
 
     it("should handle aria-label overriding visible text", async () => {
-      await page.setContent(`
-        <html><body>
-          <button aria-label="Close dialog">X</button>
-        </body></html>
-      `);
-
-      const result = await snapshot(page);
+      await page.setContent(
+        `<html><body><button aria-label="Close dialog">X</button></body></html>`,
+      );
+      const result = await run(snapshotPage(page));
       const entry = Object.values(result.refs).find((ref) => ref.role === "button");
       expect(entry?.name).toBe("Close dialog");
     });
@@ -617,68 +575,40 @@ describe("snapshot", () => {
         (_, index) => `<button>Button ${index}</button>`,
       ).join("");
       await page.setContent(`<html><body>${items}</body></html>`);
-
-      const result = await snapshot(page);
+      const result = await run(snapshotPage(page));
       expect(Object.keys(result.refs).length).toBe(50);
       expect(result.refs.e1).toBeDefined();
       expect(result.refs.e50).toBeDefined();
     });
 
     it("should handle default options when none are provided", async () => {
-      await page.setContent(`
-        <html><body>
-          <h1>Hello</h1>
-        </body></html>
-      `);
-
-      const result = await snapshot(page);
+      await page.setContent(`<html><body><h1>Hello</h1></body></html>`);
+      const result = await run(snapshotPage(page));
       expect(result.tree).toBeTruthy();
       expect(result.refs).toBeDefined();
       expect(typeof result.locator).toBe("function");
     });
 
     it("should exclude text role from refs", async () => {
-      await page.setContent(`
-        <html><body>
-          <p>Some plain text</p>
-          <button>Action</button>
-        </body></html>
-      `);
-
-      const result = await snapshot(page);
-      const roles = Object.values(result.refs).map((entry) => entry.role);
-      expect(roles).not.toContain("text");
+      await page.setContent(
+        `<html><body><p>Some plain text</p><button>Action</button></body></html>`,
+      );
+      const result = await run(snapshotPage(page));
+      expect(Object.values(result.refs).map((entry) => entry.role)).not.toContain("text");
     });
 
     it("should handle nested interactive elements inside structural containers", async () => {
-      await page.setContent(`
-        <html><body>
-          <nav>
-            <ul>
-              <li><a href="/1">Link 1</a></li>
-              <li><a href="/2">Link 2</a></li>
-              <li><a href="/3">Link 3</a></li>
-            </ul>
-          </nav>
-        </body></html>
-      `);
-
-      const result = await snapshot(page, { interactive: true });
-      const links = Object.values(result.refs).filter((entry) => entry.role === "link");
-      expect(links.length).toBe(3);
+      await page.setContent(
+        `<html><body><nav><ul><li><a href="/1">Link 1</a></li><li><a href="/2">Link 2</a></li><li><a href="/3">Link 3</a></li></ul></nav></body></html>`,
+      );
+      const result = await run(snapshotPage(page, { interactive: true }));
+      expect(Object.values(result.refs).filter((entry) => entry.role === "link").length).toBe(3);
     });
 
     it("should produce consistent refs for the same content", async () => {
-      await page.setContent(`
-        <html><body>
-          <button>A</button>
-          <button>B</button>
-        </body></html>
-      `);
-
-      const first = await snapshot(page);
-      const second = await snapshot(page);
-
+      await page.setContent(`<html><body><button>A</button><button>B</button></body></html>`);
+      const first = await run(snapshotPage(page));
+      const second = await run(snapshotPage(page));
       expect(first.refs).toEqual(second.refs);
     });
   });

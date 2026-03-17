@@ -4,9 +4,13 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { z } from "zod/v4";
 import type { Browser as PlaywrightBrowser, BrowserContext, Page } from "playwright";
-import { createPage, snapshot, annotatedScreenshot, saveVideo } from "@browser-tester/browser";
-import type { SnapshotResult } from "@browser-tester/browser";
-import { BROWSER_TESTER_LIVE_VIEW_URL_ENV_NAME } from "./constants.js";
+import { Effect } from "effect";
+import { runBrowser } from "../browser.js";
+import type { SnapshotResult } from "../types.js";
+import {
+  BROWSER_TESTER_LIVE_VIEW_URL_ENV_NAME,
+  BROWSER_TESTER_VIDEO_OUTPUT_ENV_NAME,
+} from "./constants.js";
 import { startLiveViewServer, type LiveViewServer } from "./live-view-server.js";
 
 interface ConsoleEntry {
@@ -30,18 +34,17 @@ interface BrowserSession {
   consoleMessages: ConsoleEntry[];
   networkRequests: NetworkEntry[];
   videoOutputPath?: string;
-  savedVideoPath?: string | null;
+  savedVideoPath?: string;
   trackedPages: Set<Page>;
   lastSnapshot: SnapshotResult | null;
 }
 
 interface ClosedSessionResult {
-  savedVideoPath: string | null;
+  savedVideoPath: string | undefined;
 }
 
 let session: BrowserSession | null = null;
 let liveViewServer: LiveViewServer | null = null;
-const VIDEO_OUTPUT_ENV_NAME = "BROWSER_TESTER_VIDEO_OUTPUT_PATH";
 
 const setupPageTracking = (page: Page, browserSession: BrowserSession) => {
   if (browserSession.trackedPages.has(page)) return;
@@ -81,13 +84,15 @@ const requirePage = (): Page => {
 const saveSessionVideo = async (
   browserSession: BrowserSession,
   outputPath?: string,
-): Promise<string | null> => {
+): Promise<string | undefined> => {
   const resolvedOutputPath = outputPath ?? browserSession.videoOutputPath;
-  if (!resolvedOutputPath) return null;
+  if (!resolvedOutputPath) return undefined;
   if (browserSession.savedVideoPath) return browserSession.savedVideoPath;
 
   mkdirSync(dirname(resolvedOutputPath), { recursive: true });
-  const savedVideoPath = await saveVideo(browserSession.page, resolvedOutputPath);
+  const savedVideoPath = await runBrowser((browser) =>
+    browser.saveVideo(browserSession.page, resolvedOutputPath),
+  );
   browserSession.savedVideoPath = savedVideoPath;
   return savedVideoPath;
 };
@@ -183,13 +188,15 @@ export const createBrowserMcpServer = () => {
         return textResult(`Navigated to ${url}`);
       }
 
-      const videoOutputPath = process.env[VIDEO_OUTPUT_ENV_NAME];
-      const pageResult = await createPage(url, {
-        headed,
-        cookies,
-        waitUntil,
-        video: videoOutputPath ? { dir: dirname(videoOutputPath) } : undefined,
-      });
+      const videoOutputPath = process.env[BROWSER_TESTER_VIDEO_OUTPUT_ENV_NAME];
+      const pageResult = await runBrowser((browser) =>
+        browser.createPage(url, {
+          headed,
+          cookies,
+          waitUntil,
+          video: videoOutputPath ? { dir: dirname(videoOutputPath) } : undefined,
+        }),
+      );
       const { browser, context, page } = pageResult;
       session = {
         browser,
@@ -198,7 +205,7 @@ export const createBrowserMcpServer = () => {
         consoleMessages: [],
         networkRequests: [],
         videoOutputPath,
-        savedVideoPath: null,
+        savedVideoPath: undefined,
         trackedPages: new Set(),
         lastSnapshot: null,
       };
@@ -237,7 +244,7 @@ export const createBrowserMcpServer = () => {
       const ref = (refId: string) => {
         if (!session!.lastSnapshot)
           throw new Error("No snapshot taken yet. Call screenshot with mode 'snapshot' first.");
-        return session!.lastSnapshot.locator(refId);
+        return Effect.runSync(session!.lastSnapshot.locator(refId));
       };
       try {
         const userFunction = new AsyncFunction("page", "context", "browser", "ref", code);
@@ -269,13 +276,15 @@ export const createBrowserMcpServer = () => {
       const resolvedMode = mode ?? "screenshot";
 
       if (resolvedMode === "snapshot") {
-        const result = await snapshot(page);
+        const result = await runBrowser((browser) => browser.snapshot(page));
         session!.lastSnapshot = result;
         return jsonResult({ tree: result.tree, refs: result.refs, stats: result.stats });
       }
 
       if (resolvedMode === "annotated") {
-        const result = await annotatedScreenshot(page, { fullPage });
+        const result = await runBrowser((browser) =>
+          browser.annotatedScreenshot(page, { fullPage }),
+        );
         return {
           content: [
             {

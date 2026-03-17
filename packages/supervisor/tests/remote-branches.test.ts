@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { fetchRemoteBranches } from "../src/remote-branches.js";
 
 const commandOutputs = new Map<string, string>();
@@ -20,12 +20,6 @@ vi.mock("node:child_process", () => ({
       }
     },
   ),
-  execFileSync: vi.fn((command: string, args: string[]) => {
-    const key = [command, ...args].join(" ");
-    const output = commandOutputs.get(key);
-    if (output === undefined) throw new Error(`Command not found: ${key}`);
-    return output;
-  }),
 }));
 
 const GH_PR_FIELDS = "headRefName,author,number,state,isDraft,updatedAt";

@@ -8,7 +8,6 @@ import { RuledBox } from "../ui/ruled-box.js";
 import { FileLink } from "../ui/file-link.js";
 import { ContextPicker } from "../ui/context-picker.js";
 import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions.js";
-import { CliRuntime } from "../../runtime.js";
 import { saveFlow } from "../../utils/flow-storage.js";
 import { useAppStore } from "../../store.js";
 import { ErrorMessage } from "../ui/error-message.js";
@@ -65,23 +64,14 @@ export const PlanReviewScreen = () => {
   const [pickerQuery, setPickerQuery] = useState("");
   const [pickerIndex, setPickerIndex] = useState(0);
   const [remoteOptions, setRemoteOptions] = useState<ContextOption[]>([]);
-  const [localOptions, setLocalOptions] = useState<ContextOption[]>([]);
   const [remoteLoading, setRemoteLoading] = useState(false);
   const inputFocused = topFocus === "input";
   const branchFocused = topFocus === "branch";
 
-  useEffect(() => {
-    if (!gitState) return;
-    let cancelled = false;
-    buildLocalContextOptions(gitState)
-      .then((options) => {
-        if (!cancelled) setLocalOptions(options);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [gitState]);
+  const localOptions = useMemo(
+    () => (gitState ? buildLocalContextOptions(gitState) : []),
+    [gitState],
+  );
 
   useEffect(() => {
     if (!pickerOpen || !gitState) return;
@@ -311,13 +301,11 @@ export const PlanReviewScreen = () => {
       setSaveError(null);
       setSavedPaths(null);
       setSaving(true);
-      void CliRuntime.runPromise(
-        saveFlow({
-          target: resolvedTarget,
-          plan,
-          environment: environment ?? {},
-        }),
-      )
+      void saveFlow({
+        target: resolvedTarget,
+        plan,
+        environment: environment ?? {},
+      })
         .then((result) => {
           setSavedPaths({
             flowPath: result.flowPath,
@@ -431,221 +419,230 @@ export const PlanReviewScreen = () => {
         </RuledBox>
       ) : null}
 
-      <Box flexDirection="column" paddingX={1}>
-        <Box marginTop={1}>
-          <Text color={railColor}>{"┌  "}</Text>
-          <Box flexShrink={1}>
-            <Text color={COLORS.TEXT} wrap="wrap">
-              {flowInstruction}
-            </Text>
+      {!inputFocused ? (
+        <Box flexDirection="column" paddingX={1}>
+          <Text color={COLORS.BORDER}>
+            <Text bold color={COLORS.TEXT}>
+              BROWSER TEST PLAN
+            </Text>{" "}
+            {"─".repeat(Math.max(0, columns - 20))}
+          </Text>
+
+          <Box marginTop={1}>
+            <Text color={railColor}>{"┌  "}</Text>
+            <Box flexShrink={1}>
+              <Text color={COLORS.TEXT} wrap="wrap">
+                {flowInstruction}
+              </Text>
+            </Box>
           </Box>
-        </Box>
 
-        <Box>
-          <Text color={railColor}>{"│  "}</Text>
-          <Text color={COLORS.DIM}>{resolvedTarget.displayName}</Text>
-        </Box>
+          <Box>
+            <Text color={railColor}>{"│  "}</Text>
+            <Text color={COLORS.DIM}>{resolvedTarget.displayName}</Text>
+          </Box>
 
-        <Text color={railColor}>{"│"}</Text>
+          <Text color={railColor}>{"│"}</Text>
 
-        {railItems.map((item, index) => {
-          const isSelected = index === selectedIndex;
-          const isLast = index === railItems.length - 1;
-          const continuation = isLast ? " " : "│";
-          const previousItem = index > 0 ? railItems[index - 1] : null;
-          const sectionBreak = previousItem !== null && previousItem.section !== item.section;
+          {railItems.map((item, index) => {
+            const isSelected = index === selectedIndex;
+            const isLast = index === railItems.length - 1;
+            const continuation = isLast ? " " : "│";
+            const previousItem = index > 0 ? railItems[index - 1] : null;
+            const sectionBreak = previousItem !== null && previousItem.section !== item.section;
 
-          if (item.kind === "details") {
-            return (
-              <Box key="details" flexDirection="column">
-                <Clickable onClick={() => setSelectedIndex(index)}>
-                  <Box>
-                    <Text color={isSelected ? COLORS.PRIMARY : railColor}>
-                      {isSelected ? "◆" : "◇"}{" "}
-                    </Text>
-                    <Text color={isSelected ? COLORS.PRIMARY : COLORS.TEXT} bold={isSelected}>
-                      Details
-                    </Text>
-                  </Box>
-                </Clickable>
-                {isSelected ? (
-                  <Box flexDirection="column">
-                    {plan.rationale ? (
-                      <Box>
-                        <Text color={railColor}>{`${continuation}  `}</Text>
-                        <Box flexShrink={1}>
-                          <Text color={COLORS.DIM} wrap="wrap">
-                            {plan.rationale}
-                          </Text>
-                        </Box>
-                      </Box>
-                    ) : null}
-                    {plan.targetSummary ? (
-                      <Box>
-                        <Text color={railColor}>{`${continuation}  `}</Text>
-                        <Box flexShrink={1}>
-                          <Text color={COLORS.DIM} wrap="wrap">
-                            {plan.targetSummary}
-                          </Text>
-                        </Box>
-                      </Box>
-                    ) : null}
-                  </Box>
-                ) : null}
-              </Box>
-            );
-          }
-
-          if (item.kind === "assumptions") {
-            return (
-              <Box key="assumptions" flexDirection="column">
-                <Clickable onClick={() => setSelectedIndex(index)}>
-                  <Box>
-                    <Text color={isSelected ? COLORS.PRIMARY : railColor}>
-                      {isSelected ? "◆" : "◇"}{" "}
-                    </Text>
-                    <Text color={isSelected ? COLORS.PRIMARY : COLORS.TEXT} bold={isSelected}>
-                      Assumptions
-                    </Text>
-                    <Text color={COLORS.DIM}>{` [${plan.assumptions.length}]`}</Text>
-                  </Box>
-                </Clickable>
-                {isSelected ? (
-                  <Box flexDirection="column">
-                    {plan.assumptions.map((assumption, assumptionIndex) => (
-                      <Box key={`a-${assumptionIndex}`}>
-                        <Text color={railColor}>{`${continuation}  `}</Text>
-                        <Text color={COLORS.DIM}>{"· "}</Text>
-                        <Box flexShrink={1}>
-                          <Text color={COLORS.DIM} wrap="wrap">
-                            {assumption}
-                          </Text>
-                        </Box>
-                      </Box>
-                    ))}
+            if (item.kind === "details") {
+              return (
+                <Box key="details" flexDirection="column">
+                  <Clickable onClick={() => setSelectedIndex(index)}>
                     <Box>
-                      <Text color={railColor}>{`${continuation}  `}</Text>
-                      <Text color={COLORS.DIM}>
-                        <Text color={COLORS.PRIMARY}>e</Text>
-                        {" to edit"}
+                      <Text color={isSelected ? COLORS.PRIMARY : railColor}>
+                        {isSelected ? "◆" : "◇"}{" "}
+                      </Text>
+                      <Text color={isSelected ? COLORS.PRIMARY : COLORS.TEXT} bold={isSelected}>
+                        Details
                       </Text>
                     </Box>
-                  </Box>
-                ) : null}
-              </Box>
-            );
-          }
+                  </Clickable>
+                  {isSelected ? (
+                    <Box flexDirection="column">
+                      {plan.rationale ? (
+                        <Box>
+                          <Text color={railColor}>{`${continuation}  `}</Text>
+                          <Box flexShrink={1}>
+                            <Text color={COLORS.DIM} wrap="wrap">
+                              {plan.rationale}
+                            </Text>
+                          </Box>
+                        </Box>
+                      ) : null}
+                      {plan.targetSummary ? (
+                        <Box>
+                          <Text color={railColor}>{`${continuation}  `}</Text>
+                          <Box flexShrink={1}>
+                            <Text color={COLORS.DIM} wrap="wrap">
+                              {plan.targetSummary}
+                            </Text>
+                          </Box>
+                        </Box>
+                      ) : null}
+                    </Box>
+                  ) : null}
+                </Box>
+              );
+            }
 
-          if (item.kind === "cookies") {
-            return (
-              <Box key="cookies" flexDirection="column">
-                <Clickable onClick={() => setSelectedIndex(index)}>
-                  <Box>
-                    <Text
-                      color={
-                        isSelected
-                          ? COLORS.PRIMARY
-                          : cookieSyncNeedsAttention
-                            ? COLORS.RED
-                            : railColor
-                      }
-                    >
-                      {isSelected ? "◆" : "◇"}{" "}
-                    </Text>
-                    <Text
-                      color={
-                        isSelected
-                          ? COLORS.PRIMARY
-                          : cookieSyncNeedsAttention
-                            ? COLORS.RED
-                            : COLORS.TEXT
-                      }
-                      bold={isSelected}
-                    >
-                      Cookie sync
-                    </Text>
-                    <Text color={cookiesEnabled ? COLORS.GREEN : COLORS.RED}>
-                      {cookiesEnabled ? " on" : " off"}
-                    </Text>
-                  </Box>
-                </Clickable>
-                {isSelected ? (
-                  <Box flexDirection="column">
+            if (item.kind === "assumptions") {
+              return (
+                <Box key="assumptions" flexDirection="column">
+                  <Clickable onClick={() => setSelectedIndex(index)}>
                     <Box>
-                      <Text color={railColor}>{`${continuation}  `}</Text>
-                      <Box flexShrink={1}>
-                        <Text color={COLORS.DIM} wrap="wrap">
-                          {plan.cookieSync.reason}
+                      <Text color={isSelected ? COLORS.PRIMARY : railColor}>
+                        {isSelected ? "◆" : "◇"}{" "}
+                      </Text>
+                      <Text color={isSelected ? COLORS.PRIMARY : COLORS.TEXT} bold={isSelected}>
+                        Assumptions
+                      </Text>
+                      <Text color={COLORS.DIM}>{` [${plan.assumptions.length}]`}</Text>
+                    </Box>
+                  </Clickable>
+                  {isSelected ? (
+                    <Box flexDirection="column">
+                      {plan.assumptions.map((assumption, assumptionIndex) => (
+                        <Box key={`a-${assumptionIndex}`}>
+                          <Text color={railColor}>{`${continuation}  `}</Text>
+                          <Text color={COLORS.DIM}>{"· "}</Text>
+                          <Box flexShrink={1}>
+                            <Text color={COLORS.DIM} wrap="wrap">
+                              {assumption}
+                            </Text>
+                          </Box>
+                        </Box>
+                      ))}
+                      <Box>
+                        <Text color={railColor}>{`${continuation}  `}</Text>
+                        <Text color={COLORS.DIM}>
+                          <Text color={COLORS.PRIMARY}>e</Text>
+                          {" to edit"}
                         </Text>
                       </Box>
                     </Box>
+                  ) : null}
+                </Box>
+              );
+            }
+
+            if (item.kind === "cookies") {
+              return (
+                <Box key="cookies" flexDirection="column">
+                  <Clickable onClick={() => setSelectedIndex(index)}>
+                    <Box>
+                      <Text
+                        color={
+                          isSelected
+                            ? COLORS.PRIMARY
+                            : cookieSyncNeedsAttention
+                              ? COLORS.RED
+                              : railColor
+                        }
+                      >
+                        {isSelected ? "◆" : "◇"}{" "}
+                      </Text>
+                      <Text
+                        color={
+                          isSelected
+                            ? COLORS.PRIMARY
+                            : cookieSyncNeedsAttention
+                              ? COLORS.RED
+                              : COLORS.TEXT
+                        }
+                        bold={isSelected}
+                      >
+                        Cookie sync
+                      </Text>
+                      <Text color={cookiesEnabled ? COLORS.GREEN : COLORS.RED}>
+                        {cookiesEnabled ? " on" : " off"}
+                      </Text>
+                    </Box>
+                  </Clickable>
+                  {isSelected ? (
+                    <Box flexDirection="column">
+                      <Box>
+                        <Text color={railColor}>{`${continuation}  `}</Text>
+                        <Box flexShrink={1}>
+                          <Text color={COLORS.DIM} wrap="wrap">
+                            {plan.cookieSync.reason}
+                          </Text>
+                        </Box>
+                      </Box>
+                      <Box>
+                        <Text color={railColor}>{`${continuation}  `}</Text>
+                        <Text color={COLORS.DIM}>
+                          <Text color={COLORS.PRIMARY}>c</Text>
+                          {" to toggle"}
+                        </Text>
+                      </Box>
+                    </Box>
+                  ) : null}
+                </Box>
+              );
+            }
+
+            const step = plan.steps[item.stepIndex];
+            return (
+              <Box key={step.id} flexDirection="column">
+                {sectionBreak ? (
+                  <Box marginTop={1} marginBottom={1}>
+                    <Text color={COLORS.BORDER}>
+                      {"STEPS "}
+                      {"─".repeat(Math.max(0, columns - 8))}
+                    </Text>
+                  </Box>
+                ) : null}
+                <Clickable onClick={() => setSelectedIndex(index)}>
+                  <Box>
+                    <Text color={isSelected ? COLORS.PRIMARY : railColor}>
+                      {isSelected ? "◆" : "◇"}{" "}
+                    </Text>
+                    <Text color={isSelected ? COLORS.PRIMARY : COLORS.TEXT} bold={isSelected}>
+                      {step.title}
+                    </Text>
+                  </Box>
+                </Clickable>
+                {isSelected ? (
+                  <Box flexDirection="column">
+                    <Text color={railColor}>
+                      {`${continuation}  `}
+                      <Text color={COLORS.DIM}>ACTION</Text>
+                    </Text>
                     <Box>
                       <Text color={railColor}>{`${continuation}  `}</Text>
-                      <Text color={COLORS.DIM}>
-                        <Text color={COLORS.PRIMARY}>c</Text>
-                        {" to toggle"}
-                      </Text>
+                      <Box flexShrink={1}>
+                        <Text color={COLORS.TEXT} wrap="wrap">
+                          {step.instruction}
+                        </Text>
+                      </Box>
+                    </Box>
+                    <Text color={railColor}>{`${continuation}`}</Text>
+                    <Text color={railColor}>
+                      {`${continuation}  `}
+                      <Text color={COLORS.DIM}>EXPECTED</Text>
+                    </Text>
+                    <Box>
+                      <Text color={railColor}>{`${continuation}  `}</Text>
+                      <Box flexShrink={1}>
+                        <Text color={COLORS.GREEN} wrap="wrap">
+                          {step.expectedOutcome}
+                        </Text>
+                      </Box>
                     </Box>
                   </Box>
                 ) : null}
               </Box>
             );
-          }
-
-          const step = plan.steps[item.stepIndex];
-          return (
-            <Box key={step.id} flexDirection="column">
-              {sectionBreak ? (
-                <Box marginTop={1} marginBottom={1}>
-                  <Text color={COLORS.BORDER}>
-                    {"STEPS "}
-                    {"─".repeat(Math.max(0, columns - 8))}
-                  </Text>
-                </Box>
-              ) : null}
-              <Clickable onClick={() => setSelectedIndex(index)}>
-                <Box>
-                  <Text color={isSelected ? COLORS.PRIMARY : railColor}>
-                    {isSelected ? "◆" : "◇"}{" "}
-                  </Text>
-                  <Text color={isSelected ? COLORS.PRIMARY : COLORS.TEXT} bold={isSelected}>
-                    {step.title}
-                  </Text>
-                </Box>
-              </Clickable>
-              {isSelected ? (
-                <Box flexDirection="column">
-                  <Text color={railColor}>
-                    {`${continuation}  `}
-                    <Text color={COLORS.DIM}>ACTION</Text>
-                  </Text>
-                  <Box>
-                    <Text color={railColor}>{`${continuation}  `}</Text>
-                    <Box flexShrink={1}>
-                      <Text color={COLORS.TEXT} wrap="wrap">
-                        {step.instruction}
-                      </Text>
-                    </Box>
-                  </Box>
-                  <Text color={railColor}>{`${continuation}`}</Text>
-                  <Text color={railColor}>
-                    {`${continuation}  `}
-                    <Text color={COLORS.DIM}>EXPECTED</Text>
-                  </Text>
-                  <Box>
-                    <Text color={railColor}>{`${continuation}  `}</Text>
-                    <Box flexShrink={1}>
-                      <Text color={COLORS.GREEN} wrap="wrap">
-                        {step.expectedOutcome}
-                      </Text>
-                    </Box>
-                  </Box>
-                </Box>
-              ) : null}
-            </Box>
-          );
-        })}
-      </Box>
+          })}
+        </Box>
+      ) : null}
 
       {editingState ? (
         <Box flexDirection="column" marginTop={1} paddingX={1}>

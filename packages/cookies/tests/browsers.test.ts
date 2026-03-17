@@ -1,19 +1,18 @@
-import { assert, describe, it } from "@effect/vitest";
+import { assert, describe, it } from "vite-plus/test";
 import { Effect, Option } from "effect";
 import { Browsers } from "../src/browser-detector.js";
 import { layerLive } from "../src/layers.js";
 
 describe("Browsers", () => {
-  it.effect("returns at least 2 browsers", () =>
+  it("returns at least 2 browsers", () =>
     Effect.gen(function* () {
       const browsers = yield* Browsers;
       const results = yield* browsers.list;
       assert.isArray(results);
       assert.isAbove(results.length, 1);
-    }).pipe(Effect.provide(layerLive)),
-  );
+    }).pipe(Effect.provide(layerLive), Effect.runPromise));
 
-  it.effect("chromium browsers have an executablePath", () =>
+  it("chromium browsers have an executablePath", () =>
     Effect.gen(function* () {
       const browsers = yield* Browsers;
       const results = yield* browsers.list;
@@ -23,15 +22,16 @@ describe("Browsers", () => {
         assert.isString(browser.executablePath);
         assert.notStrictEqual(browser.executablePath, "");
       }
-    }).pipe(Effect.provide(layerLive)),
-  );
+    }).pipe(Effect.provide(layerLive), Effect.runPromise));
 
-  it.effect("defaultBrowser returns Safari", () =>
+  it("defaultBrowser returns a known browser", () =>
     Effect.gen(function* () {
       const browsers = yield* Browsers;
       const result = yield* browsers.defaultBrowser();
       assert.isTrue(Option.isSome(result));
-      assert.strictEqual(result.value._tag, "SafariBrowser");
-    }).pipe(Effect.provide(layerLive)),
-  );
+      const tag = result.value._tag;
+      assert.isTrue(
+        tag === "ChromiumBrowser" || tag === "FirefoxBrowser" || tag === "SafariBrowser",
+      );
+    }).pipe(Effect.provide(layerLive), Effect.runPromise));
 });

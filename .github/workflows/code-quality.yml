@@ -23,6 +23,8 @@ jobs:
             command: pnpm lint
           - name: Format
             command: pnpm format:check
+          - name: Typecheck
+            command: pnpm check
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

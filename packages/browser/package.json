@@ -12,10 +12,18 @@
     ".": {
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
+    },
+    "./mcp": {
+      "types": "./dist/mcp/index.d.mts",
+      "import": "./dist/mcp/index.mjs"
+    },
+    "./cli": {
+      "import": "./dist/mcp/start.mjs"
     }
   },
   "scripts": {
-    "build": "vp pack",
+    "build:runtime": "node scripts/build-runtime.js",
+    "build": "pnpm build:runtime && vp pack",
     "dev": "vp pack --watch",
     "lint": "vp lint && tsc --noEmit",
     "test": "vp test run",
@@ -24,12 +32,16 @@
   "dependencies": {
     "@browser-tester/cookies": "workspace:*",
     "@effect/platform-node": "4.0.0-beta.28",
+    "@effect/vitest": "4.0.0-beta.28",
+    "@medv/finder": "^4.0.2",
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "effect": "4.0.0-beta.28",
     "playwright": "^1.52.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
+    "esbuild": "^0.25.0",
     "typescript": "^5.7.0"
   }
 }

@@ -7,12 +7,14 @@ import type {
   LanguageModelV3CallOptions,
   LanguageModelV3Content,
 } from "@ai-sdk/provider";
-import { isRecord } from "@browser-tester/utils";
+import { Effect, Layer, Predicate, ServiceMap } from "effect";
 import { convertPrompt } from "./convert-prompt.js";
+import { CursorSpawnError } from "./errors.js";
 import {
   EMPTY_USAGE,
   PROVIDER_ID,
   STOP_REASON,
+  buildAgentStream,
   convertAssistantBlocks,
   convertToolResultBlocks,
   emitAssistantParts,
@@ -21,9 +23,131 @@ import {
 } from "./provider-shared.js";
 import type { AgentProviderSettings, McpServerConfig } from "./types.js";
 
-interface CursorSettings extends AgentProviderSettings {
+export interface CursorSettings extends AgentProviderSettings {
   model?: string;
   executable?: string;
+}
+
+const runGenerate = Effect.fn("CursorAgent.generate")(function* (
+  options: LanguageModelV3CallOptions,
+  settings: CursorSettings,
+) {
+  yield* Effect.annotateCurrentSpan({ model: settings.model ?? "cursor" });
+  const { userPrompt } = convertPrompt(options.prompt);
+  const content: LanguageModelV3Content[] = [];
+  let sessionId: string | undefined;
+
+  yield* Effect.tryPromise({
+    try: async () => {
+      for await (const event of spawnCursorAgent(userPrompt, settings, options.abortSignal)) {
+        sessionId = extractSessionId(event) ?? sessionId;
+        if (event.type === "assistant") content.push(...convertMessageBlocks(event));
+        if (
+          event.type === "thinking" &&
+          event.subtype === "delta" &&
+          typeof event.text === "string"
+        ) {
+          content.push({ type: "reasoning", text: event.text });
+        }
+      }
+    },
+    catch: (cause) =>
+      new CursorSpawnError({
+        executable: settings.executable ?? "cursor-agent",
+        cause: String(cause),
+      }),
+  });
+
+  return {
+    content,
+    finishReason: STOP_REASON,
+    usage: EMPTY_USAGE,
+    warnings: [],
+    request: { body: userPrompt },
+    response: {
+      id: sessionId ?? crypto.randomUUID(),
+      timestamp: new Date(),
+      modelId: settings.model ?? "cursor",
+    },
+    providerMetadata: sessionId ? { [PROVIDER_ID]: { sessionId } } : undefined,
+  };
+});
+
+const runStream = Effect.fn("CursorAgent.stream")(function* (
+  options: LanguageModelV3CallOptions,
+  settings: CursorSettings,
+) {
+  yield* Effect.annotateCurrentSpan({ model: settings.model ?? "cursor" });
+  const { userPrompt } = convertPrompt(options.prompt);
+
+  const stream = buildAgentStream(
+    async (controller) => {
+      let sessionId: string | undefined;
+      let blockCounter = 0;
+
+      controller.enqueue({ type: "stream-start", warnings: [] });
+
+      for await (const event of spawnCursorAgent(userPrompt, settings, options.abortSignal)) {
+        const eventSessionId = extractSessionId(event);
+        if (eventSessionId) {
+          if (!sessionId)
+            controller.enqueue({
+              type: "response-metadata",
+              id: eventSessionId,
+              timestamp: new Date(),
+              modelId: settings.model ?? "cursor",
+            });
+          sessionId = eventSessionId;
+        }
+
+        if (
+          event.type === "thinking" &&
+          event.subtype === "delta" &&
+          typeof event.text === "string"
+        ) {
+          const blockId = `block-${blockCounter++}`;
+          controller.enqueue({ type: "reasoning-start", id: blockId });
+          controller.enqueue({ type: "reasoning-delta", id: blockId, delta: event.text });
+          controller.enqueue({ type: "reasoning-end", id: blockId });
+        }
+
+        if (event.type === "assistant") {
+          const messageContent = extractMessageContent(event);
+          if (messageContent) {
+            blockCounter = emitAssistantParts(messageContent, controller, blockCounter);
+            emitToolResultParts(messageContent, controller);
+          }
+        }
+      }
+
+      controller.enqueue({
+        type: "finish",
+        finishReason: STOP_REASON,
+        usage: EMPTY_USAGE,
+        providerMetadata: sessionId ? { [PROVIDER_ID]: { sessionId } } : undefined,
+      });
+    },
+    (cause) =>
+      new CursorSpawnError({
+        executable: settings.executable ?? "cursor-agent",
+        cause: String(cause),
+      }),
+  );
+
+  return { stream, request: { body: userPrompt } };
+});
+
+const buildCursorAgent = (settings: CursorSettings) =>
+  ({
+    generate: (options: LanguageModelV3CallOptions) => runGenerate(options, settings),
+    stream: (options: LanguageModelV3CallOptions) => runStream(options, settings),
+  }) as const;
+
+export class CursorAgent extends ServiceMap.Service<CursorAgent>()("@browser-tester/CursorAgent", {
+  make: Effect.succeed(buildCursorAgent({})),
+}) {
+  static live = (settings: CursorSettings) =>
+    Layer.succeed(CursorAgent)(buildCursorAgent(settings));
 }
 
 export const createCursorModel = (settings: CursorSettings = {}): LanguageModelV3 => ({
@@ -31,103 +155,13 @@ export const createCursorModel = (settings: CursorSettings = {}): LanguageModelV
   provider: PROVIDER_ID,
   modelId: "cursor",
   supportedUrls: {},
-
-  async doGenerate(options: LanguageModelV3CallOptions) {
-    const { userPrompt } = convertPrompt(options.prompt);
-    const content: LanguageModelV3Content[] = [];
-    let sessionId: string | undefined;
-
-    for await (const event of spawnCursorAgent(userPrompt, settings, options.abortSignal)) {
-      sessionId = extractSessionId(event) ?? sessionId;
-      if (event.type === "assistant") content.push(...convertMessageBlocks(event));
-      if (
-        event.type === "thinking" &&
-        event.subtype === "delta" &&
-        typeof event.text === "string"
-      ) {
-        content.push({ type: "reasoning", text: event.text });
-      }
-    }
-
-    return {
-      content,
-      finishReason: STOP_REASON,
-      usage: EMPTY_USAGE,
-      warnings: [],
-      request: { body: userPrompt },
-      response: {
-        id: sessionId ?? crypto.randomUUID(),
-        timestamp: new Date(),
-        modelId: settings.model ?? "cursor",
-      },
-      providerMetadata: sessionId ? { [PROVIDER_ID]: { sessionId } } : undefined,
-    };
-  },
-
-  async doStream(options: LanguageModelV3CallOptions) {
-    const { userPrompt } = convertPrompt(options.prompt);
-    let sessionId: string | undefined;
-    let blockCounter = 0;
-
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          controller.enqueue({ type: "stream-start", warnings: [] });
-
-          for await (const event of spawnCursorAgent(userPrompt, settings, options.abortSignal)) {
-            const eventSessionId = extractSessionId(event);
-            if (eventSessionId) {
-              if (!sessionId)
-                controller.enqueue({
-                  type: "response-metadata",
-                  id: eventSessionId,
-                  timestamp: new Date(),
-                  modelId: settings.model ?? "cursor",
-                });
-              sessionId = eventSessionId;
-            }
-
-            if (
-              event.type === "thinking" &&
-              event.subtype === "delta" &&
-              typeof event.text === "string"
-            ) {
-              const blockId = `block-${blockCounter++}`;
-              controller.enqueue({ type: "reasoning-start", id: blockId });
-              controller.enqueue({ type: "reasoning-delta", id: blockId, delta: event.text });
-              controller.enqueue({ type: "reasoning-end", id: blockId });
-            }
-
-            if (event.type === "assistant") {
-              const messageContent = extractMessageContent(event);
-              if (messageContent) {
-                blockCounter = emitAssistantParts(messageContent, controller, blockCounter);
-                emitToolResultParts(messageContent, controller);
-              }
-            }
-          }
-
-          controller.enqueue({
-            type: "finish",
-            finishReason: STOP_REASON,
-            usage: EMPTY_USAGE,
-            providerMetadata: sessionId ? { [PROVIDER_ID]: { sessionId } } : undefined,
-          });
-        } catch (error) {
-          controller.enqueue({ type: "error", error });
-        } finally {
-          controller.close();
-        }
-      },
-    });
-
-    return { stream, request: { body: userPrompt } };
-  },
+  doGenerate: (options) => Effect.runPromise(runGenerate(options, settings)),
+  doStream: (options) => Effect.runPromise(runStream(options, settings)),
 });
 
 const extractMessageContent = (event: Record<string, unknown>): unknown[] | undefined => {
   const message = event.message;
-  if (!isRecord(message) || !Array.isArray(message.content)) return undefined;
+  if (!Predicate.isReadonlyObject(message) || !Array.isArray(message.content)) return undefined;
   return message.content;
 };
 

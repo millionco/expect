@@ -2,39 +2,28 @@ import { getIndentLevel } from "./get-indent-level";
 
 const REF_MARKER = "[ref=";
 
+const isContentLine = (line: string): boolean =>
+  line.includes(REF_MARKER) || (line.includes(":") && !line.endsWith(":"));
+
 export const compactTree = (tree: string): string => {
   const lines = tree.split("\n");
-  const result: string[] = [];
+  const indents = lines.map(getIndentLevel);
+  const retained = new Array<boolean>(lines.length).fill(false);
+  const parentStack: number[] = [];
 
-  for (let index = 0; index < lines.length; index++) {
-    const line = lines[index];
+  for (let index = lines.length - 1; index >= 0; index--) {
+    if (!isContentLine(lines[index])) continue;
 
-    if (line.includes(REF_MARKER)) {
-      result.push(line);
-      continue;
-    }
+    retained[index] = true;
 
-    if (line.includes(":") && !line.endsWith(":")) {
-      result.push(line);
-      continue;
-    }
-
-    const currentIndent = getIndentLevel(line);
-    let hasRelevantChildren = false;
-
-    for (let child = index + 1; child < lines.length; child++) {
-      const childIndent = getIndentLevel(lines[child]);
-      if (childIndent <= currentIndent) break;
-      if (lines[child].includes(REF_MARKER)) {
-        hasRelevantChildren = true;
-        break;
-      }
-    }
-
-    if (hasRelevantChildren) {
-      result.push(line);
+    parentStack.length = 0;
+    for (let ancestor = index - 1; ancestor >= 0; ancestor--) {
+      if (indents[ancestor] >= indents[index]) continue;
+      if (retained[ancestor]) break;
+      retained[ancestor] = true;
+      parentStack.push(ancestor);
     }
   }
 
-  return result.join("\n");
+  return lines.filter((_, index) => retained[index]).join("\n");
 };

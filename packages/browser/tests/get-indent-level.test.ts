@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import { getIndentLevel } from "../src/utils/get-indent-level";
 
 describe("getIndentLevel", () => {

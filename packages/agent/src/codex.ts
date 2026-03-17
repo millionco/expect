@@ -6,85 +6,110 @@ import type {
   LanguageModelV3Content,
   LanguageModelV3StreamPart,
 } from "@ai-sdk/provider";
+import { Effect, Layer, ServiceMap } from "effect";
 import { convertPrompt } from "./convert-prompt.js";
-import { EMPTY_USAGE, PROVIDER_ID, STOP_REASON } from "./provider-shared.js";
+import { CodexRunError } from "./errors.js";
+import { EMPTY_USAGE, PROVIDER_ID, STOP_REASON, buildAgentStream } from "./provider-shared.js";
 import type { AgentProviderSettings } from "./types.js";
+
+const runGenerate = Effect.fn("CodexAgent.generate")(function* (
+  options: LanguageModelV3CallOptions,
+  settings: AgentProviderSettings,
+) {
+  yield* Effect.annotateCurrentSpan({ model: "codex" });
+  const { thread, input, userPrompt } = prepareRun(settings, options);
+
+  const result = yield* Effect.tryPromise({
+    try: () => thread.run(input, { signal: options.abortSignal }),
+    catch: (cause) => new CodexRunError({ cause: String(cause) }),
+  });
+
+  return {
+    content: result.items.flatMap(convertItem),
+    finishReason: STOP_REASON,
+    usage: result.usage
+      ? {
+          inputTokens: {
+            total: result.usage.input_tokens,
+            noCache: undefined,
+            cacheRead: result.usage.cached_input_tokens,
+            cacheWrite: undefined,
+          },
+          outputTokens: {
+            total: result.usage.output_tokens,
+            text: undefined,
+            reasoning: undefined,
+          },
+        }
+      : EMPTY_USAGE,
+    warnings: [],
+    request: { body: userPrompt },
+    response: { id: thread.id ?? crypto.randomUUID(), timestamp: new Date(), modelId: "codex" },
+    providerMetadata: thread.id ? { [PROVIDER_ID]: { sessionId: thread.id } } : undefined,
+  };
+});
+
+const runStream = Effect.fn("CodexAgent.stream")(function* (
+  options: LanguageModelV3CallOptions,
+  settings: AgentProviderSettings,
+) {
+  yield* Effect.annotateCurrentSpan({ model: "codex" });
+  const { thread, input, userPrompt } = prepareRun(settings, options);
+
+  const stream = buildAgentStream(
+    async (controller) => {
+      let sessionId: string | undefined;
+
+      controller.enqueue({ type: "stream-start", warnings: [] });
+      const { events } = await thread.runStreamed(input, { signal: options.abortSignal });
+
+      for await (const event of events) {
+        if (event.type === "thread.started") {
+          sessionId = event.thread_id;
+          controller.enqueue({
+            type: "response-metadata",
+            id: sessionId,
+            timestamp: new Date(),
+            modelId: "codex",
+          });
+        }
+        if (event.type === "item.completed") emitItemParts(event.item, controller);
+      }
+
+      if (!sessionId && thread.id) sessionId = thread.id;
+      controller.enqueue({
+        type: "finish",
+        finishReason: STOP_REASON,
+        usage: EMPTY_USAGE,
+        providerMetadata: sessionId ? { [PROVIDER_ID]: { sessionId } } : undefined,
+      });
+    },
+    (cause) => new CodexRunError({ cause: String(cause) }),
+  );
+
+  return { stream, request: { body: userPrompt } };
+});
+
+const buildCodexAgent = (settings: AgentProviderSettings) =>
+  ({
+    generate: (options: LanguageModelV3CallOptions) => runGenerate(options, settings),
+    stream: (options: LanguageModelV3CallOptions) => runStream(options, settings),
+  }) as const;
+
+export class CodexAgent extends ServiceMap.Service<CodexAgent>()("@browser-tester/CodexAgent", {
+  make: Effect.succeed(buildCodexAgent({})),
+}) {
+  static live = (settings: AgentProviderSettings) =>
+    Layer.succeed(CodexAgent)(buildCodexAgent(settings));
+}
 
 export const createCodexModel = (settings: AgentProviderSettings = {}): LanguageModelV3 => ({
   specificationVersion: "v3",
   provider: PROVIDER_ID,
   modelId: settings.model ?? "codex",
   supportedUrls: {},
-
-  async doGenerate(options: LanguageModelV3CallOptions) {
-    const { thread, input, userPrompt } = prepareRun(settings, options);
-    const result = await thread.run(input, { signal: options.abortSignal });
-
-    return {
-      content: result.items.flatMap(convertItem),
-      finishReason: STOP_REASON,
-      usage: result.usage
-        ? {
-            inputTokens: {
-              total: result.usage.input_tokens,
-              noCache: undefined,
-              cacheRead: result.usage.cached_input_tokens,
-              cacheWrite: undefined,
-            },
-            outputTokens: {
-              total: result.usage.output_tokens,
-              text: undefined,
-              reasoning: undefined,
-            },
-          }
-        : EMPTY_USAGE,
-      warnings: [],
-      request: { body: userPrompt },
-      response: { id: thread.id ?? crypto.randomUUID(), timestamp: new Date(), modelId: "codex" },
-      providerMetadata: thread.id ? { [PROVIDER_ID]: { sessionId: thread.id } } : undefined,
-    };
-  },
-
-  async doStream(options: LanguageModelV3CallOptions) {
-    const { thread, input, userPrompt } = prepareRun(settings, options);
-    let sessionId: string | undefined;
-
-    const stream = new ReadableStream<LanguageModelV3StreamPart>({
-      async start(controller) {
-        try {
-          controller.enqueue({ type: "stream-start", warnings: [] });
-          const { events } = await thread.runStreamed(input, { signal: options.abortSignal });
-
-          for await (const event of events) {
-            if (event.type === "thread.started") {
-              sessionId = event.thread_id;
-              controller.enqueue({
-                type: "response-metadata",
-                id: sessionId,
-                timestamp: new Date(),
-                modelId: "codex",
-              });
-            }
-            if (event.type === "item.completed") emitItemParts(event.item, controller);
-          }
-
-          if (!sessionId && thread.id) sessionId = thread.id;
-          controller.enqueue({
-            type: "finish",
-            finishReason: STOP_REASON,
-            usage: EMPTY_USAGE,
-            providerMetadata: sessionId ? { [PROVIDER_ID]: { sessionId } } : undefined,
-          });
-        } catch (error) {
-          controller.enqueue({ type: "error", error });
-        } finally {
-          controller.close();
-        }
-      },
-    });
-
-    return { stream, request: { body: userPrompt } };
-  },
+  doGenerate: (options) => Effect.runPromise(runGenerate(options, settings)),
+  doStream: (options) => Effect.runPromise(runStream(options, settings)),
 });
 
 const prepareRun = (settings: AgentProviderSettings, options: LanguageModelV3CallOptions) => {

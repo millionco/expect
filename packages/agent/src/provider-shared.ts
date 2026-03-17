@@ -1,5 +1,5 @@
 import type { LanguageModelV3Content, LanguageModelV3StreamPart } from "@ai-sdk/provider";
-import { isRecord } from "@browser-tester/utils";
+import { Effect, Predicate } from "effect";
 import { serializeToolResult } from "./utils/serialize-tool-result.js";
 
 export const PROVIDER_ID = "browser-tester-agent";
@@ -25,8 +25,8 @@ export const createLinkedAbortController = (signal?: AbortSignal): AbortControll
 export const extractSessionId = (event: Record<string, unknown>): string | undefined =>
   typeof event.session_id === "string" ? event.session_id : undefined;
 
-export const stringField = (
-  record: Record<string, unknown>,
+const stringField = (
+  record: Readonly<Record<PropertyKey, unknown>>,
   key: string,
   fallback: string,
 ): string => {
@@ -35,7 +35,7 @@ export const stringField = (
 };
 
 export const convertAssistantBlocks = (content: unknown[]): LanguageModelV3Content[] =>
-  content.filter(isRecord).flatMap((block): LanguageModelV3Content[] => {
+  content.filter(Predicate.isReadonlyObject).flatMap((block): LanguageModelV3Content[] => {
     if (block.type === "text" && typeof block.text === "string")
       return [{ type: "text", text: block.text }];
     if (block.type === "thinking" && typeof block.thinking === "string")
@@ -56,7 +56,7 @@ export const convertAssistantBlocks = (content: unknown[]): LanguageModelV3Conte
 
 export const convertToolResultBlocks = (content: unknown[]): LanguageModelV3Content[] =>
   content
-    .filter(isRecord)
+    .filter(Predicate.isReadonlyObject)
     .filter((block) => block.type === "tool_result" || block.type === "tool_error")
     .map((block) => ({
       type: "tool-result" as const,
@@ -75,7 +75,7 @@ export const emitAssistantParts = (
   blockCounter: number,
 ): number => {
   for (const block of content) {
-    if (!isRecord(block)) continue;
+    if (!Predicate.isReadonlyObject(block)) continue;
     const blockId = `block-${blockCounter++}`;
 
     if (block.type === "text" && typeof block.text === "string") {
@@ -115,7 +115,7 @@ export const emitToolResultParts = (
   controller: ReadableStreamDefaultController<LanguageModelV3StreamPart>,
 ): void => {
   for (const block of content) {
-    if (!isRecord(block)) continue;
+    if (!Predicate.isReadonlyObject(block)) continue;
     if (block.type !== "tool_result" && block.type !== "tool_error") continue;
     controller.enqueue({
       type: "tool-result",
@@ -129,3 +129,23 @@ export const emitToolResultParts = (
     });
   }
 };
+
+export const buildAgentStream = (
+  execute: (
+    controller: ReadableStreamDefaultController<LanguageModelV3StreamPart>,
+  ) => Promise<void>,
+  toError: (cause: unknown) => { readonly _tag: string },
+): ReadableStream<LanguageModelV3StreamPart> =>
+  new ReadableStream<LanguageModelV3StreamPart>({
+    start: (controller) =>
+      Effect.runPromise(
+        Effect.tryPromise({
+          try: () => execute(controller),
+          catch: (cause) => toError(cause),
+        }).pipe(
+          Effect.catchCause((cause) =>
+            Effect.sync(() => controller.enqueue({ type: "error", error: cause })),
+          ),
+        ),
+      ).finally(() => controller.close()),
+  });

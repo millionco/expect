@@ -3,68 +3,16 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 // @ts-expect-error node:sqlite lacks type declarations
 import { DatabaseSync } from "node:sqlite";
-import { assert, describe, it } from "@effect/vitest";
+import { assert, describe, it } from "vite-plus/test";
 import { Effect, Layer, Option } from "effect";
 import { NodeServices } from "@effect/platform-node";
 
-import { BrowserDetector } from "../src/browser-detector.js";
 import { Cookies } from "../src/cookies.js";
 import { BROWSER_CONFIGS } from "../src/browser-config.js";
 import { parseBinaryCookies } from "../src/utils/binary-cookies.js";
-import { BrowserInfo, BrowserProfile } from "../src/types.js";
+import { FirefoxBrowser, SafariBrowser } from "../src/types.js";
 
 const CookiesTestRuntime = Layer.merge(Cookies.layerTest, NodeServices.layer);
-
-describe("BrowserDetector", () => {
-  it.effect("returns an array of profiles", () =>
-    Effect.gen(function* () {
-      const detector = yield* BrowserDetector;
-      const profiles = yield* detector.detect();
-      assert.isArray(profiles);
-    }).pipe(Effect.provide(BrowserDetector.layer)),
-  );
-
-  it.effect("each profile has required fields", () =>
-    Effect.gen(function* () {
-      const detector = yield* BrowserDetector;
-      const profiles = yield* detector.detect();
-      for (const profile of profiles) {
-        assert.isString(profile.profileName);
-        assert.isString(profile.profilePath);
-        assert.isString(profile.displayName);
-        assert.isString(profile.browser.name);
-        assert.isString(profile.browser.executablePath);
-      }
-    }).pipe(Effect.provide(BrowserDetector.layer)),
-  );
-
-  it.effect("detects at least one profile on a system with Chrome or Arc installed", () =>
-    Effect.gen(function* () {
-      const detector = yield* BrowserDetector;
-      const profiles = yield* detector.detect();
-      assert.isAbove(profiles.length, 0);
-    }).pipe(Effect.provide(BrowserDetector.layer)),
-  );
-});
-
-describe("Cookies", () => {
-  it.effect("detectDefaultBrowser returns an Option", () =>
-    Effect.gen(function* () {
-      const cookies = yield* Cookies;
-      const result = yield* cookies.detectDefaultBrowser();
-      assert.isTrue(Option.isSome(result) || Option.isNone(result));
-    }).pipe(Effect.provide(Cookies.layerTest)),
-  );
-
-  it.effect("supportedBrowsers contains chrome and firefox", () =>
-    Effect.gen(function* () {
-      const cookies = yield* Cookies;
-      assert.include(cookies.supportedBrowsers, "chrome");
-      assert.include(cookies.supportedBrowsers, "firefox");
-      assert.include(cookies.supportedBrowsers, "safari");
-    }).pipe(Effect.provide(Cookies.layerTest)),
-  );
-});
 
 describe("BROWSER_CONFIGS", () => {
   it("contains all expected browsers", () => {
@@ -87,28 +35,6 @@ describe("BROWSER_CONFIGS", () => {
     assert.strictEqual(names.length, new Set(names).size);
   });
 });
-
-const createFirefoxProfile = (profileDir: string): BrowserProfile =>
-  new BrowserProfile({
-    profileName: "test-profile",
-    profilePath: profileDir,
-    displayName: "Test Profile",
-    browser: new BrowserInfo({
-      name: "Firefox",
-      executablePath: "/usr/bin/firefox",
-    }),
-  });
-
-const createSafariProfile = (profileDir: string): BrowserProfile =>
-  new BrowserProfile({
-    profileName: "Default",
-    profilePath: profileDir,
-    displayName: "Default",
-    browser: new BrowserInfo({
-      name: "Safari",
-      executablePath: "/Applications/Safari.app/Contents/MacOS/Safari",
-    }),
-  });
 
 const seedFirefoxCookiesDb = (dbPath: string) => {
   const database = new DatabaseSync(dbPath);
@@ -218,8 +144,8 @@ const buildBinaryCookiesFile = (
   return file;
 };
 
-describe("Cookies.extractProfile (Firefox)", () => {
-  it.effect("extracts cookies from a Firefox profile database", () =>
+describe("Cookies.extract (Firefox)", () => {
+  it("extracts cookies from a Firefox profile database", () =>
     Effect.gen(function* () {
       const profileDir = mkdtempSync(path.join(tmpdir(), "firefox-profile-test-"));
 
@@ -227,9 +153,11 @@ describe("Cookies.extractProfile (Firefox)", () => {
         seedFirefoxCookiesDb(path.join(profileDir, "cookies.sqlite"));
 
         const cookies = yield* Cookies;
-        const result = yield* cookies.extractProfile({
-          profile: createFirefoxProfile(profileDir),
+        const firefoxBrowser = new FirefoxBrowser({
+          profileName: "test-profile",
+          profilePath: profileDir,
         });
+        const result = yield* cookies.extract(firefoxBrowser);
 
         assert.isArray(result);
         assert.strictEqual(result.length, 2);
@@ -239,7 +167,6 @@ describe("Cookies.extractProfile (Firefox)", () => {
         assert.strictEqual(session!.value, "abc123");
         assert.strictEqual(session!.domain, "example.com");
         assert.strictEqual(session!.path, "/");
-        assert.strictEqual(session!.browser, "firefox");
         assert.isTrue(session!.secure);
         assert.isFalse(session!.httpOnly);
         assert.strictEqual(session!.sameSite, "Lax");
@@ -255,10 +182,9 @@ describe("Cookies.extractProfile (Firefox)", () => {
       } finally {
         rmSync(profileDir, { recursive: true, force: true });
       }
-    }).pipe(Effect.provide(CookiesTestRuntime)),
-  );
+    }).pipe(Effect.provide(CookiesTestRuntime), Effect.runPromise));
 
-  it.effect("returns empty array for profile with no cookies", () =>
+  it("returns empty array for profile with no cookies", () =>
     Effect.gen(function* () {
       const profileDir = mkdtempSync(path.join(tmpdir(), "firefox-empty-test-"));
 
@@ -273,21 +199,22 @@ describe("Cookies.extractProfile (Firefox)", () => {
         database.close();
 
         const cookies = yield* Cookies;
-        const result = yield* cookies.extractProfile({
-          profile: createFirefoxProfile(profileDir),
+        const firefoxBrowser = new FirefoxBrowser({
+          profileName: "test-profile",
+          profilePath: profileDir,
         });
+        const result = yield* cookies.extract(firefoxBrowser);
 
         assert.isArray(result);
         assert.strictEqual(result.length, 0);
       } finally {
         rmSync(profileDir, { recursive: true, force: true });
       }
-    }).pipe(Effect.provide(CookiesTestRuntime)),
-  );
+    }).pipe(Effect.provide(CookiesTestRuntime), Effect.runPromise));
 });
 
-describe("Cookies.extractProfile (Safari)", () => {
-  it.effect("extracts cookies from a Safari profile's binary cookies file", () =>
+describe("Cookies.extract (Safari)", () => {
+  it("extracts cookies from a Safari binary cookies file", () =>
     Effect.gen(function* () {
       const profileDir = mkdtempSync(path.join(tmpdir(), "safari-profile-test-"));
 
@@ -303,12 +230,14 @@ describe("Cookies.extractProfile (Safari)", () => {
             flags: 1 | 4,
           },
         ]);
-        writeFileSync(path.join(profileDir, "Cookies.binarycookies"), binaryData);
+        const cookieFilePath = path.join(profileDir, "Cookies.binarycookies");
+        writeFileSync(cookieFilePath, binaryData);
 
         const cookies = yield* Cookies;
-        const result = yield* cookies.extractProfile({
-          profile: createSafariProfile(profileDir),
+        const safariBrowser = new SafariBrowser({
+          cookieFilePath: Option.some(cookieFilePath),
         });
+        const result = yield* cookies.extract(safariBrowser);
 
         assert.isArray(result);
         assert.strictEqual(result.length, 1);
@@ -323,43 +252,7 @@ describe("Cookies.extractProfile (Safari)", () => {
       } finally {
         rmSync(profileDir, { recursive: true, force: true });
       }
-    }).pipe(Effect.provide(CookiesTestRuntime)),
-  );
-});
-
-describe("Cookies.extract resilience", () => {
-  it.effect("returns empty array when no browsers are installed for given keys", () =>
-    Effect.gen(function* () {
-      const cookies = yield* Cookies;
-      const result = yield* cookies.extract({
-        url: "https://example.com",
-        browsers: ["vivaldi", "opera", "ghost", "iridium"],
-      });
-      assert.isArray(result);
-      assert.strictEqual(result.length, 0);
-    }).pipe(Effect.provide(CookiesTestRuntime)),
-  );
-
-  it.effect("succeeds with default browsers even when some are not installed", () =>
-    Effect.gen(function* () {
-      const cookies = yield* Cookies;
-      const result = yield* cookies.extract({
-        url: "https://example.com",
-      });
-      assert.isArray(result);
-    }).pipe(Effect.provide(CookiesTestRuntime)),
-  );
-
-  it.effect("returns cookies from installed browser when mixed with non-installed", () =>
-    Effect.gen(function* () {
-      const cookies = yield* Cookies;
-      const result = yield* cookies.extract({
-        url: "https://example.com",
-        browsers: ["vivaldi", "ghost", "chrome", "iridium"],
-      });
-      assert.isArray(result);
-    }).pipe(Effect.provide(CookiesTestRuntime)),
-  );
+    }).pipe(Effect.provide(CookiesTestRuntime), Effect.runPromise));
 });
 
 describe("parseBinaryCookies domain stripping", () => {
