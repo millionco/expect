@@ -1,7 +1,8 @@
+import { Effect } from "effect";
 import {
   fetchRemoteBranches,
-  getBranchCommits,
   getPullRequestForBranch,
+  Git,
   type CommitSummary,
   type RemoteBranch,
   type TestAction,
@@ -31,7 +32,7 @@ const buildChangesOption = async (gitState: GitState): Promise<ContextOption | n
     ? null
     : await getPullRequestForBranch(cwd, gitState.currentBranch);
 
-  const stats = gitState.changesFromMainDiffStats ?? gitState.diffStats;
+  const fileCount = gitState.fileStats.length;
   const parts: string[] = [];
   if (pullRequest) {
     parts.push(`#${pullRequest.number}`);
@@ -41,8 +42,8 @@ const buildChangesOption = async (gitState: GitState): Promise<ContextOption | n
       `${gitState.branchCommitCount} commit${gitState.branchCommitCount === 1 ? "" : "s"}`,
     );
   }
-  if (stats) {
-    parts.push(`${stats.filesChanged} file${stats.filesChanged === 1 ? "" : "s"}`);
+  if (fileCount > 0) {
+    parts.push(`${fileCount} file${fileCount === 1 ? "" : "s"}`);
   }
   if (gitState.hasUnstagedChanges) {
     parts.push("uncommitted changes");
@@ -91,10 +92,18 @@ const buildPrOptions = (remoteBranches: RemoteBranch[]): ContextOption[] =>
       prStatus: branch.prStatus ?? undefined,
     }));
 
-const buildCommitOptions = (gitState: GitState): ContextOption[] => {
+const buildCommitOptions = async (gitState: GitState): Promise<ContextOption[]> => {
   if (!gitState.mainBranch) return [];
   const cwd = process.cwd();
-  const commits: CommitSummary[] = getBranchCommits(cwd, gitState.mainBranch);
+  const commits: CommitSummary[] = await Effect.runPromise(
+    Effect.gen(function* () {
+      const git = yield* Git;
+      return yield* git.getRecentCommits(`${gitState.mainBranch}..HEAD`);
+    }).pipe(
+      Effect.provide(Git.withRepoRoot(cwd)),
+      Effect.catchTag("GitError", () => Effect.succeed([] as CommitSummary[])),
+    ),
+  );
   return commits.map((commit) => ({
     id: `commit-${commit.hash}`,
     type: "commit" as const,
@@ -118,7 +127,7 @@ export const buildLocalContextOptions = async (gitState: GitState): Promise<Cont
   const changesOption = await buildChangesOption(gitState);
   if (changesOption) options.push(changesOption);
 
-  const commitOptions = buildCommitOptions(gitState);
+  const commitOptions = await buildCommitOptions(gitState);
   options.push(...commitOptions);
 
   return options;

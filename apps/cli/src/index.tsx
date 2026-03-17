@@ -1,72 +1,47 @@
-import { ensureSafeCurrentWorkingDirectory } from "@browser-tester/utils";
-import { Command, InvalidOptionArgumentError } from "commander";
+import { Effect, Option } from "effect";
+import { Command } from "commander";
 import { render } from "ink";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { App } from "./components/app";
-import { ALT_SCREEN_OFF, ALT_SCREEN_ON, VERSION } from "./constants";
-import { ThemeProvider } from "./components/theme-context";
-import { loadThemeName } from "./utils/load-theme";
-import {
-  getCommitSummary,
-  isRunningInAgent,
-  loadFlowBySlug,
-  type AgentProvider,
-  type TestAction,
-} from "@browser-tester/supervisor";
-import { autoDetectAndTest, runTest } from "./utils/run-test";
-import { runHealthcheckHeadless, runHealthcheckInteractive } from "./utils/run-healthcheck";
-import { useNavigationStore, type Screen } from "./stores/use-navigation";
-import { usePreferencesStore } from "./stores/use-preferences";
-import { useFlowSessionStore } from "./stores/use-flow-session";
-import { queryClient } from "./query-client";
-import { resolveTestRunConfig, type TestRunConfig } from "./utils/test-run-config";
-import { setInkInstance } from "./utils/clear-ink-display";
+import { App } from "./components/app.js";
+import { ALT_SCREEN_OFF, ALT_SCREEN_ON, VERSION } from "./constants.js";
+import { ThemeProvider } from "./components/theme-context.js";
+import { loadThemeName } from "./utils/load-theme.js";
+import { ChangesFor, Git, TestPlanDraft, DraftId } from "@browser-tester/supervisor";
+import { runHeadless } from "./utils/run-test.js";
+import { useNavigationStore, Screen } from "./stores/use-navigation.js";
+import { usePreferencesStore } from "./stores/use-preferences.js";
+import { usePlanStore, Plan } from "./stores/use-plan-store.js";
+import { queryClient } from "./query-client.js";
+import { setInkInstance } from "./utils/clear-ink-display.js";
 
-const parseAgentProvider = (value: string): AgentProvider => {
-  if (value === "claude" || value === "codex" || value === "cursor") {
-    return value;
-  }
+const DEFAULT_SKIP_PLANNING = true;
 
-  throw new InvalidOptionArgumentError(
-    `Unsupported agent "${value}". Use one of: claude, codex, cursor.`,
-  );
-};
+const DEFAULT_INSTRUCTION =
+  "Test all changes from main in the browser and verify they work correctly.";
+
+interface CommanderOpts {
+  message?: string;
+  flow?: string;
+  yes?: boolean;
+}
 
 const program = new Command()
   .name("testie")
   .description("AI-powered browser testing for your changes")
   .version(VERSION, "-v, --version")
-  .option("-f, --flow <slug>", "load a saved flow by slug")
   .option("-m, --message <instruction>", "natural language instruction for what to test")
-  .option(
-    "--executor <provider>",
-    "agent for execution (claude, codex, cursor)",
-    parseAgentProvider,
-    "codex",
-  )
-  .option("--execution-model <model>", "specific model for the execution agent")
-  .option("--base-url <url>", "browser base URL (overrides BROWSER_TESTER_BASE_URL)")
-  .option("--headed", "run browser visibly instead of headless")
-  .option("--cookies", "sync cookies from your browser profile")
-  .option("--no-cookies", "disable cookie sync")
+  .option("-f, --flow <slug>", "reuse a saved flow by its slug")
+  .option("-y, --yes", "skip plan review and run immediately")
   .addHelpText(
     "after",
     `
 Examples:
   $ testie                                    open interactive TUI
-  $ testie -m "test the login flow"           run a direct browser test
-  $ testie --flow checkout-happy-path         replay a saved flow
-  $ testie branch -m "verify signup"          test all branch changes
-
-Environment variables:
-  BROWSER_TESTER_BASE_URL     base URL for the browser (e.g. http://localhost:3000)
-  BROWSER_TESTER_HEADED       run headed by default (true | 1)
-  BROWSER_TESTER_COOKIES      enable cookie sync by default (true | 1)`,
+  $ testie -m "test the login flow" -y        plan and run immediately
+  $ testie branch -m "verify signup" -y       test all branch changes`,
   );
 
-const isHeadless = () => isRunningInAgent() || !process.stdin.isTTY;
-
-ensureSafeCurrentWorkingDirectory();
+const isHeadless = () => !process.stdin.isTTY;
 
 const renderApp = () => {
   const initialTheme = loadThemeName() ?? undefined;
@@ -82,87 +57,119 @@ const renderApp = () => {
   setInkInstance(instance);
 };
 
-const seedStoreFromConfig = async (config: TestRunConfig): Promise<void> => {
-  const resolvedCommit =
-    config.action === "select-commit" && config.commitHash
-      ? (getCommitSummary(process.cwd(), config.commitHash) ?? null)
-      : null;
+const resolveChangesFor = async (
+  action: "unstaged" | "branch" | "changes" | "commit",
+  commitHash?: string,
+) => {
+  const cwd = process.cwd();
+  return Effect.runPromise(
+    Effect.gen(function* () {
+      const git = yield* Git;
+      const mainBranch = yield* git.getMainBranch;
+      const currentBranch = yield* git.getCurrentBranch;
 
-  useNavigationStore.setState({ screen: "main" satisfies Screen });
+      if (action === "commit" && commitHash) {
+        return {
+          changesFor: ChangesFor.makeUnsafe({ _tag: "Commit", hash: commitHash }),
+          currentBranch,
+        };
+      }
+      if (action === "branch") {
+        return {
+          changesFor: ChangesFor.makeUnsafe({ _tag: "Branch", mainBranch }),
+          currentBranch,
+        };
+      }
+      if (action === "changes") {
+        return {
+          changesFor: ChangesFor.makeUnsafe({ _tag: "Changes", mainBranch }),
+          currentBranch,
+        };
+      }
+      return {
+        changesFor: ChangesFor.makeUnsafe({ _tag: "WorkingTree" }),
+        currentBranch,
+      };
+    }).pipe(Effect.provide(Git.withRepoRoot(cwd))),
+  );
+};
+
+const seedStores = (opts: CommanderOpts, changesFor: ChangesFor, currentBranch: string) => {
   usePreferencesStore.setState({
-    executionProvider: config.executionProvider,
-    executionModel: config.executionModel,
-    environmentOverrides: config.environmentOverrides,
-  });
-  useFlowSessionStore.setState({
-    testAction: config.action,
-    selectedCommit: resolvedCommit,
+    autoRunAfterPlanning: opts.yes ?? false,
+    skipPlanning: DEFAULT_SKIP_PLANNING,
   });
 
-  if (config.flowSlug) {
-    const savedFlow = await loadFlowBySlug(config.flowSlug, process.cwd());
-    useFlowSessionStore.getState().applySavedFlow(savedFlow);
-    return;
-  }
-
-  if (config.message) {
-    useFlowSessionStore.getState().submitFlowInstruction(config.message);
+  if (opts.message) {
+    const draft = new TestPlanDraft({
+      id: DraftId.makeUnsafe(crypto.randomUUID()),
+      changesFor,
+      currentBranch,
+      diffPreview: "",
+      fileStats: [],
+      instruction: opts.message,
+      baseUrl: Option.none(),
+      isHeadless: false,
+      requiresCookies: false,
+    });
+    usePlanStore.setState({ plan: Plan.draft(draft) });
+    useNavigationStore.setState({ screen: Screen.Planning({ instruction: opts.message }) });
+  } else {
+    useNavigationStore.setState({ screen: Screen.Main() });
   }
 };
 
-const createCommandAction =
-  (action: TestAction) =>
-  async (commitHash?: string): Promise<void> => {
-    const config = resolveTestRunConfig(action, program.opts(), commitHash);
-    if (isHeadless()) return runTest(config);
-    await seedStoreFromConfig(config);
-    renderApp();
-  };
-
-program
-  .command("healthcheck")
-  .description("check for untested changes")
-  .action(async () => {
-    if (isHeadless()) {
-      runHealthcheckHeadless();
-      return;
-    }
-    const { shouldTest, scope } = await runHealthcheckInteractive();
-    if (!shouldTest) return;
-    const actionByScope: Record<string, TestAction> = {
-      changes: "test-changes",
-      "unstaged-changes": "test-unstaged",
-      "entire-branch": "test-branch",
-      default: "test-changes",
-    };
-    const action = actionByScope[scope] ?? "test-changes";
-    const config = resolveTestRunConfig(action, program.opts());
-    await seedStoreFromConfig(config);
-    renderApp();
+const runHeadlessForAction = async (
+  action: "unstaged" | "branch" | "changes" | "commit",
+  opts: CommanderOpts,
+  commitHash?: string,
+) => {
+  const { changesFor } = await resolveChangesFor(action, commitHash);
+  return runHeadless({
+    changesFor,
+    instruction: opts.message ?? DEFAULT_INSTRUCTION,
   });
+};
+
+const runInteractiveForAction = async (
+  action: "unstaged" | "branch" | "changes" | "commit",
+  opts: CommanderOpts,
+  commitHash?: string,
+) => {
+  const { changesFor, currentBranch } = await resolveChangesFor(action, commitHash);
+  seedStores(opts, changesFor, currentBranch);
+  renderApp();
+};
 
 program
   .command("unstaged")
   .description("test current unstaged changes (default)")
-  .action(createCommandAction("test-unstaged"));
+  .action(async () => {
+    const opts = program.opts<CommanderOpts>();
+    if (isHeadless()) return runHeadlessForAction("unstaged", opts);
+    await runInteractiveForAction("unstaged", opts);
+  });
 
 program
   .command("branch")
   .description("test full branch diff against main")
-  .action(createCommandAction("test-branch"));
+  .action(async () => {
+    const opts = program.opts<CommanderOpts>();
+    if (isHeadless()) return runHeadlessForAction("branch", opts);
+    await runInteractiveForAction("branch", opts);
+  });
 
 program.action(async () => {
-  const config = resolveTestRunConfig("test-changes", program.opts());
-  if (isHeadless()) return autoDetectAndTest(config);
-  if (
-    config.message ||
-    config.environmentOverrides ||
-    config.executionProvider ||
-    config.executionModel
-  ) {
-    await seedStoreFromConfig(config);
+  const opts = program.opts<CommanderOpts>();
+  if (isHeadless()) return runHeadlessForAction("changes", opts);
+
+  const hasOptions = opts.message || opts.flow || opts.yes;
+
+  if (hasOptions) {
+    await runInteractiveForAction("changes", opts);
+  } else {
+    renderApp();
   }
-  renderApp();
 });
 
 program.parse();

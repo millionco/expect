@@ -1,16 +1,15 @@
-import { Schema } from "effect";
-import { DEFAULT_AGENT_PROVIDER } from "./constants";
+import { BROWSER_TEST_MODEL, CODEX_PLANNER_MODEL, DEFAULT_AGENT_PROVIDER } from "./constants.js";
 import { ensureSafeCurrentWorkingDirectory } from "@browser-tester/utils";
-import { createAgentModel } from "./create-agent-model";
-import { extractJsonObject } from "./json";
-import type { AgentProvider, ChangedFile } from "./types";
+import { createAgentModel } from "./create-agent-model.js";
+import { extractJsonObject } from "./json.js";
+import type { ChangedFile } from "./git/index.js";
+import type { AgentProvider } from "./types.js";
 
 const SUGGESTION_COUNT = 3;
 const SUGGESTION_MAX_FILES = 15;
-const FlowSuggestionsSchema = Schema.Array(Schema.String);
 
 interface GenerateFlowSuggestionsOptions {
-  changedFiles: ChangedFile[];
+  changedFiles: readonly ChangedFile[];
   currentBranch: string;
   contextType: "changes" | "pr" | "branch" | "commit" | null;
   contextLabel: string | null;
@@ -64,6 +63,12 @@ export const generateFlowSuggestions = async (
       cwd: ensureSafeCurrentWorkingDirectory(),
       effort: "low",
       maxTurns: 1,
+      ...(provider === "claude"
+        ? { model: BROWSER_TEST_MODEL }
+        : provider === "codex"
+          ? { model: CODEX_PLANNER_MODEL }
+          : {}),
+      permissionMode: "plan" as const,
       tools: [],
     });
 
@@ -82,11 +87,13 @@ export const generateFlowSuggestions = async (
       .map((part) => part.text)
       .join("\n");
 
-    const parsedSuggestions = Schema.decodeUnknownSync(FlowSuggestionsSchema)(
-      JSON.parse(extractJsonObject(text)),
-    );
+    const parsed: unknown = JSON.parse(extractJsonObject(text));
 
-    return parsedSuggestions.slice(0, SUGGESTION_COUNT);
+    if (!Array.isArray(parsed) || !parsed.every((item) => typeof item === "string")) {
+      throw new Error("Invalid suggestion response format");
+    }
+
+    return parsed.slice(0, SUGGESTION_COUNT);
   } catch {
     return [];
   }
