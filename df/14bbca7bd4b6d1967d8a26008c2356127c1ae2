@@ -1,0 +1,29 @@
+apps/cli/src/utils/save-flow.ts
+  e6229f2eccc34332 13,121,129-130
+apps/cli/src/constants.ts
+  e6229f2eccc34332 25-26
+apps/cli/src/utils/list-saved-flows.ts
+  e6229f2eccc34332 4-5,38
+apps/cli/src/utils/get-saved-flow-directory-path.ts
+  e6229f2eccc34332 1-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "df14bbca7bd4b6d1967d8a26008c2356127c1ae2",
+  "prompts": {
+    "e6229f2eccc34332": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9db7e3cb-ef0c-4902-ae4e-8881ed7039ab",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 69,
+      "total_deletions": 6,
+      "accepted_lines": 69,
+      "overriden_lines": 0
+    }
+  }
+}
