@@ -54,6 +54,20 @@ const getStageIndex = (elapsed: number): number => {
   return index;
 };
 
+const FINAL_STAGE_DURATION_MS = 15000;
+const PROGRESS_TICK_MS = 100;
+
+const getSmoothProgress = (elapsed: number): number => {
+  const stageIndex = getStageIndex(elapsed);
+  const currentAfter = PLANNING_STAGES[stageIndex].after;
+  const nextAfter =
+    stageIndex < PLANNING_STAGES.length - 1
+      ? PLANNING_STAGES[stageIndex + 1].after
+      : currentAfter + FINAL_STAGE_DURATION_MS;
+  const stageProgress = Math.min(1, (elapsed - currentAfter) / (nextAfter - currentAfter));
+  return (stageIndex + stageProgress) / PLANNING_STAGES.length;
+};
+
 export const PlanningScreen = () => {
   const COLORS = useColors();
   const [columns] = useStdoutDimensions();
@@ -62,6 +76,8 @@ export const PlanningScreen = () => {
   const [elapsed, setElapsed] = useState(0);
   const [tipIndex] = useState(() => Math.floor(Math.random() * TIPS.length));
 
+  const [progressElapsed, setProgressElapsed] = useState(0);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setElapsed(Date.now() - startTime);
@@ -69,8 +85,15 @@ export const PlanningScreen = () => {
     return () => clearInterval(interval);
   }, [startTime]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setProgressElapsed(Date.now() - startTime);
+    }, PROGRESS_TICK_MS);
+    return () => clearInterval(interval);
+  }, [startTime]);
+
   const stageLabel = getStageLabel(elapsed);
-  const stageIndex = getStageIndex(elapsed);
+  const smoothProgress = getSmoothProgress(progressElapsed);
 
   return (
     <Box flexDirection="column" width="100%" paddingY={1}>
@@ -95,15 +118,15 @@ export const PlanningScreen = () => {
 
       <Box paddingX={1} marginTop={1}>
         <Text>
-          {Array.from({ length: columns - 2 }, (_, index) => {
-            const progress = (stageIndex + 1) / PLANNING_STAGES.length;
-            const filled = Math.round(progress * (columns - 2));
-            return (
+          {(() => {
+            const barWidth = columns - 2;
+            const filled = Math.round(smoothProgress * barWidth);
+            return Array.from({ length: barWidth }, (_, index) => (
               <Text key={index} color={index < filled ? COLORS.DIM : COLORS.BORDER}>
                 {index < filled ? "█" : "░"}
               </Text>
-            );
-          })}
+            ));
+          })()}
         </Text>
       </Box>
     </Box>
