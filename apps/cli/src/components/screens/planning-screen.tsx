@@ -134,7 +134,8 @@ export const PlanningScreen = () => {
   const [tipIndex] = useState(() => Math.floor(Math.random() * TIPS.length));
 
   const [progressElapsed, setProgressElapsed] = useState(0);
-  const [thinkingText, setThinkingText] = useState("");
+  const [completedLines, setCompletedLines] = useState<string[]>([]);
+  const [currentLine, setCurrentLine] = useState("");
   const [thinkingKey, setThinkingKey] = useState(0);
 
   useEffect(() => {
@@ -157,17 +158,20 @@ export const PlanningScreen = () => {
     const fragments = THINKING_FRAGMENTS[stageIndex] ?? THINKING_FRAGMENTS[9];
     const fragment = fragments[thinkingKey % fragments.length];
     let charIndex = 0;
-    setThinkingText("");
+    setCurrentLine("");
 
     const typeNextChar = () => {
       if (cancelled) return;
       if (charIndex <= fragment.length) {
-        setThinkingText(fragment.slice(0, charIndex));
+        setCurrentLine(fragment.slice(0, charIndex));
         charIndex++;
         setTimeout(typeNextChar, TOKEN_SPEED_MS);
       } else {
         setTimeout(() => {
-          if (!cancelled) setThinkingKey((previous) => previous + 1);
+          if (!cancelled) {
+            setCompletedLines((previous) => [...previous, fragment]);
+            setThinkingKey((previous) => previous + 1);
+          }
         }, FRAGMENT_PAUSE_MS);
       }
     };
@@ -216,9 +220,14 @@ export const PlanningScreen = () => {
         </Text>
       </Box>
 
-      <Box paddingX={1} marginTop={1}>
+      <Box paddingX={1} marginTop={1} flexDirection="column">
+        {completedLines.map((line, index) => (
+          <Text key={index} color={COLORS.BORDER}>
+            {"│ "}<Text color={COLORS.DIM}>{line}</Text>
+          </Text>
+        ))}
         <Text color={COLORS.BORDER}>
-          {"│ "}<Text color={COLORS.DIM}>{thinkingText}<Text color={COLORS.BORDER}>▌</Text></Text>
+          {"│ "}<Text color={COLORS.DIM}>{currentLine}<Text color={COLORS.BORDER}>▌</Text></Text>
         </Text>
       </Box>
     </Box>
