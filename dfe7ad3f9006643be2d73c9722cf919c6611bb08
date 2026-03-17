@@ -1,0 +1,42 @@
+.github/workflows/publish-any-commit.yml
+  fb8ce08655e15541 1-28
+packages/supervisor/src/plan-browser-flow.ts
+  6a75c30ab125592a 6,52,54-56,63
+packages/supervisor/src/constants.ts
+  6a75c30ab125592a 3
+packages/agent/src/codex.ts
+  6a75c30ab125592a 16,98-101,103-104
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "dfe7ad3f9006643be2d73c9722cf919c6611bb08",
+  "prompts": {
+    "6a75c30ab125592a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "cb8b1d56-647a-4a52-b436-291338f141ac",
+        "model": "claude-4.6-opus-max-thinking-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 16,
+      "total_deletions": 6,
+      "accepted_lines": 14,
+      "overriden_lines": 0
+    },
+    "fb8ce08655e15541": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a406baa6-e299-4b4a-8cdb-a8943a8cb06f",
+        "model": "claude-4.6-opus-max-thinking-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 28,
+      "total_deletions": 0,
+      "accepted_lines": 28,
+      "overriden_lines": 0
+    }
+  }
+}
