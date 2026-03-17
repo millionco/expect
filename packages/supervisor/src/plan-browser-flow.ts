@@ -511,6 +511,7 @@ export const streamPlanBrowserFlow = Effect.fn("streamPlanBrowserFlow")(function
   const streamResult = yield* resolveStreamingResponse(options, prompt);
 
   let accumulatedText = "";
+  let accumulatedReasoning = "";
   const reader = streamResult.stream.getReader();
 
   yield* Effect.tryPromise({
@@ -522,6 +523,7 @@ export const streamPlanBrowserFlow = Effect.fn("streamPlanBrowserFlow")(function
         const part = value as LanguageModelV3StreamPart;
 
         if (part.type === "reasoning-delta" && part.delta) {
+          accumulatedReasoning += part.delta;
           onEvent({ kind: "thinking", text: part.delta });
         }
 
@@ -533,7 +535,8 @@ export const streamPlanBrowserFlow = Effect.fn("streamPlanBrowserFlow")(function
     catch: (cause) => new PlanningError({ stage: "stream consumption", cause }),
   });
 
-  const plan = yield* parsePlanFromText(accumulatedText, options);
+  const textToParse = accumulatedText || accumulatedReasoning;
+  const plan = yield* parsePlanFromText(textToParse, options);
   onEvent({ kind: "complete", plan });
   return plan;
 });
