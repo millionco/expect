@@ -8,9 +8,7 @@ export const createLocator = (page: Page, refs: RefMap) =>
   Effect.fn("Browser.resolveRef")(function* (ref: string) {
     const entry = refs[ref];
     if (!entry) {
-      return yield* Effect.fail(
-        new RefNotFoundError({ ref, availableRefs: Object.keys(refs) }),
-      );
+      return yield* new RefNotFoundError({ ref, availableRefs: Object.keys(refs) });
     }
     return resolveLocator(page, entry);
   });

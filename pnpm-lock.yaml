@@ -181,6 +181,9 @@ importers:
       ai:
         specifier: ^6.0.116
         version: 6.0.116(zod@4.3.6)
+      effect:
+        specifier: 4.0.0-beta.28
+        version: 4.0.0-beta.28
       zod:
         specifier: ^4.3.6
         version: 4.3.6

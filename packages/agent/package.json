@@ -27,6 +27,7 @@
     "@browser-tester/utils": "workspace:*",
     "@openai/codex-sdk": "^0.114.0",
     "ai": "^6.0.116",
+    "effect": "4.0.0-beta.28",
     "zod": "^4.3.6"
   },
   "devDependencies": {
