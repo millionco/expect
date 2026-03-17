@@ -1,0 +1,25 @@
+packages/supervisor/src/execute-browser-flow.ts
+  ed9b253f6280c568 6,531,543-544,551,556
+packages/supervisor/src/plan-browser-flow.ts
+  ed9b253f6280c568 3,280,282-283,290,295
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "f029a2b0243cbc505662b50a0d935c29b6dc937d",
+  "prompts": {
+    "ed9b253f6280c568": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a13c1ed5-6877-4d94-a4b0-136cb40f4353",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 12,
+      "total_deletions": 12,
+      "accepted_lines": 12,
+      "overriden_lines": 0
+    }
+  }
+}
