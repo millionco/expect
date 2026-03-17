@@ -10,5 +10,8 @@ export default defineConfig({
       "require-yield": "off",
     },
   },
-  fmt: {},
+  fmt: {
+    semi: true,
+    singleQuote: false,
+  },
 });
