@@ -5,11 +5,11 @@ import type {
   AgentProvider,
   BrowserEnvironmentHints,
   BrowserFlowPlan,
-  CommitSummary,
   TestAction,
   TestTarget,
   TestTargetSelection,
 } from "./types.js";
+import type { CommitSummary } from "./git/index.js";
 
 export interface EnvironmentOverrides {
   baseUrl?: string;
@@ -67,7 +67,7 @@ export const resolveBrowserTarget = (options: {
   action: TestAction;
   commit?: CommitSummary;
   cwd?: string;
-}): TestTarget =>
+}) =>
   resolveTestTarget({
     cwd: options.cwd,
     selection: createTargetSelection(options.action, options.commit),
@@ -75,7 +75,7 @@ export const resolveBrowserTarget = (options: {
 
 export const generateBrowserPlan = (options: GenerateBrowserPlanOptions) =>
   Effect.gen(function* () {
-    const target = resolveBrowserTarget(options);
+    const target = yield* resolveBrowserTarget(options);
     const environment = getBrowserEnvironment(options.environmentOverrides);
     const plan = yield* planBrowserFlow({
       target,

@@ -1,8 +1,10 @@
+import { Effect } from "effect";
 import { create } from "zustand";
 import {
   checkoutBranch,
   createDirectRunPlan,
   getBrowserEnvironment,
+  Git,
   resolveBrowserTarget,
   type AgentProvider,
   type BrowserEnvironmentHints,
@@ -184,17 +186,20 @@ export const useFlowSessionStore = create<FlowSessionStore>((set, get) => ({
         testAction: "select-commit",
         selectedCommit: commit,
         generatedPlan: state.pendingSavedFlow.plan,
-        resolvedTarget: resolveBrowserTarget({
-          action: "select-commit",
-          commit,
-        }),
         browserEnvironment: {
           ...getBrowserEnvironment(environmentOverrides),
           ...state.pendingSavedFlow.environment,
         },
         pendingSavedFlow: null,
       });
-      setScreen("review-plan");
+      void Effect.runPromise(
+        resolveBrowserTarget({ action: "select-commit", commit }).pipe(
+          Effect.provide(Git.withRepoRoot(process.cwd())),
+        ),
+      ).then((resolvedTarget) => {
+        set({ resolvedTarget });
+        setScreen("review-plan");
+      });
       return;
     }
 
@@ -225,7 +230,6 @@ export const useFlowSessionStore = create<FlowSessionStore>((set, get) => ({
     const { environmentOverrides } = usePreferencesStore.getState();
     set({
       generatedPlan: savedFlow.plan,
-      resolvedTarget: resolveBrowserTarget({ action: state.testAction }),
       browserEnvironment: {
         ...getBrowserEnvironment(environmentOverrides),
         ...savedFlow.environment,
@@ -233,7 +237,14 @@ export const useFlowSessionStore = create<FlowSessionStore>((set, get) => ({
       pendingSavedFlow: null,
       selectedCommit: null,
     });
-    setScreen("review-plan");
+    void Effect.runPromise(
+      resolveBrowserTarget({ action: state.testAction }).pipe(
+        Effect.provide(Git.withRepoRoot(process.cwd())),
+      ),
+    ).then((resolvedTarget) => {
+      set({ resolvedTarget });
+      setScreen("review-plan");
+    });
   },
 
   submitFlowInstruction: (instruction) => {
@@ -257,29 +268,35 @@ export const useFlowSessionStore = create<FlowSessionStore>((set, get) => ({
     }
 
     if (skipPlanning) {
-      const resolvedTarget = resolveBrowserTarget({
-        action: state.testAction,
-        commit: state.selectedCommit ?? undefined,
-      });
-      const browserEnvironment = getBrowserEnvironment(environmentOverrides);
-      const directPlan = createDirectRunPlan({
-        userInstruction: instruction,
-        target: resolvedTarget,
-      });
-
       set({
         ...RESET_PLAN_STATE,
         flowInstruction: instruction,
         flowInstructionHistory,
         planningError: null,
         planOrigin: "generated",
-        resolvedTarget,
-        generatedPlan: directPlan,
-        browserEnvironment,
       });
-      setScreen(
-        needsCookieConfirmation(directPlan, browserEnvironment) ? "cookie-sync-confirm" : "testing",
-      );
+      void Effect.runPromise(
+        resolveBrowserTarget({
+          action: state.testAction,
+          commit: state.selectedCommit ?? undefined,
+        }).pipe(Effect.provide(Git.withRepoRoot(process.cwd()))),
+      ).then((resolvedTarget) => {
+        const browserEnvironment = getBrowserEnvironment(environmentOverrides);
+        const directPlan = createDirectRunPlan({
+          userInstruction: instruction,
+          target: resolvedTarget,
+        });
+        set({
+          resolvedTarget,
+          generatedPlan: directPlan,
+          browserEnvironment,
+        });
+        setScreen(
+          needsCookieConfirmation(directPlan, browserEnvironment)
+            ? "cookie-sync-confirm"
+            : "testing",
+        );
+      });
       return;
     }
 

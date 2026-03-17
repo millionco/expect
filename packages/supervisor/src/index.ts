@@ -25,24 +25,19 @@ export {
   getPullRequestForBranch,
   postPullRequestComment,
 } from "./github-comment.js";
+export { checkoutBranch, getLocalBranches } from "./git.js";
 export {
-  checkoutBranch,
-  getBranchChangedFiles,
-  getBranchCommits,
-  getBranchDiffStats,
-  getChangesFromMainChangedFiles,
-  getChangesFromMainDiffStats,
-  getCommitSummary,
-  getCurrentBranchName,
-  getLocalBranches,
-  getMainBranchName,
-  getUnstagedChangedFiles,
-  getUnstagedDiffStats,
-  isInsideGitRepo,
-} from "./git.js";
+  ChangedFile,
+  ChangesFor,
+  CommitSummary,
+  FileStat,
+  formatFileStats,
+  Git,
+  GitError,
+  GitRepoRoot,
+} from "./git/index.js";
 export { generateFlowSuggestions } from "./generate-flow-suggestions.js";
 export { planBrowserFlow } from "./plan-browser-flow.js";
-export { formatDiffStats } from "./utils/format-diff-stats.js";
 export { isRunningInAgent } from "./utils/is-running-in-agent.js";
 export { resolveAgentProvider } from "./utils/resolve-agent-provider.js";
 export { fetchRemoteBranches, type RemoteBranch } from "./remote-branches.js";
@@ -107,15 +102,11 @@ export type {
   BrowserRunPullRequest,
   BrowserRunReport,
   BrowserRunStepResult,
-  ChangedFile,
-  CommitSummary,
-  DiffStats,
   ExecuteBrowserFlowOptions,
   PlanBrowserFlowOptions,
   PlanStep,
   ResolveTestTargetOptions,
   TestAction,
   TestTarget,
-  TestTargetBranch,
   TestTargetSelection,
 } from "./types.js";

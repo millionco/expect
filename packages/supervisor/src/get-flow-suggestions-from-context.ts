@@ -1,4 +1,4 @@
-import type { ChangedFile } from "./types.js";
+import type { ChangedFile } from "./git/index.js";
 import { categorizeChangedFiles } from "./utils/categorize-changed-files.js";
 
 export type ContextType = "changes" | "pr" | "branch" | "commit";
@@ -27,7 +27,7 @@ const DEFAULT_SUGGESTIONS: readonly string[] = [
   "Check authentication and protected routes",
 ];
 
-const buildChangesSuggestions = (changedFiles: ChangedFile[]): readonly string[] => {
+const buildChangesSuggestions = (changedFiles: readonly ChangedFile[]): readonly string[] => {
   if (changedFiles.length === 0) {
     return [
       "Verify my recent changes work as expected",
@@ -76,7 +76,7 @@ const buildChangesSuggestions = (changedFiles: ChangedFile[]): readonly string[]
 
 export const getFlowSuggestionsFromContext = (
   contextType: ContextType | null,
-  changedFiles: ChangedFile[],
+  changedFiles: readonly ChangedFile[],
 ): readonly string[] => {
   if (!contextType) return DEFAULT_SUGGESTIONS;
 

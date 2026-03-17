@@ -14,6 +14,10 @@ nisarg:
 
 rasmus:
 
+- FUCK!! Go to definition goes to fucking d.ts file so fucking annoying
+- Planning failed: Browser flow plan parsing failed during json extraction: Error: The model did not return a JSON object.
+- Planning failed doesn't exit, it stays in the loading state.
+
 - `CLAUDECODE=1 testie` is not steerable
 - doesn't work using `CLAUDECODE=1`
 - editing plan doesn't work

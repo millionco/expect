@@ -10,7 +10,7 @@ import { loadThemeName } from "./utils/load-theme.js";
 import {
   createDirectRunPlan,
   getBrowserEnvironment,
-  getCommitSummary,
+  Git,
   isRunningInAgent,
   loadSavedFlowBySlug,
   resolveBrowserTarget,
@@ -104,9 +104,18 @@ const resolveInitialScreen = (config: TestRunConfig, hasSavedFlow: boolean): Scr
 };
 
 const seedStoreFromConfig = async (config: TestRunConfig): Promise<void> => {
+  const cwd = process.cwd();
   const resolvedCommit =
     config.action === "select-commit" && config.commitHash
-      ? (getCommitSummary(process.cwd(), config.commitHash) ?? null)
+      ? ((await Effect.runPromise(
+          Effect.gen(function* () {
+            const git = yield* Git;
+            return yield* git.getCommitSummary(config.commitHash!);
+          }).pipe(
+            Effect.provide(Git.withRepoRoot(cwd)),
+            Effect.catchTag("GitError", () => Effect.succeed(undefined)),
+          ),
+        )) ?? null)
       : null;
 
   const savedFlow = config.flowSlug
@@ -116,10 +125,12 @@ const seedStoreFromConfig = async (config: TestRunConfig): Promise<void> => {
         ),
       )
     : null;
-  const resolvedTarget = resolveBrowserTarget({
-    action: config.action,
-    commit: resolvedCommit ?? undefined,
-  });
+  const resolvedTarget = await Effect.runPromise(
+    resolveBrowserTarget({
+      action: config.action,
+      commit: resolvedCommit ?? undefined,
+    }).pipe(Effect.provide(Git.withRepoRoot(cwd))),
+  );
   const browserEnvironment = getBrowserEnvironment(config.environmentOverrides);
   const directRunPlan =
     !savedFlow && config.message && DEFAULT_SKIP_PLANNING
@@ -175,7 +186,7 @@ program
   .description("check for untested changes")
   .action(async () => {
     if (isHeadless()) {
-      runHealthcheckHeadless();
+      await runHealthcheckHeadless();
       return;
     }
     const { shouldTest, scope } = await runHealthcheckInteractive();

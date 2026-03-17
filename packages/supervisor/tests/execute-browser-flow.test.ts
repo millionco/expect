@@ -8,6 +8,7 @@ import type {
   LanguageModelV3StreamPart,
 } from "@ai-sdk/provider";
 import { buildExecutionModelSettings, executeBrowserFlow } from "../src/execute-browser-flow.js";
+import { ChangesFor } from "../src/git/index.js";
 import type { BrowserFlowPlan, TestTarget } from "../src/types.js";
 
 const createStreamModel = (
@@ -95,19 +96,13 @@ const createExecutionModel = (
   );
 
 const testTarget: TestTarget = {
+  changesFor: ChangesFor.WorkingTree(),
   scope: "unstaged",
   cwd: "/tmp/repo",
-  branch: {
-    current: "feature/onboarding",
-    main: "main",
-  },
+  currentBranch: "feature/onboarding",
+  mainBranch: "main",
   displayName: "unstaged changes on feature/onboarding",
-  diffStats: {
-    additions: 8,
-    deletions: 1,
-    filesChanged: 2,
-  },
-  branchDiffStats: null,
+  fileStats: [{ path: "src/onboarding.tsx", additions: 8, deletions: 1 }],
   changedFiles: [{ status: "M", path: "src/onboarding.tsx" }],
   recentCommits: [],
   diffPreview: "src/onboarding.tsx | 9 ++++++++-",

@@ -1,17 +1,15 @@
 import { describe, expect, it } from "vite-plus/test";
 import type { TestTarget } from "@browser-tester/supervisor";
-import { createDirectRunPlan } from "@browser-tester/supervisor";
+import { ChangesFor, createDirectRunPlan } from "@browser-tester/supervisor";
 
 const target: TestTarget = {
+  changesFor: ChangesFor.Changes({ mainBranch: "main" }),
   scope: "changes",
   cwd: "/repo",
-  branch: {
-    current: "feature/direct-run",
-    main: "main",
-  },
+  currentBranch: "feature/direct-run",
+  mainBranch: "main",
   displayName: "feature/direct-run",
-  diffStats: null,
-  branchDiffStats: null,
+  fileStats: [],
   changedFiles: [
     { path: "apps/web/src/app.tsx", status: "M" },
     { path: "apps/web/src/routes/login.tsx", status: "M" },

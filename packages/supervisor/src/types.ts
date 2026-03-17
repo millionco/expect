@@ -1,29 +1,8 @@
 import type { LanguageModelV3 } from "@ai-sdk/provider";
 import type { AgentProviderSettings } from "@browser-tester/agent";
+import type { ChangedFile, ChangesFor, CommitSummary, FileStat } from "./git/index.js";
 
 export type AgentProvider = "claude" | "codex" | "cursor";
-
-export interface DiffStats {
-  additions: number;
-  deletions: number;
-  filesChanged: number;
-}
-
-export interface CommitSummary {
-  hash: string;
-  shortHash: string;
-  subject: string;
-}
-
-export interface ChangedFile {
-  path: string;
-  status: string;
-}
-
-export interface TestTargetBranch {
-  current: string;
-  main: string | null;
-}
 
 export type TestAction = "test-unstaged" | "test-branch" | "test-changes" | "select-commit";
 
@@ -35,14 +14,15 @@ export interface TestTargetSelection {
 }
 
 export interface TestTarget {
+  changesFor: ChangesFor;
   scope: "unstaged" | "branch" | "changes" | "commit";
   cwd: string;
-  branch: TestTargetBranch;
+  currentBranch: string;
+  mainBranch: string;
   displayName: string;
-  diffStats: DiffStats | null;
-  branchDiffStats: DiffStats | null;
-  changedFiles: ChangedFile[];
-  recentCommits: CommitSummary[];
+  fileStats: readonly FileStat[];
+  changedFiles: readonly ChangedFile[];
+  recentCommits: readonly CommitSummary[];
   diffPreview: string;
   selectedCommit?: CommitSummary;
 }

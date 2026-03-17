@@ -1,5 +1,5 @@
 import { extname } from "node:path";
-import type { ChangedFile } from "../types.js";
+import type { ChangedFile } from "../git/index.js";
 
 const COMPONENT_EXTENSIONS = new Set([".tsx", ".jsx"]);
 const STYLE_EXTENSIONS = new Set([".css", ".scss", ".sass", ".less", ".styl"]);
@@ -17,7 +17,7 @@ export interface ChangedFileSummary {
   totalFiles: number;
 }
 
-export const categorizeChangedFiles = (files: ChangedFile[]): ChangedFileSummary => {
+export const categorizeChangedFiles = (files: readonly ChangedFile[]): ChangedFileSummary => {
   let componentCount = 0;
   let styleCount = 0;
   let webCodeCount = 0;

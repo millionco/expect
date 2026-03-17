@@ -3,6 +3,7 @@ import { describe, expect, it } from "vite-plus/test";
 import type { LanguageModelV3, LanguageModelV3CallOptions } from "@ai-sdk/provider";
 import { BROWSER_TEST_MODEL } from "../src/constants.js";
 import { buildPlannerModelSettings, planBrowserFlow } from "../src/plan-browser-flow.js";
+import { ChangesFor } from "../src/git/index.js";
 import type { TestTarget } from "../src/types.js";
 
 const createPlannerModel = (
@@ -66,23 +67,16 @@ const createPlannerModel = (
 });
 
 const baseTarget: TestTarget = {
+  changesFor: ChangesFor.Branch({ mainBranch: "main" }),
   scope: "branch",
   cwd: "/tmp/repo",
-  branch: {
-    current: "feature/onboarding",
-    main: "main",
-  },
+  currentBranch: "feature/onboarding",
+  mainBranch: "main",
   displayName: "branch feature/onboarding",
-  diffStats: {
-    additions: 12,
-    deletions: 3,
-    filesChanged: 4,
-  },
-  branchDiffStats: {
-    additions: 12,
-    deletions: 3,
-    filesChanged: 4,
-  },
+  fileStats: [
+    { path: "src/onboarding.tsx", additions: 8, deletions: 2 },
+    { path: "src/import-projects.tsx", additions: 4, deletions: 1 },
+  ],
   changedFiles: [
     { status: "M", path: "src/onboarding.tsx" },
     { status: "A", path: "src/import-projects.tsx" },

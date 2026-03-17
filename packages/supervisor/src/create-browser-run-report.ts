@@ -530,7 +530,7 @@ export const createBrowserRunReport = async (
       options.events,
       options.onProgress,
     ),
-    getPullRequestForBranch(options.target.cwd, options.target.branch.current),
+    getPullRequestForBranch(options.target.cwd, options.target.currentBranch),
   ]);
 
   const partialReport = {

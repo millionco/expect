@@ -17,7 +17,7 @@ import { PlanParseError, PlanningError } from "./errors.js";
 import { extractJsonObject } from "./json.js";
 import type { PlanBrowserFlowOptions, PlanStep, TestTarget } from "./types.js";
 import { detectAuthError } from "./utils/detect-auth-error.js";
-import { formatDiffStats } from "./utils/format-diff-stats.js";
+import { formatFileStats } from "./git/index.js";
 import { prioritizePlanningFiles } from "./utils/prioritize-planning-files.js";
 import { resolveAgentProvider } from "./utils/resolve-agent-provider.js";
 
@@ -71,12 +71,12 @@ const buildDiffRetrievalCommand = (target: TestTarget): string => {
     return `git show ${target.selectedCommit.shortHash} -- <filepath>`;
   }
 
-  if (target.scope === "branch" && target.branch.main) {
-    return `git diff ${target.branch.main}...HEAD -- <filepath>`;
+  if (target.scope === "branch" && target.mainBranch) {
+    return `git diff ${target.mainBranch}...HEAD -- <filepath>`;
   }
 
-  if (target.scope === "changes" && target.branch.main) {
-    return `git diff ${target.branch.main} -- <filepath>`;
+  if (target.scope === "changes" && target.mainBranch) {
+    return `git diff ${target.mainBranch} -- <filepath>`;
   }
 
   return "git diff -- <filepath>";
@@ -136,9 +136,9 @@ const buildPlanningPrompt = (options: PlanBrowserFlowOptions): string => {
     "Testing target:",
     `- Scope: ${target.scope}`,
     `- Display name: ${target.displayName}`,
-    `- Current branch: ${target.branch.current}`,
-    `- Main branch: ${target.branch.main ?? "unknown"}`,
-    `- Diff stats: ${formatDiffStats(target.diffStats)}`,
+    `- Current branch: ${target.currentBranch}`,
+    `- Main branch: ${target.mainBranch ?? "unknown"}`,
+    `- Diff stats: ${formatFileStats(target.fileStats)}`,
     target.selectedCommit
       ? `- Selected commit: ${target.selectedCommit.shortHash} ${target.selectedCommit.subject}`
       : null,

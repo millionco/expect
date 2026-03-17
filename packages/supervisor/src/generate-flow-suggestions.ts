@@ -2,13 +2,14 @@ import { BROWSER_TEST_MODEL, CODEX_PLANNER_MODEL, DEFAULT_AGENT_PROVIDER } from 
 import { ensureSafeCurrentWorkingDirectory } from "@browser-tester/utils";
 import { createAgentModel } from "./create-agent-model.js";
 import { extractJsonObject } from "./json.js";
-import type { AgentProvider, ChangedFile } from "./types.js";
+import type { ChangedFile } from "./git/index.js";
+import type { AgentProvider } from "./types.js";
 
 const SUGGESTION_COUNT = 3;
 const SUGGESTION_MAX_FILES = 15;
 
 interface GenerateFlowSuggestionsOptions {
-  changedFiles: ChangedFile[];
+  changedFiles: readonly ChangedFile[];
   currentBranch: string;
   contextType: "changes" | "pr" | "branch" | "commit" | null;
   contextLabel: string | null;

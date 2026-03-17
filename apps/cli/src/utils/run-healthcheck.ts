@@ -14,8 +14,8 @@ interface HealthcheckResult {
   scope: TestScope;
 }
 
-export const runHealthcheckHeadless = (): void => {
-  const gitState = getGitState();
+export const runHealthcheckHeadless = async (): Promise<void> => {
+  const gitState = await getGitState();
   const report = getHealthcheckReport(gitState);
 
   process.stdout.write(
@@ -42,7 +42,7 @@ export const runHealthcheckHeadless = (): void => {
 };
 
 export const runHealthcheckInteractive = async (): Promise<HealthcheckResult> => {
-  const gitState = getGitState();
+  const gitState = await getGitState();
   const report = getHealthcheckReport(gitState);
 
   process.stdout.write(`${pc.bold("testie")} v${VERSION} healthcheck\n\n`);

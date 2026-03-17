@@ -1,4 +1,4 @@
-import type { DiffStats } from "./types.js";
+import type { FileStat } from "./git/index.js";
 import { categorizeChangedFiles, type FileCategory } from "./utils/categorize-changed-files.js";
 import { type GitState, getRecommendedScope, type TestScope } from "./get-git-state.js";
 import { isCurrentStateTested } from "./tested-state.js";
@@ -10,7 +10,7 @@ export interface HealthcheckReport {
   fileCount: number;
   categories: FileCategory[];
   totalWebFiles: number;
-  diffStats: DiffStats | null;
+  fileStats: readonly FileStat[];
   changedFilePaths: string[];
 }
 
@@ -19,10 +19,10 @@ export const getHealthcheckReport = (gitState: GitState): HealthcheckReport => {
   const hasGitChanges =
     gitState.hasChangesFromMain || gitState.hasUnstagedChanges || gitState.hasBranchCommits;
   const hasUntestedChanges = hasGitChanges && !isCurrentStateTested();
-  const diffStats =
-    gitState.changesFromMainDiffStats ?? gitState.diffStats ?? gitState.branchDiffStats;
-  const changedLines = (diffStats?.additions ?? 0) + (diffStats?.deletions ?? 0);
-  const fileCount = diffStats?.filesChanged ?? 0;
+  const additions = gitState.fileStats.reduce((sum, stat) => sum + stat.additions, 0);
+  const deletions = gitState.fileStats.reduce((sum, stat) => sum + stat.deletions, 0);
+  const changedLines = additions + deletions;
+  const fileCount = gitState.fileStats.length;
   const { categories, totalWebFiles } = categorizeChangedFiles(gitState.changedFiles);
 
   return {
@@ -32,7 +32,7 @@ export const getHealthcheckReport = (gitState: GitState): HealthcheckReport => {
     fileCount,
     categories,
     totalWebFiles,
-    diffStats,
+    fileStats: gitState.fileStats,
     changedFilePaths: gitState.changedFiles.map((file) => file.path),
   };
 };

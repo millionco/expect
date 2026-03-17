@@ -1,4 +1,4 @@
-import type { ChangedFile } from "../types.js";
+import type { ChangedFile } from "../git/index.js";
 
 const HIGH_SIGNAL_FILE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"];
 const HIGH_SIGNAL_PATH_SEGMENTS = [
@@ -59,7 +59,7 @@ const getPlanningFileScore = (changedFile: ChangedFile): number => {
   return score;
 };
 
-export const prioritizePlanningFiles = (changedFiles: ChangedFile[]): ChangedFile[] =>
+export const prioritizePlanningFiles = (changedFiles: readonly ChangedFile[]): ChangedFile[] =>
   [...changedFiles].sort((leftFile, rightFile) => {
     const scoreDifference = getPlanningFileScore(rightFile) - getPlanningFileScore(leftFile);
     if (scoreDifference !== 0) return scoreDifference;

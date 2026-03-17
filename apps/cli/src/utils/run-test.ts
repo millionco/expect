@@ -3,9 +3,9 @@ import {
   executeBrowserFlow,
   generateBrowserPlan,
   getBrowserEnvironment,
-  getCommitSummary,
   getGitState,
   getRecommendedScope,
+  Git,
   loadSavedFlowBySlug,
   resolveBrowserTarget,
   saveTestedFingerprint,
@@ -74,7 +74,11 @@ const resolvePlan = async (
       console.error(`Saved flow "${config.flowSlug}" not found.`);
       process.exit(1);
     }
-    const target = resolveBrowserTarget({ action, commit: selectedCommit });
+    const target = await Effect.runPromise(
+      resolveBrowserTarget({ action, commit: selectedCommit }).pipe(
+        Effect.provide(Git.withRepoRoot(process.cwd())),
+      ),
+    );
     const environment = {
       ...getBrowserEnvironment(environmentOverrides),
       ...savedFlow.environment,
@@ -93,7 +97,7 @@ const resolvePlan = async (
       environmentOverrides,
       provider: config.planningProvider,
       model: config.planningModel,
-    }),
+    }).pipe(Effect.provide(Git.withRepoRoot(process.cwd()))),
   );
   console.error(`Plan: ${result.plan.title} (${result.plan.steps.length} steps)\n`);
   return result;
@@ -101,11 +105,19 @@ const resolvePlan = async (
 
 export const runTest = async (config: TestRunConfig): Promise<void> => {
   const { action } = config;
-  const gitState = getGitState();
+  const gitState = await getGitState();
 
   let resolvedCommit;
   if (action === "select-commit" && config.commitHash) {
-    resolvedCommit = getCommitSummary(process.cwd(), config.commitHash) ?? undefined;
+    resolvedCommit = await Effect.runPromise(
+      Effect.gen(function* () {
+        const git = yield* Git;
+        return yield* git.getCommitSummary(config.commitHash!);
+      }).pipe(
+        Effect.provide(Git.withRepoRoot(process.cwd())),
+        Effect.catchTag("GitError", () => Effect.succeed(undefined)),
+      ),
+    );
     if (!resolvedCommit) {
       console.error(`Commit "${config.commitHash}" not found in recent history.`);
       process.exit(1);
@@ -172,7 +184,7 @@ export const runTest = async (config: TestRunConfig): Promise<void> => {
 };
 
 export const autoDetectAndTest = async (config?: Partial<TestRunConfig>): Promise<void> => {
-  const gitState = getGitState();
+  const gitState = await getGitState();
   if (!gitState.isGitRepo) {
     await runTest({ action: "test-unstaged", ...config });
     return;

@@ -16,6 +16,7 @@ import { MainMenu } from "./screens/main-menu-screen.js";
 import { Modeline } from "./ui/modeline.js";
 import {
   getBrowserEnvironment,
+  Git,
   planBrowserFlow,
   resolveBrowserTarget,
   resolveAgentProvider,
@@ -46,34 +47,44 @@ const usePlanningEffect = () => {
   useEffect(() => {
     if (screen !== "planning" || !gitState || !testAction || !flowInstruction.trim()) return;
 
-    const target = resolveBrowserTarget({
-      action: testAction,
-      commit: selectedCommit ?? undefined,
-    });
     const environment = getBrowserEnvironment(environmentOverrides);
-    useFlowSessionStore.setState({ resolvedTarget: target, resolvedPlanningProvider: null });
+    useFlowSessionStore.setState({ resolvedTarget: undefined, resolvedPlanningProvider: null });
 
     const planningFiber = Effect.runFork(
-      resolveAgentProvider(planningProvider).pipe(
-        Effect.tap((resolvedAgentProvider) =>
-          Effect.sync(() =>
-            useFlowSessionStore.setState({
-              resolvedPlanningProvider: resolvedAgentProvider.provider,
-            }),
+      resolveBrowserTarget({
+        action: testAction,
+        commit: selectedCommit ?? undefined,
+      }).pipe(
+        Effect.provide(Git.withRepoRoot(process.cwd())),
+        Effect.tap((target) =>
+          Effect.sync(() => useFlowSessionStore.setState({ resolvedTarget: target })),
+        ),
+        Effect.flatMap((target) =>
+          resolveAgentProvider(planningProvider).pipe(
+            Effect.tap((resolvedAgentProvider) =>
+              Effect.sync(() =>
+                useFlowSessionStore.setState({
+                  resolvedPlanningProvider: resolvedAgentProvider.provider,
+                }),
+              ),
+            ),
+            Effect.flatMap(() =>
+              planBrowserFlow({
+                target,
+                userInstruction: flowInstruction,
+                environment,
+                provider: planningProvider,
+                ...(planningModel ? { providerSettings: { model: planningModel } } : {}),
+              }),
+            ),
+            Effect.tap((plan) =>
+              Effect.sync(() => completePlanning({ target, plan, environment })),
+            ),
           ),
         ),
-        Effect.flatMap(() =>
-          planBrowserFlow({
-            target,
-            userInstruction: flowInstruction,
-            environment,
-            provider: planningProvider,
-            ...(planningModel ? { providerSettings: { model: planningModel } } : {}),
-          }),
-        ),
-        Effect.tap((plan) => Effect.sync(() => completePlanning({ target, plan, environment }))),
         Effect.catchTags({
           PlanningError: (planningError) => Effect.sync(() => failPlanning(planningError.message)),
+          GitError: (gitError) => Effect.sync(() => failPlanning(gitError.message)),
         }),
       ),
     );

@@ -1,28 +1,15 @@
-export interface McpServerConfig {
-  type?: "stdio";
-  command: string;
-  args?: string[];
-  env?: Record<string, string>;
-}
+import { Schema } from "effect";
 
-export type AgentPermissionMode =
-  | "default"
-  | "acceptEdits"
-  | "bypassPermissions"
-  | "plan"
-  | "dontAsk";
+export class McpServerConfig extends Schema.Class<McpServerConfig>("McpServerConfig")({
+  command: Schema.String,
+  args: Schema.Array(Schema.String),
+  env: Schema.Record(Schema.String, Schema.String),
+}) {}
 
-export type AgentEffort = "low" | "medium" | "high" | "max";
-
-export interface AgentProviderSettings {
-  cwd?: string;
-  model?: string;
-  sessionId?: string;
-  env?: Record<string, string>;
-  mcpServers?: Record<string, McpServerConfig>;
-  permissionMode?: AgentPermissionMode;
-  effort?: AgentEffort;
-  tools?: string[];
-  maxTurns?: number;
-  debugLogPath?: string;
-}
+export class AgentStreamOptions extends Schema.Class<AgentStreamOptions>("AgentStreamOptions")({
+  cwd: Schema.String,
+  model: Schema.String,
+  sessionId: Schema.String,
+  prompt: Schema.String,
+  systemPrompt: Schema.String,
+}) {}
