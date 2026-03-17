@@ -368,47 +368,41 @@ export const PlanReviewScreen = () => {
 
   return (
     <Box flexDirection="column" width="100%" paddingY={1}>
-      {inputFocused ? (
-        <Box flexDirection="column">
-          <Clickable onClick={() => setTopFocus("input")}>
-            <RuledBox color={COLORS.PRIMARY}>
-              <Box>
-                <Text color={COLORS.PRIMARY}>{"❯ "}</Text>
-                <Input
-                  focus={inputFocused && !pickerOpen}
-                  multiline
-                  value={inputValue}
-                  onSubmit={handleInputSubmit}
-                  onChange={handleInputChange}
-                />
-              </Box>
-            </RuledBox>
-          </Clickable>
-          {pickerOpen ? (
-            <Box flexDirection="column">
-              <Box marginBottom={0} paddingX={1}>
-                <Text color={COLORS.DIM}>@ </Text>
-                <Text color={COLORS.PRIMARY}>{pickerQuery}</Text>
-                <Text color={COLORS.DIM}>{pickerQuery ? "" : "type to filter"}</Text>
-              </Box>
-              <ContextPicker
-                options={filteredOptions}
-                selectedIndex={pickerIndex}
-                isLoading={remoteLoading}
-                query={pickerQuery}
-                onQueryChange={setPickerQuery}
-                onSelect={handleContextSelect}
-                onNavigate={setPickerIndex}
-                onDismiss={closePicker}
+      <Clickable onClick={() => setTopFocus("input")}>
+        <RuledBox color={inputFocused ? COLORS.PRIMARY : COLORS.BORDER}>
+          {inputFocused ? (
+            <Box>
+              <Text color={COLORS.PRIMARY}>{"❯ "}</Text>
+              <Input
+                focus={inputFocused && !pickerOpen}
+                multiline
+                value={inputValue}
+                onSubmit={handleInputSubmit}
+                onChange={handleInputChange}
               />
             </Box>
           ) : (
-            <Box paddingX={1}>
-              <Text color={COLORS.DIM}>
-                type <Text color={COLORS.PRIMARY}>@</Text> to set context
-              </Text>
-            </Box>
+            <Text color={COLORS.DIM}>{flowInstruction}</Text>
           )}
+        </RuledBox>
+      </Clickable>
+      {inputFocused && pickerOpen ? (
+        <Box flexDirection="column">
+          <Box marginBottom={0} paddingX={1}>
+            <Text color={COLORS.DIM}>@ </Text>
+            <Text color={COLORS.PRIMARY}>{pickerQuery}</Text>
+            <Text color={COLORS.DIM}>{pickerQuery ? "" : "type to filter"}</Text>
+          </Box>
+          <ContextPicker
+            options={filteredOptions}
+            selectedIndex={pickerIndex}
+            isLoading={remoteLoading}
+            query={pickerQuery}
+            onQueryChange={setPickerQuery}
+            onSelect={handleContextSelect}
+            onNavigate={setPickerIndex}
+            onDismiss={closePicker}
+          />
         </Box>
       ) : null}
 
@@ -425,14 +419,7 @@ export const PlanReviewScreen = () => {
         </RuledBox>
       ) : null}
 
-      {!inputFocused ? (
-        <Box flexDirection="column" paddingX={1}>
-          <Text color={COLORS.BORDER}>
-            <Text bold color={COLORS.TEXT}>BROWSER TEST PLAN</Text>
-            {" "}
-            {"─".repeat(Math.max(0, columns - 20))}
-          </Text>
-
+      <Box flexDirection="column" paddingX={1}>
           <Box marginTop={1}>
             <Text color={railColor}>{"┌  "}</Text>
             <Box flexShrink={1}>
@@ -611,7 +598,6 @@ export const PlanReviewScreen = () => {
           })}
 
         </Box>
-      ) : null}
 
       {editingState ? (
         <Box flexDirection="column" marginTop={1} paddingX={1}>

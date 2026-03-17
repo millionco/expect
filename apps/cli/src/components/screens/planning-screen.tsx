@@ -10,11 +10,15 @@ import { TESTING_TIMER_UPDATE_INTERVAL_MS } from "../../constants.js";
 
 const PLANNING_STAGES = [
   { after: 0, label: "Analyzing changes" },
-  { after: 3000, label: "Identifying test surfaces" },
-  { after: 7000, label: "Building browser steps" },
-  { after: 12000, label: "Defining expected outcomes" },
-  { after: 18000, label: "Validating plan" },
-  { after: 25000, label: "Finalizing" },
+  { after: 1200, label: "Reading diff" },
+  { after: 2400, label: "Identifying test surfaces" },
+  { after: 3600, label: "Mapping component boundaries" },
+  { after: 4800, label: "Building browser steps" },
+  { after: 6000, label: "Sequencing navigation flow" },
+  { after: 7200, label: "Defining expected outcomes" },
+  { after: 8400, label: "Checking assertions" },
+  { after: 9600, label: "Validating plan" },
+  { after: 11000, label: "Finalizing" },
 ] as const;
 
 const getStageLabel = (elapsed: number): (typeof PLANNING_STAGES)[number]["label"] => {
