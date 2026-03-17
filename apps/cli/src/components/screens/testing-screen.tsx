@@ -238,16 +238,7 @@ export const TestingScreen = () => {
 
   if (!target || !plan || !environment || !derivedState) return null;
 
-  const {
-    steps,
-    currentToolCallText,
-    activeStepStartedAt,
-    completedCount,
-    totalCount,
-    runStatusLabel,
-  } = derivedState;
-  const stepElapsedLabel =
-    activeStepStartedAt !== null ? formatElapsedTime(Date.now() - activeStepStartedAt) : null;
+  const { steps, currentToolCallText, completedCount, totalCount, runStatusLabel } = derivedState;
   const filledWidth =
     totalCount > 0 ? Math.round((completedCount / totalCount) * PROGRESS_BAR_WIDTH) : 0;
   const emptyWidth = PROGRESS_BAR_WIDTH - filledWidth;
@@ -287,11 +278,11 @@ export const TestingScreen = () => {
               <Box key={step.stepId} flexDirection="column">
                 {step.status === "passed" ? (
                   <Text color={COLORS.GREEN}>
-                    {`  ${figures.tick} ${stepPrefix} ${cliTruncate(step.label, TESTING_TOOL_TEXT_CHAR_LIMIT)}`}
+                    {`  ${figures.tick} ${stepPrefix} ${cliTruncate(step.label, TESTING_TOOL_TEXT_CHAR_LIMIT)}${step.elapsedMs !== null ? ` ${formatElapsedTime(step.elapsedMs)}` : ""}`}
                   </Text>
                 ) : step.status === "failed" ? (
                   <Text color={COLORS.RED}>
-                    {`  ${figures.cross} ${stepPrefix} ${cliTruncate(step.label, TESTING_TOOL_TEXT_CHAR_LIMIT)}`}
+                    {`  ${figures.cross} ${stepPrefix} ${cliTruncate(step.label, TESTING_TOOL_TEXT_CHAR_LIMIT)}${step.elapsedMs !== null ? ` ${formatElapsedTime(step.elapsedMs)}` : ""}`}
                   </Text>
                 ) : step.status === "active" ? (
                   <>
@@ -300,7 +291,7 @@ export const TestingScreen = () => {
                       <Spinner />
                       <Text> </Text>
                       <TextShimmer
-                        text={`${stepPrefix} ${step.label}${stepElapsedLabel ? ` ${stepElapsedLabel}` : ""}`}
+                        text={`${stepPrefix} ${step.label} ${formatElapsedTime(Math.round(elapsedTimeMs))}`}
                         baseColor={COLORS.SELECTION}
                         highlightColor={COLORS.PRIMARY}
                       />
