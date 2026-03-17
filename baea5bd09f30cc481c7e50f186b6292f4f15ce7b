@@ -1,0 +1,72 @@
+apps/cli/src/components/screens/planning-screen.tsx
+  1d8bbe2daf65dce0 56-62,67-69,83,110-116
+apps/cli/src/components/screens/testing-screen.tsx
+  1d8bbe2daf65dce0 49-50,130,136-139,149-151,158,187-188,191,247
+  37b1d4285493f364 246,340
+packages/supervisor/src/create-browser-run-report.ts
+  37b1d4285493f364 42,276,282-283,489,496,512,516,521-522,538
+apps/cli/src/components/app.tsx
+  1d8bbe2daf65dce0 18,32-33,45,48-54,59-62,81-82,216,218
+apps/cli/src/utils/derive-testing-state.ts
+  37b1d4285493f364 6-11,25,47,98-103,133
+apps/cli/src/index.tsx
+  1d8bbe2daf65dce0 2,10,24-33,41-48,109-112
+apps/cli/src/utils/test-run-config.ts
+  1d8bbe2daf65dce0 1,16-19,27-30,41,52-55
+packages/supervisor/tests/execute-browser-flow.test.ts
+  37b1d4285493f364 215-225
+packages/supervisor/src/generate-flow-suggestions.ts
+  1d8bbe2daf65dce0 1,59,64-68,78-79,91-92,94-96
+apps/cli/src/components/screens/main-menu-screen.tsx
+  1d8bbe2daf65dce0 35,131,136-137,139,148
+apps/cli/src/utils/browser-agent.ts
+  1d8bbe2daf65dce0 5,21-22,80-81
+packages/supervisor/src/index.ts
+  1d8bbe2daf65dce0 45
+apps/cli/src/store.ts
+  1d8bbe2daf65dce0 5,48-53,106-107,143-148
+packages/supervisor/src/execute-browser-flow.ts
+  37b1d4285493f364 189-231,411-412,419-420,423-434,438
+  1d8bbe2daf65dce0 6,30-31,452-465,469-471,479-506,510-535,539-566,602-603,605-608
+packages/supervisor/src/utils/resolve-agent-provider.ts
+  1d8bbe2daf65dce0 1-18,20-98
+packages/supervisor/src/utils/detect-auth-error.ts
+  1d8bbe2daf65dce0 1-11,13-76
+packages/supervisor/src/plan-browser-flow.ts
+  1d8bbe2daf65dce0 3,20,23,224-238,242-305,326
+apps/cli/src/utils/run-test.ts
+  1d8bbe2daf65dce0 95-96,132-134,136-138,142-148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "baea5bd09f30cc481c7e50f186b6292f4f15ce7b",
+  "prompts": {
+    "1d8bbe2daf65dce0": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a1021e88-b448-45fe-b0d8-40e68c29b637",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 618,
+      "total_deletions": 126,
+      "accepted_lines": 517,
+      "overriden_lines": 2
+    },
+    "37b1d4285493f364": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b0716379-8b00-45f5-8e54-21f967e31779",
+        "model": "gpt-5.4-high-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 111,
+      "total_deletions": 21,
+      "accepted_lines": 99,
+      "overriden_lines": 0
+    }
+  }
+}
