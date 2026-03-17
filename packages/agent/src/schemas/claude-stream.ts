@@ -207,7 +207,7 @@ export class ClaudeResultSuccess extends Schema.Class<ClaudeResultSuccess>("Clau
   session_id: Schema.String,
 }) {
   get streamParts(): Option.Option<LanguageModelV3StreamPart[]> {
-    return Option.none();
+    return Option.some([{ type: "response-metadata", id: this.session_id }]);
   }
 }
 
@@ -235,10 +235,41 @@ export class ClaudeResultError extends Schema.Class<ClaudeResultError>("ClaudeRe
 export const ClaudeResultMessage = Schema.Union([ClaudeResultSuccess, ClaudeResultError]);
 export type ClaudeResultMessage = typeof ClaudeResultMessage.Type;
 
+export class ClaudeSystemEvent extends Schema.Class<ClaudeSystemEvent>("ClaudeSystemEvent")({
+  type: Schema.Literal("system"),
+  subtype: Schema.String,
+}) {
+  get streamParts(): Option.Option<LanguageModelV3StreamPart[]> {
+    return Option.none();
+  }
+}
+
+export class ClaudeRateLimitEvent extends Schema.Class<ClaudeRateLimitEvent>(
+  "ClaudeRateLimitEvent",
+)({
+  type: Schema.Literal("rate_limit_event"),
+  rate_limit_info: Schema.Struct({
+    status: Schema.String,
+    resetsAt: Schema.Number,
+    rateLimitType: Schema.String,
+    overageStatus: Schema.String,
+    overageResetsAt: Schema.Number,
+    isUsingOverage: Schema.Boolean,
+  }),
+  uuid: Schema.String,
+  session_id: Schema.String,
+}) {
+  get streamParts(): Option.Option<LanguageModelV3StreamPart[]> {
+    return Option.none();
+  }
+}
+
 export const ClaudeStreamEvent = Schema.Union([
   ClaudeAssistantMessage,
   ClaudeUserMessage,
   ClaudeResultSuccess,
   ClaudeResultError,
+  ClaudeSystemEvent,
+  ClaudeRateLimitEvent,
 ]);
 export type ClaudeStreamEvent = typeof ClaudeStreamEvent.Type;
