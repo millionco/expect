@@ -18,8 +18,8 @@
     }
   },
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
+    "build": "vp pack",
+    "dev": "vp pack --watch",
     "link-global": "pnpm build && pnpm link --global",
     "lint": "vp lint && tsc --noEmit"
   },
@@ -46,7 +46,6 @@
   "devDependencies": {
     "@babel/core": "^7.29.0",
     "babel-plugin-react-compiler": "^1.0.0",
-    "tsup": "^8.4.0",
     "typescript": "^5.7.0"
   }
 }

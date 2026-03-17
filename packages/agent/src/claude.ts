@@ -154,10 +154,11 @@ const runStream = Effect.fn("ClaudeAgent.stream")(function* (
   return { stream, request: { body: userPrompt } };
 });
 
-const buildClaudeAgent = (settings: AgentProviderSettings) => ({
-  generate: (options: LanguageModelV3CallOptions) => runGenerate(options, settings),
-  stream: (options: LanguageModelV3CallOptions) => runStream(options, settings),
-});
+const buildClaudeAgent = (settings: AgentProviderSettings) =>
+  ({
+    generate: (options: LanguageModelV3CallOptions) => runGenerate(options, settings),
+    stream: (options: LanguageModelV3CallOptions) => runStream(options, settings),
+  }) as const;
 
 export class ClaudeAgent extends ServiceMap.Service<ClaudeAgent>()("@browser-tester/ClaudeAgent", {
   make: Effect.succeed(buildClaudeAgent({})),

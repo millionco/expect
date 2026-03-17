@@ -1,0 +1,40 @@
+import { defineConfig } from "vite-plus";
+
+export default defineConfig({
+  pack: {
+    entry: { cli: "src/cli.ts" },
+    format: ["esm"],
+    dts: false,
+    target: "node18",
+    platform: "node",
+    fixedExtension: false,
+    treeshake: true,
+    deps: {
+      alwaysBundle: [/@browser-tester\//],
+      neverBundle: [
+        "playwright",
+        "commander",
+        "picocolors",
+        "ws",
+        "bun:sqlite",
+        "libsql",
+        "events",
+        "stream",
+        "http",
+        "https",
+        "net",
+        "tls",
+        "crypto",
+        "url",
+        "zlib",
+        "buffer",
+        "util",
+        "os",
+        "path",
+        "fs",
+        "child_process",
+      ],
+    },
+    banner: "#!/usr/bin/env node",
+  },
+});

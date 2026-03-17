@@ -63,12 +63,14 @@ const resolveDefaultBrowserContext = Effect.fn("Browser.resolveDefaultBrowserCon
   Effect.provide(layerLive),
 );
 
-const extractCookiesSafe = Effect.fn("Browser.extractCookiesSafe")(
+const extractCookiesForProfile = Effect.fn("Browser.extractCookiesForProfile")(
   function* (cookiesService: typeof Cookies.Service, profile: BrowserProfile) {
     return yield* cookiesService.extract(profile);
   },
-  Effect.catchTag("ExtractionError", () => Effect.succeed([])),
-  Effect.catchTag("PlatformError", () => Effect.succeed([])),
+  Effect.catchTags({
+    ExtractionError: () => Effect.succeed([]),
+    PlatformError: Effect.die,
+  }),
 );
 
 const extractDefaultBrowserCookies = Effect.fn("Browser.extractDefaultBrowserCookies")(function* (
@@ -79,7 +81,7 @@ const extractDefaultBrowserCookies = Effect.fn("Browser.extractDefaultBrowserCoo
 
   const cookiesService = yield* Cookies;
 
-  const profileCookies = yield* extractCookiesSafe(cookiesService, preferredProfile);
+  const profileCookies = yield* extractCookiesForProfile(cookiesService, preferredProfile);
   if (profileCookies.length > 0) return profileCookies;
 
   const browsers = yield* Browsers;
@@ -95,7 +97,7 @@ const extractDefaultBrowserCookies = Effect.fn("Browser.extractDefaultBrowserCoo
 
   const results = yield* Effect.forEach(
     matchingProfiles,
-    (profile) => extractCookiesSafe(cookiesService, profile),
+    (profile) => extractCookiesForProfile(cookiesService, profile),
     { concurrency: "unbounded" },
   );
   return results.flat();
@@ -228,7 +230,11 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
       });
 
       return yield* setupPage.pipe(
-        Effect.tapError(() => Effect.tryPromise(() => browser.close()).pipe(Effect.ignore)),
+        Effect.tapError(() =>
+          Effect.tryPromise(() => browser.close()).pipe(
+            Effect.catchTag("UnknownError", () => Effect.void),
+          ),
+        ),
       );
     });
 
@@ -325,7 +331,7 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
       for (const [ref, entry] of Object.entries(snapshotResult.refs)) {
         const locator = yield* snapshotResult.locator(ref);
         const box = yield* Effect.tryPromise(() => locator.boundingBox()).pipe(
-          Effect.orElseSucceed(() => undefined),
+          Effect.catchTag("UnknownError", () => Effect.succeed(undefined)),
         );
         if (!box) continue;
 
@@ -340,7 +346,9 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
           try: () => page.screenshot({ fullPage: options.fullPage }),
           catch: toBrowserLaunchError,
         }).pipe(Effect.map((screenshotBuffer) => ({ screenshot: screenshotBuffer, annotations }))),
-        evaluateRuntime(page, "removeOverlay", OVERLAY_CONTAINER_ID).pipe(Effect.ignore),
+        evaluateRuntime(page, "removeOverlay", OVERLAY_CONTAINER_ID).pipe(
+          Effect.catchCause(() => Effect.void),
+        ),
       );
     });
 
@@ -368,7 +376,7 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
       });
       if (page.url() !== urlBefore) {
         yield* Effect.tryPromise(() => page.waitForLoadState("domcontentloaded")).pipe(
-          Effect.ignore,
+          Effect.catchTag("UnknownError", () => Effect.void),
         );
         yield* Effect.tryPromise({
           try: () => page.waitForTimeout(POST_NAVIGATION_SETTLE_MS),

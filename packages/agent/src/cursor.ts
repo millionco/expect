@@ -137,10 +137,11 @@ const runStream = Effect.fn("CursorAgent.stream")(function* (
   return { stream, request: { body: userPrompt } };
 });
 
-const buildCursorAgent = (settings: CursorSettings) => ({
-  generate: (options: LanguageModelV3CallOptions) => runGenerate(options, settings),
-  stream: (options: LanguageModelV3CallOptions) => runStream(options, settings),
-});
+const buildCursorAgent = (settings: CursorSettings) =>
+  ({
+    generate: (options: LanguageModelV3CallOptions) => runGenerate(options, settings),
+    stream: (options: LanguageModelV3CallOptions) => runStream(options, settings),
+  }) as const;
 
 export class CursorAgent extends ServiceMap.Service<CursorAgent>()("@browser-tester/CursorAgent", {
   make: Effect.succeed(buildCursorAgent({})),

@@ -7,6 +7,11 @@ export default defineConfig({
     dts: true,
     sourcemap: true,
     platform: "node",
-    external: ["bun:sqlite"],
+    deps: {
+      neverBundle: ["bun:sqlite"],
+    },
+  },
+  test: {
+    globals: true,
   },
 });

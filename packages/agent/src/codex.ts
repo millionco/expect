@@ -90,10 +90,11 @@ const runStream = Effect.fn("CodexAgent.stream")(function* (
   return { stream, request: { body: userPrompt } };
 });
 
-const buildCodexAgent = (settings: AgentProviderSettings) => ({
-  generate: (options: LanguageModelV3CallOptions) => runGenerate(options, settings),
-  stream: (options: LanguageModelV3CallOptions) => runStream(options, settings),
-});
+const buildCodexAgent = (settings: AgentProviderSettings) =>
+  ({
+    generate: (options: LanguageModelV3CallOptions) => runGenerate(options, settings),
+    stream: (options: LanguageModelV3CallOptions) => runStream(options, settings),
+  }) as const;
 
 export class CodexAgent extends ServiceMap.Service<CodexAgent>()("@browser-tester/CodexAgent", {
   make: Effect.succeed(buildCodexAgent({})),
