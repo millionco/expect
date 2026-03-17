@@ -21,7 +21,7 @@ export const TextShimmer = ({ text, baseColor, highlightColor, speed = 1 }: Text
       );
     }, SHIMMER_TICK_MS);
     return () => clearInterval(interval);
-  }, [text.length]);
+  }, [text.length, speed]);
 
   return (
     <Text>

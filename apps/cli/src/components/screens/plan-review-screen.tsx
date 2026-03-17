@@ -642,6 +642,7 @@ export const PlanReviewScreen = () => {
             );
           })}
         </Box>
+      ) : null}
 
       {editingState ? (
         <Box flexDirection="column" marginTop={1} paddingX={1}>
