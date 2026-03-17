@@ -36,4 +36,50 @@ describe("extractJsonObject", () => {
 
     expect(extractJsonObject(input)).toBe('{\n  "title": "Plan",\n  "steps": []\n}');
   });
+
+  it("sanitizes invalid escape sequences so JSON.parse succeeds", () => {
+    const input = '{"instruction":"Check the \\search field","valid":"line1\\nline2"}';
+    const result = extractJsonObject(input);
+
+    expect(() => JSON.parse(result)).not.toThrow();
+    expect(JSON.parse(result)).toEqual({
+      instruction: "Check the \\search field",
+      valid: "line1\nline2",
+    });
+  });
+
+  it("preserves valid unicode escape sequences", () => {
+    const input = '{"emoji":"\\u2603"}';
+    const result = extractJsonObject(input);
+
+    expect(() => JSON.parse(result)).not.toThrow();
+    expect(JSON.parse(result)).toEqual({ emoji: "\u2603" });
+  });
+
+  it("sanitizes invalid unicode-like escape sequences", () => {
+    const input = '{"text":"\\ugly"}';
+    const result = extractJsonObject(input);
+
+    expect(() => JSON.parse(result)).not.toThrow();
+    expect(JSON.parse(result)).toEqual({ text: "\\ugly" });
+  });
+
+  it("sanitizes multiple invalid escapes in a large json object", () => {
+    const input =
+      '{"steps":[{"instruction":"Navigate to \\dashboard","expectedOutcome":"\\page loads"}]}';
+    const result = extractJsonObject(input);
+
+    expect(() => JSON.parse(result)).not.toThrow();
+    const parsed = JSON.parse(result);
+    expect(parsed.steps[0].instruction).toBe("Navigate to \\dashboard");
+    expect(parsed.steps[0].expectedOutcome).toBe("\\page loads");
+  });
+
+  it("handles backslash at end of string value", () => {
+    const input = '{"path":"trailing\\\\"}';
+    const result = extractJsonObject(input);
+
+    expect(() => JSON.parse(result)).not.toThrow();
+    expect(JSON.parse(result)).toEqual({ path: "trailing\\" });
+  });
 });

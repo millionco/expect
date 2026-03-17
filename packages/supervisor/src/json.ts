@@ -1,5 +1,9 @@
 const JSON_CODE_BLOCK_PATTERN = /```json\s*([\s\S]*?)```/i;
 
+const VALID_JSON_ESCAPE_CHARS = new Set(['"', "\\", "/", "b", "f", "n", "r", "t"]);
+const UNICODE_HEX_LENGTH = 4;
+const HEX_PATTERN = /^[0-9a-fA-F]{4}$/;
+
 const extractFromCodeBlock = (input: string): string | null => {
   const codeBlockMatch = input.match(JSON_CODE_BLOCK_PATTERN);
   if (!codeBlockMatch) return null;
@@ -17,6 +21,51 @@ const normalizeJsonCandidate = (input: string): string => {
   if (!looksEscaped) return trimmedInput;
 
   return trimmedInput.replace(/\\n/g, "\n").replace(/\\"/g, '"').replace(/\\\\/g, "\\").trim();
+};
+
+const sanitizeInvalidJsonEscapes = (input: string): string => {
+  const characters: string[] = [];
+  let insideString = false;
+
+  for (let index = 0; index < input.length; index += 1) {
+    const character = input[index];
+
+    if (!insideString) {
+      characters.push(character);
+      if (character === '"') insideString = true;
+      continue;
+    }
+
+    if (character === "\\") {
+      const nextCharacter = input[index + 1];
+
+      if (nextCharacter === "u") {
+        const hexSequence = input.slice(index + 2, index + 2 + UNICODE_HEX_LENGTH);
+        if (hexSequence.length === UNICODE_HEX_LENGTH && HEX_PATTERN.test(hexSequence)) {
+          characters.push("\\", "u", ...hexSequence);
+          index += 1 + UNICODE_HEX_LENGTH;
+        } else {
+          characters.push("\\", "\\");
+        }
+      } else if (nextCharacter !== undefined && VALID_JSON_ESCAPE_CHARS.has(nextCharacter)) {
+        characters.push(character, nextCharacter);
+        index += 1;
+      } else {
+        characters.push("\\", "\\");
+      }
+      continue;
+    }
+
+    if (character === '"') {
+      characters.push(character);
+      insideString = false;
+      continue;
+    }
+
+    characters.push(character);
+  }
+
+  return characters.join("");
 };
 
 const extractBalancedJsonObjectAt = (input: string, startIndex: number): string | null => {
@@ -78,12 +127,12 @@ const findLargestJsonObject = (input: string): string | null => {
 
 export const extractJsonObject = (input: string): string => {
   const codeBlockJson = extractFromCodeBlock(input);
-  if (codeBlockJson) return normalizeJsonCandidate(codeBlockJson);
+  if (codeBlockJson) return sanitizeInvalidJsonEscapes(normalizeJsonCandidate(codeBlockJson));
 
   const largest = findLargestJsonObject(input);
   if (!largest) {
     throw new Error("The model did not return a JSON object.");
   }
 
-  return normalizeJsonCandidate(largest);
+  return sanitizeInvalidJsonEscapes(normalizeJsonCandidate(largest));
 };
