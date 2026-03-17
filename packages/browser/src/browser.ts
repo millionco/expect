@@ -1,15 +1,11 @@
-import {
-  detectBrowserProfiles,
-  detectDefaultBrowser,
-  extractCookies,
-  extractProfileCookies,
-  toPlaywrightCookies,
-} from "@browser-tester/cookies";
-import type { Browser as BrowserKey, BrowserProfile, Cookie } from "@browser-tester/cookies";
+import { Browsers, Cookies, layerLive } from "@browser-tester/cookies";
+import type { Browser as BrowserProfile, Cookie } from "@browser-tester/cookies";
 import { tmpdir } from "node:os";
 import { chromium } from "playwright";
 import type { Locator, Page } from "playwright";
 import { Effect, Layer, Option, ServiceMap } from "effect";
+
+const cookiesLayer = Layer.mergeAll(layerLive, Cookies.layer);
 import {
   CONTENT_ROLES,
   DEFAULT_VIDEO_HEIGHT_PX,
@@ -53,51 +49,57 @@ const toBrowserLaunchError = (cause: unknown) =>
     cause: cause instanceof Error ? cause.message : String(cause),
   });
 
-const resolveDefaultBrowserContext = Effect.fn("Browser.resolveDefaultBrowserContext")(
-  function* () {
-    const defaultBrowser = yield* Effect.tryPromise({
-      try: () => detectDefaultBrowser(),
-      catch: () => new BrowserLaunchError({ cause: "Failed to detect default browser" }),
+const resolveDefaultBrowserContext = () =>
+  Effect.gen(function* () {
+    const browsers = yield* Browsers;
+    const maybeDefault = yield* browsers
+      .defaultBrowser()
+      .pipe(
+        Effect.catchTag("ListBrowsersError", () => Effect.succeed(Option.none<BrowserProfile>())),
+      );
+
+    return Option.match(maybeDefault, {
+      onNone: () => ({ preferredProfile: undefined as BrowserProfile | undefined }),
+      onSome: (profile) => ({ preferredProfile: profile as BrowserProfile | undefined }),
+    });
+  }).pipe(Effect.provide(layerLive), Effect.withSpan("Browser.resolveDefaultBrowserContext"));
+
+const extractCookiesSafe = (cookiesService: typeof Cookies.Service, profile: BrowserProfile) =>
+  Effect.gen(function* () {
+    const result = yield* cookiesService.extract(profile);
+    return result as Cookie[];
+  }).pipe(
+    Effect.catchTag("ExtractionError", () => Effect.succeed([] as Cookie[])),
+    Effect.catchTag("PlatformError", () => Effect.succeed([] as Cookie[])),
+  );
+
+const extractDefaultBrowserCookies = (url: string, preferredProfile: BrowserProfile | undefined) =>
+  Effect.gen(function* () {
+    if (!preferredProfile) return [] as Cookie[];
+
+    const cookiesService = yield* Cookies;
+
+    const profileCookies = yield* extractCookiesSafe(cookiesService, preferredProfile);
+    if (profileCookies.length > 0) return profileCookies;
+
+    const browsers = yield* Browsers;
+    const allProfiles = yield* browsers.list.pipe(
+      Effect.catchTag("ListBrowsersError", () => Effect.succeed([] as BrowserProfile[])),
+    );
+    const matchingProfiles = allProfiles.filter((profile) => {
+      if (preferredProfile._tag === "ChromiumBrowser" && profile._tag === "ChromiumBrowser") {
+        return profile.key === preferredProfile.key;
+      }
+      return profile._tag === preferredProfile._tag;
     });
 
-    if (!defaultBrowser) return { defaultBrowser: undefined, preferredProfile: undefined };
-
-    const profiles = yield* Effect.try({
-      try: () => detectBrowserProfiles({ browser: defaultBrowser }),
-      catch: () => new BrowserLaunchError({ cause: "Failed to detect browser profiles" }),
-    });
-
-    return {
-      defaultBrowser,
-      preferredProfile: profiles.at(0),
-    };
-  },
-);
-
-const extractDefaultBrowserCookies = Effect.fn("Browser.extractDefaultBrowserCookies")(function* (
-  url: string,
-  defaultBrowserContext: {
-    defaultBrowser: BrowserKey | undefined;
-    preferredProfile: BrowserProfile | undefined;
-  },
-) {
-  const { defaultBrowser, preferredProfile } = defaultBrowserContext;
-
-  if (preferredProfile) {
-    const result = yield* Effect.tryPromise({
-      try: () => extractProfileCookies({ profile: preferredProfile }),
-      catch: () => new BrowserLaunchError({ cause: "Failed to extract profile cookies" }),
-    });
-    if (result.cookies.length > 0) return result.cookies;
-  }
-
-  const browsers = defaultBrowser ? [defaultBrowser] : undefined;
-  const result = yield* Effect.tryPromise({
-    try: () => extractCookies({ url, browsers }),
-    catch: () => new BrowserLaunchError({ cause: "Failed to extract cookies" }),
-  });
-  return result.cookies;
-});
+    const results = yield* Effect.forEach(
+      matchingProfiles,
+      (profile) => extractCookiesSafe(cookiesService, profile),
+      { concurrency: "unbounded" },
+    );
+    return results.flat() as Cookie[];
+  }).pipe(Effect.provide(cookiesLayer), Effect.withSpan("Browser.extractDefaultBrowserCookies"));
 
 const resolveContextOptions = (
   video: boolean | VideoOptions | undefined,
@@ -176,13 +178,15 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
         const defaultBrowserContext =
           options.cookies === true
             ? yield* resolveDefaultBrowserContext()
-            : { defaultBrowser: undefined, preferredProfile: undefined };
+            : { preferredProfile: undefined as BrowserProfile | undefined };
+
+        const profileLocale =
+          defaultBrowserContext.preferredProfile?._tag === "ChromiumBrowser"
+            ? defaultBrowserContext.preferredProfile.locale
+            : undefined;
 
         const context = yield* Effect.tryPromise({
-          try: () =>
-            browser.newContext(
-              resolveContextOptions(options.video, defaultBrowserContext.preferredProfile?.locale),
-            ),
+          try: () => browser.newContext(resolveContextOptions(options.video, profileLocale)),
           catch: toBrowserLaunchError,
         });
 
@@ -192,11 +196,14 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
         });
 
         if (options.cookies) {
-          const cookies: Cookie[] = Array.isArray(options.cookies)
+          const cookies = Array.isArray(options.cookies)
             ? options.cookies
-            : yield* extractDefaultBrowserCookies(url ?? "", defaultBrowserContext);
+            : yield* extractDefaultBrowserCookies(
+                url ?? "",
+                defaultBrowserContext.preferredProfile,
+              );
           yield* Effect.tryPromise({
-            try: () => context.addCookies(toPlaywrightCookies(cookies)),
+            try: () => context.addCookies(cookies.map((cookie) => cookie.playwrightFormat)),
             catch: toBrowserLaunchError,
           });
         }

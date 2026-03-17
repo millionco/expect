@@ -1,13 +1,10 @@
-import type { BrowserProfile, Cookie } from "@browser-tester/cookies";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_VIDEO_HEIGHT_PX, DEFAULT_VIDEO_WIDTH_PX } from "../src/constants";
 
 const {
-  detectBrowserProfilesMock,
-  detectDefaultBrowserMock,
-  extractProfileCookiesMock,
-  extractCookiesMock,
-  toPlaywrightCookiesMock,
+  defaultBrowserMock,
+  browserListMock,
+  cookieExtractMock,
   launchMock,
   newContextMock,
   addCookiesMock,
@@ -16,11 +13,9 @@ const {
   gotoMock,
   closeMock,
 } = vi.hoisted(() => ({
-  detectBrowserProfilesMock: vi.fn(),
-  detectDefaultBrowserMock: vi.fn(),
-  extractProfileCookiesMock: vi.fn(),
-  extractCookiesMock: vi.fn(),
-  toPlaywrightCookiesMock: vi.fn((cookies: Cookie[]) => cookies),
+  defaultBrowserMock: vi.fn(),
+  browserListMock: vi.fn(),
+  cookieExtractMock: vi.fn(),
   launchMock: vi.fn(),
   newContextMock: vi.fn(),
   addCookiesMock: vi.fn(),
@@ -30,13 +25,35 @@ const {
   closeMock: vi.fn(),
 }));
 
-vi.mock("@browser-tester/cookies", () => ({
-  detectBrowserProfiles: detectBrowserProfilesMock,
-  detectDefaultBrowser: detectDefaultBrowserMock,
-  extractProfileCookies: extractProfileCookiesMock,
-  extractCookies: extractCookiesMock,
-  toPlaywrightCookies: toPlaywrightCookiesMock,
-}));
+vi.mock("@browser-tester/cookies", async () => {
+  const { Context, Effect, Layer } = await import("effect");
+
+  const BrowsersTag = Context.GenericTag<{
+    defaultBrowser: Effect.Effect<import("effect").Option.Option<unknown>>;
+    list: Effect.Effect<unknown[]>;
+    register: (source: unknown) => Effect.Effect<void>;
+  }>("@cookies/Browsers");
+
+  const CookiesTag = Context.GenericTag<{
+    extract: (profile: unknown) => Effect.Effect<unknown[]>;
+  }>("@cookies/Cookies");
+
+  const browsersLayer = Layer.succeed(BrowsersTag, {
+    defaultBrowser: Effect.suspend(() => defaultBrowserMock()),
+    list: Effect.suspend(() => browserListMock()),
+    register: () => Effect.void,
+  });
+
+  const cookiesLayer = Layer.succeed(CookiesTag, {
+    extract: (profile: unknown) => Effect.suspend(() => cookieExtractMock(profile)),
+  });
+
+  return {
+    Browsers: BrowsersTag,
+    Cookies: Object.assign(CookiesTag, { layer: cookiesLayer }),
+    layerLive: browsersLayer,
+  };
+});
 
 vi.mock("playwright", () => ({
   chromium: {
@@ -44,10 +61,46 @@ vi.mock("playwright", () => ({
   },
 }));
 
+import { Effect, Option } from "effect";
 import { runBrowser } from "../src/browser";
 
-const testCookies: Cookie[] = [
-  Cookie.make({
+const heliumProfile = {
+  _tag: "ChromiumBrowser" as const,
+  key: "helium",
+  profileName: "Default",
+  profilePath: "/tmp/helium/Default",
+  executablePath: "/usr/bin/helium",
+  locale: "en-US",
+};
+
+const workProfile = {
+  _tag: "ChromiumBrowser" as const,
+  key: "helium",
+  profileName: "Profile 1",
+  profilePath: "/tmp/helium/Profile 1",
+  executablePath: "/usr/bin/helium",
+  locale: "en-US",
+};
+
+const mockCookie = (data: Record<string, unknown>) => ({
+  ...data,
+  get playwrightFormat() {
+    const domain = String(data.domain);
+    return {
+      name: data.name,
+      value: data.value,
+      domain: domain.startsWith(".") ? domain : `.${domain}`,
+      path: data.path,
+      expires: -1,
+      secure: data.secure,
+      httpOnly: data.httpOnly,
+      sameSite: data.sameSite,
+    };
+  },
+});
+
+const profileCookies = [
+  mockCookie({
     name: "__Host-session",
     value: "profile-cookie",
     domain: "github.com",
@@ -58,8 +111,8 @@ const testCookies: Cookie[] = [
   }),
 ];
 
-const fallbackCookies: Cookie[] = [
-  {
+const fallbackCookies = [
+  mockCookie({
     name: "fallback-session",
     value: "sqlite-cookie",
     domain: "github.com",
@@ -67,8 +120,7 @@ const fallbackCookies: Cookie[] = [
     secure: true,
     httpOnly: true,
     sameSite: "Lax",
-    browser: "helium",
-  },
+  }),
 ];
 
 describe("Browser.createPage cookie reuse", () => {
@@ -90,47 +142,31 @@ describe("Browser.createPage cookie reuse", () => {
       close: closeMock,
     });
 
-    detectDefaultBrowserMock.mockResolvedValue("helium");
-    detectBrowserProfilesMock.mockReturnValue([heliumProfile, workProfile]);
-    extractProfileCookiesMock.mockResolvedValue({
-      cookies: profileCookies,
-      warnings: [],
-    });
-    extractCookiesMock.mockResolvedValue({
-      cookies: fallbackCookies,
-      warnings: [],
-    });
+    defaultBrowserMock.mockReturnValue(Effect.succeed(Option.some(heliumProfile)));
+    browserListMock.mockReturnValue(Effect.succeed([heliumProfile, workProfile]));
+    cookieExtractMock.mockReturnValue(Effect.succeed(profileCookies));
   });
 
   it("uses the preferred profile cookies before sqlite fallback for the default browser", async () => {
     await runBrowser((browser) => browser.createPage("https://github.com", { cookies: true }));
 
-    expect(detectDefaultBrowserMock).toHaveBeenCalledOnce();
-    expect(detectBrowserProfilesMock).toHaveBeenCalledWith({
-      browser: "helium",
-    });
-    expect(extractProfileCookiesMock).toHaveBeenCalledOnce();
-    expect(extractProfileCookiesMock).toHaveBeenCalledWith({
-      profile: heliumProfile,
-    });
     expect(newContextMock).toHaveBeenCalledWith({ locale: "en-US" });
-    expect(extractCookiesMock).not.toHaveBeenCalled();
-    expect(addCookiesMock).toHaveBeenCalledWith(profileCookies);
+    expect(cookieExtractMock).toHaveBeenCalledWith(heliumProfile);
+    expect(addCookiesMock).toHaveBeenCalledWith(
+      profileCookies.map((cookie) => cookie.playwrightFormat),
+    );
   });
 
-  it("falls back to sqlite extraction when profile extraction returns no cookies", async () => {
-    extractProfileCookiesMock.mockResolvedValueOnce({
-      cookies: [],
-      warnings: ["no cookies found in profile: You"],
-    });
+  it("falls back to other profiles when preferred profile extraction returns no cookies", async () => {
+    cookieExtractMock
+      .mockReturnValueOnce(Effect.succeed([]))
+      .mockReturnValue(Effect.succeed(fallbackCookies));
 
     await runBrowser((browser) => browser.createPage("https://github.com", { cookies: true }));
 
-    expect(extractCookiesMock).toHaveBeenCalledWith({
-      url: "https://github.com",
-      browsers: ["helium"],
-    });
-    expect(addCookiesMock).toHaveBeenCalledWith(fallbackCookies);
+    expect(addCookiesMock).toHaveBeenCalledWith(
+      fallbackCookies.map((cookie) => cookie.playwrightFormat),
+    );
   });
 });
 

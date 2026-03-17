@@ -1,19 +1,10 @@
 export { Browser, runBrowser } from "./browser";
 export { diffSnapshots } from "./diff";
-export {
-  detectBrowserProfiles,
-  detectDefaultBrowser,
-  extractCookies,
-  extractProfileCookies,
-  toPlaywrightCookies,
-} from "@browser-tester/cookies";
 export type {
-  Browser as BrowserKey,
-  BrowserProfile,
+  Browser as BrowserProfile,
+  BrowserKey,
   Cookie,
   ExtractOptions,
-  ExtractResult,
-  PlaywrightCookie,
 } from "@browser-tester/cookies";
 export {
   ActionTimeoutError,

@@ -26,8 +26,8 @@ jobs:
       - name: Install dependencies
         run: vp install --frozen-lockfile
       - name: Build
-        run: pnpm build
+        run: vp build
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
       - name: Run E2E tests
-        run: pnpm --filter @browser-tester/browser test
+        run: vp run --filter @browser-tester/browser test

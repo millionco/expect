@@ -202,7 +202,8 @@ describe("browser e2e", () => {
       expect(await session.page.locator("#active-workspace").textContent()).toBe("beta");
 
       const saveRef = Object.keys(snapshot.refs).find(
-        (key) => snapshot.refs[key].role === "button" && snapshot.refs[key].name === "Save settings",
+        (key) =>
+          snapshot.refs[key].role === "button" && snapshot.refs[key].name === "Save settings",
       );
       expect(saveRef).toBeDefined();
 
@@ -212,7 +213,9 @@ describe("browser e2e", () => {
       await session.page.waitForFunction(
         () => document.getElementById("status")?.textContent === "Saved Browser smoke for beta",
       );
-      expect(await session.page.locator("#status").textContent()).toBe("Saved Browser smoke for beta");
+      expect(await session.page.locator("#status").textContent()).toBe(
+        "Saved Browser smoke for beta",
+      );
 
       const apiRequest = requests.find((request) => request.path === "/api/settings");
       expect(apiRequest).toBeDefined();
@@ -258,7 +261,9 @@ describe("browser e2e", () => {
 
       expect(result.screenshot.byteLength).toBeGreaterThan(0);
       expect(result.annotations.length).toBeGreaterThanOrEqual(5);
-      expect(result.annotations.some((annotation) => annotation.name === "Workspace name")).toBe(true);
+      expect(result.annotations.some((annotation) => annotation.name === "Workspace name")).toBe(
+        true,
+      );
       expect(result.annotations.filter((annotation) => annotation.name === "Open")).toHaveLength(2);
     } finally {
       await session.browser.close();
