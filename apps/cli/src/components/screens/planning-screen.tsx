@@ -25,6 +25,61 @@ const PLANNING_STAGES = [
 
 const STAGE_LABEL_WIDTH = Math.max(...PLANNING_STAGES.map((stage) => stage.label.length));
 
+const THINKING_FRAGMENTS: Record<number, readonly string[]> = {
+  0: [
+    "scanning modified files for testable surfaces...",
+    "checking diff for UI component changes...",
+    "evaluating changeset scope and risk profile...",
+  ],
+  1: [
+    "parsing added and removed lines...",
+    "identifying affected rendering paths...",
+    "correlating file changes with route handlers...",
+  ],
+  2: [
+    "mapping user-facing interactions...",
+    "checking form inputs, buttons, and navigation targets...",
+    "evaluating conditional rendering branches...",
+  ],
+  3: [
+    "tracing component dependency graph...",
+    "resolving shared state between changed modules...",
+    "identifying integration boundaries...",
+  ],
+  4: [
+    "constructing navigation sequence...",
+    "ordering steps by dependency chain...",
+    "defining browser actions for each test surface...",
+  ],
+  5: [
+    "planning viewport interactions...",
+    "sequencing click, type, and wait actions...",
+    "adding assertion checkpoints between steps...",
+  ],
+  6: [
+    "deriving expected DOM state after each action...",
+    "mapping visual assertions to component output...",
+    "checking for error state edge cases...",
+  ],
+  7: [
+    "validating assertion coverage...",
+    "cross-referencing steps with changed lines...",
+    "confirming expected outcomes are observable...",
+  ],
+  8: [
+    "verifying step ordering is deterministic...",
+    "checking for redundant or overlapping assertions...",
+    "ensuring plan covers critical paths...",
+  ],
+  9: [
+    "assembling final plan structure...",
+    "writing step metadata and risk annotations...",
+  ],
+};
+
+const TOKEN_SPEED_MS = 30;
+const FRAGMENT_PAUSE_MS = 800;
+
 const TIPS = [
   "Use @ in the input to target a specific PR, branch, or commit",
   "Press shift+tab to toggle auto-run after planning",
@@ -79,6 +134,8 @@ export const PlanningScreen = () => {
   const [tipIndex] = useState(() => Math.floor(Math.random() * TIPS.length));
 
   const [progressElapsed, setProgressElapsed] = useState(0);
+  const [thinkingText, setThinkingText] = useState("");
+  const [thinkingKey, setThinkingKey] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -93,6 +150,33 @@ export const PlanningScreen = () => {
     }, PROGRESS_TICK_MS);
     return () => clearInterval(interval);
   }, [startTime]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const stageIndex = getStageIndex(Date.now() - startTime);
+    const fragments = THINKING_FRAGMENTS[stageIndex] ?? THINKING_FRAGMENTS[9];
+    const fragment = fragments[thinkingKey % fragments.length];
+    let charIndex = 0;
+    setThinkingText("");
+
+    const typeNextChar = () => {
+      if (cancelled) return;
+      if (charIndex <= fragment.length) {
+        setThinkingText(fragment.slice(0, charIndex));
+        charIndex++;
+        setTimeout(typeNextChar, TOKEN_SPEED_MS);
+      } else {
+        setTimeout(() => {
+          if (!cancelled) setThinkingKey((previous) => previous + 1);
+        }, FRAGMENT_PAUSE_MS);
+      }
+    };
+    typeNextChar();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [thinkingKey, startTime]);
 
   const stageLabel = getStageLabel(elapsed);
   const smoothProgress = getSmoothProgress(progressElapsed);
@@ -129,6 +213,12 @@ export const PlanningScreen = () => {
               </Text>
             ));
           })()}
+        </Text>
+      </Box>
+
+      <Box paddingX={1} marginTop={1}>
+        <Text color={COLORS.BORDER}>
+          {"│ "}<Text color={COLORS.DIM}>{thinkingText}<Text color={COLORS.BORDER}>▌</Text></Text>
         </Text>
       </Box>
     </Box>
