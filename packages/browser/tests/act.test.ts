@@ -143,7 +143,11 @@ describe("act", () => {
     const selectRef = Object.keys(before.refs).find((key) => before.refs[key].role === "combobox");
     expect(selectRef).toBeDefined();
 
-    await run(actOnPage(page, selectRef!, (locator) => locator.selectOption("banana")));
+    await run(
+      actOnPage(page, selectRef!, async (locator) => {
+        await locator.selectOption("banana");
+      }),
+    );
     const value = await page.locator("#fruit").inputValue();
     expect(value).toBe("banana");
   });

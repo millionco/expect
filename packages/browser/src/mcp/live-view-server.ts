@@ -16,7 +16,7 @@ export interface LiveViewServer {
 
 interface StartLiveViewServerOptions {
   liveViewUrl: string;
-  getPage: () => Page | null;
+  getPage: () => Page | undefined;
 }
 
 interface ScreencastFrameParams {
@@ -66,9 +66,9 @@ export const startLiveViewServer = async ({
 }: StartLiveViewServerOptions): Promise<LiveViewServer> => {
   const parsedUrl = new URL(liveViewUrl);
   const viewers = new Set<MjpegClient>();
-  let latestFrame: Buffer | null = null;
-  let cdpSession: CDPSession | null = null;
-  let screencastPage: Page | null = null;
+  let latestFrame: Buffer | undefined;
+  let cdpSession: CDPSession | undefined;
+  let screencastPage: Page | undefined;
 
   const broadcastFrame = (frameBuffer: Buffer): void => {
     latestFrame = frameBuffer;
@@ -89,8 +89,8 @@ export const startLiveViewServer = async ({
   const stopScreencast = async (): Promise<void> => {
     if (!cdpSession) return;
     const activeCdpSession = cdpSession;
-    cdpSession = null;
-    screencastPage = null;
+    cdpSession = undefined;
+    screencastPage = undefined;
     try {
       await activeCdpSession.send("Page.stopScreencast");
       await activeCdpSession.detach();
@@ -109,6 +109,7 @@ export const startLiveViewServer = async ({
 
     cdp.on("Page.screencastFrame", (params: ScreencastFrameParams) => {
       broadcastFrame(Buffer.from(params.data, "base64"));
+      // HACK: fire-and-forget ack — failure is non-critical and the CDP session may be gone
       cdp.send("Page.screencastFrameAck", { sessionId: params.sessionId }).catch(() => {});
     });
 
@@ -136,6 +137,7 @@ export const startLiveViewServer = async ({
       return;
     }
     if (page !== screencastPage) {
+      // HACK: best-effort screencast start — page may close before setup completes
       startScreencast(page).catch(() => {});
     }
   };

@@ -69,51 +69,6 @@ pnpm dev
 
 This starts `tsup` in watch mode, rebuilding on file changes. If you've already linked globally, the `testie` command will pick up changes automatically.
 
-## 3/13 notes
-
-### Testing the browser CLI
-
-```bash
-# from repo root
-pnpm install --no-frozen-lockfile
-cd packages/browser && pnpm build && cd ../..
-cd packages/browser-tester-cli && pnpm build && cd ../..
-
-# snapshot a page
-bun packages/browser-tester-cli/dist/cli.js snapshot example.com
-
-# interactive only + JSON
-bun packages/browser-tester-cli/dist/cli.js snapshot example.com -i --json
-
-# click a ref and see what changed
-bun packages/browser-tester-cli/dist/cli.js click example.com e2 --diff
-
-# annotated screenshot (numbered labels on elements)
-bun packages/browser-tester-cli/dist/cli.js screenshot example.com /tmp/page.png --annotate
-
-# record a video
-bun packages/browser-tester-cli/dist/cli.js click example.com e2 --video /tmp/recording.webm
-
-# run browser package tests
-cd packages/browser && pnpm test
-```
-
-### Using with Claude Code
-
-Tell Claude Code to use the CLI for browser testing:
-
-```
-Use browser-tester-cli to test the page. The CLI is at packages/browser-tester-cli/dist/cli.js.
-
-Core workflow:
-1. bun packages/browser-tester-cli/dist/cli.js snapshot <url> -i --json
-2. Pick refs from the snapshot (e.g. e1, e2)
-3. bun packages/browser-tester-cli/dist/cli.js click <url> <ref> --diff
-4. Re-snapshot after page changes
-
-Other commands: fill, type, select, hover, screenshot (--annotate), diff, --video
-```
-
 ### 3/12 notes
 
 **P0**: GET USERS

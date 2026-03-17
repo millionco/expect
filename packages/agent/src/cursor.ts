@@ -192,7 +192,7 @@ const createWorkspaceOverlay = (
     try {
       execFileSync(executable, ["mcp", "enable", name], { stdio: "ignore" });
     } catch {
-      /* ignore */
+      // HACK: mcp enable may fail if server is already enabled or binary is missing
     }
   }
 
@@ -256,6 +256,7 @@ const spawnCursorAgent = async function* (
         try {
           yield JSON.parse(trimmed);
         } catch {
+          // HACK: NDJSON lines from child process may be partial or malformed — skip
           continue;
         }
       }
@@ -265,7 +266,7 @@ const spawnCursorAgent = async function* (
       try {
         yield JSON.parse(buffer.trim());
       } catch {
-        /* ignore */
+        // HACK: trailing NDJSON buffer may be incomplete — skip
       }
     }
   } finally {

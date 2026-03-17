@@ -143,6 +143,7 @@ export const buildAgentStream = (
           try: () => execute(controller),
           catch: (cause) => toError(cause),
         }).pipe(
+          // HACK: catchCause needed to forward defects as stream error events — catchTag cannot catch defects
           Effect.catchCause((cause) =>
             Effect.sync(() => controller.enqueue({ type: "error", error: cause })),
           ),

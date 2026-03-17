@@ -7,7 +7,7 @@ export const evaluateRuntime = <K extends keyof BrowserTesterRuntime>(
   page: Page,
   method: K,
   ...args: Parameters<BrowserTesterRuntime[K]>
-): Effect.Effect<ReturnType<BrowserTesterRuntime[K]>> =>
+) =>
   Effect.promise(
     () =>
       page.evaluate(

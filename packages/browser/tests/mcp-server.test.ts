@@ -3,6 +3,7 @@ import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { McpRuntime } from "../src/mcp/runtime.js";
 import { createBrowserMcpServer } from "../src/mcp/server.js";
 
 const TEST_HTML = `<!DOCTYPE html>
@@ -47,7 +48,7 @@ beforeAll(async () => {
   const port = (httpServer.address() as AddressInfo).port;
   testServerUrl = `http://127.0.0.1:${port}`;
 
-  const server = createBrowserMcpServer();
+  const server = createBrowserMcpServer(McpRuntime);
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   mcpClient = new Client({ name: "test-client", version: "0.0.1" });
   await server.connect(serverTransport);
@@ -82,12 +83,9 @@ describe("MCP server tools", () => {
     expect(snapshotData.tree).toContain("Submit");
     expect(snapshotData.tree).toContain("Email");
 
-    const emailRef = Object.entries(snapshotData.refs).find(
-      ([, entry]: [string, { name: string }]) => entry.name === "Email",
-    );
-    const submitRef = Object.entries(snapshotData.refs).find(
-      ([, entry]: [string, { name: string }]) => entry.name === "Submit",
-    );
+    const refs: Record<string, { name: string }> = snapshotData.refs;
+    const emailRef = Object.entries(refs).find(([, entry]) => entry.name === "Email");
+    const submitRef = Object.entries(refs).find(([, entry]) => entry.name === "Submit");
     expect(emailRef).toBeDefined();
     expect(submitRef).toBeDefined();
 

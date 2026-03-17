@@ -77,7 +77,7 @@ const extractDefaultBrowserCookies = Effect.fn("Browser.extractDefaultBrowserCoo
   url: string,
   preferredProfile: BrowserProfile | undefined,
 ) {
-  if (!preferredProfile) return [] as Cookie[];
+  if (!preferredProfile) return [];
 
   const cookiesService = yield* Cookies;
 
@@ -86,7 +86,7 @@ const extractDefaultBrowserCookies = Effect.fn("Browser.extractDefaultBrowserCoo
 
   const browsers = yield* Browsers;
   const allProfiles = yield* browsers.list.pipe(
-    Effect.catchTag("ListBrowsersError", () => Effect.succeed([] as BrowserProfile[])),
+    Effect.catchTag("ListBrowsersError", () => Effect.succeed<BrowserProfile[]>([])),
   );
   const matchingProfiles = allProfiles.filter((profile) => {
     if (preferredProfile._tag === "ChromiumBrowser" && profile._tag === "ChromiumBrowser") {
@@ -346,6 +346,7 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
           try: () => page.screenshot({ fullPage: options.fullPage }),
           catch: toBrowserLaunchError,
         }).pipe(Effect.map((screenshotBuffer) => ({ screenshot: screenshotBuffer, annotations }))),
+        // HACK: overlay removal is best-effort cleanup — evaluateRuntime uses Effect.promise which defects on failure
         evaluateRuntime(page, "removeOverlay", OVERLAY_CONTAINER_ID).pipe(
           Effect.catchCause(() => Effect.void),
         ),
