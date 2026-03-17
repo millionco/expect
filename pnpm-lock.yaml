@@ -340,16 +340,6 @@ importers:
         specifier: ^5
         version: 5.9.3
 
-  playground/replay:
-    dependencies:
-      '@browser-tester/browser':
-        specifier: workspace:*
-        version: link:../../packages/browser
-    devDependencies:
-      typescript:
-        specifier: ^5.7.0
-        version: 5.9.3
-
 packages:
 
   '@ai-sdk/provider@3.0.8':

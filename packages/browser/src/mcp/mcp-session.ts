@@ -159,6 +159,10 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       setupPageTracking(pageResult.page, sessionData);
       currentSession = sessionData;
 
+      yield* evaluateRuntime(pageResult.page, "startRecording").pipe(
+        Effect.catchCause(() => Effect.void),
+      );
+
       if (Option.isSome(liveViewUrl) && !currentLiveView) {
         currentLiveView = yield* Effect.tryPromise(() =>
           startLiveViewServer({
