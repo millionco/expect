@@ -1,0 +1,39 @@
+packages/supervisor/src/github-comment.ts
+  f014516d3a4ca728 1,5,10-11,29-30,34-36,66,69-70,73,139,141,146,155
+packages/supervisor/tests/command-exists.test.ts
+  f014516d3a4ca728 7,9-12,22,24,27-28
+packages/supervisor/src/utils/command-exists.ts
+  f014516d3a4ca728 1,3-6,8
+packages/supervisor/src/remote-branches.ts
+  f014516d3a4ca728 86
+packages/supervisor/src/execute-browser-flow.ts
+  f014516d3a4ca728 375
+apps/cli/src/components/screens/plan-review-screen.tsx
+  f014516d3a4ca728 68,73-75,77-84
+apps/cli/src/components/screens/main-menu-screen.tsx
+  f014516d3a4ca728 47,50-52,54-61
+apps/cli/src/utils/context-options.ts
+  f014516d3a4ca728 26,32,116,118
+packages/supervisor/src/create-browser-run-report.ts
+  f014516d3a4ca728 1,7,64-65,68,70,77,79,82,283,285,291,303,310,327,340,353-355,366-367,370,373,418,420-422,428,435,442,444-447,451,460,599,603,609,612-613,615,620,625,629-633,635,652,654,658-661,670
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "5bc9610cbb9f66b4c443944c0aee8de2f6fb53b6",
+  "prompts": {
+    "f014516d3a4ca728": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d0ed62de-0ec2-4724-8428-624992cb38ea",
+        "model": "claude-4.6-opus-max-thinking-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 160,
+      "total_deletions": 139,
+      "accepted_lines": 119,
+      "overriden_lines": 0
+    }
+  }
+}
