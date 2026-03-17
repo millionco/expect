@@ -1,1 +1,0 @@
-export const EVENT_COLLECT_INTERVAL_MS = 500;

@@ -2,7 +2,7 @@ import {
   getEvents,
   getAllEvents,
   getEventCount,
-} from "@browser-tester/replay/runtime";
+} from "@browser-tester/browser/runtime";
 
 const EVENT_TYPE_NAMES: Record<number, string> = {
   0: "DomContentLoaded",

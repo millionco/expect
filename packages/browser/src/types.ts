@@ -1,3 +1,4 @@
+import type { eventWithTime } from "@rrweb/types";
 import type { Effect } from "effect";
 import type { Cookie } from "@browser-tester/cookies";
 import type { Locator, Page } from "playwright";
@@ -75,4 +76,9 @@ export interface SnapshotDiff {
   removals: number;
   unchanged: number;
   changed: boolean;
+}
+
+export interface CollectResult {
+  readonly events: ReadonlyArray<eventWithTime>;
+  readonly total: number;
 }

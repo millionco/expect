@@ -216,6 +216,9 @@ importers:
       playwright:
         specifier: ^1.52.0
         version: 1.58.2
+      rrweb:
+        specifier: ^2.0.0-alpha.18
+        version: 2.0.0-alpha.20
       zod:
         specifier: ^4.3.6
         version: 4.3.6
@@ -257,28 +260,6 @@ importers:
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.15
-      typescript:
-        specifier: ^5.7.0
-        version: 5.9.3
-
-  packages/replay:
-    dependencies:
-      effect:
-        specifier: 4.0.0-beta.28
-        version: 4.0.0-beta.28
-      playwright:
-        specifier: ^1.52.0
-        version: 1.58.2
-      rrweb:
-        specifier: ^2.0.0-alpha.18
-        version: 2.0.0-alpha.20
-    devDependencies:
-      '@types/node':
-        specifier: ^22.15.0
-        version: 22.19.15
-      esbuild:
-        specifier: ^0.25.0
-        version: 0.25.12
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
@@ -361,9 +342,9 @@ importers:
 
   playground/replay:
     dependencies:
-      '@browser-tester/replay':
+      '@browser-tester/browser':
         specifier: workspace:*
-        version: link:../../packages/replay
+        version: link:../../packages/browser
     devDependencies:
       typescript:
         specifier: ^5.7.0

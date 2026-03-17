@@ -41,6 +41,7 @@ export const MIN_RUN_DURATION_MS = 1000;
 export const LIVE_VIEW_HOST = "127.0.0.1";
 export const LIVE_VIEW_DEFAULT_PORT = 6274;
 export const LIVE_VIEW_PORT_SEARCH_LIMIT = 100;
+export const REPLAY_FILE_NAME = "browser-flow.ndjson";
 export const BROWSER_TOOL_PREFIX = "mcp__browser__";
 export const TOOL_INPUT_CHAR_LIMIT = 60;
 export const SELECT_TRUNCATION_LIMIT = 24;

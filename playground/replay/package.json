@@ -9,7 +9,7 @@
     "lint": "vp lint"
   },
   "dependencies": {
-    "@browser-tester/replay": "workspace:*"
+    "@browser-tester/browser": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.7.0"

@@ -1,5 +1,6 @@
 export { Browser, runBrowser } from "./browser";
 export { diffSnapshots } from "./diff";
+export { collectEvents, collectAllEvents, saveSession, loadSession } from "./recorder";
 export type {
   Browser as BrowserProfile,
   BrowserKey,
@@ -11,10 +12,12 @@ export {
   ActionUnknownError,
   BrowserLaunchError,
   NavigationError,
+  RecorderInjectionError,
   RefAmbiguousError,
   RefBlockedError,
   RefNotFoundError,
   RefNotVisibleError,
+  SessionLoadError,
   SnapshotTimeoutError,
 } from "./errors";
 export type { ActionError } from "./errors";
@@ -23,6 +26,7 @@ export type {
   AnnotatedScreenshotOptions,
   AnnotatedScreenshotResult,
   AriaRole,
+  CollectResult,
   CreatePageOptions,
   RefEntry,
   RefMap,

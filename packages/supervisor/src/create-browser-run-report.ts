@@ -1,10 +1,10 @@
-import * as child_process from "node:child_process";
-import * as crypto from "node:crypto";
-import * as fs from "node:fs";
-import * as os from "node:os";
-import * as path from "node:path";
-import * as url from "node:url";
-import * as util from "node:util";
+import { execFile } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { basename, dirname, extname, join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import { promisify } from "node:util";
 import {
   HIGHLIGHT_OVERLAY_FONT_SIZE_PX,
   HIGHLIGHT_OVERLAY_HEIGHT_PX,
@@ -24,6 +24,7 @@ import {
 import type { BrowserRunEvent } from "./events";
 import { getPullRequestForBranch } from "./github-comment";
 import type {
+  BrowserFlowPlan,
   BrowserRunArtifacts,
   BrowserRunFinding,
   BrowserRunReport,
@@ -33,10 +34,11 @@ import type {
 
 interface CreateBrowserRunReportOptions {
   target: TestTarget;
-  userInstruction: string;
+  plan: BrowserFlowPlan;
   events: BrowserRunEvent[];
   completionEvent: Extract<BrowserRunEvent, { type: "run-completed" }>;
   rawVideoPath?: string;
+  replaySessionPath?: string;
   screenshotPaths: string[];
   onProgress?: (message: string) => Promise<void> | void;
 }
@@ -52,7 +54,7 @@ interface ArtifactPreparationResult {
   warnings: string[];
 }
 
-const execFileAsync = util.promisify(child_process.execFile);
+const execFileAsync = promisify(execFile);
 
 const commandExists = async (command: string): Promise<boolean> => {
   try {
@@ -74,40 +76,33 @@ const ffmpegFilterAvailable = async (filterName: string): Promise<boolean> => {
   }
 };
 
+const normalizeText = (value: string): string => value.trim().toLowerCase();
+
+const matchesRiskArea = (riskArea: string, texts: string[]): boolean => {
+  const normalizedRiskArea = normalizeText(riskArea);
+  return texts.some((text) => normalizeText(text).includes(normalizedRiskArea));
+};
+
 const getStepResults = (
+  plan: BrowserFlowPlan,
   events: BrowserRunEvent[],
   completionEvent: Extract<BrowserRunEvent, { type: "run-completed" }>,
 ): BrowserRunStepResult[] => {
   const stepResultById = new Map<string, BrowserRunStepResult>();
-  const stepOrder: string[] = [];
 
-  const ensureStepResult = (stepId: string, title: string): BrowserRunStepResult => {
-    const existingStepResult = stepResultById.get(stepId);
-    if (existingStepResult) {
-      if (existingStepResult.title !== title) {
-        stepResultById.set(stepId, { ...existingStepResult, title });
-      }
-      return stepResultById.get(stepId)!;
-    }
-
-    const stepResult = {
-      stepId,
-      title,
-      status: "not-run" as const,
+  for (const step of plan.steps) {
+    stepResultById.set(step.id, {
+      stepId: step.id,
+      title: step.title,
+      status: "not-run",
       summary: "Step was not completed.",
-    };
-    stepResultById.set(stepId, stepResult);
-    stepOrder.push(stepId);
-    return stepResult;
-  };
+    });
+  }
 
   for (const event of events) {
-    if (event.type === "step-started") {
-      ensureStepResult(event.stepId, event.title);
-    }
-
     if (event.type === "step-completed") {
-      const existingStepResult = ensureStepResult(event.stepId, event.stepId);
+      const existingStepResult = stepResultById.get(event.stepId);
+      if (!existingStepResult) continue;
       stepResultById.set(event.stepId, {
         ...existingStepResult,
         status: "passed",
@@ -116,7 +111,8 @@ const getStepResults = (
     }
 
     if (event.type === "assertion-failed") {
-      const existingStepResult = ensureStepResult(event.stepId, event.stepId);
+      const existingStepResult = stepResultById.get(event.stepId);
+      if (!existingStepResult) continue;
       stepResultById.set(event.stepId, {
         ...existingStepResult,
         status: "failed",
@@ -125,17 +121,7 @@ const getStepResults = (
     }
   }
 
-  if (stepOrder.length === 0) {
-    return [
-      {
-        stepId: "step-01",
-        title: "Run requested browser test",
-        status: completionEvent.status,
-        summary: completionEvent.summary,
-      },
-    ];
-  }
-
+  // HACK: direct runs don't emit per-step events, so infer step status from the overall run result
   for (const stepResult of stepResultById.values()) {
     if (stepResult.status === "not-run") {
       stepResult.status = completionEvent.status === "passed" ? "passed" : "failed";
@@ -143,35 +129,29 @@ const getStepResults = (
     }
   }
 
-  return stepOrder
-    .map((stepId) => stepResultById.get(stepId))
+  return plan.steps
+    .map((step) => stepResultById.get(step.id))
     .filter((stepResult): stepResult is BrowserRunStepResult => Boolean(stepResult));
 };
 
 const getFindings = (
   events: BrowserRunEvent[],
+  plan: BrowserFlowPlan,
   completionEvent: Extract<BrowserRunEvent, { type: "run-completed" }>,
 ): BrowserRunFinding[] => {
   const findings: BrowserRunFinding[] = [];
-  const stepTitleById = new Map<string, string>();
-
-  for (const event of events) {
-    if (event.type === "step-started") {
-      stepTitleById.set(event.stepId, event.title);
-    }
-  }
 
   for (const event of events) {
     if (event.type !== "assertion-failed") continue;
 
-    const stepTitle = stepTitleById.get(event.stepId);
+    const planStep = plan.steps.find((step) => step.id === event.stepId);
     findings.push({
       id: `${event.stepId}-${findings.length + 1}`,
       severity: "error",
-      title: stepTitle ? `${stepTitle} failed` : `${event.stepId} failed`,
+      title: planStep ? `${planStep.title} failed` : `${event.stepId} failed`,
       detail: event.message,
       stepId: event.stepId,
-      stepTitle,
+      stepTitle: planStep?.title,
     });
   }
 
@@ -185,6 +165,44 @@ const getFindings = (
   }
 
   return findings;
+};
+
+const getRiskAreaSummary = (
+  plan: BrowserFlowPlan,
+  stepResults: BrowserRunStepResult[],
+  findings: BrowserRunFinding[],
+): Pick<BrowserRunReport, "confirmedRiskAreas" | "clearedRiskAreas" | "unresolvedRiskAreas"> => {
+  const confirmedRiskAreas: string[] = [];
+  const clearedRiskAreas: string[] = [];
+  const unresolvedRiskAreas: string[] = [];
+
+  const failedTexts = stepResults
+    .filter((stepResult) => stepResult.status === "failed")
+    .flatMap((stepResult) => [stepResult.title, stepResult.summary]);
+  const findingTexts = findings.flatMap((finding) => [finding.title, finding.detail]);
+  const passedTexts = stepResults
+    .filter((stepResult) => stepResult.status === "passed")
+    .flatMap((stepResult) => [stepResult.title, stepResult.summary]);
+
+  for (const riskArea of plan.riskAreas) {
+    if (matchesRiskArea(riskArea, [...failedTexts, ...findingTexts])) {
+      confirmedRiskAreas.push(riskArea);
+      continue;
+    }
+
+    if (matchesRiskArea(riskArea, passedTexts)) {
+      clearedRiskAreas.push(riskArea);
+      continue;
+    }
+
+    unresolvedRiskAreas.push(riskArea);
+  }
+
+  return {
+    confirmedRiskAreas,
+    clearedRiskAreas,
+    unresolvedRiskAreas,
+  };
 };
 
 const isInterestingToolName = (toolName: string): boolean => {
@@ -267,7 +285,7 @@ const createHighlightVideo = async (
   events: BrowserRunEvent[],
   onProgress?: (message: string) => Promise<void> | void,
 ) => {
-  if (!rawVideoPath || !fs.existsSync(rawVideoPath)) {
+  if (!rawVideoPath || !existsSync(rawVideoPath)) {
     return { highlightVideoPath: undefined, warning: undefined };
   }
 
@@ -286,19 +304,14 @@ const createHighlightVideo = async (
   }
 
   const canDrawText = await ffmpegFilterAvailable("drawtext");
-  const temporaryDirectoryPath = fs.mkdtempSync(
-    path.join(os.tmpdir(), "browser-tester-highlight-"),
-  );
-  const highlightVideoPath = path.join(
-    path.dirname(path.resolve(rawVideoPath)),
-    HIGHLIGHT_VIDEO_FILE_NAME,
-  );
+  const temporaryDirectoryPath = mkdtempSync(join(tmpdir(), "browser-tester-highlight-"));
+  const highlightVideoPath = join(dirname(resolve(rawVideoPath)), HIGHLIGHT_VIDEO_FILE_NAME);
 
   try {
     const segmentPaths: string[] = [];
 
     for (const [index, window] of windows.entries()) {
-      const segmentPath = path.join(temporaryDirectoryPath, `segment-${index}.webm`);
+      const segmentPath = join(temporaryDirectoryPath, `segment-${index}.webm`);
       const ffmpegArguments = [
         "-y",
         "-ss",
@@ -318,8 +331,8 @@ const createHighlightVideo = async (
       segmentPaths.push(segmentPath);
     }
 
-    const concatFilePath = path.join(temporaryDirectoryPath, "segments.txt");
-    fs.writeFileSync(
+    const concatFilePath = join(temporaryDirectoryPath, "segments.txt");
+    writeFileSync(
       concatFilePath,
       segmentPaths
         .map((segmentPath) => `file '${segmentPath.replaceAll("'", "'\\''")}'`)
@@ -349,7 +362,7 @@ const createHighlightVideo = async (
       warning: "Highlight reel generation failed.",
     };
   } finally {
-    fs.rmSync(temporaryDirectoryPath, { recursive: true, force: true });
+    rmSync(temporaryDirectoryPath, { recursive: true, force: true });
   }
 };
 
@@ -358,14 +371,14 @@ const copyArtifact = (
   filePath: string,
   preferredPrefix: string,
 ): string | undefined => {
-  if (!fs.existsSync(filePath)) return undefined;
+  if (!existsSync(filePath)) return undefined;
 
-  const targetPath = path.join(
+  const targetPath = join(
     assetDirectoryPath,
-    `${preferredPrefix}-${crypto.randomUUID().slice(0, 8)}${path.extname(filePath)}`,
+    `${preferredPrefix}-${randomUUID().slice(0, 8)}${extname(filePath)}`,
   );
-  fs.copyFileSync(filePath, targetPath);
-  return `${SHARE_ASSET_DIRECTORY_NAME}/${path.basename(targetPath)}`;
+  copyFileSync(filePath, targetPath);
+  return `${SHARE_ASSET_DIRECTORY_NAME}/${basename(targetPath)}`;
 };
 
 const createShareBundle = (options: {
@@ -374,15 +387,15 @@ const createShareBundle = (options: {
 }): Pick<BrowserRunArtifacts, "shareBundlePath" | "shareSummaryPath" | "shareUrl"> => {
   const shareOutputDirectoryPath = process.env.BROWSER_TESTER_SHARE_OUTPUT_DIR;
   const shareBaseUrl = process.env.BROWSER_TESTER_SHARE_BASE_URL;
-  const bundleId = crypto.randomUUID().slice(0, 8);
+  const bundleId = randomUUID().slice(0, 8);
   const shareBundlePath =
     shareOutputDirectoryPath && shareBaseUrl
-      ? path.join(path.resolve(shareOutputDirectoryPath), bundleId)
-      : fs.mkdtempSync(path.join(os.tmpdir(), SHARE_DIRECTORY_PREFIX));
+      ? join(resolve(shareOutputDirectoryPath), bundleId)
+      : mkdtempSync(join(tmpdir(), SHARE_DIRECTORY_PREFIX));
 
-  fs.mkdirSync(shareBundlePath, { recursive: true });
-  const assetDirectoryPath = path.join(shareBundlePath, SHARE_ASSET_DIRECTORY_NAME);
-  fs.mkdirSync(assetDirectoryPath, { recursive: true });
+  mkdirSync(shareBundlePath, { recursive: true });
+  const assetDirectoryPath = join(shareBundlePath, SHARE_ASSET_DIRECTORY_NAME);
+  mkdirSync(assetDirectoryPath, { recursive: true });
 
   const sharedVideoPath = options.artifacts.highlightVideoPath ?? options.artifacts.rawVideoPath;
   const sharedScreenshotPaths = options.artifacts.screenshotPaths;
@@ -396,8 +409,8 @@ const createShareBundle = (options: {
     )
     .filter((relativePath): relativePath is string => Boolean(relativePath));
 
-  const shareSummaryPath = path.join(shareBundlePath, SHARE_SUMMARY_FILE_NAME);
-  const shareReportPath = path.join(shareBundlePath, SHARE_REPORT_FILE_NAME);
+  const shareSummaryPath = join(shareBundlePath, SHARE_SUMMARY_FILE_NAME);
+  const shareReportPath = join(shareBundlePath, SHARE_REPORT_FILE_NAME);
 
   const summaryLines = [
     `# ${options.report.title}`,
@@ -450,8 +463,8 @@ const createShareBundle = (options: {
     );
   }
 
-  fs.writeFileSync(shareSummaryPath, summaryLines.join("\n"), "utf-8");
-  fs.writeFileSync(
+  writeFileSync(shareSummaryPath, summaryLines.join("\n"), "utf-8");
+  writeFileSync(
     shareReportPath,
     [
       "<!doctype html>",
@@ -475,22 +488,24 @@ const createShareBundle = (options: {
     shareUrl:
       shareOutputDirectoryPath && shareBaseUrl
         ? `${shareBaseUrl.replace(/\/$/, "")}/${bundleId}/${SHARE_REPORT_FILE_NAME}`
-        : url.pathToFileURL(shareReportPath).href,
+        : pathToFileURL(shareReportPath).href,
   };
 };
 
 const prepareArtifacts = async (
   rawVideoPath: string | undefined,
+  replaySessionPath: string | undefined,
   screenshotPaths: string[],
   events: BrowserRunEvent[],
   onProgress?: (message: string) => Promise<void> | void,
 ): Promise<ArtifactPreparationResult> => {
   const warnings: string[] = [];
   const existingScreenshotPaths = screenshotPaths.filter((screenshotPath) =>
-    fs.existsSync(screenshotPath),
+    existsSync(screenshotPath),
   );
-  const existingRawVideoPath =
-    rawVideoPath && fs.existsSync(rawVideoPath) ? rawVideoPath : undefined;
+  const existingRawVideoPath = rawVideoPath && existsSync(rawVideoPath) ? rawVideoPath : undefined;
+  const existingReplaySessionPath =
+    replaySessionPath && existsSync(replaySessionPath) ? replaySessionPath : undefined;
   const highlightVideoResult = await createHighlightVideo(existingRawVideoPath, events, onProgress);
   if (highlightVideoResult.warning) warnings.push(highlightVideoResult.warning);
 
@@ -499,6 +514,7 @@ const prepareArtifacts = async (
     artifacts: {
       rawVideoPath: existingRawVideoPath,
       highlightVideoPath: highlightVideoResult.highlightVideoPath,
+      replaySessionPath: existingReplaySessionPath,
       screenshotPaths: existingScreenshotPaths,
     },
   };
@@ -508,12 +524,14 @@ export const createBrowserRunReport = async (
   options: CreateBrowserRunReportOptions,
 ): Promise<BrowserRunReport> => {
   await options.onProgress?.("Analyzing results");
-  const stepResults = getStepResults(options.events, options.completionEvent);
-  const findings = getFindings(options.events, options.completionEvent);
+  const stepResults = getStepResults(options.plan, options.events, options.completionEvent);
+  const findings = getFindings(options.events, options.plan, options.completionEvent);
+  const riskAreaSummary = getRiskAreaSummary(options.plan, stepResults, findings);
   await options.onProgress?.("Looking up pull request");
   const [artifactPreparation, pullRequest] = await Promise.all([
     prepareArtifacts(
       options.rawVideoPath,
+      options.replaySessionPath,
       options.screenshotPaths,
       options.events,
       options.onProgress,
@@ -522,13 +540,14 @@ export const createBrowserRunReport = async (
   ]);
 
   const partialReport = {
-    title: options.userInstruction,
+    title: options.plan.title,
     status: options.completionEvent.status,
     summary: options.completionEvent.summary,
     findings,
     stepResults,
     warnings: artifactPreparation.warnings,
     pullRequest,
+    ...riskAreaSummary,
   };
 
   await options.onProgress?.("Building report");

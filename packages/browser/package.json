@@ -19,6 +19,10 @@
     },
     "./cli": {
       "import": "./dist/mcp/start.mjs"
+    },
+    "./runtime": {
+      "types": "./dist/runtime/index.d.mts",
+      "import": "./dist/runtime/index.mjs"
     }
   },
   "scripts": {
@@ -40,6 +44,7 @@
     "@modelcontextprotocol/sdk": "^1.27.1",
     "effect": "4.0.0-beta.28",
     "playwright": "^1.52.0",
+    "rrweb": "^2.0.0-alpha.18",
     "zod": "^4.3.6"
   },
   "devDependencies": {

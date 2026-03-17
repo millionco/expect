@@ -1,6 +1,6 @@
-import * as fs from "node:fs";
+import { mkdtempSync } from "node:fs";
 import * as os from "node:os";
-import * as path from "node:path";
+import path from "node:path";
 import type { LanguageModelV3, LanguageModelV3StreamPart } from "@ai-sdk/provider";
 import type { AgentProviderSettings } from "@browser-tester/agent";
 import { Effect, Result, Stream } from "effect";
@@ -8,9 +8,8 @@ import {
   BROWSER_TEST_MODEL,
   DEFAULT_AGENT_PROVIDER,
   DEFAULT_BROWSER_MCP_SERVER_NAME,
-  EXECUTION_CONTEXT_FILE_LIMIT,
   EXECUTION_MODEL_EFFORT,
-  EXECUTION_RECENT_COMMIT_LIMIT,
+  REPLAY_FILE_NAME,
   VIDEO_DIRECTORY_PREFIX,
   VIDEO_FILE_NAME,
 } from "./constants";
@@ -19,8 +18,8 @@ import { createBrowserRunReport } from "./create-browser-run-report";
 import { createAgentModel } from "./create-agent-model";
 import { ExecutionError } from "./errors";
 import type { BrowserRunEvent } from "./events";
-import { loadLearnings } from "./learnings-storage";
 import {
+  buildStepMap,
   extractStreamSessionId,
   parseBrowserToolName,
   parseMarkerLine,
@@ -43,7 +42,7 @@ export const buildExecutionModelSettings = (
     | "browserMcpServerName"
     | "videoOutputPath"
     | "liveViewUrl"
-  >,
+  > & { replayOutputPath?: string },
 ): AgentProviderSettings => {
   const provider = options.provider ?? DEFAULT_AGENT_PROVIDER;
   const browserMcpServerName = options.browserMcpServerName ?? DEFAULT_BROWSER_MCP_SERVER_NAME;
@@ -60,62 +59,17 @@ export const buildExecutionModelSettings = (
     },
     browserMcpServerName,
     videoOutputPath: options.videoOutputPath,
+    replayOutputPath: options.replayOutputPath,
     liveViewUrl: options.liveViewUrl,
   });
 };
 
-const formatSavedFlowGuidance = (options: ExecuteBrowserFlowOptions): string[] => {
-  if (!options.savedFlow) return [];
-
-  return [
-    "Saved flow guidance:",
-    "You are replaying a previously saved flow. Follow these steps as guidance, but adapt if the UI has changed.",
-    `Saved flow title: ${options.savedFlow.title}`,
-    `Saved flow request: ${options.savedFlow.userInstruction}`,
-    "",
-    ...options.savedFlow.steps.flatMap((step, index) => [
-      `Step ${index + 1}: ${step.title}`,
-      `Instruction: ${step.instruction}`,
-      `Expected: ${step.expectedOutcome}`,
-      "",
-    ]),
-  ];
-};
-
-const buildExecutionPrompt = (
-  options: ExecuteBrowserFlowOptions & { learnings?: string },
-): string => {
-  const { userInstruction, target, environment, browserMcpServerName, videoOutputPath } = options;
+const buildExecutionPrompt = (options: ExecuteBrowserFlowOptions): string => {
+  const { plan, target, environment, browserMcpServerName, videoOutputPath } = options;
   const mcpName = browserMcpServerName ?? DEFAULT_BROWSER_MCP_SERVER_NAME;
-  const changedFiles = target.changedFiles.slice(0, EXECUTION_CONTEXT_FILE_LIMIT);
-  const recentCommits = target.recentCommits.slice(0, EXECUTION_RECENT_COMMIT_LIMIT);
-  const scopeStrategy =
-    target.scope === "commit"
-      ? [
-          "- Start narrow and prove the selected commit's intended change works first.",
-          "- Treat the selected commit and its touched files as the primary testing hypothesis.",
-          "- After the primary flow, only test the 1-2 most likely adjacent regressions.",
-        ]
-      : target.scope === "unstaged"
-        ? [
-            "- Start with the exact user-requested flow against the local in-progress changes.",
-            "- Keep the run tight and high-signal instead of broad regression coverage.",
-            "- After the primary flow, test only the most obvious nearby regressions.",
-          ]
-        : target.scope === "changes"
-          ? [
-              "- Treat committed and uncommitted work as one body of change.",
-              "- Cover the requested flow first, then the highest-risk adjacent flows.",
-              "- Prefer 1-2 strong follow-up checks over an exhaustive sweep.",
-            ]
-          : [
-              "- Cover the requested flow first, then adjacent entry points or follow-up screens that could regress together.",
-              "- When multiple related files changed, bias toward neighboring journeys rather than a full app tour.",
-              "- Prefer a small number of high-signal checks over exhaustive coverage.",
-            ];
 
   return [
-    "You are executing a browser regression test directly from repository context.",
+    "You are executing an approved browser test plan.",
     `You have 4 browser tools via the MCP server named "${mcpName}":`,
     "",
     "1. open — Launch a browser and navigate to a URL.",
@@ -153,13 +107,8 @@ const buildExecutionPrompt = (
     "  playwright: await ref('e1').click(); await page.waitForURL('**/about');",
     "  playwright: return { url: page.url(), title: await page.title() };",
     "",
-    "Execution strategy:",
-    "- First master the primary flow the developer asked for.",
-    "- Once the primary flow passes or you understand the blocker, test 1-2 additional nearby flows suggested by the changed files and route context.",
-    "- Keep additional coverage tightly related to the requested journey. Do not do an exhaustive app tour.",
-    "- Use the same browser session throughout unless the app forces you into a different path.",
-    "- Execution style is assertion-first: navigate, act, validate, recover once, then fail with evidence if still blocked.",
-    "- Create your own step structure while executing. Use stable sequential IDs like step-01, step-02, step-03.",
+    "Follow the approved steps in order. You may adapt to UI details, but do not invent a different goal.",
+    "Execution style: assertion-first. For each step, think in loops: navigate, act, validate, recover, then fail if still blocked.",
     "A browser video recording is enabled for this run.",
     "",
     "Before and after each step, emit these exact status lines on their own lines:",
@@ -200,37 +149,31 @@ const buildExecutionPrompt = (
     `- Display name: ${target.displayName}`,
     `- Current branch: ${target.branch.current}`,
     `- Main branch: ${target.branch.main ?? "unknown"}`,
-    target.selectedCommit
-      ? `- Selected commit: ${target.selectedCommit.shortHash} ${target.selectedCommit.subject}`
-      : null,
-    `- Diff stats: ${
-      target.diffStats
-        ? `${target.diffStats.filesChanged} files, +${target.diffStats.additions}/-${target.diffStats.deletions}`
-        : "unknown"
-    }`,
     "",
-    "Developer request:",
-    userInstruction,
+    "Approved plan:",
+    `Title: ${plan.title}`,
+    `Rationale: ${plan.rationale}`,
+    `Target summary: ${plan.targetSummary}`,
+    `User instruction: ${plan.userInstruction}`,
+    `Assumptions: ${plan.assumptions.length > 0 ? plan.assumptions.join("; ") : "none"}`,
+    `Risk areas: ${plan.riskAreas.length > 0 ? plan.riskAreas.join("; ") : "none"}`,
+    `Target URLs: ${plan.targetUrls.length > 0 ? plan.targetUrls.join(", ") : "none"}`,
     "",
-    ...formatSavedFlowGuidance(options),
-    "Project learnings from previous runs:",
-    options.learnings?.trim() || "No learnings yet.",
-    "",
-    "Changed files:",
-    changedFiles.length > 0
-      ? changedFiles.map((file) => `- [${file.status}] ${file.path}`).join("\n")
-      : "- No changed files detected",
-    "",
-    "Recent commits:",
-    recentCommits.length > 0
-      ? recentCommits.map((commit) => `- ${commit.shortHash} ${commit.subject}`).join("\n")
-      : "- No recent commits available",
-    "",
-    "Diff preview:",
-    target.diffPreview || "No diff preview available",
-    "",
-    "Scope strategy:",
-    ...scopeStrategy,
+    plan.steps
+      .map((step) =>
+        [
+          `- ${step.id}: ${step.title}`,
+          `  instruction: ${step.instruction}`,
+          `  expected outcome: ${step.expectedOutcome}`,
+          `  route hint: ${step.routeHint ?? "none"}`,
+          `  changed file evidence: ${
+            step.changedFileEvidence && step.changedFileEvidence.length > 0
+              ? step.changedFileEvidence.join(", ")
+              : "none"
+          }`,
+        ].join("\n"),
+      )
+      .join("\n"),
   ].join("\n");
 };
 
@@ -279,9 +222,10 @@ const createAsyncEventQueue = <T>() => {
 
 const createBrowserRunEventIterable = (options: {
   target: ExecuteBrowserFlowOptions["target"];
-  userInstruction: string;
+  plan: ExecuteBrowserFlowOptions["plan"];
   browserMcpServerName: string;
   videoOutputPath: string;
+  replayOutputPath: string;
   liveViewUrl?: string;
   stream: ReadableStream<LanguageModelV3StreamPart>;
   abortController: AbortController;
@@ -291,19 +235,20 @@ const createBrowserRunEventIterable = (options: {
     const runStartedEvent: BrowserRunEvent = {
       type: "run-started",
       timestamp: Date.now(),
-      title: options.userInstruction,
+      planTitle: options.plan.title,
       liveViewUrl: options.liveViewUrl,
     };
     emittedEvents.push(runStartedEvent);
     yield runStartedEvent;
 
     const reader = options.stream.getReader();
-    let streamState: ExecutionStreamState = { bufferedText: "", stepTitlesById: new Map() };
+    let streamState: ExecutionStreamState = { bufferedText: "" };
     let completionEvent: Extract<BrowserRunEvent, { type: "run-completed" }> | null = null;
     let screenshotOutputDirectoryPath: string | undefined;
     const screenshotPaths: string[] = [];
     const streamContext: ExecutionStreamContext = {
       browserMcpServerName: options.browserMcpServerName,
+      stepsById: buildStepMap(options.plan.steps),
     };
 
     try {
@@ -322,6 +267,7 @@ const createBrowserRunEventIterable = (options: {
                 ...event,
                 sessionId: streamState.sessionId,
                 videoPath: options.videoOutputPath,
+                replaySessionPath: options.replayOutputPath,
               };
             } else {
               emittedEvents.push(event);
@@ -416,20 +362,32 @@ const createBrowserRunEventIterable = (options: {
       }
 
       if (streamState.bufferedText.trim()) {
-        const trailingEvent = parseMarkerLine(streamState.bufferedText.trim(), streamState);
+        const trailingEvent = parseMarkerLine(streamState.bufferedText.trim(), streamContext);
         if (trailingEvent) {
-          streamState = trailingEvent.nextState;
-          for (const event of trailingEvent.events) {
-            if (event.type === "run-completed") {
-              completionEvent = {
-                ...event,
-                sessionId: streamState.sessionId,
-                videoPath: options.videoOutputPath,
-              };
-            } else {
-              emittedEvents.push(event);
-              yield event;
+          if (Array.isArray(trailingEvent)) {
+            for (const event of trailingEvent) {
+              if (event.type === "run-completed") {
+                completionEvent = {
+                  ...event,
+                  sessionId: streamState.sessionId,
+                  videoPath: options.videoOutputPath,
+                  replaySessionPath: options.replayOutputPath,
+                };
+              } else {
+                emittedEvents.push(event);
+                yield event;
+              }
             }
+          } else if (trailingEvent.type === "run-completed") {
+            completionEvent = {
+              ...trailingEvent,
+              sessionId: streamState.sessionId,
+              videoPath: options.videoOutputPath,
+              replaySessionPath: options.replayOutputPath,
+            };
+          } else {
+            emittedEvents.push(trailingEvent);
+            yield trailingEvent;
           }
         }
       }
@@ -443,15 +401,17 @@ const createBrowserRunEventIterable = (options: {
           summary: "Run completed.",
           sessionId: streamState.sessionId,
           videoPath: options.videoOutputPath,
+          replaySessionPath: options.replayOutputPath,
         } satisfies Extract<BrowserRunEvent, { type: "run-completed" }>);
 
       const progressEvents = createAsyncEventQueue<BrowserRunEvent>();
       const reportPromise = createBrowserRunReport({
         target: options.target,
-        userInstruction: options.userInstruction,
+        plan: options.plan,
         events: emittedEvents,
         completionEvent: resolvedCompletionEvent,
         rawVideoPath: options.videoOutputPath,
+        replaySessionPath: options.replayOutputPath,
         screenshotPaths,
         onProgress: (text) => {
           const progressEvent: BrowserRunEvent = {
@@ -507,6 +467,7 @@ const createModelStreamResult = Effect.fn("createModelStreamResult")(function* (
   provider: NonNullable<ExecuteBrowserFlowOptions["provider"]>,
   browserMcpServerName: string,
   videoOutputPath: string,
+  replayOutputPath: string,
   liveViewUrl?: string,
   abortController?: AbortController,
 ) {
@@ -520,6 +481,7 @@ const createModelStreamResult = Effect.fn("createModelStreamResult")(function* (
         target: options.target,
         browserMcpServerName,
         videoOutputPath,
+        replayOutputPath,
         liveViewUrl,
       }),
     );
@@ -543,6 +505,7 @@ const resolveExecutionStreamResult = Effect.fn("resolveExecutionStreamResult")(f
   prompt: string,
   browserMcpServerName: string,
   videoOutputPath: string,
+  replayOutputPath: string,
   liveViewUrl: string | undefined,
   abortController: AbortController,
 ) {
@@ -553,6 +516,7 @@ const resolveExecutionStreamResult = Effect.fn("resolveExecutionStreamResult")(f
       options.provider ?? DEFAULT_AGENT_PROVIDER,
       browserMcpServerName,
       videoOutputPath,
+      replayOutputPath,
       liveViewUrl,
       abortController,
     ).pipe(
@@ -579,6 +543,7 @@ const resolveExecutionStreamResult = Effect.fn("resolveExecutionStreamResult")(f
         provider,
         browserMcpServerName,
         videoOutputPath,
+        replayOutputPath,
         liveViewUrl,
         abortController,
       ),
@@ -619,29 +584,22 @@ const buildExecutionStream = Effect.fn("executeBrowserFlow")(function* (
   const browserMcpServerName = options.browserMcpServerName ?? DEFAULT_BROWSER_MCP_SERVER_NAME;
   const videoOutputPath =
     options.videoOutputPath ??
-    path.join(fs.mkdtempSync(path.join(os.tmpdir(), VIDEO_DIRECTORY_PREFIX)), VIDEO_FILE_NAME);
+    path.join(mkdtempSync(path.join(os.tmpdir(), VIDEO_DIRECTORY_PREFIX)), VIDEO_FILE_NAME);
+  const replayOutputPath = path.join(path.dirname(videoOutputPath), REPLAY_FILE_NAME);
   const liveViewUrl =
     options.liveViewUrl ??
     (yield* Effect.tryPromise({
       try: () => resolveLiveViewUrl(),
       catch: (cause) => new ExecutionError({ stage: "resolve live view url", cause }),
     }).pipe(Effect.catchTag("ExecutionError", () => Effect.succeed(undefined))));
-  const learnings = yield* Effect.tryPromise({
-    try: () => loadLearnings(options.target.cwd),
-    catch: (cause) => new ExecutionError({ stage: "load learnings", cause }),
-  }).pipe(Effect.catchTag("ExecutionError", () => Effect.succeed(undefined)));
-  const prompt = buildExecutionPrompt({
-    ...options,
-    browserMcpServerName,
-    videoOutputPath,
-    learnings,
-  });
+  const prompt = buildExecutionPrompt({ ...options, browserMcpServerName, videoOutputPath });
   const abortController = new AbortController();
   const streamResult = yield* resolveExecutionStreamResult(
     options,
     prompt,
     browserMcpServerName,
     videoOutputPath,
+    replayOutputPath,
     liveViewUrl,
     abortController,
   );
@@ -649,9 +607,10 @@ const buildExecutionStream = Effect.fn("executeBrowserFlow")(function* (
   return Stream.fromAsyncIterable(
     createBrowserRunEventIterable({
       target: options.target,
-      userInstruction: options.userInstruction,
+      plan: options.plan,
       browserMcpServerName,
       videoOutputPath,
+      replayOutputPath,
       liveViewUrl,
       stream: streamResult.stream,
       abortController,
