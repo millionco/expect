@@ -1,4 +1,4 @@
-import { assert, describe, it } from "vitest";
+import { assert, describe, it } from "vite-plus/test";
 import { Effect, Layer } from "effect";
 import { Browsers } from "../src/browser-detector.js";
 import { Cookies } from "../src/cookies.js";

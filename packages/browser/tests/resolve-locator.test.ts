@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vite-plus/test";
 import { chromium } from "playwright";
 import type { Browser, Page } from "playwright";
 import { resolveLocator } from "../src/utils/resolve-locator";

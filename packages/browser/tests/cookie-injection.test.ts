@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vite-plus/test";
 import { chromium } from "playwright";
 import type { Browser, BrowserContext, Page } from "playwright";
 import { createServer, type Server } from "node:http";

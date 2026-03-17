@@ -1,5 +1,5 @@
 import { Option } from "effect";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import { parseAriaLine } from "../src/utils/parse-aria-line";
 
 describe("parseAriaLine", () => {

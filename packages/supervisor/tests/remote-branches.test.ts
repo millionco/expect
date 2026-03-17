@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { fetchRemoteBranches } from "../src/remote-branches.js";
 
 const commandOutputs = new Map<string, string>();

@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { createServer, type Server } from "node:http";
 import { runBrowser } from "../src/browser";
 

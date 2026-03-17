@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 // @ts-expect-error node:sqlite lacks type declarations
 import { DatabaseSync } from "node:sqlite";
-import { assert, describe, it } from "vitest";
+import { assert, describe, it } from "vite-plus/test";
 import { Effect, Layer, Option } from "effect";
 import { NodeServices } from "@effect/platform-node";
 

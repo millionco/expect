@@ -1,7 +1,7 @@
 import { existsSync, rmSync } from "node:fs";
 import { dirname } from "node:path";
 import { Effect, Stream } from "effect";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import type {
   LanguageModelV3,
   LanguageModelV3CallOptions,

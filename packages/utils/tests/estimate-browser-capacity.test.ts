@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { BROWSER_MEMORY_OVERHEAD_MB, MEMORY_SAFETY_RATIO } from "../src/constants";
 
