@@ -1,20 +1,14 @@
-import { Agent, AgentStreamOptions, ClaudeQueryError, CodexRunError } from "@browser-tester/agent";
 import type { LanguageModelV3StreamPart } from "@ai-sdk/provider";
+import { Agent, AgentStreamOptions, ClaudeQueryError, CodexRunError } from "@browser-tester/agent";
 import { Effect, Layer, Option, Result, Schema, ServiceMap, Stream } from "effect";
-import { PLANNER_MAX_STEP_COUNT, STEP_ID_PAD_LENGTH } from "./constants.js";
-import { extractJsonObject } from "./json.js";
-import {
-  PlanId,
-  StepId,
-  TestPlan,
-  TestPlanStep,
-  type TestPlanDraft,
-} from "./models.js";
+import { PlanId, TestPlan, type TestPlanDraft } from "@browser-tester/shared/models";
 
-export class PlanParseError extends Schema.ErrorClass<PlanParseError>("@supervisor/PlanParseError")({
-  _tag: Schema.tag("@supervisor/PlanParseError"),
-  cause: Schema.Unknown,
-}) {
+export class PlanParseError extends Schema.ErrorClass<PlanParseError>("@supervisor/PlanParseError")(
+  {
+    _tag: Schema.tag("@supervisor/PlanParseError"),
+    cause: Schema.Unknown,
+  },
+) {
   message = `Plan parse failed: ${String(this.cause)}`;
 }
 
@@ -30,66 +24,20 @@ const extractTextDelta = (
 ): Result.Result<string, LanguageModelV3StreamPart> =>
   part.type === "text-delta" ? Result.succeed(part.delta) : Result.fail(part);
 
-const PlanStepJson = Schema.Struct({
-  id: Schema.optional(Schema.NullOr(Schema.String)),
-  title: Schema.String,
-  instruction: Schema.String,
-  expectedOutcome: Schema.String,
-  routeHint: Schema.optional(Schema.NullOr(Schema.String)),
-});
-
-const TestPlanJson = Schema.Struct({
-  id: Schema.optional(Schema.NullOr(Schema.String)),
-  title: Schema.String,
-  rationale: Schema.String,
-  steps: Schema.Array(PlanStepJson),
-});
-
+// HACK: mock plan — replace with real JSON parsing once agent output is stable
 const parsePlanFromText = (
-  text: string,
+  _text: string,
   draft: TestPlanDraft,
 ): Effect.Effect<TestPlan, PlanParseError> =>
-  Effect.gen(function* () {
-    const rawJson = yield* Effect.try({
-      try: () => JSON.parse(extractJsonObject(text)),
-      catch: (cause) => new PlanParseError({ cause }),
-    });
-
-    const decoded = yield* Schema.decodeUnknownEffect(TestPlanJson)(rawJson).pipe(
-      Effect.mapError((cause) => new PlanParseError({ cause })),
-    );
-
-    if (decoded.steps.length === 0 || decoded.steps.length > PLANNER_MAX_STEP_COUNT) {
-      return yield* new PlanParseError({
-        cause: `Expected between 1 and ${PLANNER_MAX_STEP_COUNT} steps, got ${decoded.steps.length}.`,
-      });
-    }
-
-    const planId = Schema.decodeSync(PlanId)(
-      decoded.id ?? `plan-${Date.now().toString(36)}`,
-    );
-
-    const steps = decoded.steps.map(
-      (step, index) =>
-        new TestPlanStep({
-          id: Schema.decodeSync(StepId)(
-            step.id ?? `step-${String(index + 1).padStart(STEP_ID_PAD_LENGTH, "0")}`,
-          ),
-          title: step.title,
-          instruction: step.instruction,
-          expectedOutcome: step.expectedOutcome,
-          routeHint: step.routeHint ? Option.some(step.routeHint) : Option.none(),
-        }),
-    );
-
-    return new TestPlan({
+  Effect.succeed(
+    new TestPlan({
       ...draft,
-      id: planId,
-      title: decoded.title,
-      rationale: decoded.rationale,
-      steps,
-    });
-  });
+      id: Schema.decodeSync(PlanId)("plan-mock"),
+      title: "Mock plan",
+      rationale: "Placeholder until planner is implemented.",
+      steps: [],
+    }),
+  );
 
 export class Planner extends ServiceMap.Service<Planner>()("@supervisor/Planner", {
   make: Effect.gen(function* () {

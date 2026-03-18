@@ -1,13 +1,6 @@
 import { Effect } from "effect";
-import {
-  fetchRemoteBranches,
-  getPullRequestForBranch,
-  Git,
-  type CommitSummary,
-  type RemoteBranch,
-  type TestAction,
-} from "@browser-tester/supervisor";
-import type { GitState } from "@browser-tester/supervisor";
+import { Git, Github, type CommitSummary } from "@browser-tester/supervisor";
+import type { GitState, RemoteBranch } from "@browser-tester/shared/models";
 
 export interface ContextOption {
   id: string;
@@ -15,7 +8,6 @@ export interface ContextOption {
   label: string;
   description: string;
   filterText: string;
-  action: TestAction;
   branchName?: string;
   prNumber?: number;
   prStatus?: "open" | "draft" | "merged";
@@ -24,13 +16,27 @@ export interface ContextOption {
   commitSubject?: string;
 }
 
+// HACK: Github.layer leaves `undefined` in R due to Effect v4 beta ServiceMap type inference
+const withGithub = <A, E>(effect: Effect.Effect<A, E, Github | undefined>) =>
+  effect.pipe(Effect.provide(Github.layer)) as Effect.Effect<A, E>;
+
+const getPullRequestForBranch = (cwd: string, branch: string) =>
+  withGithub(
+    Github.use((github) =>
+      github.findPullRequest(cwd, { _tag: "Branch" as const, branchName: branch }),
+    ),
+  );
+
 const buildChangesOption = async (gitState: GitState): Promise<ContextOption | null> => {
   if (!gitState.hasChangesFromMain && !gitState.hasUnstagedChanges) return null;
 
   const cwd = process.cwd();
   const pullRequest = gitState.isOnMain
     ? null
-    : await getPullRequestForBranch(cwd, gitState.currentBranch);
+    : await Effect.runPromise(getPullRequestForBranch(cwd, gitState.currentBranch)).then(
+        (opt) => (opt._tag === "Some" ? opt.value : null),
+        () => null,
+      );
 
   const fileCount = gitState.fileStats.length;
   const parts: string[] = [];
@@ -55,7 +61,6 @@ const buildChangesOption = async (gitState: GitState): Promise<ContextOption | n
     label: gitState.isOnMain ? "Local changes" : gitState.currentBranch,
     description: parts.length > 0 ? parts.join(", ") : "working tree",
     filterText: `local changes ${gitState.currentBranch}`,
-    action: "test-changes",
     prNumber: pullRequest?.number,
   };
 };
@@ -73,7 +78,6 @@ const buildBranchOptions = (
       label: branch.name,
       description: branch.author ? `by ${branch.author}` : "",
       filterText: branch.name,
-      action: "test-branch" as const,
       branchName: branch.name,
     }));
 
@@ -86,7 +90,6 @@ const buildPrOptions = (remoteBranches: RemoteBranch[]): ContextOption[] =>
       label: branch.name,
       description: `#${branch.prNumber} ${branch.prStatus ?? ""}`.trim(),
       filterText: `#${branch.prNumber} ${branch.name} ${branch.author}`,
-      action: "test-branch" as const,
       branchName: branch.name,
       prNumber: branch.prNumber ?? undefined,
       prStatus: branch.prStatus ?? undefined,
@@ -99,10 +102,7 @@ const buildCommitOptions = async (gitState: GitState): Promise<ContextOption[]> 
     Effect.gen(function* () {
       const git = yield* Git;
       return yield* git.getRecentCommits(`${gitState.mainBranch}..HEAD`);
-    }).pipe(
-      Effect.provide(Git.withRepoRoot(cwd)),
-      Effect.catchTag("GitError", () => Effect.succeed([] as CommitSummary[])),
-    ),
+    }).pipe(Effect.provide(Git.withRepoRoot(cwd))),
   );
   return commits.map((commit) => ({
     id: `commit-${commit.hash}`,
@@ -110,7 +110,6 @@ const buildCommitOptions = async (gitState: GitState): Promise<ContextOption[]> 
     label: commit.shortHash,
     description: commit.subject,
     filterText: `${commit.shortHash} ${commit.subject}`,
-    action: "select-commit" as const,
     commitHash: commit.hash,
     commitShortHash: commit.shortHash,
     commitSubject: commit.subject,
@@ -132,6 +131,9 @@ export const buildLocalContextOptions = async (gitState: GitState): Promise<Cont
 
   return options;
 };
+
+export const fetchRemoteBranches = (cwd: string): Promise<RemoteBranch[]> =>
+  Effect.runPromise(withGithub(Github.use((github) => github.listPullRequests(cwd))));
 
 export const fetchRemoteContextOptions = async (gitState: GitState): Promise<ContextOption[]> => {
   const cwd = process.cwd();

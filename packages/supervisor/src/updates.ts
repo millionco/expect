@@ -1,12 +1,13 @@
-import { Effect, Layer, PubSub, ServiceMap, Stream } from "effect";
-import type { UpdateContent } from "./models.js";
+import { DateTime, Effect, Layer, PubSub, ServiceMap, Stream } from "effect";
+import type { UpdateContent } from "@browser-tester/shared/models";
+import { Update } from "@browser-tester/shared/models";
 
 export class Updates extends ServiceMap.Service<Updates>()("@supervisor/Updates", {
   make: Effect.gen(function* () {
-    const pubsub = yield* PubSub.unbounded<UpdateContent>();
+    const pubsub = yield* PubSub.unbounded<Update>();
 
     const publish = Effect.fn("Updates.publish")(function* (content: UpdateContent) {
-      yield* PubSub.publish(pubsub, content);
+      yield* PubSub.publish(pubsub, new Update({ content, receivedAt: DateTime.nowUnsafe() }));
     });
 
     const stream = Effect.fn("Updates.stream")(function* () {

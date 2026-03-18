@@ -43,7 +43,9 @@ const buildQueryOptions = (options: AgentStreamOptions, model: string) => {
     permissionMode: "bypassPermissions" as const,
     debugFile: debugLogPath,
     ...(Option.isSome(options.sessionId) ? { resume: options.sessionId.value } : {}),
-    ...(Option.isSome(options.systemPrompt) ? { appendSystemPrompt: options.systemPrompt.value } : {}),
+    ...(Option.isSome(options.systemPrompt)
+      ? { appendSystemPrompt: options.systemPrompt.value }
+      : {}),
     env,
     ...(explicitExecutablePath ? { pathToClaudeCodeExecutable: explicitExecutablePath } : {}),
   };

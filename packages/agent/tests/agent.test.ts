@@ -89,7 +89,12 @@ describe("Agent", () => {
           (part): part is Extract<LanguageModelV3StreamPart, { type: "text-delta" }> =>
             part.type === "text-delta",
         );
-        expect(textParts.map((part) => part.delta).join("").toLowerCase()).toContain("ping");
+        expect(
+          textParts
+            .map((part) => part.delta)
+            .join("")
+            .toLowerCase(),
+        ).toContain("ping");
       }, 60_000);
     });
   });

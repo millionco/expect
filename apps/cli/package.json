@@ -29,6 +29,9 @@
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
+    "@browser-tester/shared": "workspace:*",
+    "@browser-tester/supervisor": "workspace:*",
+    "@effect/atom-react": "4.0.0-beta.35",
     "@tanstack/react-query": "^5.80.7",
     "@types/react": "^19.2.14",
     "cli-truncate": "^5.2.0",
@@ -48,8 +51,6 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
-    "@browser-tester/supervisor": "workspace:*",
-    "@browser-tester/utils": "workspace:*",
     "@babel/core": "^7.29.0",
     "babel-plugin-react-compiler": "^1.0.0",
     "typescript": "^5.7.0"

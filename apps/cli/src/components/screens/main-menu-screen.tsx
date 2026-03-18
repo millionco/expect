@@ -1,313 +1,137 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Text, useInput } from "ink";
-import { useFlowSessionStore } from "../../stores/use-flow-session";
-import { useGitState } from "../../hooks/use-git-state";
-import { useColors } from "../theme-context";
-import { Clickable } from "../ui/clickable";
-import { Input } from "../ui/input";
-import { RuledBox } from "../ui/ruled-box";
-import { ErrorMessage } from "../ui/error-message";
-import { ContextPicker } from "../ui/context-picker";
-import { stripMouseSequences } from "../../hooks/mouse-context";
-import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions";
-import { DotField } from "../ui/dot-field";
+import { Option } from "effect";
+import { TestPlanDraft, ChangesFor, checkoutBranch, DraftId } from "@browser-tester/supervisor";
+import type { GitState, TestContext } from "@browser-tester/shared/models";
+import { usePreferencesStore } from "../../stores/use-preferences.js";
+import { usePlanStore, Plan } from "../../stores/use-plan-store.js";
+import { useNavigationStore, Screen } from "../../stores/use-navigation.js";
+import { useColors } from "../theme-context.js";
+import { Clickable } from "../ui/clickable.js";
+import { Input } from "../ui/input.js";
+import { RuledBox } from "../ui/ruled-box.js";
+import { ErrorMessage } from "../ui/error-message.js";
+import { ContextPicker } from "../ui/context-picker.js";
+import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions.js";
+import { DotField } from "../ui/dot-field.js";
+import { useContextPicker } from "../../hooks/use-context-picker.js";
+import { getFlowSuggestions } from "../../utils/get-flow-suggestions.js";
+import { getContextDisplayLabel, getContextDescription } from "../../utils/context-options.js";
+import { queryClient } from "../../query-client.js";
 
-import { generateFlowSuggestions } from "@browser-tester/supervisor";
-import { getFlowSuggestions } from "../../utils/get-flow-suggestions";
-import {
-  buildLocalContextOptions,
-  fetchRemoteContextOptions,
-  filterContextOptions,
-  type ContextOption,
-} from "../../utils/context-options";
-type FocusArea = "input";
+interface MainMenuProps {
+  gitState: GitState;
+}
 
-export const MainMenu = () => {
+export const MainMenu = ({ gitState }: MainMenuProps) => {
   const COLORS = useColors();
   const [columns] = useStdoutDimensions();
-  const { data: gitState } = useGitState();
-  const submitFlowInstruction = useFlowSessionStore((state) => state.submitFlowInstruction);
-  const selectAction = useFlowSessionStore((state) => state.selectAction);
-  const storeSelectContext = useFlowSessionStore((state) => state.selectContext);
-  const selectedContext = useFlowSessionStore((state) => state.selectedContext);
-  const switchBranch = useFlowSessionStore((state) => state.switchBranch);
-  const flowInstruction = useFlowSessionStore((state) => state.flowInstruction);
-
-  const flowInstructionHistory = useFlowSessionStore((state) => state.flowInstructionHistory);
-
-  const [value, setValue] = useState(flowInstruction);
+  const toggleSkipPlanning = usePreferencesStore((state) => state.toggleSkipPlanning);
+  const setScreen = useNavigationStore((state) => state.setScreen);
+  const plan = usePlanStore((state) => state.plan);
+  const [selectedContext, setSelectedContext] = useState<TestContext | undefined>(undefined);
+  const savedInstruction =
+    plan?._tag === "draft" ? plan.instruction : plan?._tag === "plan" ? plan.instruction : "";
+  const [value, setValue] = useState(savedInstruction);
   const [inputKey, setInputKey] = useState(0);
   const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [hasCycled, setHasCycled] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [focus, setFocus] = useState<FocusArea>("input");
-  const [historyIndex, setHistoryIndex] = useState<number | null>(null);
-  const [savedCurrentInput, setSavedCurrentInput] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
 
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [pickerQuery, setPickerQuery] = useState("");
-  const [pickerIndex, setPickerIndex] = useState(0);
-  const [remoteOptions, setRemoteOptions] = useState<ContextOption[]>([]);
-  const [localOptions, setLocalOptions] = useState<ContextOption[]>([]);
-  const [remoteLoading, setRemoteLoading] = useState(false);
-
-  const previousGitStateRef = useRef(gitState);
-  if (previousGitStateRef.current !== gitState) {
-    previousGitStateRef.current = gitState;
-    if (gitState) {
-      buildLocalContextOptions(gitState)
-        .then((options) => setLocalOptions(options))
-        .catch(() => {});
-    }
-  }
-
-  const previousPickerDepsRef = useRef({ pickerOpen, gitState });
-  if (
-    previousPickerDepsRef.current.pickerOpen !== pickerOpen ||
-    previousPickerDepsRef.current.gitState !== gitState
-  ) {
-    previousPickerDepsRef.current = { pickerOpen, gitState };
-    if (pickerOpen && gitState) {
-      setRemoteLoading(true);
-      fetchRemoteContextOptions(gitState)
-        .then((options) => setRemoteOptions(options))
-        .catch(() => {})
-        .finally(() => setRemoteLoading(false));
-    }
-  }
-
-  const allOptions = useMemo(
-    () => [...localOptions, ...remoteOptions],
-    [localOptions, remoteOptions],
-  );
-
-  const filteredOptions = useMemo(
-    () => filterContextOptions(allOptions, pickerQuery),
-    [allOptions, pickerQuery],
-  );
-
-  const previousPickerQueryRef = useRef(pickerQuery);
-  if (previousPickerQueryRef.current !== pickerQuery) {
-    previousPickerQueryRef.current = pickerQuery;
-    setPickerIndex(0);
-  }
+  const picker = useContextPicker({
+    gitState,
+    onSelect: setSelectedContext,
+  });
 
   const defaultContext = useMemo(() => {
-    if (!gitState) return null;
-    return localOptions.find((option) => option.type === "changes") ?? null;
-  }, [gitState, localOptions]);
+    return picker.localOptions.find((option) => option._tag === "WorkingTree") ?? undefined;
+  }, [picker.localOptions]);
 
-  const activeContext = selectedContext ?? defaultContext;
-  const staticSuggestions = useMemo(
-    () => getFlowSuggestions(activeContext, gitState ?? null),
+  const activeContext = selectedContext ?? defaultContext ?? null;
+  const suggestions = useMemo(
+    () => getFlowSuggestions(activeContext, gitState),
     [activeContext, gitState],
   );
-  const [aiSuggestions, setAiSuggestions] = useState<readonly string[] | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const generationAbortRef = useRef<AbortController | null>(null);
-  const suggestions = aiSuggestions ?? staticSuggestions;
 
-  const previousSuggestionDepsRef = useRef({ activeContext, gitState });
-  if (
-    previousSuggestionDepsRef.current.activeContext !== activeContext ||
-    previousSuggestionDepsRef.current.gitState !== gitState
-  ) {
-    previousSuggestionDepsRef.current = { activeContext, gitState };
+  useEffect(() => {
     setSuggestionIndex(0);
-    setAiSuggestions(null);
-    setIsGenerating(false);
-    generationAbortRef.current?.abort();
-    generationAbortRef.current = null;
-  }
-
-  const requestSuggestions = useCallback(() => {
-    if (!gitState || isGenerating) return;
-
-    generationAbortRef.current?.abort();
-    const abortController = new AbortController();
-    generationAbortRef.current = abortController;
-    setIsGenerating(true);
-
-    generateFlowSuggestions({
-      changedFiles: gitState.changedFiles,
-      currentBranch: gitState.currentBranch,
-      contextType: activeContext?.type ?? null,
-      contextLabel: activeContext?.label ?? null,
-      signal: abortController.signal,
-    })
-      .then((result) => {
-        if (!abortController.signal.aborted) {
-          setAiSuggestions(result.length > 0 ? result : null);
-          if (result.length > 0) {
-            setSuggestionIndex(0);
-          }
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!abortController.signal.aborted) {
-          setIsGenerating(false);
-        }
-      });
-  }, [activeContext, gitState, isGenerating]);
-
-  const openPicker = useCallback(() => {
-    setPickerOpen(true);
-    setPickerQuery("");
-    setPickerIndex(0);
-  }, []);
-
-  const closePicker = useCallback(() => {
-    setPickerOpen(false);
-    setPickerQuery("");
-  }, []);
-
-  const handleContextSelect = useCallback(
-    (option: ContextOption) => {
-      storeSelectContext(option);
-      closePicker();
-    },
-    [storeSelectContext, closePicker],
-  );
+  }, [activeContext, gitState]);
 
   const submit = useCallback(
     (submittedValue?: string) => {
       const trimmed = (submittedValue ?? value).trim();
+      console.error("[main-menu] submit called, trimmed:", JSON.stringify(trimmed));
       if (!trimmed) {
         setErrorMessage("Describe what you want the browser agent to test.");
         return;
       }
 
-      const context = activeContext;
+      const mainBranch = gitState.mainBranch ?? "main";
+      let changesFor: ChangesFor;
 
-      if (context?.branchName && context.type !== "changes") {
-        switchBranch(context.branchName, context.prNumber ?? null);
-      }
+      console.error("[main-menu] activeContext:", activeContext?._tag ?? "none");
 
-      if (context?.action === "select-commit") {
-        selectAction("select-commit");
-        useFlowSessionStore.setState({
-          selectedCommit: context.commitHash
-            ? {
-                hash: context.commitHash,
-                shortHash: context.commitShortHash ?? "",
-                subject: context.commitSubject ?? "",
-              }
-            : null,
-        });
+      if (activeContext?._tag === "Commit") {
+        changesFor = ChangesFor.makeUnsafe({ _tag: "Commit", hash: activeContext.hash });
+      } else if (activeContext?._tag === "Branch" || activeContext?._tag === "PullRequest") {
+        if (activeContext.branch.name) {
+          checkoutBranch(process.cwd(), activeContext.branch.name);
+          void queryClient.invalidateQueries({ queryKey: ["git-state"] });
+        }
+        changesFor = ChangesFor.makeUnsafe({ _tag: "Branch", mainBranch });
       } else {
-        selectAction(context?.action ?? "test-changes");
+        changesFor = ChangesFor.makeUnsafe({ _tag: "Changes", mainBranch });
       }
 
-      submitFlowInstruction(trimmed);
+      console.error("[main-menu] changesFor:", changesFor._tag);
+
+      const draft = new TestPlanDraft({
+        id: DraftId.makeUnsafe(crypto.randomUUID()),
+        changesFor,
+        currentBranch: gitState.currentBranch ?? "",
+        diffPreview: "",
+        fileStats: [],
+        instruction: trimmed,
+        baseUrl: Option.none(),
+        isHeadless: false,
+        requiresCookies: false,
+      });
+
+      console.error("[main-menu] draft created, navigating to planning");
+      usePreferencesStore.getState().rememberInstruction(trimmed);
+      usePlanStore.getState().setPlan(Plan.draft(draft));
+      setScreen(Screen.Planning({ instruction: trimmed }));
     },
-    [value, activeContext, switchBranch, selectAction, submitFlowInstruction],
+    [value, activeContext, gitState, setScreen],
   );
 
   const valueRef = useRef(value);
   valueRef.current = value;
-  const pickerOpenRef = useRef(pickerOpen);
-  pickerOpenRef.current = pickerOpen;
-  const errorMessageRef = useRef(errorMessage);
-  errorMessageRef.current = errorMessage;
-  const historyIndexRef = useRef(historyIndex);
-  historyIndexRef.current = historyIndex;
-  const savedCurrentInputRef = useRef(savedCurrentInput);
-  savedCurrentInputRef.current = savedCurrentInput;
-  const flowInstructionHistoryRef = useRef(flowInstructionHistory);
-  flowInstructionHistoryRef.current = flowInstructionHistory;
 
-  const handleInputChange = useCallback(
-    (nextValue: string) => {
-      const stripped = stripMouseSequences(nextValue);
-      const previousValue = valueRef.current;
-
-      if (
-        stripped.length > previousValue.length &&
-        stripped[stripped.length - 1] === "@" &&
-        (previousValue.length === 0 || stripped[stripped.length - 2] === " ")
-      ) {
-        setValue(stripped.slice(0, -1));
-        openPicker();
-        return;
-      }
-
-      if (pickerOpenRef.current) {
-        const afterAt = stripped.length - previousValue.length;
-        if (afterAt < 0) {
-          closePicker();
-          setValue(stripped);
-        } else {
-          setPickerQuery((previous) => {
-            const added = stripped.slice(previousValue.length);
-            if (added.includes(" ")) {
-              closePicker();
-              setValue(stripped);
-              return "";
-            }
-            return previous + added;
-          });
-        }
-        return;
-      }
-
-      setValue(stripped);
-      if (errorMessageRef.current) setErrorMessage(null);
-      if (historyIndexRef.current !== null) {
-        setHistoryIndex(null);
-        setSavedCurrentInput("");
-      }
-    },
-    [openPicker, closePicker],
+  const handleInputChange = useMemo(
+    () =>
+      picker.createInputChangeHandler(valueRef, (stripped) => {
+        setValue(stripped);
+        if (errorMessage) setErrorMessage(undefined);
+      }),
+    [picker, errorMessage],
   );
 
-  const applyHistoryEntry = useCallback((entry: string) => {
-    setValue(entry);
-    setInputKey((previous) => previous + 1);
-  }, []);
-
-  const navigateHistoryBack = useCallback(() => {
-    const history = flowInstructionHistoryRef.current;
-    if (history.length === 0) return;
-
-    const currentIndex = historyIndexRef.current;
-    if (currentIndex === null) {
-      setSavedCurrentInput(valueRef.current);
-      setHistoryIndex(0);
-      applyHistoryEntry(history[0]!);
-    } else if (currentIndex < history.length - 1) {
-      const nextIndex = currentIndex + 1;
-      setHistoryIndex(nextIndex);
-      applyHistoryEntry(history[nextIndex]!);
-    }
-  }, [applyHistoryEntry]);
-
-  const navigateHistoryForward = useCallback(() => {
-    const currentIndex = historyIndexRef.current;
-    if (currentIndex === null) return;
-
-    if (currentIndex > 0) {
-      const nextIndex = currentIndex - 1;
-      setHistoryIndex(nextIndex);
-      applyHistoryEntry(flowInstructionHistoryRef.current[nextIndex]!);
-    } else {
-      setHistoryIndex(null);
-      applyHistoryEntry(savedCurrentInputRef.current);
-      setSavedCurrentInput("");
-    }
-  }, [applyHistoryEntry]);
-
-  const showSuggestion = focus === "input" && value === "" && !pickerOpen && suggestions.length > 0;
+  const showSuggestion = value === "" && !picker.pickerOpen && suggestions.length > 0;
   const showCycleHint = showSuggestion && !hasCycled;
   const currentSuggestion = suggestions[suggestionIndex % suggestions.length];
 
   useInput(
     (input, key) => {
-      if (pickerOpen) return;
+      if (picker.pickerOpen) return;
 
       if (key.tab && !key.shift && showSuggestion && currentSuggestion) {
         setValue(currentSuggestion);
         setInputKey((previous) => previous + 1);
+        return;
+      }
+      if (key.tab && key.shift) {
+        toggleSkipPlanning();
         return;
       }
       if (!showSuggestion) return;
@@ -321,15 +145,9 @@ export const MainMenu = () => {
         setHasCycled(true);
         return;
       }
-      if (input === "g") {
-        requestSuggestions();
-        return;
-      }
     },
-    { isActive: focus === "input" },
+    { isActive: true },
   );
-
-  if (!gitState) return null;
 
   return (
     <Box flexDirection="column" width="100%" paddingY={1}>
@@ -348,18 +166,17 @@ export const MainMenu = () => {
           <Clickable
             fullWidth={false}
             onClick={() => {
-              if (pickerOpen) closePicker();
-              else openPicker();
+              if (picker.pickerOpen) picker.closePicker();
+              else picker.openPicker();
             }}
           >
             {activeContext ? (
               <Text color={COLORS.DIM}>
                 Testing{" "}
                 <Text color={COLORS.PRIMARY}>
-                  @
-                  {activeContext.type === "pr" ? `#${activeContext.prNumber}` : activeContext.label}
+                  @{getContextDisplayLabel(activeContext, gitState)}
                 </Text>{" "}
-                {activeContext.description}
+                {getContextDescription(activeContext, gitState)}
               </Text>
             ) : (
               <Text color={COLORS.DIM}>
@@ -368,24 +185,19 @@ export const MainMenu = () => {
             )}
           </Clickable>
         </Box>
-        <Clickable onClick={() => setFocus("input")}>
-          <RuledBox
-            color={focus === "input" ? COLORS.PRIMARY : COLORS.BORDER}
-            marginTop={1}
-            paddingX={0}
-          >
+        <Clickable>
+          <RuledBox color={COLORS.PRIMARY} marginTop={1} paddingX={0}>
             <Box justifyContent="space-between">
               <Box>
                 <Text color={COLORS.PRIMARY}>{"❯ "}</Text>
                 <Input
                   key={inputKey}
-                  focus={focus === "input" && !pickerOpen}
+                  focus={!picker.pickerOpen}
                   multiline
                   placeholder={currentSuggestion ? `${currentSuggestion}  [tab]` : ""}
                   value={value}
                   onSubmit={submit}
-                  onUpArrowAtTop={navigateHistoryBack}
-                  onDownArrowAtBottom={navigateHistoryForward}
+                  onDownArrowAtBottom={() => {}}
                   onChange={handleInputChange}
                 />
               </Box>
@@ -395,22 +207,23 @@ export const MainMenu = () => {
             </Box>
           </RuledBox>
         </Clickable>
-        {pickerOpen ? (
+        {picker.pickerOpen ? (
           <Box flexDirection="column">
             <Box marginBottom={0} paddingX={1}>
               <Text color={COLORS.DIM}>@ </Text>
-              <Text color={COLORS.PRIMARY}>{pickerQuery}</Text>
-              <Text color={COLORS.DIM}>{pickerQuery ? "" : "type to filter"}</Text>
+              <Text color={COLORS.PRIMARY}>{picker.pickerQuery}</Text>
+              <Text color={COLORS.DIM}>{picker.pickerQuery ? "" : "type to filter"}</Text>
             </Box>
             <ContextPicker
-              options={filteredOptions}
-              selectedIndex={pickerIndex}
-              isLoading={remoteLoading}
-              query={pickerQuery}
-              onQueryChange={setPickerQuery}
-              onSelect={handleContextSelect}
-              onNavigate={setPickerIndex}
-              onDismiss={closePicker}
+              options={picker.filteredOptions}
+              selectedIndex={picker.pickerIndex}
+              isLoading={picker.remoteLoading}
+              query={picker.pickerQuery}
+              gitState={gitState}
+              onQueryChange={picker.setPickerQuery}
+              onSelect={picker.handleContextSelect}
+              onNavigate={picker.setPickerIndex}
+              onDismiss={picker.closePicker}
             />
           </Box>
         ) : (
