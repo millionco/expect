@@ -1,0 +1,50 @@
+.agents/skills/react-best-practices/rules/no-use-effect.md
+  166161a130990222 1-204
+packages/supervisor/src/plan-browser-flow.ts
+  47468b5acef72be1 5,66
+vite.config.ts
+  166161a130990222 12-24
+packages/supervisor/src/constants.ts
+  47468b5acef72be1 3
+packages/supervisor/tests/plan-browser-flow.test.ts
+  47468b5acef72be1 4,101
+.agents/skills/react-best-practices/SKILL.md
+  166161a130990222 1-17
+apps/cli/src/index.tsx
+  47468b5acef72be1 61-62
+packages/supervisor/src/generate-flow-suggestions.ts
+  47468b5acef72be1 2,68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "454be6cdd3dbb9e2b33cc68c6550fcac44640124",
+  "prompts": {
+    "166161a130990222": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "6871d9bc-a337-4cef-9d94-4259c8696cfb",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 752,
+      "total_deletions": 276,
+      "accepted_lines": 476,
+      "overriden_lines": 0
+    },
+    "47468b5acef72be1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8a35fd05-eb9d-4996-973a-739bb4bb5e6f",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 9,
+      "total_deletions": 8,
+      "accepted_lines": 9,
+      "overriden_lines": 0
+    }
+  }
+}
