@@ -1,3 +1,29 @@
+export {
+  AgentThinking,
+  ExecutedTestPlan,
+  ExecutionEvent,
+  FileDiff,
+  PlanId,
+  RunCompleted,
+  RunFinished,
+  RunStarted,
+  StepCompleted,
+  StepFailed,
+  StepId,
+  StepStarted,
+  TestPlan,
+  TestPlanDraft,
+  TestPlanStep,
+  TestReport,
+  TestReportStep,
+  ToolCall,
+  ToolResult,
+  UpdateContent,
+} from "./models.js";
+export { Updates } from "./updates.js";
+export { Planner, PlanningError as TestPlanningError, PlanParseError as TestPlanParseError } from "./planner.js";
+export { Executor, ExecutionError as TestExecutionError } from "./executor.js";
+export { Reporter } from "./reporter.js";
 export { buildBrowserMcpSettings, getBrowserMcpEntrypoint } from "./browser-mcp-config.js";
 export {
   BROWSER_TOOL_PREFIX,

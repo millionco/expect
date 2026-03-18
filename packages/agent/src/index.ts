@@ -1,6 +1,7 @@
 export { AgentStreamOptions, McpServerConfig } from "./types.js";
 export { ClaudeQueryError, CodexRunError } from "./errors.js";
 export { Agent } from "./agent.js";
+export { CurrentModel } from "./current-model.js";
 export { ClaudeProvider } from "./claude-provider.js";
 export { CodexProvider } from "./codex-provider.js";
 
