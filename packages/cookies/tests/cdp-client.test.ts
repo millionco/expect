@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { assert, describe, it } from "vite-plus/test";
 import { Effect } from "effect";
-import { CdpClient } from "../src/cdp-client.js";
+import { CdpClient } from "../src/cdp-client";
 
 const CHROME_PROFILE_PATH = "/Users/rasmus/Library/Application Support/Google/Chrome/Default";
 const CHROME_EXECUTABLE_PATH = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Text } from "ink";
-import { lerpColor } from "../../utils/lerp-color.js";
-import { SHIMMER_TICK_MS, SHIMMER_GRADIENT_WIDTH } from "../../constants.js";
+import { lerpColor } from "../../utils/lerp-color";
+import { SHIMMER_TICK_MS, SHIMMER_GRADIENT_WIDTH } from "../../constants";
 
 interface TextShimmerProps {
   text: string;

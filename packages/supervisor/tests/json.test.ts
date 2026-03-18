@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { extractJsonObject } from "../src/json.js";
+import { extractJsonObject } from "../src/json";
 
 describe("extractJsonObject", () => {
   it("extracts JSON from a fenced code block", () => {

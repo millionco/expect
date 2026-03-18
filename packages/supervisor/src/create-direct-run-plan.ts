@@ -1,5 +1,5 @@
-import type { BrowserFlowPlan, TestTarget } from "./types.js";
-import { DIRECT_RUN_CHANGED_FILE_LIMIT, DIRECT_RUN_TITLE_CHAR_LIMIT } from "./constants.js";
+import type { BrowserFlowPlan, TestTarget } from "./types";
+import { DIRECT_RUN_CHANGED_FILE_LIMIT, DIRECT_RUN_TITLE_CHAR_LIMIT } from "./constants";
 
 interface CreateDirectRunPlanOptions {
   userInstruction: string;

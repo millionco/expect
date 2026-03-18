@@ -8,8 +8,8 @@ import type {
 } from "@ai-sdk/provider";
 import { ensureSafeCurrentWorkingDirectory } from "@browser-tester/utils";
 import { Effect, Layer, ServiceMap } from "effect";
-import { convertPrompt } from "./convert-prompt.js";
-import { ClaudeQueryError } from "./errors.js";
+import { convertPrompt } from "./convert-prompt";
+import { ClaudeQueryError } from "./errors";
 import {
   EMPTY_USAGE,
   PROVIDER_ID,
@@ -21,9 +21,9 @@ import {
   emitAssistantParts,
   emitToolResultParts,
   extractSessionId,
-} from "./provider-shared.js";
-import type { AgentProviderSettings } from "./types.js";
-import { buildClaudeProcessEnv } from "./utils/build-claude-process-env.js";
+} from "./provider-shared";
+import type { AgentProviderSettings } from "./types";
+import { buildClaudeProcessEnv } from "./utils/build-claude-process-env";
 
 const DEFAULT_CLAUDE_MAX_TURNS = 200;
 const AGENT_TRACES_DIRECTORY_NAME = ".testie-agent-traces";

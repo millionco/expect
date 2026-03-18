@@ -1,6 +1,6 @@
-import { MEMORY_MAX_EXECUTOR_FAILURES, MEMORY_MAX_EXECUTOR_ROUTES } from "../constants.js";
-import { readMemoryIndex } from "./memory-store.js";
-import type { ExecutorMemoryContext, MemoryIndex, RouteMemory } from "./types.js";
+import { MEMORY_MAX_EXECUTOR_FAILURES, MEMORY_MAX_EXECUTOR_ROUTES } from "../constants";
+import { readMemoryIndex } from "./memory-store";
+import type { ExecutorMemoryContext, MemoryIndex, RouteMemory } from "./types";
 
 const routeOverlaps = (routeA: string, routeB: string): boolean =>
   routeA.includes(routeB) || routeB.includes(routeA);

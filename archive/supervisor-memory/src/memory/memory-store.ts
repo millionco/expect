@@ -8,8 +8,8 @@ import {
   MEMORY_RUNS_DIRECTORY_NAME,
   MEMORY_SUBDIRECTORY_NAME,
   MEMORY_SUMMARY_FILE_NAME,
-} from "../constants.js";
-import type { MemoryIndex, RunMemoryRecord } from "./types.js";
+} from "../constants";
+import type { MemoryIndex, RunMemoryRecord } from "./types";
 
 export const resolveMemoryDirectoryPath = (cwd: string): string =>
   path.join(cwd, MEMORY_ROOT_DIRECTORY_NAME, MEMORY_SUBDIRECTORY_NAME);

@@ -3,20 +3,20 @@ import { Effect, Layer, ServiceMap } from "effect";
 import * as FileSystem from "effect/FileSystem";
 import type { PlatformError } from "effect/PlatformError";
 import { NodeServices } from "@effect/platform-node";
-import type { BrowserEnvironmentHints, BrowserFlowPlan, TestTarget } from "./types.js";
+import type { BrowserEnvironmentHints, BrowserFlowPlan, TestTarget } from "./types";
 import {
   FLOW_DESCRIPTION_CHAR_LIMIT,
   FLOW_DIRECTORY_INDEX_FILE_NAME,
   SAVED_FLOW_FORMAT_VERSION,
-} from "./constants.js";
-import { getSavedFlowDirectoryPath } from "./utils/get-saved-flow-directory-path.js";
+} from "./constants";
+import { getSavedFlowDirectoryPath } from "./utils/get-saved-flow-directory-path";
 import {
   formatSavedFlowFrontmatter,
   parseSavedFlowFile,
   type SavedFlowFileData,
-} from "./saved-flow-file.js";
-import { slugify } from "./utils/slugify.js";
-import { FlowNotFoundError, FlowParseError, FlowStorageError } from "./flow-storage-errors.js";
+} from "./saved-flow-file";
+import { slugify } from "./utils/slugify";
+import { FlowNotFoundError, FlowParseError, FlowStorageError } from "./flow-storage-errors";
 
 export interface SaveFlowOptions {
   target: TestTarget;

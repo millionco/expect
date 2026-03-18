@@ -1,6 +1,6 @@
 import { Text } from "ink";
 import InkSpinner from "ink-spinner";
-import { useColors } from "../theme-context.js";
+import { useColors } from "../theme-context";
 
 interface SpinnerProps {
   message?: string;

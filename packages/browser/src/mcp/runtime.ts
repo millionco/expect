@@ -1,5 +1,5 @@
 import { Layer, Logger, ManagedRuntime } from "effect";
-import { McpSession } from "./mcp-session.js";
+import { McpSession } from "./mcp-session";
 
 const StderrLoggerLayer = Layer.succeed(Logger.LogToStderr, true);
 

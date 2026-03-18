@@ -1,11 +1,11 @@
-export { Cookies } from "./cookies.js";
-export { Browsers } from "./browser-detector.js";
-export { CdpClient } from "./cdp-client.js";
-export { SqliteClient, SqliteEngine } from "./sqlite-client.js";
-export { ChromiumSource, ChromiumPlatform } from "./chromium.js";
-export { FirefoxSource, FirefoxPlatform } from "./firefox.js";
-export { SafariSource, SafariPlatform } from "./safari.js";
-export { layerLive } from "./layers.js";
+export { Cookies } from "./cookies";
+export { Browsers } from "./browser-detector";
+export { CdpClient } from "./cdp-client";
+export { SqliteClient, SqliteEngine } from "./sqlite-client";
+export { ChromiumSource, ChromiumPlatform } from "./chromium";
+export { FirefoxSource, FirefoxPlatform } from "./firefox";
+export { SafariSource, SafariPlatform } from "./safari";
+export { layerLive } from "./layers";
 
 export {
   ExtractionError,
@@ -21,9 +21,9 @@ export {
   UnsupportedPlatformError,
   UnsupportedBrowserError,
   UnknownError,
-} from "./errors.js";
+} from "./errors";
 
-export { BROWSER_CONFIGS, configByKey } from "./browser-config.js";
+export { BROWSER_CONFIGS, configByKey } from "./browser-config";
 
 export {
   BrowserKey,
@@ -34,6 +34,6 @@ export {
   Browser,
   Cookie,
   SameSitePolicy,
-} from "./types.js";
+} from "./types";
 
-export type { ExtractOptions } from "./types.js";
+export type { ExtractOptions } from "./types";

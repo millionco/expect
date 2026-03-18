@@ -3,10 +3,10 @@ import { ensureSafeCurrentWorkingDirectory } from "@browser-tester/utils";
 import { Command, InvalidOptionArgumentError } from "commander";
 import { render } from "ink";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { App } from "./components/app.js";
-import { ALT_SCREEN_OFF, ALT_SCREEN_ON, VERSION } from "./constants.js";
-import { ThemeProvider } from "./components/theme-context.js";
-import { loadThemeName } from "./utils/load-theme.js";
+import { App } from "./components/app";
+import { ALT_SCREEN_OFF, ALT_SCREEN_ON, VERSION } from "./constants";
+import { ThemeProvider } from "./components/theme-context";
+import { loadThemeName } from "./utils/load-theme";
 import {
   createDirectRunPlan,
   getBrowserEnvironment,
@@ -17,17 +17,21 @@ import {
   type AgentProvider,
   type TestAction,
 } from "@browser-tester/supervisor";
-import { autoDetectAndTest, runTest } from "./utils/run-test.js";
-import { runHealthcheckHeadless, runHealthcheckInteractive } from "./utils/run-healthcheck.js";
-import { useNavigationStore, type Screen } from "./stores/use-navigation.js";
-import { usePreferencesStore } from "./stores/use-preferences.js";
-import { useFlowSessionStore } from "./stores/use-flow-session.js";
-import { queryClient } from "./query-client.js";
-import { resolveTestRunConfig, type TestRunConfig } from "./utils/test-run-config.js";
-import { CliRuntime } from "./runtime.js";
-import { setInkInstance } from "./utils/clear-ink-display.js";
+import { autoDetectAndTest, runTest } from "./utils/run-test";
+import { runHealthcheckHeadless, runHealthcheckInteractive } from "./utils/run-healthcheck";
+import { useNavigationStore, type Screen } from "./stores/use-navigation";
+import { usePreferencesStore } from "./stores/use-preferences";
+import { useFlowSessionStore } from "./stores/use-flow-session";
+import { queryClient } from "./query-client";
+import { resolveTestRunConfig, type TestRunConfig } from "./utils/test-run-config";
+import { NodeServices } from "@effect/platform-node";
+import { CliRuntime } from "./runtime";
+import { setInkInstance } from "./utils/clear-ink-display";
+import { loadPreferences } from "./utils/load-preferences";
 
-const DEFAULT_SKIP_PLANNING = true;
+const persistedPreferences = await Effect.runPromise(
+  loadPreferences.pipe(Effect.provide(NodeServices.layer)),
+);
 
 const parseAgentProvider = (value: string): AgentProvider => {
   if (value === "claude" || value === "codex" || value === "cursor") {
@@ -99,7 +103,7 @@ const renderApp = () => {
 
 const resolveInitialScreen = (config: TestRunConfig, hasSavedFlow: boolean): Screen => {
   if (hasSavedFlow) return config.autoRun ? "testing" : "review-plan";
-  if (config.message) return DEFAULT_SKIP_PLANNING ? "testing" : "planning";
+  if (config.message) return persistedPreferences.skipPlanning ? "testing" : "planning";
   return "main";
 };
 
@@ -122,7 +126,7 @@ const seedStoreFromConfig = async (config: TestRunConfig): Promise<void> => {
   });
   const browserEnvironment = getBrowserEnvironment(config.environmentOverrides);
   const directRunPlan =
-    !savedFlow && config.message && DEFAULT_SKIP_PLANNING
+    !savedFlow && config.message && persistedPreferences.skipPlanning
       ? createDirectRunPlan({ userInstruction: config.message, target: resolvedTarget })
       : null;
 
@@ -131,7 +135,7 @@ const seedStoreFromConfig = async (config: TestRunConfig): Promise<void> => {
   useNavigationStore.setState({ screen });
   usePreferencesStore.setState({
     autoRunAfterPlanning: config.autoRun ?? false,
-    skipPlanning: DEFAULT_SKIP_PLANNING,
+    skipPlanning: persistedPreferences.skipPlanning,
     planningProvider: config.planningProvider,
     executionProvider: config.executionProvider,
     planningModel: config.planningModel,

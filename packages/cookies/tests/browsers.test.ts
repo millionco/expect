@@ -1,7 +1,7 @@
 import { assert, describe, it } from "vite-plus/test";
 import { Effect, Option } from "effect";
-import { Browsers } from "../src/browser-detector.js";
-import { layerLive } from "../src/layers.js";
+import { Browsers } from "../src/browser-detector";
+import { layerLive } from "../src/layers";
 
 describe("Browsers", () => {
   it("returns at least 2 browsers", () =>

@@ -1,6 +1,6 @@
 import { Text } from "ink";
-import { useThemeContext } from "../theme-context.js";
-import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions.js";
+import { useThemeContext } from "../theme-context";
+import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions";
 import stringWidth from "string-width";
 
 interface ScreenHeadingProps {

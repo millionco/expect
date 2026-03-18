@@ -8,10 +8,10 @@ import type {
 } from "@ai-sdk/provider";
 import { ensureSafeCurrentWorkingDirectory } from "@browser-tester/utils";
 import { Effect, Layer, ServiceMap } from "effect";
-import { convertPrompt } from "./convert-prompt.js";
-import { CodexRunError } from "./errors.js";
-import { EMPTY_USAGE, PROVIDER_ID, STOP_REASON, buildAgentStream } from "./provider-shared.js";
-import type { AgentProviderSettings } from "./types.js";
+import { convertPrompt } from "./convert-prompt";
+import { CodexRunError } from "./errors";
+import { EMPTY_USAGE, PROVIDER_ID, STOP_REASON, buildAgentStream } from "./provider-shared";
+import type { AgentProviderSettings } from "./types";
 
 const runGenerate = Effect.fn("CodexAgent.generate")(function* (
   options: LanguageModelV3CallOptions,

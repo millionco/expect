@@ -7,7 +7,7 @@ export {
   retrieveExecutorMemory,
   retrievePlannerMemory,
   writeRunMemory,
-} from "./memory/index.js";
+} from "./memory/index";
 export type {
   CreateRunMemoryOptions,
   EnvironmentFact,
@@ -19,4 +19,4 @@ export type {
   RouteMemory,
   RunMemoryRecord,
   RunMemoryStepOutcome,
-} from "./memory/index.js";
+} from "./memory/index";

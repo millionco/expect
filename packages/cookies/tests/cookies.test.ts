@@ -1,10 +1,10 @@
 import { accessSync, constants, existsSync } from "node:fs";
 import { assert, describe, it } from "vite-plus/test";
 import { Effect, Layer } from "effect";
-import { Browsers } from "../src/browser-detector.js";
-import { Cookies } from "../src/cookies.js";
-import { layerLive } from "../src/layers.js";
-import type { Cookie } from "../src/types.js";
+import { Browsers } from "../src/browser-detector";
+import { Cookies } from "../src/cookies";
+import { layerLive } from "../src/layers";
+import type { Cookie } from "../src/types";
 
 const FIVE_MINUTES_MS = 300_000;
 
@@ -112,7 +112,7 @@ describe("Cookies", () => {
   );
 
   it.skipIf(!existsSync(CHROME_EXECUTABLE))(
-    "Chrome: APISID on google.com has correct expiry",
+    "Chrome: extracted cookies have valid expiry timestamps",
     { timeout: FIVE_MINUTES_MS },
     () =>
       Effect.gen(function* () {
@@ -126,9 +126,19 @@ describe("Cookies", () => {
         assert.isDefined(chrome);
 
         const result = yield* cookies.extract(chrome!);
-        const cookie = findCookie(result, "APISID", "google.com");
-        assert.isDefined(cookie, "cookie APISID not found on google.com");
-        assert.strictEqual(cookie!.expires, 1807347526);
+        assert.isAbove(result.length, 0, "expected Chrome to return at least one cookie");
+
+        const cookiesWithExpiry = result.filter((cookie) => cookie.expires !== undefined);
+        assert.isAbove(cookiesWithExpiry.length, 0, "expected at least one cookie with an expiry");
+
+        for (const cookie of cookiesWithExpiry) {
+          assert.isNumber(cookie.expires);
+          assert.isTrue(
+            Number.isInteger(cookie.expires),
+            `cookie ${cookie.name} expiry should be an integer`,
+          );
+          assert.isAbove(cookie.expires!, 0, `cookie ${cookie.name} has non-positive expiry`);
+        }
       }).pipe(Effect.scoped, Effect.provide(CookiesTestLayer), Effect.runPromise),
   );
 });

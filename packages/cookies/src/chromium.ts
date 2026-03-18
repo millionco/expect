@@ -5,10 +5,10 @@ import * as FileSystem from "effect/FileSystem";
 import { ChildProcess } from "effect/unstable/process";
 import { ChildProcessSpawner } from "effect/unstable/process/ChildProcessSpawner";
 import { NodeServices } from "@effect/platform-node";
-import { ChromiumBrowser, type ChromiumBrowserKey } from "./types.js";
-import { CHROMIUM_CONFIGS, type ChromiumConfig } from "./browser-config.js";
-import { ListBrowsersError } from "./errors.js";
-import { Browsers } from "./browser-detector.js";
+import { ChromiumBrowser, type ChromiumBrowserKey } from "./types";
+import { CHROMIUM_CONFIGS, type ChromiumConfig } from "./browser-config";
+import { ListBrowsersError } from "./errors";
+import { Browsers } from "./browser-detector";
 
 const CONCURRENCY_PROFILE_SCAN = 10;
 

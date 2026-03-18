@@ -2,12 +2,12 @@ import path from "node:path";
 import { Effect, Layer, Match, Option, Schema, SchemaGetter, ServiceMap } from "effect";
 import * as FileSystem from "effect/FileSystem";
 import { NodeServices } from "@effect/platform-node";
-import { CdpClient } from "./cdp-client.js";
-import { SqliteClient } from "./sqlite-client.js";
-import { ChromiumSqliteFallback } from "./chromium-sqlite.js";
-import { ExtractionError, RequiresFullDiskAccess, UnknownError } from "./errors.js";
-import { parseBinaryCookies } from "./utils/binary-cookies.js";
-import { SameSitePolicy, Cookie, type Browser } from "./types.js";
+import { CdpClient } from "./cdp-client";
+import { SqliteClient } from "./sqlite-client";
+import { ChromiumSqliteFallback } from "./chromium-sqlite";
+import { ExtractionError, RequiresFullDiskAccess, UnknownError } from "./errors";
+import { parseBinaryCookies } from "./utils/binary-cookies";
+import { SameSitePolicy, Cookie, type Browser } from "./types";
 
 const SAME_SITE_NONE = 0;
 const SAME_SITE_LAX = 1;

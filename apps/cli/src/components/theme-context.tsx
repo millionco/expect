@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
-import { THEMES, DEFAULT_DARK_THEME_NAME, type ThemeDefinition } from "../themes.js";
+import { THEMES, DEFAULT_DARK_THEME_NAME, type ThemeDefinition } from "../themes";
 
 export interface Colors {
   TEXT: string;

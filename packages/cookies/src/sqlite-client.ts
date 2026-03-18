@@ -3,7 +3,7 @@ import { Effect, Layer, Scope, ServiceMap } from "effect";
 import * as FileSystem from "effect/FileSystem";
 import { NodeServices } from "@effect/platform-node";
 import LibsqlDatabase from "libsql";
-import { CookieDatabaseCopyError, CookieReadError } from "./errors.js";
+import { CookieDatabaseCopyError, CookieReadError } from "./errors";
 
 const IS_BUN = "Bun" in globalThis;
 const BUN_SQLITE_MODULE = "bun:sqlite";

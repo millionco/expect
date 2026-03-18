@@ -23,17 +23,17 @@ import {
   parseBrowserToolName,
   parseMarkerLine,
   parseTextDelta,
-} from "./parse-execution-stream.js";
-import type { ExecutionStreamContext, ExecutionStreamState } from "./parse-execution-stream.js";
-import type { AgentProvider, ExecuteBrowserFlowOptions } from "./types.js";
-import { detectAuthError } from "./utils/detect-auth-error.js";
+} from "./parse-execution-stream";
+import type { ExecutionStreamContext, ExecutionStreamState } from "./parse-execution-stream";
+import type { AgentProvider, ExecuteBrowserFlowOptions } from "./types";
+import { detectAuthError } from "./utils/detect-auth-error";
 import {
   resolveAgentProvider,
   type ResolvedAgentProvider,
-} from "./utils/resolve-agent-provider.js";
-import { saveBrowserImageResult } from "./utils/save-browser-image-result.js";
-import { serializeToolResult } from "./utils/serialize-tool-result.js";
-import { resolveLiveViewUrl } from "./utils/resolve-live-view-url.js";
+} from "./utils/resolve-agent-provider";
+import { saveBrowserImageResult } from "./utils/save-browser-image-result";
+import { serializeToolResult } from "./utils/serialize-tool-result";
+import { resolveLiveViewUrl } from "./utils/resolve-live-view-url";
 
 export const buildExecutionModelSettings = (
   options: Pick<

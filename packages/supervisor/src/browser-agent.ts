@@ -1,6 +1,6 @@
 import { Effect } from "effect";
-import { planBrowserFlow } from "./plan-browser-flow.js";
-import { resolveTestTarget } from "./resolve-test-target.js";
+import { planBrowserFlow } from "./plan-browser-flow";
+import { resolveTestTarget } from "./resolve-test-target";
 import type {
   AgentProvider,
   BrowserEnvironmentHints,
@@ -9,7 +9,7 @@ import type {
   TestAction,
   TestTarget,
   TestTargetSelection,
-} from "./types.js";
+} from "./types";
 
 export interface EnvironmentOverrides {
   baseUrl?: string;

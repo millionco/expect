@@ -1,6 +1,6 @@
-import type { BrowserFlowPlan } from "./types.js";
-import type { BrowserRunEvent } from "./events.js";
-import { formatBrowserToolCall } from "./utils/format-browser-tool-call.js";
+import type { BrowserFlowPlan } from "./types";
+import type { BrowserRunEvent } from "./events";
+import { formatBrowserToolCall } from "./utils/format-browser-tool-call";
 
 const TOOL_CALL_HIDDEN = "hidden";
 const TOOL_CALL_DETAILED = "detailed";

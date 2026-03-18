@@ -7,8 +7,8 @@ import type {
   LanguageModelV3CallOptions,
   LanguageModelV3StreamPart,
 } from "@ai-sdk/provider";
-import { buildExecutionModelSettings, executeBrowserFlow } from "../src/execute-browser-flow.js";
-import type { BrowserFlowPlan, TestTarget } from "../src/types.js";
+import { buildExecutionModelSettings, executeBrowserFlow } from "../src/execute-browser-flow";
+import type { BrowserFlowPlan, TestTarget } from "../src/types";
 
 const createStreamModel = (
   parts: LanguageModelV3StreamPart[],

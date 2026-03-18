@@ -5,8 +5,8 @@
  */
 
 import { getEpochSeconds } from "@browser-tester/utils";
-import { hostMatchesCookieDomain, toCookieHeader } from "./host-matching.js";
-import type { Cookie, SameSitePolicy } from "../types.js";
+import { hostMatchesCookieDomain, toCookieHeader } from "./host-matching";
+import type { Cookie, SameSitePolicy } from "../types";
 
 const SESSION_EXPIRES = -1;
 

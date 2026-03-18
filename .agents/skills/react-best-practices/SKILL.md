@@ -12,6 +12,6 @@ Opinionated React patterns for this codebase. Add new rules as markdown files un
 
 ## Rules
 
-| Rule | File | When to apply |
-| ---- | ---- | ------------- |
+| Rule         | File                     | When to apply                                                         |
+| ------------ | ------------------------ | --------------------------------------------------------------------- |
 | No useEffect | `rules/no-use-effect.md` | Writing components, refactoring effects, reviewing PRs with useEffect |

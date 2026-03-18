@@ -48,7 +48,7 @@ vi.mock("node:fs", async (importOriginal) => {
   };
 });
 
-import { createCursorModel } from "../src/cursor.js";
+import { createCursorModel } from "../src/cursor";
 
 const defaultOptions: LanguageModelV3CallOptions = {
   prompt: [{ role: "user", content: [{ type: "text", text: "test" }] }],

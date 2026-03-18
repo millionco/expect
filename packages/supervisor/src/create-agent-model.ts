@@ -1,7 +1,7 @@
 import type { LanguageModelV3 } from "@ai-sdk/provider";
 import type { AgentProviderSettings } from "@browser-tester/agent";
 import { createClaudeModel, createCodexModel, createCursorModel } from "@browser-tester/agent";
-import type { AgentProvider } from "./types.js";
+import type { AgentProvider } from "./types";
 
 const MODEL_FACTORIES: Record<AgentProvider, (settings: AgentProviderSettings) => LanguageModelV3> =
   {

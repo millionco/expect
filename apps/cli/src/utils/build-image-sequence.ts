@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { detectTerminal } from "detect-terminal";
-import { supportsKittyImages, supportsItermImages } from "./supports-inline-images.js";
+import { supportsKittyImages, supportsItermImages } from "./supports-inline-images";
 
 interface ImageSequenceOptions {
   width?: string | number;

@@ -1,4 +1,4 @@
-import { createCursorModel } from "../src/cursor.js";
+import { createCursorModel } from "../src/cursor";
 
 const main = async () => {
   const model = createCursorModel({ cwd: process.cwd() });

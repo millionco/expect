@@ -8,22 +8,22 @@ import {
   PROGRESS_BAR_WIDTH,
   TESTING_TIMER_UPDATE_INTERVAL_MS,
   TESTING_TOOL_TEXT_CHAR_LIMIT,
-} from "../../constants.js";
-import { useColors } from "../theme-context.js";
-import { RuledBox } from "../ui/ruled-box.js";
-import { Spinner } from "../ui/spinner.js";
-import { TextShimmer } from "../ui/text-shimmer.js";
-import { useFlowSessionStore } from "../../stores/use-flow-session.js";
-import { usePreferencesStore } from "../../stores/use-preferences.js";
-import { ScreenHeading } from "../ui/screen-heading.js";
+} from "../../constants";
+import { useColors } from "../theme-context";
+import { RuledBox } from "../ui/ruled-box";
+import { Spinner } from "../ui/spinner";
+import { TextShimmer } from "../ui/text-shimmer";
+import { useFlowSessionStore } from "../../stores/use-flow-session";
+import { usePreferencesStore } from "../../stores/use-preferences";
+import { ScreenHeading } from "../ui/screen-heading";
 import cliTruncate from "cli-truncate";
-import { formatElapsedTime } from "../../utils/format-elapsed-time.js";
-import { extractScreenshotPath } from "../../utils/extract-screenshot-path.js";
-import { Image } from "../ui/image.js";
-import { FileLink } from "../ui/file-link.js";
-import { ErrorMessage } from "../ui/error-message.js";
+import { formatElapsedTime } from "../../utils/format-elapsed-time";
+import { extractScreenshotPath } from "../../utils/extract-screenshot-path";
+import { Image } from "../ui/image";
+import { FileLink } from "../ui/file-link";
+import { ErrorMessage } from "../ui/error-message";
 import { deriveTestingState, saveTestedFingerprint } from "@browser-tester/supervisor";
-import { openUrl } from "../../utils/open-url.js";
+import { openUrl } from "../../utils/open-url";
 
 const TOOL_CALL_DISPLAY_MODE_COMPACT = "compact";
 const TOOL_CALL_DISPLAY_MODE_DETAILED = "detailed";

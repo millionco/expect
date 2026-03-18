@@ -7,7 +7,7 @@ import {
   getHealthcheckReport,
   type TestScope,
 } from "@browser-tester/supervisor";
-import { VERSION } from "../constants.js";
+import { VERSION } from "../constants";
 
 interface HealthcheckResult {
   shouldTest: boolean;

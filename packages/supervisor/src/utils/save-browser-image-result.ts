@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Schema } from "effect";
-import { SCREENSHOT_DIRECTORY_PREFIX, SCREENSHOT_OUTPUT_DIRECTORY_PATH } from "../constants.js";
+import { SCREENSHOT_DIRECTORY_PREFIX, SCREENSHOT_OUTPUT_DIRECTORY_PATH } from "../constants";
 
 interface BrowserImageContent {
   data: string;

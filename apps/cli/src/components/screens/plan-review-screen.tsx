@@ -1,26 +1,26 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Text, useInput } from "ink";
-import { Input } from "../ui/input.js";
-import { useColors } from "../theme-context.js";
-import { stripMouseSequences } from "../../hooks/mouse-context.js";
-import { Clickable } from "../ui/clickable.js";
-import { RuledBox } from "../ui/ruled-box.js";
-import { FileLink } from "../ui/file-link.js";
-import { ContextPicker } from "../ui/context-picker.js";
-import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions.js";
+import { Input } from "../ui/input";
+import { useColors } from "../theme-context";
+import { stripMouseSequences } from "../../hooks/mouse-context";
+import { Clickable } from "../ui/clickable";
+import { RuledBox } from "../ui/ruled-box";
+import { FileLink } from "../ui/file-link";
+import { ContextPicker } from "../ui/context-picker";
+import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions";
 import { saveFlow } from "@browser-tester/supervisor";
-import { CliRuntime } from "../../runtime.js";
-import { useFlowSessionStore } from "../../stores/use-flow-session.js";
-import { useNavigationStore } from "../../stores/use-navigation.js";
-import { useGitState } from "../../hooks/use-git-state.js";
-import { queryClient } from "../../query-client.js";
-import { ErrorMessage } from "../ui/error-message.js";
+import { CliRuntime } from "../../runtime";
+import { useFlowSessionStore } from "../../stores/use-flow-session";
+import { useNavigationStore } from "../../stores/use-navigation";
+import { useGitState } from "../../hooks/use-git-state";
+import { queryClient } from "../../query-client";
+import { ErrorMessage } from "../ui/error-message";
 import {
   buildLocalContextOptions,
   fetchRemoteContextOptions,
   filterContextOptions,
   type ContextOption,
-} from "../../utils/context-options.js";
+} from "../../utils/context-options";
 
 interface StepEditingState {
   kind: "step";

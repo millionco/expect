@@ -1,4 +1,4 @@
-import type { BrowserKey, ChromiumBrowserKey } from "./types.js";
+import type { BrowserKey, ChromiumBrowserKey } from "./types";
 
 interface PlatformPaths {
   readonly darwin: string;

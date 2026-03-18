@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Box, Text } from "ink";
-import { lerpColor } from "../../utils/lerp-color.js";
-import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions.js";
+import { lerpColor } from "../../utils/lerp-color";
+import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions";
 
 const DOT = "·";
 const TICK_MS = 60;

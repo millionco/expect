@@ -4,7 +4,7 @@ import {
   LIVE_VIEW_CAPTURE_INTERVAL_MS,
   LIVE_VIEW_JPEG_QUALITY,
   LIVE_VIEW_MJPEG_BOUNDARY,
-} from "./constants.js";
+} from "./constants";
 
 export interface LiveViewServer {
   url: string;

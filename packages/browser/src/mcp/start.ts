@@ -1,7 +1,7 @@
 import { Effect } from "effect";
-import { McpSession } from "./mcp-session.js";
-import { McpRuntime } from "./runtime.js";
-import { startBrowserMcpServer } from "./server.js";
+import { McpSession } from "./mcp-session";
+import { McpRuntime } from "./runtime";
+import { startBrowserMcpServer } from "./server";
 
 let cleanupRegistered = false;
 
@@ -31,4 +31,5 @@ const registerProcessCleanup = () => {
 };
 
 registerProcessCleanup();
+void McpRuntime.runPromise(Effect.void);
 void startBrowserMcpServer(McpRuntime);

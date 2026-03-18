@@ -1,11 +1,11 @@
-export type { AgentProviderSettings, McpServerConfig } from "./types.js";
-export type { CursorSettings } from "./cursor.js";
+export type { AgentProviderSettings, McpServerConfig } from "./types";
+export type { CursorSettings } from "./cursor";
 export {
   ClaudeQueryError,
   CodexRunError,
   CursorNotSignedInError,
   CursorSpawnError,
-} from "./errors.js";
-export { ClaudeAgent, createClaudeModel } from "./claude.js";
-export { CodexAgent, createCodexModel } from "./codex.js";
-export { CursorAgent, createCursorModel } from "./cursor.js";
+} from "./errors";
+export { ClaudeAgent, createClaudeModel } from "./claude";
+export { CodexAgent, createCodexModel } from "./codex";
+export { CursorAgent, createCursorModel } from "./cursor";

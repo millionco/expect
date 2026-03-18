@@ -14,18 +14,18 @@ import {
   configByDesktopFile,
   configByDisplayName,
   CHROMIUM_CONFIGS,
-} from "./browser-config.js";
-import { BrowserDetector, type DetectBrowserProfilesOptions } from "./browser-detector.js";
-import { parseBinaryCookies } from "./utils/binary-cookies.js";
-import { CdpClient } from "./cdp-client.js";
-import { ChromiumExtractor } from "./chromium-extractor.js";
-import { FirefoxExtractor } from "./firefox-extractor.js";
-import { SafariExtractor } from "./safari-extractor.js";
-import { CookieDatabaseNotFoundError, CookieReadError } from "./errors.js";
-import { SqliteClient } from "./sqlite-client.js";
-import { dedupeCookies, originsToHosts, stripLeadingDot } from "./utils/host-matching.js";
-import { normalizeSameSite, parseFirefoxExpiry } from "./utils/normalize.js";
-import { sqliteBool, stringField } from "./utils/sql-helpers.js";
+} from "./browser-config";
+import { BrowserDetector, type DetectBrowserProfilesOptions } from "./browser-detector";
+import { parseBinaryCookies } from "./utils/binary-cookies";
+import { CdpClient } from "./cdp-client";
+import { ChromiumExtractor } from "./chromium-extractor";
+import { FirefoxExtractor } from "./firefox-extractor";
+import { SafariExtractor } from "./safari-extractor";
+import { CookieDatabaseNotFoundError, CookieReadError } from "./errors";
+import { SqliteClient } from "./sqlite-client";
+import { dedupeCookies, originsToHosts, stripLeadingDot } from "./utils/host-matching";
+import { normalizeSameSite, parseFirefoxExpiry } from "./utils/normalize";
+import { sqliteBool, stringField } from "./utils/sql-helpers";
 import type {
   Browser,
   BrowserProfile,
@@ -33,7 +33,7 @@ import type {
   Cookie,
   ExtractOptions,
   ExtractProfileOptions,
-} from "./types.js";
+} from "./types";
 
 export class Cookies extends ServiceMap.Service<Cookies>()("@cookies/Cookies", {
   make: Effect.gen(function* () {

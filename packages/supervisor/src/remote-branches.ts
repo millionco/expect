@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { Data, Effect, Schema } from "effect";
-import { GIT_TIMEOUT_MS, GITHUB_TIMEOUT_MS, PR_LIMIT } from "./constants.js";
+import { GIT_TIMEOUT_MS, GITHUB_TIMEOUT_MS, PR_LIMIT } from "./constants";
 
 export interface RemoteBranch {
   name: string;

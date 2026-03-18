@@ -1,15 +1,15 @@
 import { Box, Text } from "ink";
-import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions.js";
+import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions";
 import stringWidth from "string-width";
-import { useColors, useThemeContext } from "../theme-context.js";
-import { HintBar, HINT_SEPARATOR, type HintSegment } from "./hint-bar.js";
-import { useNavigationStore, type Screen } from "../../stores/use-navigation.js";
-import { usePreferencesStore } from "../../stores/use-preferences.js";
-import { useFlowSessionStore } from "../../stores/use-flow-session.js";
-import { useGitState } from "../../hooks/use-git-state.js";
-import { useSavedFlows } from "../../hooks/use-saved-flows.js";
-import { Clickable } from "./clickable.js";
-import { TextShimmer } from "./text-shimmer.js";
+import { useColors, useThemeContext } from "../theme-context";
+import { HintBar, HINT_SEPARATOR, type HintSegment } from "./hint-bar";
+import { useNavigationStore, type Screen } from "../../stores/use-navigation";
+import { usePreferencesStore } from "../../stores/use-preferences";
+import { useFlowSessionStore } from "../../stores/use-flow-session";
+import { useGitState } from "../../hooks/use-git-state";
+import { useSavedFlows } from "../../hooks/use-saved-flows";
+import { Clickable } from "./clickable";
+import { TextShimmer } from "./text-shimmer";
 
 const useHintSegments = (screen: Screen): HintSegment[] => {
   const COLORS = useColors();

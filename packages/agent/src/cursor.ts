@@ -9,8 +9,8 @@ import type {
 } from "@ai-sdk/provider";
 import { ensureSafeCurrentWorkingDirectory } from "@browser-tester/utils";
 import { Effect, Layer, Predicate, ServiceMap } from "effect";
-import { convertPrompt } from "./convert-prompt.js";
-import { CursorNotSignedInError, CursorSpawnError } from "./errors.js";
+import { convertPrompt } from "./convert-prompt";
+import { CursorNotSignedInError, CursorSpawnError } from "./errors";
 import {
   EMPTY_USAGE,
   PROVIDER_ID,
@@ -21,8 +21,8 @@ import {
   emitAssistantParts,
   emitToolResultParts,
   extractSessionId,
-} from "./provider-shared.js";
-import type { AgentProviderSettings, McpServerConfig } from "./types.js";
+} from "./provider-shared";
+import type { AgentProviderSettings, McpServerConfig } from "./types";
 
 export interface CursorSettings extends AgentProviderSettings {
   model?: string;

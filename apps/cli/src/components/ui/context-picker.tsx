@@ -1,9 +1,9 @@
 import { Box, Text, useInput } from "ink";
-import { useColors } from "../theme-context.js";
-import { RuledBox } from "./ruled-box.js";
-import type { ContextOption } from "../../utils/context-options.js";
-import { CONTEXT_PICKER_VISIBLE_COUNT } from "../../constants.js";
-import { stripMouseSequences } from "../../hooks/mouse-context.js";
+import { useColors } from "../theme-context";
+import { RuledBox } from "./ruled-box";
+import type { ContextOption } from "../../utils/context-options";
+import { CONTEXT_PICKER_VISIBLE_COUNT } from "../../constants";
+import { stripMouseSequences } from "../../hooks/mouse-context";
 import figures from "figures";
 
 interface ContextPickerProps {

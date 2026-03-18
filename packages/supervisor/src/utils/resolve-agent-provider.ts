@@ -1,6 +1,6 @@
 import { Effect } from "effect";
-import type { AgentProvider } from "../types.js";
-import { commandExists } from "./command-exists.js";
+import type { AgentProvider } from "../types";
+import { commandExists } from "./command-exists";
 
 const AUTO_PROVIDER_ORDER: readonly AgentProvider[] = ["codex", "claude", "cursor"];
 

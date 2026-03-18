@@ -1,5 +1,5 @@
-import type { ChangedFile } from "./types.js";
-import { categorizeChangedFiles } from "./utils/categorize-changed-files.js";
+import type { ChangedFile } from "./types";
+import { categorizeChangedFiles } from "./utils/categorize-changed-files";
 
 export type ContextType = "changes" | "pr" | "branch" | "commit";
 

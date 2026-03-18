@@ -13,11 +13,11 @@ import {
   type TestAction,
   type TestTarget,
 } from "@browser-tester/supervisor";
-import { FLOW_INPUT_HISTORY_LIMIT } from "../constants.js";
-import type { ContextOption } from "../utils/context-options.js";
-import { useNavigationStore } from "./use-navigation.js";
-import { usePreferencesStore } from "./use-preferences.js";
-import { queryClient } from "../query-client.js";
+import { FLOW_INPUT_HISTORY_LIMIT } from "../constants";
+import type { ContextOption } from "../utils/context-options";
+import { useNavigationStore } from "./use-navigation";
+import { usePreferencesStore } from "./use-preferences";
+import { queryClient } from "../query-client";
 
 interface FlowSessionStore {
   testAction: TestAction | null;

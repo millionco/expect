@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { useQuery } from "@tanstack/react-query";
 import { listSavedFlows, type SavedFlowSummary } from "@browser-tester/supervisor";
-import { CliRuntime } from "../runtime.js";
+import { CliRuntime } from "../runtime";
 
 export const EMPTY_SAVED_FLOWS: SavedFlowSummary[] = [];
 

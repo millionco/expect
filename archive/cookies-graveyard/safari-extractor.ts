@@ -10,11 +10,11 @@ import { Effect, Layer, ServiceMap } from "effect";
 import * as FileSystem from "effect/FileSystem";
 import { NodeServices } from "@effect/platform-node";
 import { getEpochSeconds } from "@browser-tester/utils";
-import { parseBinaryCookies } from "./utils/binary-cookies.js";
-import { SAFARI_CONFIG } from "./browser-config.js";
-import { CookieDatabaseNotFoundError, BinaryParseError } from "./errors.js";
-import { hostMatchesAny } from "./utils/host-matching.js";
-import type { Cookie } from "./types.js";
+import { parseBinaryCookies } from "./utils/binary-cookies";
+import { SAFARI_CONFIG } from "./browser-config";
+import { CookieDatabaseNotFoundError, BinaryParseError } from "./errors";
+import { hostMatchesAny } from "./utils/host-matching";
+import type { Cookie } from "./types";
 
 const resolveBinaryCookiesPath = Effect.fn("SafariExtractor.resolveBinaryCookiesPath")(
   function* () {

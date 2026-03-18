@@ -1,6 +1,6 @@
 import { Box, Text } from "ink";
-import { useColors } from "../theme-context.js";
-import { Clickable } from "./clickable.js";
+import { useColors } from "../theme-context";
+import { Clickable } from "./clickable";
 import type { ReactNode } from "react";
 
 interface CollapsibleProps {

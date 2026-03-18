@@ -14,13 +14,13 @@ Never call `useEffect` directly. Use derived state, event handlers, data-fetchin
 - React docs: [You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect)
 - Origin: [https://x.com/alvinsng/status/2033969062834045089](https://x.com/alvinsng/status/2033969062834045089)
 
-| Instead of useEffect for... | Use |
-|----------------------------|-----|
-| Deriving state from other state/props | Inline computation (Rule 1) |
-| Fetching data | `useQuery` / data-fetching library (Rule 2) |
-| Responding to user actions | Event handlers (Rule 3) |
-| One-time external sync on mount | `useMountEffect` (Rule 4) |
-| Resetting state when a prop changes | `key` prop on parent (Rule 5) |
+| Instead of useEffect for...           | Use                                         |
+| ------------------------------------- | ------------------------------------------- |
+| Deriving state from other state/props | Inline computation (Rule 1)                 |
+| Fetching data                         | `useQuery` / data-fetching library (Rule 2) |
+| Responding to user actions            | Event handlers (Rule 3)                     |
+| One-time external sync on mount       | `useMountEffect` (Rule 4)                   |
+| Resetting state when a prop changes   | `key` prop on parent (Rule 5)               |
 
 ## The Escape Hatch: useMountEffect
 
@@ -77,9 +77,7 @@ function ProductPage({ productId }) {
 
 // GOOD: Query library handles cancellation/caching/staleness
 function ProductPage({ productId }) {
-  const { data: product } = useQuery(['product', productId], () =>
-    fetchProduct(productId)
-  );
+  const { data: product } = useQuery(["product", productId], () => fetchProduct(productId));
 }
 ```
 
@@ -140,14 +138,14 @@ Use `useMountEffect` for stable dependencies (singletons, refs, context values t
 ```typescript
 // BAD: useEffect with dependency that never changes
 useEffect(() => {
-  connectionManager.on('connected', handleConnect);
-  return () => connectionManager.off('connected', handleConnect);
+  connectionManager.on("connected", handleConnect);
+  return () => connectionManager.off("connected", handleConnect);
 }, [connectionManager]); // connectionManager is a singleton from context
 
 // GOOD: useMountEffect for stable dependencies
 useMountEffect(() => {
-  connectionManager.on('connected', handleConnect);
-  return () => connectionManager.off('connected', handleConnect);
+  connectionManager.on("connected", handleConnect);
+  return () => connectionManager.off("connected", handleConnect);
 });
 ```
 

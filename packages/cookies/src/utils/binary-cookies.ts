@@ -1,4 +1,4 @@
-import { Cookie } from "../types.js";
+import { Cookie } from "../types";
 
 const MAC_EPOCH_DELTA_SECONDS = 978_307_200;
 const BINARY_COOKIE_PAGE_HEADER = 0x00000100;

@@ -1,4 +1,4 @@
-import type { ChangedFile } from "../types.js";
+import type { ChangedFile } from "../types";
 
 const HIGH_SIGNAL_FILE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"];
 const HIGH_SIGNAL_PATH_SEGMENTS = [

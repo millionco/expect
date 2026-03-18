@@ -8,20 +8,20 @@ import * as FileSystem from "effect/FileSystem";
 import { ChildProcess } from "effect/unstable/process";
 import { ChildProcessSpawner } from "effect/unstable/process/ChildProcessSpawner";
 import { NodeServices } from "@effect/platform-node";
-import { chromiumConfig } from "./browser-config.js";
-import { deriveKey, decryptAes128Cbc, decryptAes256Gcm } from "./utils/crypto.js";
+import { chromiumConfig } from "./browser-config";
+import { deriveKey, decryptAes128Cbc, decryptAes256Gcm } from "./utils/crypto";
 import {
   normalizeChromiumExpiration,
   normalizeChromiumSameSite,
-} from "./utils/chromium-normalize.js";
+} from "./utils/chromium-normalize";
 import {
   CookieDatabaseNotFoundError,
   CookieDecryptionKeyError,
   ExtractionError,
   UnknownError,
-} from "./errors.js";
-import { SqliteClient } from "./sqlite-client.js";
-import { Cookie, type ChromiumBrowser, type ChromiumBrowserKey } from "./types.js";
+} from "./errors";
+import { SqliteClient } from "./sqlite-client";
+import { Cookie, type ChromiumBrowser, type ChromiumBrowserKey } from "./types";
 
 const CHROMIUM_META_VERSION_HASH_PREFIX = 24;
 const PBKDF2_ITERATIONS_DARWIN = 1003;

@@ -1,6 +1,6 @@
 import { Box, Text } from "ink";
-import { Input } from "./input.js";
-import { useColors } from "../theme-context.js";
+import { Input } from "./input";
+import { useColors } from "../theme-context";
 
 interface SearchBarProps {
   readonly isSearching: boolean;

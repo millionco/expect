@@ -7,7 +7,7 @@ import {
   LIVE_VIEW_SCREENCAST_MAX_HEIGHT_PX,
   LIVE_VIEW_SCREENCAST_MAX_WIDTH_PX,
   LIVE_VIEW_SCREENCAST_QUALITY,
-} from "./constants.js";
+} from "./constants";
 
 export interface LiveViewServer {
   url: string;

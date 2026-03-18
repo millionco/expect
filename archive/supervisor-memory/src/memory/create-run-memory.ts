@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { CreateRunMemoryOptions, RunMemoryRecord, RunMemoryStepOutcome } from "./types.js";
+import type { CreateRunMemoryOptions, RunMemoryRecord, RunMemoryStepOutcome } from "./types";
 
 const formatRunTimestamp = (timestamp: number): string => {
   const date = new Date(timestamp);

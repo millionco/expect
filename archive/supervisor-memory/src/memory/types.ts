@@ -4,7 +4,7 @@ import type {
   BrowserRunReport,
   PlanStep,
   TestTarget,
-} from "../types.js";
+} from "../types";
 
 export interface RunMemoryStepOutcome {
   stepId: string;

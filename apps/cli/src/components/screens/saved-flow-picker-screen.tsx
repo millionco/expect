@@ -1,18 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import figures from "figures";
-import { SAVED_FLOW_PICKER_VISIBLE_COUNT } from "../../constants.js";
-import { useColors } from "../theme-context.js";
-import { RuledBox } from "../ui/ruled-box.js";
-import { useFlowSessionStore } from "../../stores/use-flow-session.js";
-import { EMPTY_SAVED_FLOWS, useSavedFlows } from "../../hooks/use-saved-flows.js";
-import { queryClient } from "../../query-client.js";
-import { formatTimeAgo } from "../../utils/format-time-ago.js";
-import { CliRuntime } from "../../runtime.js";
+import { SAVED_FLOW_PICKER_VISIBLE_COUNT } from "../../constants";
+import { useColors } from "../theme-context";
+import { RuledBox } from "../ui/ruled-box";
+import { useFlowSessionStore } from "../../stores/use-flow-session";
+import { EMPTY_SAVED_FLOWS, useSavedFlows } from "../../hooks/use-saved-flows";
+import { queryClient } from "../../query-client";
+import { formatTimeAgo } from "../../utils/format-time-ago";
+import { CliRuntime } from "../../runtime";
 import { loadSavedFlow, removeSavedFlow } from "@browser-tester/supervisor";
-import { ScreenHeading } from "../ui/screen-heading.js";
-import { ErrorMessage } from "../ui/error-message.js";
-import { Clickable } from "../ui/clickable.js";
+import { ScreenHeading } from "../ui/screen-heading";
+import { ErrorMessage } from "../ui/error-message";
+import { Clickable } from "../ui/clickable";
 
 const ACTION_LABELS: Record<string, string> = {
   "test-unstaged": "Test current changes",

@@ -6,8 +6,8 @@ import {
   MEMORY_MAX_SUMMARY_FLOWS,
   MEMORY_MAX_SUMMARY_ROUTES,
   MEMORY_PROMOTION_MIN_OCCURRENCES,
-} from "../constants.js";
-import { readRunMemories, writeMemoryIndex, writeMemorySummary } from "./memory-store.js";
+} from "../constants";
+import { readRunMemories, writeMemoryIndex, writeMemorySummary } from "./memory-store";
 import type {
   EnvironmentFact,
   FailureMemory,
@@ -15,7 +15,7 @@ import type {
   MemoryIndex,
   RouteMemory,
   RunMemoryRecord,
-} from "./types.js";
+} from "./types";
 
 const normalizeForGrouping = (text: string): string =>
   text.toLowerCase().replace(/\s+/g, " ").trim();

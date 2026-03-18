@@ -1,4 +1,4 @@
-import type { ChangedFile, DiffStats } from "./types.js";
+import type { ChangedFile, DiffStats } from "./types";
 import {
   getBranchCommits,
   getBranchDiffStats,
@@ -9,7 +9,7 @@ import {
   getUnstagedChangedFiles,
   getUnstagedDiffStats,
   isInsideGitRepo,
-} from "./git.js";
+} from "./git";
 
 export interface GitState {
   isGitRepo: boolean;

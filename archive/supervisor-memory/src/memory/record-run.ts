@@ -1,7 +1,7 @@
-import { createRunMemory } from "./create-run-memory.js";
-import { writeRunMemory } from "./memory-store.js";
-import { promoteMemories } from "./promote-memories.js";
-import type { CreateRunMemoryOptions, RunMemoryRecord } from "./types.js";
+import { createRunMemory } from "./create-run-memory";
+import { writeRunMemory } from "./memory-store";
+import { promoteMemories } from "./promote-memories";
+import type { CreateRunMemoryOptions, RunMemoryRecord } from "./types";
 
 export const recordRun = (options: CreateRunMemoryOptions): RunMemoryRecord => {
   const record = createRunMemory(options);

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vite-plus/test";
-import type { BrowserRunEvent } from "../src/events.js";
+import type { BrowserRunEvent } from "../src/events";
 import {
   buildStepTitleOverlayFilter,
   escapeFilterText,
   getHighlightWindows,
-} from "../src/create-browser-run-report.js";
+} from "../src/create-browser-run-report";
 
 const BASE_TIMESTAMP = 1_000_000;
 

@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod/v4";
 import { Effect, type ManagedRuntime } from "effect";
-import { McpSession } from "./mcp-session.js";
+import { McpSession } from "./mcp-session";
 
 const textResult = (text: string) => ({
   content: [{ type: "text" as const, text }],

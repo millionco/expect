@@ -1,5 +1,5 @@
 import { Box, Text, type DOMElement } from "ink";
-import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions.js";
+import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions";
 
 interface RuledBoxProps {
   color: string;

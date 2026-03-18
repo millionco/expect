@@ -21,7 +21,7 @@ vi.mock("@anthropic-ai/claude-agent-sdk", () => ({
   },
 }));
 
-import { createClaudeModel } from "../src/claude.js";
+import { createClaudeModel } from "../src/claude";
 
 const FIXTURES_DIR = join(import.meta.dirname, "fixtures");
 const loadFixture = (name: string): Record<string, unknown>[] =>

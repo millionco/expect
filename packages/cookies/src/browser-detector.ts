@@ -1,8 +1,8 @@
 import { Effect, identity, Layer, Option, ServiceMap, Array as Arr } from "effect";
 import getDefaultBrowser from "default-browser";
-import { configByBundleId, configByDesktopFile } from "./browser-config.js";
-import { ListBrowsersError } from "./errors.js";
-import type { Browser } from "./types.js";
+import { configByBundleId, configByDesktopFile } from "./browser-config";
+import { ListBrowsersError } from "./errors";
+import type { Browser } from "./types";
 
 export class Browsers extends ServiceMap.Service<Browsers>()("@cookies/Browsers", {
   make: Effect.gen(function* () {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useStdout } from "ink";
-import { FALLBACK_TERMINAL_COLUMNS, FALLBACK_TERMINAL_ROWS } from "../constants.js";
+import { FALLBACK_TERMINAL_COLUMNS, FALLBACK_TERMINAL_ROWS } from "../constants";
 
 const safeColumns = (value: number | undefined): number =>
   value && value > 0 ? value : FALLBACK_TERMINAL_COLUMNS;

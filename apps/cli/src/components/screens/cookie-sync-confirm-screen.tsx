@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Box, Text, useInput } from "ink";
 import figures from "figures";
-import { useColors } from "../theme-context.js";
-import { Clickable } from "../ui/clickable.js";
-import { RuledBox } from "../ui/ruled-box.js";
-import { ScreenHeading } from "../ui/screen-heading.js";
-import { useFlowSessionStore } from "../../stores/use-flow-session.js";
+import { useColors } from "../theme-context";
+import { Clickable } from "../ui/clickable";
+import { RuledBox } from "../ui/ruled-box";
+import { ScreenHeading } from "../ui/screen-heading";
+import { useFlowSessionStore } from "../../stores/use-flow-session";
 
 interface ConfirmOption {
   id: "enable-sync" | "run-without-sync";

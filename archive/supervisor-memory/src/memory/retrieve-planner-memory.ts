@@ -2,9 +2,9 @@ import {
   MEMORY_MAX_PLANNER_FAILURES,
   MEMORY_MAX_PLANNER_FLOWS,
   MEMORY_MAX_PLANNER_ROUTES,
-} from "../constants.js";
-import { readMemoryIndex } from "./memory-store.js";
-import type { MemoryIndex, PlannerMemoryContext } from "./types.js";
+} from "../constants";
+import { readMemoryIndex } from "./memory-store";
+import type { MemoryIndex, PlannerMemoryContext } from "./types";
 
 const formatRouteMemories = (index: MemoryIndex): string[] => {
   const relevantRoutes = index.routes

@@ -7,8 +7,8 @@ import {
   SAVED_FLOW_DIRECTORY_FALLBACK_SEGMENT,
   SAVED_FLOW_DIRECTORY_HASH_LENGTH,
   TESTIE_STATE_DIR,
-} from "../constants.js";
-import { slugify } from "./slugify.js";
+} from "../constants";
+import { slugify } from "./slugify";
 
 const ROOT_SEPARATOR_PATTERN = /[/:\\]+/g;
 

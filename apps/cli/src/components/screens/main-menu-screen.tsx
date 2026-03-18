@@ -1,26 +1,26 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Text, useInput } from "ink";
-import { useFlowSessionStore } from "../../stores/use-flow-session.js";
-import { usePreferencesStore } from "../../stores/use-preferences.js";
-import { useGitState } from "../../hooks/use-git-state.js";
-import { useColors } from "../theme-context.js";
-import { Clickable } from "../ui/clickable.js";
-import { Input } from "../ui/input.js";
-import { RuledBox } from "../ui/ruled-box.js";
-import { ErrorMessage } from "../ui/error-message.js";
-import { ContextPicker } from "../ui/context-picker.js";
-import { stripMouseSequences } from "../../hooks/mouse-context.js";
-import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions.js";
-import { DotField } from "../ui/dot-field.js";
+import { useFlowSessionStore } from "../../stores/use-flow-session";
+import { usePreferencesStore } from "../../stores/use-preferences";
+import { useGitState } from "../../hooks/use-git-state";
+import { useColors } from "../theme-context";
+import { Clickable } from "../ui/clickable";
+import { Input } from "../ui/input";
+import { RuledBox } from "../ui/ruled-box";
+import { ErrorMessage } from "../ui/error-message";
+import { ContextPicker } from "../ui/context-picker";
+import { stripMouseSequences } from "../../hooks/mouse-context";
+import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions";
+import { DotField } from "../ui/dot-field";
 
 import { generateFlowSuggestions } from "@browser-tester/supervisor";
-import { getFlowSuggestions } from "../../utils/get-flow-suggestions.js";
+import { getFlowSuggestions } from "../../utils/get-flow-suggestions";
 import {
   buildLocalContextOptions,
   fetchRemoteContextOptions,
   filterContextOptions,
   type ContextOption,
-} from "../../utils/context-options.js";
+} from "../../utils/context-options";
 type FocusArea = "input";
 
 export const MainMenu = () => {

@@ -2,10 +2,10 @@ import path from "node:path";
 import { homedir } from "node:os";
 import { Effect, Layer, Option, ServiceMap } from "effect";
 import * as FileSystem from "effect/FileSystem";
-import { SafariBrowser } from "./types.js";
-import { SAFARI_CONFIG } from "./browser-config.js";
-import { ListBrowsersError } from "./errors.js";
-import { Browsers } from "./browser-detector.js";
+import { SafariBrowser } from "./types";
+import { SAFARI_CONFIG } from "./browser-config";
+import { ListBrowsersError } from "./errors";
+import { Browsers } from "./browser-detector";
 
 export class SafariPlatform extends ServiceMap.Service<
   SafariPlatform,

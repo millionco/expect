@@ -15,9 +15,9 @@ import {
   getUnstagedChangedFiles,
   getUnstagedDiffPreview,
   getUnstagedDiffStats,
-} from "./git.js";
+} from "./git";
 import { ensureSafeCurrentWorkingDirectory } from "@browser-tester/utils";
-import type { ResolveTestTargetOptions, TestTarget } from "./types.js";
+import type { ResolveTestTargetOptions, TestTarget } from "./types";
 
 const resolveCommitDisplayName = (commitShortHash?: string, commitSubject?: string): string => {
   if (commitShortHash && commitSubject) return `commit ${commitShortHash} (${commitSubject})`;

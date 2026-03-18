@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef } from "react";
-import { CLICK_SUPPORT_ENABLED } from "../constants.js";
+import { CLICK_SUPPORT_ENABLED } from "../constants";
 
 interface MousePosition {
   x: number;

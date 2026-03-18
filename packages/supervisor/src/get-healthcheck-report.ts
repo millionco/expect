@@ -1,7 +1,7 @@
-import type { DiffStats } from "./types.js";
-import { categorizeChangedFiles, type FileCategory } from "./utils/categorize-changed-files.js";
-import { type GitState, getRecommendedScope, type TestScope } from "./get-git-state.js";
-import { isCurrentStateTested } from "./tested-state.js";
+import type { DiffStats } from "./types";
+import { categorizeChangedFiles, type FileCategory } from "./utils/categorize-changed-files";
+import { type GitState, getRecommendedScope, type TestScope } from "./get-git-state";
+import { isCurrentStateTested } from "./tested-state";
 
 export interface HealthcheckReport {
   hasUntestedChanges: boolean;

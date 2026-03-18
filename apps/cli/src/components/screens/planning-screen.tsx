@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { Box, Text } from "ink";
 import figures from "figures";
-import { Spinner } from "../ui/spinner.js";
-import { useColors } from "../theme-context.js";
-import { RuledBox } from "../ui/ruled-box.js";
-import { DotField } from "../ui/dot-field.js";
-import { useFlowSessionStore } from "../../stores/use-flow-session.js";
-import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions.js";
-import { formatElapsedTime } from "../../utils/format-elapsed-time.js";
-import { TESTING_TIMER_UPDATE_INTERVAL_MS } from "../../constants.js";
+import { Spinner } from "../ui/spinner";
+import { useColors } from "../theme-context";
+import { RuledBox } from "../ui/ruled-box";
+import { DotField } from "../ui/dot-field";
+import { useFlowSessionStore } from "../../stores/use-flow-session";
+import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions";
+import { formatElapsedTime } from "../../utils/format-elapsed-time";
+import { TESTING_TIMER_UPDATE_INTERVAL_MS } from "../../constants";
 
 const PLANNING_STAGES = [
   { after: 0, label: "Analyzing changes" },

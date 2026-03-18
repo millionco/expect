@@ -1,19 +1,19 @@
 import { Effect, Fiber } from "effect";
 import { useEffect, useState } from "react";
 import { Box, Text, useInput } from "ink";
-import { MouseProvider } from "../hooks/mouse-context.js";
-import { useColors } from "./theme-context.js";
-import { PrPickerScreen } from "./screens/pr-picker-screen.js";
-import { PlanningScreen } from "./screens/planning-screen.js";
-import { PlanReviewScreen } from "./screens/plan-review-screen.js";
-import { CookieSyncConfirmScreen } from "./screens/cookie-sync-confirm-screen.js";
-import { SavedFlowPickerScreen } from "./screens/saved-flow-picker-screen.js";
-import { Spinner } from "./ui/spinner.js";
-import { TestingScreen } from "./screens/testing-screen.js";
-import { ResultsScreen } from "./screens/results-screen.js";
-import { ThemePickerScreen } from "./screens/theme-picker-screen.js";
-import { MainMenu } from "./screens/main-menu-screen.js";
-import { Modeline } from "./ui/modeline.js";
+import { MouseProvider } from "../hooks/mouse-context";
+import { useColors } from "./theme-context";
+import { PrPickerScreen } from "./screens/pr-picker-screen";
+import { PlanningScreen } from "./screens/planning-screen";
+import { PlanReviewScreen } from "./screens/plan-review-screen";
+import { CookieSyncConfirmScreen } from "./screens/cookie-sync-confirm-screen";
+import { SavedFlowPickerScreen } from "./screens/saved-flow-picker-screen";
+import { Spinner } from "./ui/spinner";
+import { TestingScreen } from "./screens/testing-screen";
+import { ResultsScreen } from "./screens/results-screen";
+import { ThemePickerScreen } from "./screens/theme-picker-screen";
+import { MainMenu } from "./screens/main-menu-screen";
+import { Modeline } from "./ui/modeline";
 import {
   getBrowserEnvironment,
   planBrowserFlow,
@@ -21,15 +21,15 @@ import {
   resolveAgentProvider,
   saveFlow,
 } from "@browser-tester/supervisor";
-import { useNavigationStore } from "../stores/use-navigation.js";
-import { usePreferencesStore } from "../stores/use-preferences.js";
-import { useFlowSessionStore } from "../stores/use-flow-session.js";
-import { useGitState } from "../hooks/use-git-state.js";
-import { EMPTY_SAVED_FLOWS, useSavedFlows } from "../hooks/use-saved-flows.js";
-import { queryClient } from "../query-client.js";
-import { CliRuntime } from "../runtime.js";
-import { clearInkDisplay } from "../utils/clear-ink-display.js";
-import { useStdoutDimensions } from "../hooks/use-stdout-dimensions.js";
+import { useNavigationStore } from "../stores/use-navigation";
+import { usePreferencesStore } from "../stores/use-preferences";
+import { useFlowSessionStore } from "../stores/use-flow-session";
+import { useGitState } from "../hooks/use-git-state";
+import { EMPTY_SAVED_FLOWS, useSavedFlows } from "../hooks/use-saved-flows";
+import { queryClient } from "../query-client";
+import { CliRuntime } from "../runtime";
+import { clearInkDisplay } from "../utils/clear-ink-display";
+import { useStdoutDimensions } from "../hooks/use-stdout-dimensions";
 
 const usePlanningEffect = () => {
   const screen = useNavigationStore((state) => state.screen);

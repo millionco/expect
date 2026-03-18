@@ -1,5 +1,8 @@
+import { Effect } from "effect";
+import { NodeServices } from "@effect/platform-node";
 import { create } from "zustand";
 import type { AgentProvider, EnvironmentOverrides } from "@browser-tester/supervisor";
+import { savePreferences } from "../utils/load-preferences";
 
 interface PreferencesStore {
   autoRunAfterPlanning: boolean;
@@ -25,6 +28,16 @@ export const usePreferencesStore = create<PreferencesStore>((set) => ({
   executionModel: undefined,
   environmentOverrides: undefined,
   toggleAutoRun: () => set((state) => ({ autoRunAfterPlanning: !state.autoRunAfterPlanning })),
-  toggleSkipPlanning: () => set((state) => ({ skipPlanning: !state.skipPlanning })),
+  toggleSkipPlanning: () =>
+    set((state) => {
+      const nextValue = !state.skipPlanning;
+      void Effect.runPromise(
+        savePreferences({ skipPlanning: nextValue }).pipe(
+          Effect.provide(NodeServices.layer),
+          Effect.catchTag("PreferencesWriteError", () => Effect.void),
+        ),
+      );
+      return { skipPlanning: nextValue };
+    }),
   toggleAutoSave: () => set((state) => ({ autoSaveFlows: !state.autoSaveFlows })),
 }));

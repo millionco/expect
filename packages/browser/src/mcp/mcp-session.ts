@@ -1,16 +1,17 @@
 import { dirname } from "node:path";
 import { mkdirSync } from "node:fs";
 import type { Browser as PlaywrightBrowser, BrowserContext, Page } from "playwright";
-import { Config, Effect, Layer, Option, ServiceMap } from "effect";
-import { Browser } from "../browser.js";
-import { NavigationError } from "../errors.js";
-import type { AnnotatedScreenshotOptions, SnapshotOptions, SnapshotResult } from "../types.js";
+import type { Cookie } from "@browser-tester/cookies";
+import { Config, Deferred, Effect, Layer, Option, ServiceMap } from "effect";
+import { Browser } from "../browser";
+import { NavigationError } from "../errors";
+import type { AnnotatedScreenshotOptions, SnapshotOptions, SnapshotResult } from "../types";
 import {
   BROWSER_TESTER_LIVE_VIEW_URL_ENV_NAME,
   BROWSER_TESTER_VIDEO_OUTPUT_ENV_NAME,
-} from "./constants.js";
-import { McpSessionNotOpenError } from "./errors.js";
-import { startLiveViewServer, type LiveViewServer } from "./live-view-server.js";
+} from "./constants";
+import { McpSessionNotOpenError } from "./errors";
+import { startLiveViewServer, type LiveViewServer } from "./live-view-server";
 
 interface ConsoleEntry {
   type: string;
@@ -90,6 +91,15 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
     );
     const liveViewUrl = yield* Config.option(Config.string(BROWSER_TESTER_LIVE_VIEW_URL_ENV_NAME));
 
+    const cookieCacheDeferred = yield* Deferred.make<readonly Cookie[]>();
+    yield* Effect.gen(function* () {
+      const cookies = yield* browserService.preExtractCookies();
+      yield* Deferred.succeed(cookieCacheDeferred, cookies);
+    }).pipe(
+      Effect.catchCause(() => Deferred.succeed(cookieCacheDeferred, [])),
+      Effect.forkDetach,
+    );
+
     let currentSession: BrowserSessionData | undefined;
     let currentLiveView: LiveViewServer | undefined;
 
@@ -120,10 +130,15 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
     const open = Effect.fn("McpSession.open")(function* (url: string, options: OpenOptions = {}) {
       yield* Effect.annotateCurrentSpan({ url });
 
+      const resolvedCookies = options.cookies
+        ? yield* Deferred.await(cookieCacheDeferred)
+        : undefined;
+
       const videoDir = Option.map(videoOutputPath, (path) => dirname(path));
       const pageResult = yield* browserService.createPage(url, {
         headed: options.headed,
-        cookies: options.cookies,
+        cookies:
+          resolvedCookies && resolvedCookies.length > 0 ? [...resolvedCookies] : options.cookies,
         waitUntil: options.waitUntil,
         video: Option.match(videoDir, {
           onNone: () => undefined,

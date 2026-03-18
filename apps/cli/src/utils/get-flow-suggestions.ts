@@ -1,5 +1,5 @@
 import { getFlowSuggestionsFromContext, type GitState } from "@browser-tester/supervisor";
-import type { ContextOption } from "./context-options.js";
+import type { ContextOption } from "./context-options";
 
 export const getFlowSuggestions = (
   context: ContextOption | null,

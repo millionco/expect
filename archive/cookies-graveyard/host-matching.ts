@@ -4,7 +4,7 @@
  * Kept only as reference for browser SQLite decryption and cookie extraction logic.
  */
 
-import type { Cookie } from "../types.js";
+import type { Cookie } from "../types";
 
 export const stripLeadingDot = (domain: string): string =>
   domain.startsWith(".") ? domain.slice(1) : domain;

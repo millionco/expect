@@ -6,7 +6,7 @@ import {
   MS_PER_HOUR,
   MS_PER_MINUTE,
   MS_PER_SECOND,
-} from "../constants.js";
+} from "../constants";
 
 const RELATIVE_TIME_FORMATTER = new Intl.RelativeTimeFormat("en", {
   numeric: "auto",

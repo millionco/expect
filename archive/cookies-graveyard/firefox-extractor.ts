@@ -10,13 +10,13 @@ import { Effect, Layer, Match, ServiceMap } from "effect";
 import * as FileSystem from "effect/FileSystem";
 import { NodeServices } from "@effect/platform-node";
 import { getEpochSeconds } from "@browser-tester/utils";
-import { FIREFOX_CONFIG } from "./browser-config.js";
-import { CookieDatabaseNotFoundError } from "./errors.js";
-import { SqliteClient } from "./sqlite-client.js";
-import { stripLeadingDot } from "./utils/host-matching.js";
-import { normalizeSameSite, parseFirefoxExpiry } from "./utils/normalize.js";
-import { buildHostWhereClause, sqliteBool, stringField } from "./utils/sql-helpers.js";
-import type { Cookie } from "./types.js";
+import { FIREFOX_CONFIG } from "./browser-config";
+import { CookieDatabaseNotFoundError } from "./errors";
+import { SqliteClient } from "./sqlite-client";
+import { stripLeadingDot } from "./utils/host-matching";
+import { normalizeSameSite, parseFirefoxExpiry } from "./utils/normalize";
+import { buildHostWhereClause, sqliteBool, stringField } from "./utils/sql-helpers";
+import type { Cookie } from "./types";
 
 const resolveCookieDbPath = Effect.fn("FirefoxExtractor.resolveCookieDbPath")(function* () {
   const fileSystem = yield* FileSystem.FileSystem;

@@ -3,7 +3,7 @@ import {
   BROWSER_TESTER_LIVE_VIEW_URL_ENV_NAME,
   BROWSER_TESTER_VIDEO_OUTPUT_ENV_NAME,
 } from "@browser-tester/browser/mcp";
-import { DEFAULT_BROWSER_MCP_SERVER_NAME } from "./constants.js";
+import { DEFAULT_BROWSER_MCP_SERVER_NAME } from "./constants";
 import type { AgentProviderSettings, McpServerConfig } from "@browser-tester/agent";
 
 export const getBrowserMcpEntrypoint = (): string =>

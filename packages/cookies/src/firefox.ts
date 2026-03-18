@@ -3,10 +3,10 @@ import { homedir } from "node:os";
 import { parse } from "ini";
 import { Effect, Layer, Predicate, Schema, ServiceMap } from "effect";
 import * as FileSystem from "effect/FileSystem";
-import { FirefoxBrowser } from "./types.js";
-import { FIREFOX_CONFIG } from "./browser-config.js";
-import { ListBrowsersError } from "./errors.js";
-import { Browsers } from "./browser-detector.js";
+import { FirefoxBrowser } from "./types";
+import { FIREFOX_CONFIG } from "./browser-config";
+import { ListBrowsersError } from "./errors";
+import { Browsers } from "./browser-detector";
 
 const ProfileSection = Schema.Struct({
   Name: Schema.String,

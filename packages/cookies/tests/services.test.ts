@@ -7,10 +7,10 @@ import { assert, describe, it } from "vite-plus/test";
 import { Effect, Layer, Option } from "effect";
 import { NodeServices } from "@effect/platform-node";
 
-import { Cookies } from "../src/cookies.js";
-import { BROWSER_CONFIGS } from "../src/browser-config.js";
-import { parseBinaryCookies } from "../src/utils/binary-cookies.js";
-import { FirefoxBrowser, SafariBrowser } from "../src/types.js";
+import { Cookies } from "../src/cookies";
+import { BROWSER_CONFIGS } from "../src/browser-config";
+import { parseBinaryCookies } from "../src/utils/binary-cookies";
+import { FirefoxBrowser, SafariBrowser } from "../src/types";
 
 const CookiesTestRuntime = Layer.merge(Cookies.layerTest, NodeServices.layer);
 

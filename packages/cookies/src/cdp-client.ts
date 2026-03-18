@@ -18,8 +18,8 @@ import {
   DebuggerUrlNotFoundError,
   ExtractionError,
   UnknownError,
-} from "./errors.js";
-import { Cookie } from "./types.js";
+} from "./errors";
+import { Cookie } from "./types";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import { HttpClient } from "effect/unstable/http/HttpClient";
 import { HttpClientResponse } from "effect/unstable/http";

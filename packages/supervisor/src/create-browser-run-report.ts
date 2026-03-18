@@ -20,9 +20,9 @@ import {
   SHARE_DIRECTORY_PREFIX,
   SHARE_REPORT_FILE_NAME,
   SHARE_SUMMARY_FILE_NAME,
-} from "./constants.js";
-import type { BrowserRunEvent } from "./events.js";
-import { getPullRequestForBranch } from "./github-comment.js";
+} from "./constants";
+import type { BrowserRunEvent } from "./events";
+import { getPullRequestForBranch } from "./github-comment";
 import type {
   BrowserFlowPlan,
   BrowserRunArtifacts,
@@ -30,7 +30,7 @@ import type {
   BrowserRunReport,
   BrowserRunStepResult,
   TestTarget,
-} from "./types.js";
+} from "./types";
 
 interface CreateBrowserRunReportOptions {
   target: TestTarget;

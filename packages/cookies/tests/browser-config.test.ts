@@ -10,7 +10,7 @@ import {
   configByDesktopFile,
   configByDisplayName,
   configByKey,
-} from "../src/browser-config.js";
+} from "../src/browser-config";
 
 describe("BROWSER_CONFIGS", () => {
   it("has 20 entries (18 chromium + firefox + safari)", () => {

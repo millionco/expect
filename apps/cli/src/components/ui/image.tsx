@@ -1,9 +1,9 @@
 import { resolve } from "node:path";
 import { useEffect, useRef } from "react";
 import { useStdout } from "ink";
-import { buildImageSequence } from "../../utils/build-image-sequence.js";
-import { supportsInlineImages } from "../../utils/supports-inline-images.js";
-import { FileLink } from "./file-link.js";
+import { buildImageSequence } from "../../utils/build-image-sequence";
+import { supportsInlineImages } from "../../utils/supports-inline-images";
+import { FileLink } from "./file-link";
 
 interface ImageProps {
   src: string;

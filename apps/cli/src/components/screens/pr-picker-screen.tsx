@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Box, Text, useInput } from "ink";
-import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions.js";
+import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions";
 import figures from "figures";
 import {
   BRANCH_NAME_COLUMN_WIDTH,
@@ -8,19 +8,19 @@ import {
   BRANCH_VISIBLE_COUNT,
   COMMIT_SELECTOR_WIDTH,
   TABLE_COLUMN_GAP,
-} from "../../constants.js";
-import { useColors } from "../theme-context.js";
-import { RuledBox } from "../ui/ruled-box.js";
-import { stripMouseSequences } from "../../hooks/mouse-context.js";
-import { Clickable } from "../ui/clickable.js";
-import { SearchBar } from "../ui/search-bar.js";
+} from "../../constants";
+import { useColors } from "../theme-context";
+import { RuledBox } from "../ui/ruled-box";
+import { stripMouseSequences } from "../../hooks/mouse-context";
+import { Clickable } from "../ui/clickable";
+import { SearchBar } from "../ui/search-bar";
 import { fetchRemoteBranches, type RemoteBranch } from "@browser-tester/supervisor";
-import { Spinner } from "../ui/spinner.js";
+import { Spinner } from "../ui/spinner";
 import cliTruncate from "cli-truncate";
-import { visualPadEnd } from "../../utils/visual-pad-end.js";
-import { useScrollableList } from "../../hooks/use-scrollable-list.js";
-import { useFlowSessionStore } from "../../stores/use-flow-session.js";
-import { ScreenHeading } from "../ui/screen-heading.js";
+import { visualPadEnd } from "../../utils/visual-pad-end";
+import { useScrollableList } from "../../hooks/use-scrollable-list";
+import { useFlowSessionStore } from "../../stores/use-flow-session";
+import { ScreenHeading } from "../ui/screen-heading";
 
 type PrFilter = "recent" | "all" | "open" | "draft" | "merged" | "no-pr";
 

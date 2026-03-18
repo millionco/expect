@@ -3,8 +3,8 @@ import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { McpRuntime } from "../src/mcp/runtime.js";
-import { createBrowserMcpServer } from "../src/mcp/server.js";
+import { McpRuntime } from "../src/mcp/runtime";
+import { createBrowserMcpServer } from "../src/mcp/server";
 
 const TEST_HTML = `<!DOCTYPE html>
 <html>

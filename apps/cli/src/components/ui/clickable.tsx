@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Box, type DOMElement } from "ink";
-import { useMouse } from "../../hooks/mouse-context.js";
-import { LAYOUT_ORIGIN_OFFSET } from "../../constants.js";
+import { useMouse } from "../../hooks/mouse-context";
+import { LAYOUT_ORIGIN_OFFSET } from "../../constants";
 
 interface ClickableProps {
   onClick?: () => void;

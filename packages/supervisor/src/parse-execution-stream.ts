@@ -1,6 +1,6 @@
 import type { LanguageModelV3StreamPart } from "@ai-sdk/provider";
-import type { BrowserRunEvent } from "./events.js";
-import type { PlanStep } from "./types.js";
+import type { BrowserRunEvent } from "./events";
+import type { PlanStep } from "./types";
 
 const PROVIDER_METADATA_KEY = "browser-tester-agent";
 

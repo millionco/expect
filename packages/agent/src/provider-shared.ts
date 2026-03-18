@@ -1,6 +1,6 @@
 import type { LanguageModelV3Content, LanguageModelV3StreamPart } from "@ai-sdk/provider";
 import { Effect, Predicate } from "effect";
-import { serializeToolResult } from "./utils/serialize-tool-result.js";
+import { serializeToolResult } from "./utils/serialize-tool-result";
 
 export const PROVIDER_ID = "browser-tester-agent";
 

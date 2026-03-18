@@ -11,15 +11,15 @@ import {
   PLANNER_MODEL_EFFORT,
   PLANNER_RECENT_COMMIT_LIMIT,
   STEP_ID_PAD_LENGTH,
-} from "./constants.js";
-import { createAgentModel } from "./create-agent-model.js";
-import { PlanParseError, PlanningError } from "./errors.js";
-import { extractJsonObject } from "./json.js";
-import type { PlanBrowserFlowOptions, PlanStep, TestTarget } from "./types.js";
-import { detectAuthError } from "./utils/detect-auth-error.js";
-import { formatDiffStats } from "./utils/format-diff-stats.js";
-import { prioritizePlanningFiles } from "./utils/prioritize-planning-files.js";
-import { resolveAgentProvider } from "./utils/resolve-agent-provider.js";
+} from "./constants";
+import { createAgentModel } from "./create-agent-model";
+import { PlanParseError, PlanningError } from "./errors";
+import { extractJsonObject } from "./json";
+import type { PlanBrowserFlowOptions, PlanStep, TestTarget } from "./types";
+import { detectAuthError } from "./utils/detect-auth-error";
+import { formatDiffStats } from "./utils/format-diff-stats";
+import { prioritizePlanningFiles } from "./utils/prioritize-planning-files";
+import { resolveAgentProvider } from "./utils/resolve-agent-provider";
 
 const NullableOptionalStringSchema = Schema.optional(Schema.NullOr(Schema.NonEmptyString));
 

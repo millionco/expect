@@ -390,6 +390,12 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
       }
     });
 
+    const preExtractCookies = Effect.fn("Browser.preExtractCookies")(function* () {
+      const { preferredProfile } = yield* resolveDefaultBrowserContext();
+      const cookies = yield* extractDefaultBrowserCookies("", preferredProfile);
+      return cookies;
+    });
+
     return {
       createPage,
       snapshot,
@@ -397,6 +403,7 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
       annotatedScreenshot,
       saveVideo,
       waitForNavigationSettle,
+      preExtractCookies,
     } as const;
   }),
 }) {

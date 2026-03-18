@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { parseBinaryCookies } from "../src/utils/binary-cookies.js";
+import { parseBinaryCookies } from "../src/utils/binary-cookies";
 
 const buildBinaryCookies = (
   cookies: Array<{

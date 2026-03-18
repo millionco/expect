@@ -4,8 +4,8 @@ import {
   DIFF_PREVIEW_CHAR_LIMIT,
   GIT_TIMEOUT_MS,
   RECENT_COMMIT_LIMIT,
-} from "./constants.js";
-import type { ChangedFile, CommitSummary, DiffStats } from "./types.js";
+} from "./constants";
+import type { ChangedFile, CommitSummary, DiffStats } from "./types";
 
 const MAIN_BRANCH_NAMES = ["main", "master"];
 const FIELD_SEPARATOR = "\u001f";

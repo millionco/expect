@@ -3,7 +3,7 @@ import {
   LIVE_VIEW_DEFAULT_PORT,
   LIVE_VIEW_HOST,
   LIVE_VIEW_PORT_SEARCH_LIMIT,
-} from "../constants.js";
+} from "../constants";
 
 const isPortAvailable = async (port: number): Promise<boolean> => {
   const server = createServer();

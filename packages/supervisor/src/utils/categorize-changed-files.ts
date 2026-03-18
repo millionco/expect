@@ -1,5 +1,5 @@
 import { extname } from "node:path";
-import type { ChangedFile } from "../types.js";
+import type { ChangedFile } from "../types";
 
 const COMPONENT_EXTENSIONS = new Set([".tsx", ".jsx"]);
 const STYLE_EXTENSIONS = new Set([".css", ".scss", ".sass", ".less", ".styl"]);

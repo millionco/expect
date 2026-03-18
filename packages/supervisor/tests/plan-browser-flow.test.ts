@@ -1,9 +1,9 @@
 import { Effect } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 import type { LanguageModelV3, LanguageModelV3CallOptions } from "@ai-sdk/provider";
-import { CLAUDE_PLANNER_MODEL } from "../src/constants.js";
-import { buildPlannerModelSettings, planBrowserFlow } from "../src/plan-browser-flow.js";
-import type { TestTarget } from "../src/types.js";
+import { CLAUDE_PLANNER_MODEL } from "../src/constants";
+import { buildPlannerModelSettings, planBrowserFlow } from "../src/plan-browser-flow";
+import type { TestTarget } from "../src/types";
 
 const createPlannerModel = (
   callback: (options: LanguageModelV3CallOptions) => void,

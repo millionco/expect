@@ -12,18 +12,18 @@ import { ChildProcess } from "effect/unstable/process";
 import { ChildProcessSpawner } from "effect/unstable/process/ChildProcessSpawner";
 import { NodeServices } from "@effect/platform-node";
 import { getEpochSeconds } from "@browser-tester/utils";
-import { chromiumConfig } from "./browser-config.js";
-import { decryptAes128Cbc, decryptAes256Gcm, deriveKey } from "./utils/crypto.js";
+import { chromiumConfig } from "./browser-config";
+import { decryptAes128Cbc, decryptAes256Gcm, deriveKey } from "./utils/crypto";
 import {
   CookieDatabaseNotFoundError,
   CookieDecryptionKeyError,
   UnsupportedPlatformError,
-} from "./errors.js";
-import { SqliteClient } from "./sqlite-client.js";
-import { stripLeadingDot } from "./utils/host-matching.js";
-import { normalizeExpiration, normalizeSameSite } from "./utils/normalize.js";
-import { buildHostWhereClause, sqliteBool, stringField } from "./utils/sql-helpers.js";
-import type { ChromiumBrowser, Cookie } from "./types.js";
+} from "./errors";
+import { SqliteClient } from "./sqlite-client";
+import { stripLeadingDot } from "./utils/host-matching";
+import { normalizeExpiration, normalizeSameSite } from "./utils/normalize";
+import { buildHostWhereClause, sqliteBool, stringField } from "./utils/sql-helpers";
+import type { ChromiumBrowser, Cookie } from "./types";
 
 const CHROMIUM_META_VERSION_HASH_PREFIX = 24;
 const DPAPI_PREFIX_LENGTH_BYTES = 5;

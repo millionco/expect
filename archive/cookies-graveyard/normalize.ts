@@ -4,7 +4,7 @@
  * Kept only as reference for browser SQLite decryption and cookie extraction logic.
  */
 
-import type { SameSitePolicy } from "../types.js";
+import type { SameSitePolicy } from "../types";
 import { MS_PER_SECOND } from "@browser-tester/utils";
 
 const SAME_SITE_NONE = 0;

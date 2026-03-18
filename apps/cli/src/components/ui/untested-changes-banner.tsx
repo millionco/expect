@@ -1,9 +1,9 @@
 import figures from "figures";
 import { Text } from "ink";
 import { formatFileCategories, getHealthcheckReport } from "@browser-tester/supervisor";
-import { useGitState } from "../../hooks/use-git-state.js";
-import { useColors } from "../theme-context.js";
-import { RuledBox } from "./ruled-box.js";
+import { useGitState } from "../../hooks/use-git-state";
+import { useColors } from "../theme-context";
+import { RuledBox } from "./ruled-box";
 
 export const UntestedChangesBanner = () => {
   const COLORS = useColors();

@@ -1,5 +1,5 @@
 import { Box, Text } from "ink";
-import { Clickable } from "./clickable.js";
+import { Clickable } from "./clickable";
 
 export interface HintSegment {
   key: string;

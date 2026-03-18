@@ -1,9 +1,9 @@
 import { Schema } from "effect";
-import { CLAUDE_PLANNER_MODEL, CODEX_PLANNER_MODEL, DEFAULT_AGENT_PROVIDER } from "./constants.js";
+import { CLAUDE_PLANNER_MODEL, CODEX_PLANNER_MODEL, DEFAULT_AGENT_PROVIDER } from "./constants";
 import { ensureSafeCurrentWorkingDirectory } from "@browser-tester/utils";
-import { createAgentModel } from "./create-agent-model.js";
-import { extractJsonObject } from "./json.js";
-import type { AgentProvider, ChangedFile } from "./types.js";
+import { createAgentModel } from "./create-agent-model";
+import { extractJsonObject } from "./json";
+import type { AgentProvider, ChangedFile } from "./types";
 
 const SUGGESTION_COUNT = 3;
 const SUGGESTION_MAX_FILES = 15;

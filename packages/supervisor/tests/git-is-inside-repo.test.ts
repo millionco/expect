@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import { isInsideGitRepo } from "../src/git.js";
+import { isInsideGitRepo } from "../src/git";
 
 const commandOutputs = new Map<string, string>();
 

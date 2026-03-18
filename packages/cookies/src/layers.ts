@@ -1,10 +1,10 @@
 import { platform } from "node:os";
 import { Effect, Layer } from "effect";
 import { NodeServices } from "@effect/platform-node";
-import { Browsers } from "./browser-detector.js";
-import { ChromiumSource, ChromiumPlatform } from "./chromium.js";
-import { FirefoxSource, FirefoxPlatform } from "./firefox.js";
-import { SafariSource, SafariPlatform } from "./safari.js";
+import { Browsers } from "./browser-detector";
+import { ChromiumSource, ChromiumPlatform } from "./chromium";
+import { FirefoxSource, FirefoxPlatform } from "./firefox";
+import { SafariSource, SafariPlatform } from "./safari";
 
 const base = Browsers.layer;
 

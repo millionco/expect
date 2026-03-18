@@ -1,4 +1,4 @@
-import type { AgentProvider } from "../types.js";
+import type { AgentProvider } from "../types";
 
 const includesAny = (value: string, patterns: readonly string[]): boolean =>
   patterns.some((pattern) => value.includes(pattern));

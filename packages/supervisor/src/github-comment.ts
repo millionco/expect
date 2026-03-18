@@ -4,9 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { Schema } from "effect";
-import { COMMENT_DIRECTORY_PREFIX, GITHUB_TIMEOUT_MS } from "./constants.js";
-import type { BrowserRunPullRequest, BrowserRunReport } from "./types.js";
-import { commandExists } from "./utils/command-exists.js";
+import { COMMENT_DIRECTORY_PREFIX, GITHUB_TIMEOUT_MS } from "./constants";
+import type { BrowserRunPullRequest, BrowserRunReport } from "./types";
+import { commandExists } from "./utils/command-exists";
 
 const execFileAsync = promisify(execFile);
 

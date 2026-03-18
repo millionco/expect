@@ -31,7 +31,7 @@ vi.mock("@openai/codex-sdk", () => ({
   },
 }));
 
-import { createCodexModel } from "../src/codex.js";
+import { createCodexModel } from "../src/codex";
 
 const defaultOptions: LanguageModelV3CallOptions = {
   prompt: [{ role: "user", content: [{ type: "text", text: "test" }] }],

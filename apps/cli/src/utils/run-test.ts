@@ -16,9 +16,9 @@ import {
   type TestAction,
 } from "@browser-tester/supervisor";
 import figures from "figures";
-import { VERSION } from "../constants.js";
-import { CliRuntime } from "../runtime.js";
-import type { TestRunConfig } from "./test-run-config.js";
+import { VERSION } from "../constants";
+import { CliRuntime } from "../runtime";
+import type { TestRunConfig } from "./test-run-config";
 
 const ACTION_LABELS: Record<TestAction, string> = {
   "test-unstaged": "unstaged changes",
