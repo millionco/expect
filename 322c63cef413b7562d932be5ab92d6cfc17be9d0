@@ -1,0 +1,35 @@
+packages/supervisor/src/plan-browser-flow.ts
+  ccbaf64735b82bf5 49-59,210,213
+packages/supervisor/src/utils/save-browser-image-result.ts
+  ccbaf64735b82bf5 4,12-14,16-20,30-33,35-37
+packages/cookies/src/chromium-sqlite.ts
+  ccbaf64735b82bf5 6,31-36,160,164
+packages/supervisor/src/utils/format-browser-tool-call.ts
+  ccbaf64735b82bf5 1,12,16
+packages/supervisor/src/remote-branches.ts
+  ccbaf64735b82bf5 2,22-32,107
+packages/supervisor/src/github-comment.ts
+  ccbaf64735b82bf5 6,13-20,64-65
+packages/supervisor/src/generate-flow-suggestions.ts
+  ccbaf64735b82bf5 1,10,91-92,95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "322c63cef413b7562d932be5ab92d6cfc17be9d0",
+  "prompts": {
+    "ccbaf64735b82bf5": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "50062b49-a81f-4145-91c0-8bc1f151a413",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 123,
+      "total_deletions": 145,
+      "accepted_lines": 83,
+      "overriden_lines": 0
+    }
+  }
+}
