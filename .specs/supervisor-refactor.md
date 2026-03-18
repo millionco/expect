@@ -265,7 +265,7 @@ export class Planner extends ServiceMap.Service<Planner>()("@supervisor/Planner"
     return { plan } as const;
   }),
 }) {
-  static layer = Layer.effect(this)(this.make).pipe(Layer.provide(Agent.layerClaude));
+  static layer = Layer.effect(this)(this.make);
 }
 ```
 
@@ -317,9 +317,7 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
     return { executePlan } as const;
   }),
 }) {
-  static layer = Layer.effect(this)(this.make).pipe(
-    Layer.provide(Layer.merge(Updates.layer, Agent.layerClaude)),
-  );
+  static layer = Layer.effect(this)(this.make).pipe(Layer.provide(Updates.layer));
 }
 ```
 
@@ -368,12 +366,26 @@ The CLI calls them in sequence: `executor.executePlan(plan)` → `reporter.repor
 
 ```
 Updates.layer
-Planner.layer   ← provides Agent.layerClaude
-Executor.layer  ← provides Agent.layerClaude + Updates.layer
+Planner.layer   ← requires Agent
+Executor.layer  ← provides Updates.layer, requires Agent
 Reporter.layer  ← provides Updates.layer
 ```
 
-The CLI's `ManagedRuntime` adds all four. Usage is sequential:
+`Agent` is not provided by any supervisor layer — the entrypoint picks the backend:
+
+```ts
+// CLI runtime
+ManagedRuntime.make(
+  Layer.mergeAll(
+    Planner.layer,
+    Executor.layer,
+    Reporter.layer,
+    Agent.layerClaude, // or Agent.layerCodex
+  )
+)
+```
+
+Usage is sequential:
 ```ts
 const executed = yield* executor.executePlan(plan);
 const testReport = yield* reporter.report(executed);

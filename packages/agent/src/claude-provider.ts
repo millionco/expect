@@ -5,6 +5,7 @@ import { query } from "@anthropic-ai/claude-agent-sdk";
 import type { LanguageModelV3StreamPart } from "@ai-sdk/provider";
 import { Effect, Layer, Option, Schema, ServiceMap, Stream } from "effect";
 import { ClaudeQueryError } from "./errors.js";
+import { CurrentModel } from "./current-model.js";
 import { ClaudeStreamEvent } from "./schemas/claude-stream.js";
 import { AgentStreamOptions } from "./types.js";
 import { buildClaudeProcessEnv } from "./utils/build-claude-process-env.js";
@@ -30,13 +31,13 @@ const resolveClaudeExecutablePath = (): string | undefined => {
   }
 };
 
-const buildQueryOptions = (options: AgentStreamOptions) => {
+const buildQueryOptions = (options: AgentStreamOptions, model: string) => {
   const explicitExecutablePath = resolveClaudeExecutablePath();
   const env = buildClaudeProcessEnv();
   const debugLogPath = createAgentDebugLogPath(options.cwd);
 
   return {
-    model: options.model,
+    model,
     cwd: options.cwd,
     allowDangerouslySkipPermissions: true,
     permissionMode: "bypassPermissions" as const,
@@ -56,26 +57,28 @@ export class ClaudeProvider extends ServiceMap.Service<
     ) => Stream.Stream<LanguageModelV3StreamPart, ClaudeQueryError>;
   }
 >()("@browser-tester/ClaudeProvider") {
-  static layer = Layer.succeed(
-    ClaudeProvider,
-    ClaudeProvider.of({
-      stream: (options) => {
-        const claudeQuery = query({
-          prompt: options.prompt,
-          options: buildQueryOptions(options),
-        });
+  static layer = Layer.effect(ClaudeProvider)(
+    Effect.gen(function* () {
+      const model = yield* CurrentModel;
+      return ClaudeProvider.of({
+        stream: (options) => {
+          const claudeQuery = query({
+            prompt: options.prompt,
+            options: buildQueryOptions(options, model),
+          });
 
-        return Stream.fromAsyncIterable(
-          claudeQuery,
-          (cause) => new ClaudeQueryError({ cause: String(cause) }),
-        ).pipe(
-          Stream.mapEffect((rawEvent) => Schema.decodeUnknownEffect(ClaudeStreamEvent)(rawEvent)),
-          Stream.map((event) => event.streamParts),
-          Stream.filter(Option.isSome),
-          Stream.flatMap((option) => Stream.fromIterable(option.value)),
-          Stream.ensuring(Effect.sync(() => claudeQuery.close())),
-        );
-      },
+          return Stream.fromAsyncIterable(
+            claudeQuery,
+            (cause) => new ClaudeQueryError({ cause: String(cause) }),
+          ).pipe(
+            Stream.mapEffect((rawEvent) => Schema.decodeUnknownEffect(ClaudeStreamEvent)(rawEvent)),
+            Stream.map((event) => event.streamParts),
+            Stream.filter(Option.isSome),
+            Stream.flatMap((option) => Stream.fromIterable(option.value)),
+            Stream.ensuring(Effect.sync(() => claudeQuery.close())),
+          );
+        },
+      });
     }),
   );
 }

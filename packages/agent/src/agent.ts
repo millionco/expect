@@ -2,6 +2,7 @@ import type { LanguageModelV3StreamPart } from "@ai-sdk/provider";
 import { Effect, Layer, ServiceMap, Stream } from "effect";
 import { ClaudeProvider } from "./claude-provider.js";
 import { CodexProvider } from "./codex-provider.js";
+import { CurrentModel } from "./current-model.js";
 import { ClaudeQueryError, CodexRunError } from "./errors.js";
 import { AgentStreamOptions } from "./types.js";
 
@@ -22,7 +23,10 @@ export class Agent extends ServiceMap.Service<
         stream: (options) => provider.stream(options),
       });
     }),
-  ).pipe(Layer.provide(ClaudeProvider.layer));
+  ).pipe(
+    Layer.provide(ClaudeProvider.layer),
+    Layer.provide(CurrentModel.layerClaude),
+  );
 
   static layerCodex = Layer.effect(Agent)(
     Effect.gen(function* () {
@@ -31,7 +35,10 @@ export class Agent extends ServiceMap.Service<
         stream: (options) => provider.stream(options),
       });
     }),
-  ).pipe(Layer.provide(CodexProvider.layer));
+  ).pipe(
+    Layer.provide(CodexProvider.layer),
+    Layer.provide(CurrentModel.layerCodex),
+  );
 
   static layerFor = (backend: AgentBackend) =>
     backend === "claude" ? Agent.layerClaude : Agent.layerCodex;
