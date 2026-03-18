@@ -1,0 +1,52 @@
+packages/supervisor/package.json
+  5ab779802e38676c 21-23
+packages/browser/package.json
+  5ab779802e38676c 29-31
+apps/website/package.json
+  5ab779802e38676c 9-13
+packages/cookies/package.json
+  5ab779802e38676c 21-23
+packages/utils/package.json
+  5ab779802e38676c 21-23
+packages/replay/package.json
+  5ab779802e38676c 26-28
+apps/website/tests/placeholder.test.ts
+  0f0a8a54c3ff4ae1 1-5
+packages/agent/package.json
+  5ab779802e38676c 21-23
+packages/replay/tests/placeholder.test.ts
+  0f0a8a54c3ff4ae1 1-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "3d371c4c98de6271f86f29acf0a4df4792af42b1",
+  "prompts": {
+    "0f0a8a54c3ff4ae1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "20e72566-6b6b-4b2e-be76-6f2c4af312e0",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 10,
+      "total_deletions": 0,
+      "accepted_lines": 10,
+      "overriden_lines": 0
+    },
+    "5ab779802e38676c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "698969cf-f184-44f2-a7ef-4358c388339a",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 23,
+      "total_deletions": 1,
+      "accepted_lines": 23,
+      "overriden_lines": 0
+    }
+  }
+}
