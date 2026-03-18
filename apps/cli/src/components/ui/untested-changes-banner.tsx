@@ -1,6 +1,5 @@
 import figures from "figures";
 import { Text } from "ink";
-import { formatFileCategories, getHealthcheckReport } from "@browser-tester/supervisor";
 import { useGitState } from "../../hooks/use-git-state.js";
 import { useColors } from "../theme-context.js";
 import { RuledBox } from "./ruled-box.js";
@@ -11,20 +10,19 @@ export const UntestedChangesBanner = () => {
 
   if (!gitState?.isGitRepo) return null;
 
-  const { hasUntestedChanges, changedLines, fileCount, categories } =
-    getHealthcheckReport(gitState);
+  const hasUntestedChanges = gitState.hasChangesFromMain || gitState.hasUnstagedChanges;
 
   if (!hasUntestedChanges) return null;
+
+  const fileCount = gitState.fileStats.length;
+  const changedLines = gitState.fileStats.reduce((sum, stat) => sum + stat.added + stat.removed, 0);
 
   const headline =
     changedLines > 0
       ? `${changedLines} changed line${changedLines === 1 ? "" : "s"} not tested`
       : "Untested changes detected";
 
-  const detail =
-    categories.length > 0
-      ? `${formatFileCategories(categories)} across ${fileCount} file${fileCount === 1 ? "" : "s"}`
-      : `${fileCount} file${fileCount === 1 ? "" : "s"} changed`;
+  const detail = `${fileCount} file${fileCount === 1 ? "" : "s"} changed`;
 
   return (
     <RuledBox color={COLORS.YELLOW} marginBottom={1}>

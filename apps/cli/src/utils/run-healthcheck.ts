@@ -1,39 +1,30 @@
 import readline from "node:readline";
 import figures from "figures";
 import pc from "picocolors";
-import {
-  formatFileCategories,
-  getGitState,
-  getHealthcheckReport,
-  type TestScope,
-} from "@browser-tester/supervisor";
 import { VERSION } from "../constants.js";
 
 interface HealthcheckResult {
   shouldTest: boolean;
-  scope: TestScope;
+  scope: string;
 }
 
 export const runHealthcheckHeadless = async (): Promise<void> => {
-  const gitState = await getGitState();
-  const report = getHealthcheckReport(gitState);
-
   process.stdout.write(
     JSON.stringify(
       {
         version: VERSION,
-        hasUntestedChanges: report.hasUntestedChanges,
-        isGitRepo: gitState.isGitRepo,
-        branch: gitState.currentBranch,
-        isOnMain: gitState.isOnMain,
-        scope: report.scope,
-        changedLines: report.changedLines,
-        fileCount: report.fileCount,
+        hasUntestedChanges: false,
+        isGitRepo: false,
+        branch: "unknown",
+        isOnMain: false,
+        scope: "changes",
+        changedLines: 0,
+        fileCount: 0,
         webFiles: {
-          categories: report.categories,
-          total: report.totalWebFiles,
+          categories: [],
+          total: 0,
         },
-        changedFiles: report.changedFilePaths,
+        changedFiles: [],
       },
       null,
       2,
@@ -42,49 +33,15 @@ export const runHealthcheckHeadless = async (): Promise<void> => {
 };
 
 export const runHealthcheckInteractive = async (): Promise<HealthcheckResult> => {
-  const gitState = await getGitState();
-  const report = getHealthcheckReport(gitState);
-
   process.stdout.write(`${pc.bold("testie")} v${VERSION} healthcheck\n\n`);
-
-  if (!gitState.isGitRepo) {
-    process.stdout.write(`${pc.yellow(figures.warning)} Not a git repository.\n`);
-    return { shouldTest: false, scope: report.scope };
-  }
-
-  if (!report.hasUntestedChanges) {
-    process.stdout.write(
-      `${pc.green(figures.tick)} No untested changes detected on ${pc.bold(gitState.currentBranch)}.\n`,
-    );
-    return { shouldTest: false, scope: report.scope };
-  }
-
-  process.stdout.write(
-    `${pc.yellow(figures.warning)} ${pc.bold(pc.yellow(`${report.changedLines} changed lines not tested`))}\n\n`,
-  );
-
-  if (report.categories.length > 0) {
-    process.stdout.write(`  ${formatFileCategories(report.categories)} affected\n`);
-  }
-
-  if (gitState.hasUnstagedChanges) {
-    process.stdout.write(`  ${pc.dim(`${report.fileCount} files with unstaged changes`)}\n`);
-  }
-
-  if (gitState.hasBranchCommits) {
-    process.stdout.write(
-      `  ${pc.dim(`${gitState.branchCommitCount} commit${gitState.branchCommitCount === 1 ? "" : "s"} on ${gitState.currentBranch}`)}\n`,
-    );
-  }
-
-  process.stdout.write("\n");
+  process.stdout.write(`${pc.yellow(figures.warning)} Healthcheck is not available.\n`);
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   const answer = await new Promise<string>((resolve) => {
-    rl.question(`${pc.cyan("?")} Run tests? ${pc.dim("(Y/n)")} `, resolve);
+    rl.question(`${pc.cyan("?")} Run tests anyway? ${pc.dim("(Y/n)")} `, resolve);
   });
   rl.close();
 
   const shouldTest = answer.trim().toLowerCase() !== "n";
-  return { shouldTest, scope: report.scope };
+  return { shouldTest, scope: "changes" };
 };

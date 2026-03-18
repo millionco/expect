@@ -24,8 +24,8 @@
     "lint": "vp lint && tsc --noEmit"
   },
   "dependencies": {
+    "@browser-tester/shared": "workspace:*",
     "@browser-tester/supervisor": "workspace:*",
-    "@browser-tester/utils": "workspace:*",
     "@tanstack/react-query": "^5.80.7",
     "@types/react": "^19.2.14",
     "cli-truncate": "^5.2.0",

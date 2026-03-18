@@ -15,14 +15,15 @@ import {
   ToolResult,
   type ExecutionEvent,
   type TestPlan,
-} from "./models.js";
-import { Updates } from "./updates.js";
+} from "@browser-tester/shared/models";
 import { serializeToolResult } from "./utils/serialize-tool-result.js";
 
-export class ExecutionError extends Schema.ErrorClass<ExecutionError>("@supervisor/ExecutionError")({
-  _tag: Schema.tag("@supervisor/ExecutionError"),
-  reason: Schema.Union([ClaudeQueryError, CodexRunError]),
-}) {
+export class ExecutionError extends Schema.ErrorClass<ExecutionError>("@supervisor/ExecutionError")(
+  {
+    _tag: Schema.tag("@supervisor/ExecutionError"),
+    reason: Schema.Union([ClaudeQueryError, CodexRunError]),
+  },
+) {
   message = `Execution failed: ${this.reason.message}`;
 }
 
@@ -99,15 +100,13 @@ const streamPartToUpdate = (
 export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Executor", {
   make: Effect.gen(function* () {
     const agent = yield* Agent;
-    const updates = yield* Updates;
 
     const executePlan = Effect.fn("Executor.executePlan")(function* (plan: TestPlan) {
       const runStarted = new RunStarted({ plan });
-      yield* updates.publish(runStarted);
-
       const buffer = yield* Ref.make("");
+      const initial = new ExecutedTestPlan({ ...plan, events: [runStarted] });
 
-      return yield* agent
+      return agent
         .stream(
           new AgentStreamOptions({
             cwd: process.cwd(),
@@ -119,17 +118,19 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
         .pipe(
           Stream.mapEffect((part) => streamPartToUpdate(part, buffer)),
           Stream.flatMap((events) => Stream.fromIterable(events)),
-          Stream.tap((update) => updates.publish(update)),
-          Stream.runFold(
-            () => new ExecutedTestPlan({ ...plan, events: [runStarted] }),
-            (executed, event) => executed.addEvent(event),
+          Stream.mapAccum(
+            () => initial,
+            (executed, event) => {
+              const next = executed.addEvent(event);
+              return [next, [next]] as const;
+            },
           ),
-          Effect.mapError((reason) => new ExecutionError({ reason })),
+          Stream.mapError((reason) => new ExecutionError({ reason })),
         );
     });
 
     return { executePlan } as const;
   }),
 }) {
-  static layer = Layer.effect(this)(this.make).pipe(Layer.provide(Updates.layer));
+  static layer = Layer.effect(this)(this.make);
 }

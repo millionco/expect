@@ -5,15 +5,12 @@ import { useColors } from "../theme-context.js";
 import { stripMouseSequences } from "../../hooks/mouse-context.js";
 import { Clickable } from "../ui/clickable.js";
 import { RuledBox } from "../ui/ruled-box.js";
-import { FileLink } from "../ui/file-link.js";
 import { ContextPicker } from "../ui/context-picker.js";
 import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions.js";
-import { saveFlow } from "@browser-tester/supervisor";
-import { CliRuntime } from "../../runtime.js";
+import { TestPlan, TestPlanStep } from "@browser-tester/supervisor";
 import { useFlowSessionStore } from "../../stores/use-flow-session.js";
 import { useNavigationStore } from "../../stores/use-navigation.js";
 import { useGitState } from "../../hooks/use-git-state.js";
-import { queryClient } from "../../query-client.js";
 import { ErrorMessage } from "../ui/error-message.js";
 import {
   buildLocalContextOptions,
@@ -37,28 +34,21 @@ export const PlanReviewScreen = () => {
   const COLORS = useColors();
   const [columns] = useStdoutDimensions();
   const plan = useFlowSessionStore((state) => state.generatedPlan);
-  const environment = useFlowSessionStore((state) => state.browserEnvironment);
-  const resolvedTarget = useFlowSessionStore((state) => state.resolvedTarget);
+  const changesFor = useFlowSessionStore((state) => state.changesFor);
+  const selectedCommit = useFlowSessionStore((state) => state.selectedCommit);
   const goBack = useFlowSessionStore((state) => state.goBack);
   const updatePlan = useFlowSessionStore((state) => state.updatePlan);
-  const updateEnvironment = useFlowSessionStore((state) => state.updateEnvironment);
   const requestPlanApproval = useFlowSessionStore((state) => state.requestPlanApproval);
   const flowInstruction = useFlowSessionStore((state) => state.flowInstruction);
   const storeSelectContext = useFlowSessionStore((state) => state.selectContext);
   const { data: gitState } = useGitState();
   const navigateTo = useNavigationStore((state) => state.navigateTo);
-  const selectAction = useFlowSessionStore((state) => state.selectAction);
+  const selectChangesFor = useFlowSessionStore((state) => state.selectChangesFor);
   const submitFlowInstruction = useFlowSessionStore((state) => state.submitFlowInstruction);
-  const testAction = useFlowSessionStore((state) => state.testAction);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [editingState, setEditingState] = useState<EditingState>(null);
   const [editingValue, setEditingValue] = useState("");
-  const [savedPaths, setSavedPaths] = useState<{
-    flowPath: string;
-    directoryPath: string;
-  } | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
   const [exitConfirmationVisible, setExitConfirmationVisible] = useState(false);
   const [topFocus, setTopFocus] = useState<"branch" | "input" | null>(null);
   const [inputValue, setInputValue] = useState(flowInstruction);
@@ -165,38 +155,33 @@ export const PlanReviewScreen = () => {
     [inputValue, pickerOpen, openPicker, closePicker],
   );
 
-  if (!plan || !resolvedTarget) return null;
+  if (!plan) return null;
+
+  const displayName = selectedCommit
+    ? selectedCommit.shortHash
+    : changesFor?._tag === "Branch" || changesFor?._tag === "Changes"
+      ? (gitState?.currentBranch ?? "branch")
+      : "working tree";
 
   const editingStep =
     editingState?.kind === "step" ? (plan.steps[editingState.stepIndex] ?? null) : null;
   const editingStepIndex = editingState?.kind === "step" ? editingState.stepIndex : null;
-  const editingAssumptions = editingState?.kind === "assumptions";
-  const cookiesEnabled = (environment ?? {}).cookies === true;
-  const cookieSyncIsRequired = plan.cookieSync.required;
-  const cookieSyncNeedsAttention = cookieSyncIsRequired && !cookiesEnabled;
+  const editingAssumptions = false;
 
   type RailSection = "info" | "steps";
 
   type RailItem =
     | { kind: "details"; section: RailSection }
-    | { kind: "assumptions"; section: RailSection }
-    | { kind: "cookies"; section: RailSection }
     | { kind: "step"; stepIndex: number; section: RailSection };
 
   const railItems: RailItem[] = useMemo(() => {
     const result: RailItem[] = [];
     result.push({ kind: "details", section: "info" });
-    if (plan.assumptions.length > 0) {
-      result.push({ kind: "assumptions", section: "info" });
-    }
-    if (cookieSyncIsRequired) {
-      result.push({ kind: "cookies", section: "info" });
-    }
     plan.steps.forEach((_, index) => {
       result.push({ kind: "step", stepIndex: index, section: "steps" });
     });
     return result;
-  }, [plan, cookieSyncIsRequired]);
+  }, [plan]);
 
   const totalItems = railItems.length;
   const currentRailItem = railItems[selectedIndex];
@@ -217,24 +202,16 @@ export const PlanReviewScreen = () => {
       }
 
       if (key.return && !key.shift && editingStep && editingValue.trim()) {
-        updatePlan({
-          ...plan,
-          steps: plan.steps.map((step, index) =>
-            index === editingStepIndex ? { ...step, instruction: editingValue.trim() } : step,
-          ),
-        });
-        setEditingState(null);
-        setEditingValue("");
-      }
-
-      if (key.return && !key.shift && editingAssumptions) {
-        updatePlan({
-          ...plan,
-          assumptions: editingValue
-            .split("\n")
-            .map((assumption) => assumption.trim())
-            .filter(Boolean),
-        });
+        updatePlan(
+          new TestPlan({
+            ...plan,
+            steps: plan.steps.map((step, index) =>
+              index === editingStepIndex
+                ? new TestPlanStep({ ...step, instruction: editingValue.trim() })
+                : step,
+            ),
+          }),
+        );
         setEditingState(null);
         setEditingValue("");
       }
@@ -243,8 +220,8 @@ export const PlanReviewScreen = () => {
     }
 
     if (resubmitConfirmVisible) {
-      if (input.toLowerCase() === "y" && testAction) {
-        selectAction(testAction);
+      if (input.toLowerCase() === "y" && changesFor) {
+        selectChangesFor(changesFor);
         submitFlowInstruction(inputValue.trim());
       }
       if (input.toLowerCase() === "n" || key.escape) {
@@ -298,41 +275,8 @@ export const PlanReviewScreen = () => {
       }
     }
 
-    if (input === "e" && currentRailItem?.kind === "assumptions") {
-      setEditingState({ kind: "assumptions" });
-      setEditingValue(plan.assumptions.join("\n"));
-    }
-
-    if (input === "c" && cookieSyncIsRequired) {
-      updateEnvironment({
-        ...(environment ?? {}),
-        cookies: !cookiesEnabled,
-      });
-    }
-    if (input === "s" && !saving) {
-      setSaveError(null);
-      setSavedPaths(null);
-      setSaving(true);
-      void CliRuntime.runPromise(
-        saveFlow({
-          target: resolvedTarget,
-          plan,
-          environment: environment ?? {},
-        }),
-      )
-        .then((result) => {
-          setSavedPaths({
-            flowPath: result.flowPath,
-            directoryPath: result.directoryPath,
-          });
-          void queryClient.invalidateQueries({ queryKey: ["saved-flows"] });
-        })
-        .catch((caughtError) => {
-          setSaveError(caughtError instanceof Error ? caughtError.message : "Failed to save flow.");
-        })
-        .finally(() => {
-          setSaving(false);
-        });
+    if (input === "s") {
+      setSaveError("Flow saving is not available.");
     }
     if (input === "a" || key.return) {
       requestPlanApproval();
@@ -453,7 +397,7 @@ export const PlanReviewScreen = () => {
 
           <Box>
             <Text color={railColor}>{"│  "}</Text>
-            <Text color={COLORS.DIM}>{resolvedTarget.displayName}</Text>
+            <Text color={COLORS.DIM}>{displayName}</Text>
           </Box>
 
           <Text color={railColor}>{"│"}</Text>
@@ -490,112 +434,6 @@ export const PlanReviewScreen = () => {
                           </Box>
                         </Box>
                       ) : null}
-                      {plan.targetSummary ? (
-                        <Box>
-                          <Text color={railColor}>{`${continuation}  `}</Text>
-                          <Box flexShrink={1}>
-                            <Text color={COLORS.DIM} wrap="wrap">
-                              {plan.targetSummary}
-                            </Text>
-                          </Box>
-                        </Box>
-                      ) : null}
-                    </Box>
-                  ) : null}
-                </Box>
-              );
-            }
-
-            if (item.kind === "assumptions") {
-              return (
-                <Box key="assumptions" flexDirection="column">
-                  <Clickable onClick={() => setSelectedIndex(index)}>
-                    <Box>
-                      <Text color={isSelected ? COLORS.PRIMARY : railColor}>
-                        {isSelected ? "◆" : "◇"}{" "}
-                      </Text>
-                      <Text color={isSelected ? COLORS.PRIMARY : COLORS.TEXT} bold={isSelected}>
-                        Assumptions
-                      </Text>
-                      <Text color={COLORS.DIM}>{` [${plan.assumptions.length}]`}</Text>
-                    </Box>
-                  </Clickable>
-                  {isSelected ? (
-                    <Box flexDirection="column">
-                      {plan.assumptions.map((assumption, assumptionIndex) => (
-                        <Box key={`a-${assumptionIndex}`}>
-                          <Text color={railColor}>{`${continuation}  `}</Text>
-                          <Text color={COLORS.DIM}>{"· "}</Text>
-                          <Box flexShrink={1}>
-                            <Text color={COLORS.DIM} wrap="wrap">
-                              {assumption}
-                            </Text>
-                          </Box>
-                        </Box>
-                      ))}
-                      <Box>
-                        <Text color={railColor}>{`${continuation}  `}</Text>
-                        <Text color={COLORS.DIM}>
-                          <Text color={COLORS.PRIMARY}>e</Text>
-                          {" to edit"}
-                        </Text>
-                      </Box>
-                    </Box>
-                  ) : null}
-                </Box>
-              );
-            }
-
-            if (item.kind === "cookies") {
-              return (
-                <Box key="cookies" flexDirection="column">
-                  <Clickable onClick={() => setSelectedIndex(index)}>
-                    <Box>
-                      <Text
-                        color={
-                          isSelected
-                            ? COLORS.PRIMARY
-                            : cookieSyncNeedsAttention
-                              ? COLORS.RED
-                              : railColor
-                        }
-                      >
-                        {isSelected ? "◆" : "◇"}{" "}
-                      </Text>
-                      <Text
-                        color={
-                          isSelected
-                            ? COLORS.PRIMARY
-                            : cookieSyncNeedsAttention
-                              ? COLORS.RED
-                              : COLORS.TEXT
-                        }
-                        bold={isSelected}
-                      >
-                        Cookie sync
-                      </Text>
-                      <Text color={cookiesEnabled ? COLORS.GREEN : COLORS.RED}>
-                        {cookiesEnabled ? " on" : " off"}
-                      </Text>
-                    </Box>
-                  </Clickable>
-                  {isSelected ? (
-                    <Box flexDirection="column">
-                      <Box>
-                        <Text color={railColor}>{`${continuation}  `}</Text>
-                        <Box flexShrink={1}>
-                          <Text color={COLORS.DIM} wrap="wrap">
-                            {plan.cookieSync.reason}
-                          </Text>
-                        </Box>
-                      </Box>
-                      <Box>
-                        <Text color={railColor}>{`${continuation}  `}</Text>
-                        <Text color={COLORS.DIM}>
-                          <Text color={COLORS.PRIMARY}>c</Text>
-                          {" to toggle"}
-                        </Text>
-                      </Box>
                     </Box>
                   ) : null}
                 </Box>
@@ -680,26 +518,9 @@ export const PlanReviewScreen = () => {
         </Box>
       ) : null}
 
-      {savedPaths ? (
-        <Box marginTop={1} flexDirection="column" paddingX={1}>
-          <Text color={COLORS.GREEN}>
-            Saved <FileLink path={savedPaths.flowPath} />
-          </Text>
-          <Text color={COLORS.GREEN}>
-            Updated <FileLink path={savedPaths.directoryPath} />
-          </Text>
-        </Box>
-      ) : null}
-
       <Box paddingX={1}>
         <ErrorMessage message={saveError} />
       </Box>
-
-      {saving ? (
-        <Box marginTop={1} paddingX={1}>
-          <Text color={COLORS.DIM}>Saving flow...</Text>
-        </Box>
-      ) : null}
 
       {exitConfirmationVisible ? (
         <RuledBox color={COLORS.YELLOW} marginTop={1}>

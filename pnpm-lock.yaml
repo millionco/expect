@@ -30,12 +30,12 @@ importers:
 
   apps/cli:
     dependencies:
+      '@browser-tester/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@browser-tester/supervisor':
         specifier: workspace:*
         version: link:../../packages/supervisor
-      '@browser-tester/utils':
-        specifier: workspace:*
-        version: link:../../packages/utils
       '@tanstack/react-query':
         specifier: ^5.80.7
         version: 5.90.21(react@19.2.4)
@@ -173,9 +173,9 @@ importers:
       '@anthropic-ai/claude-agent-sdk':
         specifier: ^0.2.77
         version: 0.2.77(zod@4.3.6)
-      '@browser-tester/utils':
+      '@browser-tester/shared':
         specifier: workspace:*
-        version: link:../utils
+        version: link:../shared
       '@openai/codex-sdk':
         specifier: ^0.114.0
         version: 0.114.0
@@ -280,6 +280,19 @@ importers:
         specifier: ^5.7.0
         version: 5.9.3
 
+  packages/shared:
+    dependencies:
+      effect:
+        specifier: 4.0.0-beta.28
+        version: 4.0.0-beta.28
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.15
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
   packages/supervisor:
     dependencies:
       '@ai-sdk/provider':
@@ -291,9 +304,9 @@ importers:
       '@browser-tester/browser':
         specifier: workspace:*
         version: link:../browser
-      '@browser-tester/utils':
+      '@browser-tester/shared':
         specifier: workspace:*
-        version: link:../utils
+        version: link:../shared
       '@effect/platform-node':
         specifier: 4.0.0-beta.28
         version: 4.0.0-beta.28(effect@4.0.0-beta.28)(ioredis@5.10.0)
@@ -318,15 +331,6 @@ importers:
         version: 5.9.3
 
   packages/testie: {}
-
-  packages/utils:
-    devDependencies:
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.19.15
-      typescript:
-        specifier: ^5.7.0
-        version: 5.9.3
 
   playground/minecraft-ui:
     dependencies:

@@ -80,7 +80,12 @@ export const CookieSyncConfirmScreen = () => {
           This plan depends on cookie sync.
         </Text>
         <Text color={COLORS.DIM}>
-          Reason: <Text color={COLORS.TEXT}>{plan.cookieSync.reason}</Text>
+          Reason:{" "}
+          <Text color={COLORS.TEXT}>
+            {"cookieSync" in plan
+              ? (plan as { cookieSync: { reason: string } }).cookieSync.reason
+              : "Cookie sync required."}
+          </Text>
         </Text>
         <Text color={COLORS.DIM}>
           Running without synced cookies will make browser testing less reliable and more likely to

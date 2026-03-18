@@ -37,9 +37,9 @@ What the CLI gives the `Planner`. Uses existing git models directly — no inven
 ```ts
 export class TestPlanDraft extends Schema.Class<TestPlanDraft>("@supervisor/TestPlanDraft")({
   // from git service
-  changesFor: ChangesFor,            // WorkingTree | Branch { base, branchName } | Commit { hash }
+  changesFor: ChangesFor, // WorkingTree | Branch { base, branchName } | Commit { hash }
   currentBranch: Schema.String,
-  diffs: Schema.Array(Diff),         // full before/after content per file
+  diffs: Schema.Array(Diff), // full before/after content per file
   fileStats: Schema.Array(FileStat), // relativePath, added, removed
 
   // what to test
@@ -95,7 +95,9 @@ A `TestPlan` with its accumulated execution events. Immutable — `addEvent` ret
 The Executor folds events into it as they arrive; the Reporter reads from it to build the report.
 
 ```ts
-export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>("@supervisor/ExecutedTestPlan")({
+export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
+  "@supervisor/ExecutedTestPlan",
+)({
   events: Schema.Array(UpdateContent),
 }) {
   addEvent(event: UpdateContent): ExecutedTestPlan {
@@ -243,13 +245,15 @@ export class Planner extends ServiceMap.Service<Planner>()("@supervisor/Planner"
 
     const plan = Effect.fn("Planner.plan")(function* (draft: TestPlanDraft) {
       const text = yield* agent
-        .stream(new AgentStreamOptions({
-          cwd: process.cwd(),
-          model: PLANNER_MODEL,
-          sessionId: Option.none(),
-          prompt: draft.prompt,
-          systemPrompt: Option.none(),
-        }))
+        .stream(
+          new AgentStreamOptions({
+            cwd: process.cwd(),
+            model: PLANNER_MODEL,
+            sessionId: Option.none(),
+            prompt: draft.prompt,
+            systemPrompt: Option.none(),
+          }),
+        )
         .pipe(
           Stream.filterMap(extractTextDelta), // pull text-delta parts
           Stream.runFold("", (acc, chunk) => acc + chunk),
@@ -295,16 +299,18 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
       yield* updates.publish(runStarted);
 
       return yield* agent
-        .stream(new AgentStreamOptions({
-          cwd: process.cwd(),
-          model: EXECUTOR_MODEL,
-          sessionId: Option.none(),
-          prompt: plan.prompt,
-          systemPrompt: Option.none(),
-        }))
+        .stream(
+          new AgentStreamOptions({
+            cwd: process.cwd(),
+            model: EXECUTOR_MODEL,
+            sessionId: Option.none(),
+            prompt: plan.prompt,
+            systemPrompt: Option.none(),
+          }),
+        )
         .pipe(
           Stream.mapEffect((part) => streamPartToUpdate(part, plan)), // pure mapping + marker parsing
-          Stream.filterMap(identity),                                  // drop nulls (unrecognised parts)
+          Stream.filterMap(identity), // drop nulls (unrecognised parts)
           Stream.tap((update) => updates.publish(update)),
           Stream.runFold(
             new ExecutedTestPlan({ ...plan, events: [runStarted] }),
@@ -381,12 +387,13 @@ ManagedRuntime.make(
     Executor.layer,
     Reporter.layer,
     Agent.layerClaude, // or Agent.layerCodex
-  )
-)
+  ),
+);
 ```
 
 Usage is sequential:
+
 ```ts
-const executed = yield* executor.executePlan(plan);
-const testReport = yield* reporter.report(executed);
+const executed = yield * executor.executePlan(plan);
+const testReport = yield * reporter.report(executed);
 ```

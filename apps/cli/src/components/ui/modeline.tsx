@@ -7,43 +7,30 @@ import { useNavigationStore, type Screen } from "../../stores/use-navigation.js"
 import { usePreferencesStore } from "../../stores/use-preferences.js";
 import { useFlowSessionStore } from "../../stores/use-flow-session.js";
 import { useGitState } from "../../hooks/use-git-state.js";
-import { useSavedFlows } from "../../hooks/use-saved-flows.js";
 import { Clickable } from "./clickable.js";
 import { TextShimmer } from "./text-shimmer.js";
 
 const useHintSegments = (screen: Screen): HintSegment[] => {
   const COLORS = useColors();
-  const navigateTo = useNavigationStore((state) => state.navigateTo);
   const goBack = useFlowSessionStore((state) => state.goBack);
   const updateEnvironment = useFlowSessionStore((state) => state.updateEnvironment);
   const browserEnvironment = useFlowSessionStore((state) => state.browserEnvironment);
   const requestPlanApproval = useFlowSessionStore((state) => state.requestPlanApproval);
   const approvePlan = useFlowSessionStore((state) => state.approvePlan);
-  const generatedPlan = useFlowSessionStore((state) => state.generatedPlan);
   const skipPlanning = usePreferencesStore((state) => state.skipPlanning);
-  const { data: savedFlowSummaries = [] } = useSavedFlows();
-  const latestRunReport = useFlowSessionStore((state) => state.latestRunReport);
   const liveViewUrl = useFlowSessionStore((state) => state.liveViewUrl);
   const planningProvider = usePreferencesStore((state) => state.planningProvider);
   const planningModel = usePreferencesStore((state) => state.planningModel);
   const resolvedPlanningProvider = useFlowSessionStore((state) => state.resolvedPlanningProvider);
   switch (screen) {
     case "main": {
-      const hints: HintSegment[] = [
+      return [
         {
           key: "shift+tab",
           label: `skip planning ${skipPlanning ? "on" : "off"}`,
           color: skipPlanning ? COLORS.GREEN : undefined,
         },
       ];
-      if (savedFlowSummaries.length > 0) {
-        hints.push({
-          key: "ctrl+r",
-          label: "reuse flow",
-          onClick: () => navigateTo("saved-flow-picker"),
-        });
-      }
-      return hints;
     }
     case "select-pr":
       return [
@@ -83,19 +70,6 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
         { key: "↑↓", label: "nav" },
         { key: "tab", label: "fold" },
         { key: "s", label: "save plan" },
-        ...(generatedPlan?.cookieSync.required
-          ? [
-              {
-                key: "c",
-                label: browserEnvironment?.cookies === true ? "cookies on" : "sync cookies",
-                onClick: () =>
-                  updateEnvironment({
-                    ...(browserEnvironment ?? {}),
-                    cookies: !(browserEnvironment?.cookies === true),
-                  }),
-              },
-            ]
-          : []),
         { key: "esc", label: "leave" },
         { key: "e", label: "edit", cta: true },
         {
@@ -141,21 +115,8 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
       return hints;
     }
     case "results": {
-      const resultsHints: HintSegment[] = [];
-      const videoPath = latestRunReport?.artifacts.rawVideoPath;
-      if (videoPath) {
-        resultsHints.push({ key: "v", label: "open video" });
-      }
-      if (latestRunReport?.artifacts.highlightVideoPath) {
-        resultsHints.push({ key: "h", label: "highlight reel" });
-      }
-      if (latestRunReport?.artifacts.shareUrl) {
-        resultsHints.push({ key: "o", label: "open report" });
-      }
       return [
-        ...resultsHints,
         { key: "y", label: "copy", color: COLORS.PRIMARY, cta: true },
-        ...(latestRunReport?.pullRequest ? [{ key: "p", label: "post to PR", cta: true }] : []),
         { key: "esc", label: "main menu", cta: true, onClick: goBack },
       ];
     }

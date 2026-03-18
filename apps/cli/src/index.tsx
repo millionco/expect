@@ -1,5 +1,4 @@
 import { Effect } from "effect";
-import { ensureSafeCurrentWorkingDirectory } from "@browser-tester/utils";
 import { Command, InvalidOptionArgumentError } from "commander";
 import { render } from "ink";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -7,24 +6,18 @@ import { App } from "./components/app.js";
 import { ALT_SCREEN_OFF, ALT_SCREEN_ON, VERSION } from "./constants.js";
 import { ThemeProvider } from "./components/theme-context.js";
 import { loadThemeName } from "./utils/load-theme.js";
-import {
-  createDirectRunPlan,
-  getBrowserEnvironment,
-  Git,
-  isRunningInAgent,
-  loadSavedFlowBySlug,
-  resolveBrowserTarget,
-  type AgentProvider,
-  type TestAction,
-} from "@browser-tester/supervisor";
+import { ChangesFor, Git } from "@browser-tester/supervisor";
 import { autoDetectAndTest, runTest } from "./utils/run-test.js";
 import { runHealthcheckHeadless, runHealthcheckInteractive } from "./utils/run-healthcheck.js";
 import { useNavigationStore, type Screen } from "./stores/use-navigation.js";
 import { usePreferencesStore } from "./stores/use-preferences.js";
 import { useFlowSessionStore } from "./stores/use-flow-session.js";
 import { queryClient } from "./query-client.js";
-import { resolveTestRunConfig, type TestRunConfig } from "./utils/test-run-config.js";
-import { CliRuntime } from "./runtime.js";
+import {
+  resolveTestRunConfig,
+  type TestRunConfig,
+  type AgentProvider,
+} from "./utils/test-run-config.js";
 import { setInkInstance } from "./utils/clear-ink-display.js";
 
 const DEFAULT_SKIP_PLANNING = true;
@@ -71,7 +64,6 @@ Examples:
   $ testie                                    open interactive TUI
   $ testie -m "test the login flow" -y        plan and run immediately
   $ testie branch -m "verify signup" -y       test all branch changes
-  $ testie -f my-flow                         reuse a saved flow
 
 Environment variables:
   BROWSER_TESTER_BASE_URL     base URL for the browser (e.g. http://localhost:3000)
@@ -79,9 +71,7 @@ Environment variables:
   BROWSER_TESTER_COOKIES      enable cookie sync by default (true | 1)`,
   );
 
-const isHeadless = () => isRunningInAgent() || !process.stdin.isTTY;
-
-ensureSafeCurrentWorkingDirectory();
+const isHeadless = () => !process.stdin.isTTY;
 
 const renderApp = () => {
   const initialTheme = loadThemeName() ?? undefined;
@@ -97,47 +87,39 @@ const renderApp = () => {
   setInkInstance(instance);
 };
 
-const resolveInitialScreen = (config: TestRunConfig, hasSavedFlow: boolean): Screen => {
-  if (hasSavedFlow) return config.autoRun ? "testing" : "review-plan";
+const resolveInitialScreen = (config: TestRunConfig): Screen => {
   if (config.message) return DEFAULT_SKIP_PLANNING ? "testing" : "planning";
   return "main";
 };
 
-const seedStoreFromConfig = async (config: TestRunConfig): Promise<void> => {
+const resolveChangesFor = async (config: TestRunConfig) => {
   const cwd = process.cwd();
-  const resolvedCommit =
-    config.action === "select-commit" && config.commitHash
-      ? ((await Effect.runPromise(
-          Effect.gen(function* () {
-            const git = yield* Git;
-            return yield* git.getCommitSummary(config.commitHash!);
-          }).pipe(
-            Effect.provide(Git.withRepoRoot(cwd)),
-            Effect.catchTag("GitError", () => Effect.succeed(undefined)),
-          ),
-        )) ?? null)
-      : null;
+  return Effect.runPromise(
+    Effect.gen(function* () {
+      const git = yield* Git;
+      const mainBranch = yield* git.getMainBranch;
 
-  const savedFlow = config.flowSlug
-    ? await CliRuntime.runPromise(
-        loadSavedFlowBySlug(config.flowSlug).pipe(
-          Effect.catchTag("FlowNotFoundError", () => Effect.succeed(null)),
-        ),
-      )
-    : null;
-  const resolvedTarget = await Effect.runPromise(
-    resolveBrowserTarget({
-      action: config.action,
-      commit: resolvedCommit ?? undefined,
+      if (config.action === "commit" && config.commitHash) {
+        const commit = yield* git.getCommitSummary(config.commitHash);
+        return {
+          changesFor: ChangesFor.Commit({ hash: config.commitHash }),
+          selectedCommit: commit ?? undefined,
+        };
+      }
+      if (config.action === "branch") {
+        return { changesFor: ChangesFor.Branch({ mainBranch }), selectedCommit: undefined };
+      }
+      if (config.action === "changes") {
+        return { changesFor: ChangesFor.Changes({ mainBranch }), selectedCommit: undefined };
+      }
+      return { changesFor: ChangesFor.WorkingTree(), selectedCommit: undefined };
     }).pipe(Effect.provide(Git.withRepoRoot(cwd))),
   );
-  const browserEnvironment = getBrowserEnvironment(config.environmentOverrides);
-  const directRunPlan =
-    !savedFlow && config.message && DEFAULT_SKIP_PLANNING
-      ? createDirectRunPlan({ userInstruction: config.message, target: resolvedTarget })
-      : null;
+};
 
-  const screen = resolveInitialScreen(config, Boolean(savedFlow));
+const seedStoreFromConfig = async (config: TestRunConfig): Promise<void> => {
+  const { changesFor, selectedCommit } = await resolveChangesFor(config);
+  const screen = resolveInitialScreen(config);
 
   useNavigationStore.setState({ screen });
   usePreferencesStore.setState({
@@ -150,30 +132,15 @@ const seedStoreFromConfig = async (config: TestRunConfig): Promise<void> => {
     environmentOverrides: config.environmentOverrides,
   });
   useFlowSessionStore.setState({
-    testAction: config.action,
-    selectedCommit: resolvedCommit,
+    changesFor,
+    selectedCommit: selectedCommit ?? null,
     ...(config.message && { flowInstruction: config.message }),
-    ...(savedFlow && {
-      generatedPlan: savedFlow.plan,
-      resolvedTarget,
-      browserEnvironment: {
-        ...browserEnvironment,
-        ...savedFlow.environment,
-      },
-      planOrigin: "saved" as const,
-    }),
-    ...(directRunPlan && {
-      generatedPlan: directRunPlan,
-      resolvedTarget,
-      browserEnvironment,
-      planOrigin: "generated" as const,
-    }),
-    ...(!savedFlow && config.message && !directRunPlan && { planOrigin: "generated" as const }),
+    ...(!config.message && { planOrigin: "generated" as const }),
   });
 };
 
 const createCommandAction =
-  (action: TestAction) =>
+  (action: TestRunConfig["action"]) =>
   async (commitHash?: string): Promise<void> => {
     const config = resolveTestRunConfig(action, program.opts(), commitHash);
     if (isHeadless()) return runTest(config);
@@ -191,13 +158,13 @@ program
     }
     const { shouldTest, scope } = await runHealthcheckInteractive();
     if (!shouldTest) return;
-    const actionByScope: Record<string, TestAction> = {
-      changes: "test-changes",
-      "unstaged-changes": "test-unstaged",
-      "entire-branch": "test-branch",
-      default: "test-changes",
+    const actionByScope: Record<string, TestRunConfig["action"]> = {
+      changes: "changes",
+      "unstaged-changes": "unstaged",
+      "entire-branch": "branch",
+      default: "changes",
     };
-    const action = actionByScope[scope] ?? "test-changes";
+    const action = actionByScope[scope] ?? "changes";
     const config = resolveTestRunConfig(action, program.opts());
     await seedStoreFromConfig(config);
     renderApp();
@@ -206,15 +173,15 @@ program
 program
   .command("unstaged")
   .description("test current unstaged changes (default)")
-  .action(createCommandAction("test-unstaged"));
+  .action(createCommandAction("unstaged"));
 
 program
   .command("branch")
   .description("test full branch diff against main")
-  .action(createCommandAction("test-branch"));
+  .action(createCommandAction("branch"));
 
 program.action(async () => {
-  const config = resolveTestRunConfig("test-changes", program.opts());
+  const config = resolveTestRunConfig("changes", program.opts());
   if (isHeadless()) return autoDetectAndTest(config);
   if (
     config.message ||

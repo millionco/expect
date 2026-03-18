@@ -10,7 +10,3 @@ export {
   type BrowserCapacity,
   type SystemStats,
 } from "./estimate-browser-capacity";
-export {
-  ensureSafeCurrentWorkingDirectory,
-  resolveSafeCurrentWorkingDirectory,
-} from "./get-safe-current-working-directory";

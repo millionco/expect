@@ -1,182 +1,165 @@
-import { Effect, Stream } from "effect";
+import { Cause, Effect, Stream } from "effect";
 import {
-  executeBrowserFlow,
-  generateBrowserPlan,
-  getBrowserEnvironment,
-  getGitState,
-  getRecommendedScope,
+  ChangesFor,
+  Executor,
+  ExecutedTestPlan,
   Git,
-  loadSavedFlowBySlug,
-  resolveBrowserTarget,
-  saveTestedFingerprint,
-  type BrowserRunEvent,
-  type BrowserRunReport,
-  type CommitSummary,
-  type GenerateBrowserPlanResult,
-  type TestAction,
+  Planner,
+  Reporter,
+  TestPlanDraft,
 } from "@browser-tester/supervisor";
+import { Agent } from "@browser-tester/agent";
+import { Option } from "effect";
 import figures from "figures";
 import { VERSION } from "../constants.js";
 import { CliRuntime } from "../runtime.js";
 import type { TestRunConfig } from "./test-run-config.js";
 
-const ACTION_LABELS: Record<TestAction, string> = {
-  "test-unstaged": "unstaged changes",
-  "test-branch": "branch",
-  "test-changes": "changes",
-  "select-commit": "commit",
+const ACTION_LABELS: Record<TestRunConfig["action"], string> = {
+  unstaged: "unstaged changes",
+  branch: "branch",
+  changes: "changes",
+  commit: "commit",
 };
 
-const DEFAULT_INSTRUCTIONS: Record<TestAction, string> = {
-  "test-unstaged": "Test all unstaged changes in the browser and verify they work correctly.",
-  "test-branch": "Test all branch changes in the browser and verify they work correctly.",
-  "test-changes": "Test all changes from main in the browser and verify they work correctly.",
-  "select-commit":
-    "Test the selected commit's changes in the browser and verify they work correctly.",
-};
-
-const formatRunEvent = (event: BrowserRunEvent): string | null => {
-  switch (event.type) {
-    case "run-started":
-      return `Starting ${event.planTitle}`;
-    case "step-started":
-      return `${figures.arrowRight} ${event.stepId} ${event.title}`;
-    case "step-completed":
-      return `  ${figures.tick} ${event.stepId} ${event.summary}`;
-    case "assertion-failed":
-      return `  ${figures.cross} ${event.stepId} ${event.message}`;
-    case "browser-log":
-      return `    browser:${event.action} ${event.message}`;
-    case "text":
-      return event.text;
-    case "error":
-      return `Error: ${event.message}`;
-    case "run-completed":
-      return `Run ${event.status}: ${event.summary}`;
-    default:
-      return null;
-  }
-};
-
-const resolvePlan = async (
-  config: TestRunConfig,
-  selectedCommit?: CommitSummary,
-): Promise<GenerateBrowserPlanResult> => {
-  const { action, environmentOverrides } = config;
-
-  if (config.flowSlug) {
-    const savedFlow = await CliRuntime.runPromise(
-      loadSavedFlowBySlug(config.flowSlug).pipe(
-        Effect.catchTag("FlowNotFoundError", () => Effect.succeed(null)),
-      ),
-    );
-    if (!savedFlow) {
-      console.error(`Saved flow "${config.flowSlug}" not found.`);
-      process.exit(1);
-    }
-    const target = await Effect.runPromise(
-      resolveBrowserTarget({ action, commit: selectedCommit }).pipe(
-        Effect.provide(Git.withRepoRoot(process.cwd())),
-      ),
-    );
-    const environment = {
-      ...getBrowserEnvironment(environmentOverrides),
-      ...savedFlow.environment,
-    };
-    console.error(`Using saved flow: ${savedFlow.title} (${savedFlow.plan.steps.length} steps)\n`);
-    return { target, plan: savedFlow.plan, environment };
-  }
-
-  const userInstruction = config.message ?? DEFAULT_INSTRUCTIONS[action];
-  console.error("Planning browser flow...");
-  const result = await Effect.runPromise(
-    generateBrowserPlan({
-      action,
-      commit: selectedCommit,
-      userInstruction,
-      environmentOverrides,
-      provider: config.planningProvider,
-      model: config.planningModel,
-    }).pipe(Effect.provide(Git.withRepoRoot(process.cwd()))),
-  );
-  console.error(`Plan: ${result.plan.title} (${result.plan.steps.length} steps)\n`);
-  return result;
+const DEFAULT_INSTRUCTIONS: Record<TestRunConfig["action"], string> = {
+  unstaged: "Test all unstaged changes in the browser and verify they work correctly.",
+  branch: "Test all branch changes in the browser and verify they work correctly.",
+  changes: "Test all changes from main in the browser and verify they work correctly.",
+  commit: "Test the selected commit's changes in the browser and verify they work correctly.",
 };
 
 export const runTest = async (config: TestRunConfig): Promise<void> => {
   const { action } = config;
-  const gitState = await getGitState();
+  const cwd = process.cwd();
 
-  let resolvedCommit;
-  if (action === "select-commit" && config.commitHash) {
-    resolvedCommit = await Effect.runPromise(
-      Effect.gen(function* () {
-        const git = yield* Git;
-        return yield* git.getCommitSummary(config.commitHash!);
-      }).pipe(
-        Effect.provide(Git.withRepoRoot(process.cwd())),
-        Effect.catchTag("GitError", () => Effect.succeed(undefined)),
-      ),
-    );
-    if (!resolvedCommit) {
-      console.error(`Commit "${config.commitHash}" not found in recent history.`);
-      process.exit(1);
-    }
-  }
+  const agentBackend = config.planningProvider === "claude" ? "claude" : "codex";
 
   console.error(`testie v${VERSION}`);
-  if (gitState.isGitRepo) {
-    console.error(`Testing ${ACTION_LABELS[action]} on ${gitState.currentBranch}\n`);
-  } else {
-    console.error(`Testing ${ACTION_LABELS[action]} (no git repository detected)\n`);
-  }
+  console.error(`Testing ${ACTION_LABELS[action]}\n`);
 
   try {
-    const { target, plan, environment } = await resolvePlan(config, resolvedCommit);
-    const latestRunReportState: { current: BrowserRunReport | null } = { current: null };
+    const environment = {
+      baseUrl: config.environmentOverrides?.baseUrl,
+      headed: config.environmentOverrides?.headed,
+      cookies: config.environmentOverrides?.cookies,
+    };
 
-    await Effect.runPromise(
-      Stream.runForEach(
-        executeBrowserFlow({
-          target,
-          plan,
-          environment,
-          provider: config.executionProvider,
-          ...(config.executionModel ? { providerSettings: { model: config.executionModel } } : {}),
-        }),
-        (event) =>
-          Effect.sync(() => {
-            if (event.type === "run-started" && event.liveViewUrl) {
-              process.stdout.write(`Live view: ${event.liveViewUrl}\n`);
-            }
-            if (event.type === "run-completed" && event.report) {
-              latestRunReportState.current = event.report;
-            }
-            const line = formatRunEvent(event);
-            if (line) {
-              process.stdout.write(line + "\n");
-            }
-          }),
-      ),
-    );
+    let testPlan;
+    if (config.message) {
+      console.error("Planning browser flow...");
+      const draft = await Effect.runPromise(
+        Effect.gen(function* () {
+          const git = yield* Git;
+          const currentBranch = yield* git.getCurrentBranch;
+          const mainBranch = yield* git.getMainBranch;
+          const changesFor =
+            action === "branch"
+              ? ChangesFor.Branch({ mainBranch })
+              : action === "changes"
+                ? ChangesFor.Changes({ mainBranch })
+                : ChangesFor.WorkingTree();
+          const fileStats = yield* git.getFileStats(changesFor);
+          const diffPreview = yield* git.getDiffPreview(changesFor);
 
-    const latestRunReport = latestRunReportState.current;
+          return new TestPlanDraft({
+            changesFor: { _tag: "WorkingTree" as const },
+            currentBranch,
+            diffPreview,
+            fileStats: [...fileStats],
+            instruction: config.message ?? "",
+            baseUrl: environment.baseUrl ? Option.some(environment.baseUrl) : Option.none(),
+            isHeadless: environment.headed === false,
+            requiresCookies: environment.cookies === true,
+          });
+        }).pipe(Effect.provide(Git.withRepoRoot(cwd))),
+      );
 
-    if (latestRunReport?.status === "passed") {
-      saveTestedFingerprint();
-    }
+      testPlan = await CliRuntime.runPromise(
+        Planner.use((planner) => planner.plan(draft)).pipe(
+          Effect.provide(Planner.layer),
+          Effect.provide(Agent.layerFor(agentBackend)),
+        ),
+      );
+      console.error(`Plan: ${testPlan.title} (${testPlan.steps.length} steps)\n`);
+    } else {
+      const instruction = DEFAULT_INSTRUCTIONS[action];
+      testPlan = await Effect.runPromise(
+        Effect.gen(function* () {
+          const git = yield* Git;
+          const currentBranch = yield* git.getCurrentBranch;
+          const changesFor = ChangesFor.WorkingTree();
+          const fileStats = yield* git.getFileStats(changesFor);
+          const diffPreview = yield* git.getDiffPreview(changesFor);
 
-    if (latestRunReport?.artifacts.highlightVideoPath) {
-      process.stdout.write(`Highlight reel: ${latestRunReport.artifacts.highlightVideoPath}\n`);
-    }
-    if (latestRunReport?.artifacts.shareUrl) {
-      process.stdout.write(`Report: ${latestRunReport.artifacts.shareUrl}\n`);
-    }
-    if (latestRunReport?.pullRequest) {
-      process.stdout.write(
-        `Open PR: #${latestRunReport.pullRequest.number} ${latestRunReport.pullRequest.url}\n`,
+          return new TestPlanDraft({
+            changesFor: { _tag: "WorkingTree" as const },
+            currentBranch,
+            diffPreview,
+            fileStats: [...fileStats],
+            instruction,
+            baseUrl: environment.baseUrl ? Option.some(environment.baseUrl) : Option.none(),
+            isHeadless: environment.headed === false,
+            requiresCookies: environment.cookies === true,
+          });
+        }).pipe(Effect.provide(Git.withRepoRoot(cwd))),
       );
     }
+
+    await CliRuntime.runPromise(
+      Effect.gen(function* () {
+        const executor = yield* Executor;
+        // HACK: Effect v4 beta loses Stream element type through ServiceMap.Service inference
+        const executionStream = (yield* executor.executePlan(
+          testPlan,
+        )) as Stream.Stream<ExecutedTestPlan>;
+
+        const finalExecuted = yield* executionStream.pipe(
+          Stream.tap((executed) =>
+            Effect.sync(() => {
+              const lastEvent = executed.events.at(-1);
+              if (!lastEvent) return;
+              switch (lastEvent._tag) {
+                case "RunStarted":
+                  console.error(`Starting ${lastEvent.plan.title}`);
+                  break;
+                case "StepStarted":
+                  console.error(`${figures.arrowRight} ${lastEvent.stepId} ${lastEvent.title}`);
+                  break;
+                case "StepCompleted":
+                  console.error(`  ${figures.tick} ${lastEvent.stepId} ${lastEvent.summary}`);
+                  break;
+                case "StepFailed":
+                  console.error(`  ${figures.cross} ${lastEvent.stepId} ${lastEvent.message}`);
+                  break;
+              }
+            }),
+          ),
+          Stream.runLast,
+          Effect.map((option) =>
+            option._tag === "Some"
+              ? option.value
+              : new ExecutedTestPlan({ ...testPlan, events: [] }),
+          ),
+        );
+
+        const report = yield* Reporter.use((reporter) => reporter.report(finalExecuted)).pipe(
+          Effect.provide(Reporter.layer),
+        );
+        console.error(`\nResult: ${report.status.toUpperCase()}`);
+        console.error(report.summary);
+      }).pipe(
+        Effect.provide(Executor.layer),
+        Effect.provide(Agent.layerFor(config.executionProvider === "claude" ? "claude" : "codex")),
+        Effect.catchCause((cause) =>
+          Effect.sync(() => {
+            if (!cause.reasons.every(Cause.isInterruptReason)) {
+              console.error(`Error: ${Cause.pretty(cause)}`);
+            }
+          }),
+        ),
+      ),
+    );
   } catch (error) {
     console.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
@@ -184,18 +167,5 @@ export const runTest = async (config: TestRunConfig): Promise<void> => {
 };
 
 export const autoDetectAndTest = async (config?: Partial<TestRunConfig>): Promise<void> => {
-  const gitState = await getGitState();
-  if (!gitState.isGitRepo) {
-    await runTest({ action: "test-unstaged", ...config });
-    return;
-  }
-  const scope = getRecommendedScope(gitState);
-  const actionByScope: Record<string, TestAction> = {
-    changes: "test-changes",
-    "unstaged-changes": "test-unstaged",
-    "entire-branch": "test-branch",
-    default: "test-changes",
-  };
-  const action = actionByScope[scope] ?? "test-changes";
-  await runTest({ action, ...config });
+  await runTest({ action: "changes", ...config });
 };

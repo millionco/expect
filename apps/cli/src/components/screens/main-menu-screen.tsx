@@ -4,6 +4,7 @@ import { useFlowSessionStore } from "../../stores/use-flow-session.js";
 import { usePreferencesStore } from "../../stores/use-preferences.js";
 import { useGitState } from "../../hooks/use-git-state.js";
 import { useColors } from "../theme-context.js";
+import { ChangesFor } from "@browser-tester/supervisor";
 import { Clickable } from "../ui/clickable.js";
 import { Input } from "../ui/input.js";
 import { RuledBox } from "../ui/ruled-box.js";
@@ -13,7 +14,6 @@ import { stripMouseSequences } from "../../hooks/mouse-context.js";
 import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions.js";
 import { DotField } from "../ui/dot-field.js";
 
-import { generateFlowSuggestions } from "@browser-tester/supervisor";
 import { getFlowSuggestions } from "../../utils/get-flow-suggestions.js";
 import {
   buildLocalContextOptions,
@@ -29,13 +29,11 @@ export const MainMenu = () => {
   const { data: gitState } = useGitState();
   const toggleSkipPlanning = usePreferencesStore((state) => state.toggleSkipPlanning);
   const submitFlowInstruction = useFlowSessionStore((state) => state.submitFlowInstruction);
-  const selectAction = useFlowSessionStore((state) => state.selectAction);
+  const selectChangesFor = useFlowSessionStore((state) => state.selectChangesFor);
   const storeSelectContext = useFlowSessionStore((state) => state.selectContext);
   const selectedContext = useFlowSessionStore((state) => state.selectedContext);
   const switchBranch = useFlowSessionStore((state) => state.switchBranch);
   const flowInstruction = useFlowSessionStore((state) => state.flowInstruction);
-  const planningProvider = usePreferencesStore((state) => state.planningProvider);
-
   const [value, setValue] = useState(flowInstruction);
   const [inputKey, setInputKey] = useState(0);
   const [suggestionIndex, setSuggestionIndex] = useState(0);
@@ -104,50 +102,13 @@ export const MainMenu = () => {
     () => getFlowSuggestions(activeContext, gitState ?? null),
     [activeContext, gitState],
   );
-  const [aiSuggestions, setAiSuggestions] = useState<readonly string[] | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const generationAbortRef = useRef<AbortController | null>(null);
-  const suggestions = aiSuggestions ?? staticSuggestions;
+  const suggestions = staticSuggestions;
 
   useEffect(() => {
     setSuggestionIndex(0);
-    setAiSuggestions(null);
-    setIsGenerating(false);
-    generationAbortRef.current?.abort();
-    generationAbortRef.current = null;
   }, [activeContext, gitState]);
 
-  const requestSuggestions = useCallback(() => {
-    if (!gitState || isGenerating) return;
-
-    generationAbortRef.current?.abort();
-    const abortController = new AbortController();
-    generationAbortRef.current = abortController;
-    setIsGenerating(true);
-
-    generateFlowSuggestions({
-      changedFiles: gitState.changedFiles,
-      currentBranch: gitState.currentBranch,
-      contextType: activeContext?.type ?? null,
-      contextLabel: activeContext?.label ?? null,
-      provider: planningProvider,
-      signal: abortController.signal,
-    })
-      .then((result) => {
-        if (!abortController.signal.aborted) {
-          setAiSuggestions(result.length > 0 ? result : null);
-          if (result.length > 0) {
-            setSuggestionIndex(0);
-          }
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!abortController.signal.aborted) {
-          setIsGenerating(false);
-        }
-      });
-  }, [activeContext, gitState, isGenerating, planningProvider]);
+  const requestSuggestions = useCallback(() => {}, []);
 
   const openPicker = useCallback(() => {
     setPickerOpen(true);
@@ -182,24 +143,26 @@ export const MainMenu = () => {
         switchBranch(context.branchName, context.prNumber ?? null);
       }
 
-      if (context?.action === "select-commit") {
-        selectAction("select-commit");
-        useFlowSessionStore.setState({
-          selectedCommit: context.commitHash
-            ? {
-                hash: context.commitHash,
-                shortHash: context.commitShortHash ?? "",
-                subject: context.commitSubject ?? "",
-              }
-            : null,
-        });
+      if (context?.type === "commit" && context.commitHash) {
+        const commit = {
+          hash: context.commitHash,
+          shortHash: context.commitShortHash ?? "",
+          subject: context.commitSubject ?? "",
+        };
+        useFlowSessionStore.setState({ selectedCommit: commit });
+        selectChangesFor(ChangesFor.Commit({ hash: context.commitHash }));
       } else {
-        selectAction(context?.action ?? "test-changes");
+        const mainBranch = gitState?.mainBranch ?? "main";
+        selectChangesFor(
+          context?.type === "branch" || context?.type === "pr"
+            ? ChangesFor.Branch({ mainBranch })
+            : ChangesFor.Changes({ mainBranch }),
+        );
       }
 
       submitFlowInstruction(trimmed);
     },
-    [value, activeContext, switchBranch, selectAction, submitFlowInstruction],
+    [value, activeContext, gitState, switchBranch, selectChangesFor, submitFlowInstruction],
   );
 
   const valueRef = useRef(value);

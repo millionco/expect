@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AgentProvider, EnvironmentOverrides } from "@browser-tester/supervisor";
+import type { AgentProvider, EnvironmentOverrides } from "../utils/test-run-config.js";
 
 interface PreferencesStore {
   autoRunAfterPlanning: boolean;

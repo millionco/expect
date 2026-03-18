@@ -1,40 +1,40 @@
-import { Effect } from "effect";
 import { create } from "zustand";
 import {
   checkoutBranch,
-  createDirectRunPlan,
-  getBrowserEnvironment,
-  Git,
-  resolveBrowserTarget,
-  type AgentProvider,
-  type BrowserEnvironmentHints,
-  type BrowserFlowPlan,
-  type BrowserRunReport,
+  ChangesFor,
   type CommitSummary,
-  type LoadedSavedFlow,
-  type TestAction,
-  type TestTarget,
+  type TestPlan,
+  type TestReport,
 } from "@browser-tester/supervisor";
+import type {
+  AgentProvider,
+  BrowserEnvironmentHints,
+  EnvironmentOverrides,
+} from "../utils/test-run-config.js";
 import { FLOW_INPUT_HISTORY_LIMIT } from "../constants.js";
 import type { ContextOption } from "../utils/context-options.js";
 import { useNavigationStore } from "./use-navigation.js";
 import { usePreferencesStore } from "./use-preferences.js";
 import { queryClient } from "../query-client.js";
 
+const getBrowserEnvironment = (overrides?: EnvironmentOverrides): BrowserEnvironmentHints => ({
+  baseUrl: overrides?.baseUrl,
+  headed: overrides?.headed,
+  cookies: overrides?.cookies,
+});
+
 interface FlowSessionStore {
-  testAction: TestAction | null;
+  changesFor: ChangesFor | null;
   selectedCommit: CommitSummary | null;
   flowInstruction: string;
   flowInstructionHistory: string[];
   planOrigin: "generated" | "saved" | null;
-  generatedPlan: BrowserFlowPlan | null;
-  resolvedTarget: TestTarget | null;
+  generatedPlan: TestPlan | null;
   browserEnvironment: BrowserEnvironmentHints | null;
   resolvedPlanningProvider: AgentProvider | null;
   resolvedExecutionProvider: AgentProvider | null;
   planningError: string | null;
-  pendingSavedFlow: LoadedSavedFlow | null;
-  latestRunReport: BrowserRunReport | null;
+  latestRunReport: TestReport | null;
   autoSaveStatus: "idle" | "saving" | "saved" | "error";
   liveViewUrl: string | null;
   mainMenuOnAction: boolean;
@@ -47,39 +47,28 @@ interface FlowSessionStore {
   selectContext: (context: ContextOption | null) => void;
   setLiveViewUrl: (url: string | null) => void;
   goBack: () => void;
-  selectAction: (action: TestAction) => void;
+  selectChangesFor: (changesFor: ChangesFor) => void;
   selectCommit: (commit: CommitSummary) => void;
-  beginSavedFlowReuse: (action: TestAction) => void;
-  applySavedFlow: (savedFlow: LoadedSavedFlow) => void;
   submitFlowInstruction: (instruction: string) => void;
-  completePlanning: (result: {
-    target: TestTarget;
-    plan: BrowserFlowPlan;
-    environment: BrowserEnvironmentHints;
-  }) => void;
+  completePlanning: (result: { plan: TestPlan; environment: BrowserEnvironmentHints }) => void;
   failPlanning: (error: string) => void;
-  updatePlan: (plan: BrowserFlowPlan) => void;
+  updatePlan: (plan: TestPlan) => void;
   updateEnvironment: (environment: BrowserEnvironmentHints | null) => void;
   requestPlanApproval: () => void;
   approvePlan: () => void;
-  completeTestingRun: (report: BrowserRunReport) => void;
+  completeTestingRun: (report: TestReport) => void;
   exitTesting: () => void;
   switchBranch: (branch: string, prNumber?: number | null) => void;
   clearCheckoutError: () => void;
 }
 
-const needsCookieConfirmation = (
-  plan: BrowserFlowPlan | null,
-  environment: BrowserEnvironmentHints | null,
-): boolean => Boolean(plan?.cookieSync.required) && environment?.cookies !== true;
+const needsCookieConfirmation = (): boolean => false;
 
 const RESET_PLAN_STATE = {
   generatedPlan: null,
-  resolvedTarget: null,
   browserEnvironment: null,
   resolvedPlanningProvider: null,
   resolvedExecutionProvider: null,
-  pendingSavedFlow: null,
   latestRunReport: null,
   autoSaveStatus: "idle" as const,
   liveViewUrl: null,
@@ -87,7 +76,7 @@ const RESET_PLAN_STATE = {
 
 const RESET_FLOW_STATE = {
   ...RESET_PLAN_STATE,
-  testAction: null,
+  changesFor: null,
   selectedCommit: null,
   selectedContext: null,
   flowInstruction: "",
@@ -106,18 +95,16 @@ const rememberFlowInstruction = (history: string[], instruction: string): string
 const setScreen = useNavigationStore.getState().setScreen;
 
 export const useFlowSessionStore = create<FlowSessionStore>((set, get) => ({
-  testAction: null,
+  changesFor: null,
   selectedCommit: null,
   flowInstruction: "",
   flowInstructionHistory: [],
   planOrigin: null,
   generatedPlan: null,
-  resolvedTarget: null,
   browserEnvironment: null,
   resolvedPlanningProvider: null,
   resolvedExecutionProvider: null,
   planningError: null,
-  pendingSavedFlow: null,
   latestRunReport: null,
   autoSaveStatus: "idle",
   liveViewUrl: null,
@@ -153,25 +140,15 @@ export const useFlowSessionStore = create<FlowSessionStore>((set, get) => ({
       setScreen("main");
       return;
     }
-    if (screen === "saved-flow-picker") {
-      set({
-        ...RESET_PLAN_STATE,
-        testAction: null,
-        selectedCommit: null,
-        planOrigin: null,
-      });
-      setScreen("main");
-      return;
-    }
     if (screen !== "testing") {
       setScreen("main");
     }
   },
 
-  selectAction: (action) => {
+  selectChangesFor: (changesFor) => {
     set({
       ...RESET_PLAN_STATE,
-      testAction: action,
+      changesFor,
       selectedCommit: null,
       planOrigin: null,
     });
@@ -179,72 +156,13 @@ export const useFlowSessionStore = create<FlowSessionStore>((set, get) => ({
   },
 
   selectCommit: (commit) => {
-    const state = get();
-    if (state.pendingSavedFlow) {
-      const { environmentOverrides } = usePreferencesStore.getState();
-      set({
-        testAction: "select-commit",
-        selectedCommit: commit,
-        generatedPlan: state.pendingSavedFlow.plan,
-        browserEnvironment: {
-          ...getBrowserEnvironment(environmentOverrides),
-          ...state.pendingSavedFlow.environment,
-        },
-        pendingSavedFlow: null,
-      });
-      void Effect.runPromise(
-        resolveBrowserTarget({ action: "select-commit", commit }).pipe(
-          Effect.provide(Git.withRepoRoot(process.cwd())),
-        ),
-      ).then((resolvedTarget) => {
-        set({ resolvedTarget });
-        setScreen("review-plan");
-      });
-      return;
-    }
-
     set({
       ...RESET_PLAN_STATE,
-      testAction: "select-commit",
+      changesFor: ChangesFor.Commit({ hash: commit.hash }),
       selectedCommit: commit,
       planOrigin: null,
     });
     setScreen("main");
-  },
-
-  beginSavedFlowReuse: (action) => {
-    set({
-      ...RESET_PLAN_STATE,
-      testAction: action,
-      selectedCommit: null,
-      planningError: null,
-      planOrigin: "saved",
-    });
-    setScreen("saved-flow-picker");
-  },
-
-  applySavedFlow: (savedFlow) => {
-    const state = get();
-    if (!state.testAction) return;
-
-    const { environmentOverrides } = usePreferencesStore.getState();
-    set({
-      generatedPlan: savedFlow.plan,
-      browserEnvironment: {
-        ...getBrowserEnvironment(environmentOverrides),
-        ...savedFlow.environment,
-      },
-      pendingSavedFlow: null,
-      selectedCommit: null,
-    });
-    void Effect.runPromise(
-      resolveBrowserTarget({ action: state.testAction }).pipe(
-        Effect.provide(Git.withRepoRoot(process.cwd())),
-      ),
-    ).then((resolvedTarget) => {
-      set({ resolvedTarget });
-      setScreen("review-plan");
-    });
   },
 
   submitFlowInstruction: (instruction) => {
@@ -255,7 +173,7 @@ export const useFlowSessionStore = create<FlowSessionStore>((set, get) => ({
       instruction,
     );
 
-    if (!state.testAction) {
+    if (!state.changesFor) {
       set({
         ...RESET_PLAN_STATE,
         flowInstruction: instruction,
@@ -275,28 +193,9 @@ export const useFlowSessionStore = create<FlowSessionStore>((set, get) => ({
         planningError: null,
         planOrigin: "generated",
       });
-      void Effect.runPromise(
-        resolveBrowserTarget({
-          action: state.testAction,
-          commit: state.selectedCommit ?? undefined,
-        }).pipe(Effect.provide(Git.withRepoRoot(process.cwd()))),
-      ).then((resolvedTarget) => {
-        const browserEnvironment = getBrowserEnvironment(environmentOverrides);
-        const directPlan = createDirectRunPlan({
-          userInstruction: instruction,
-          target: resolvedTarget,
-        });
-        set({
-          resolvedTarget,
-          generatedPlan: directPlan,
-          browserEnvironment,
-        });
-        setScreen(
-          needsCookieConfirmation(directPlan, browserEnvironment)
-            ? "cookie-sync-confirm"
-            : "testing",
-        );
-      });
+      const browserEnvironment = getBrowserEnvironment(environmentOverrides);
+      set({ browserEnvironment });
+      setScreen(needsCookieConfirmation() ? "cookie-sync-confirm" : "testing");
       return;
     }
 
@@ -313,11 +212,10 @@ export const useFlowSessionStore = create<FlowSessionStore>((set, get) => ({
   completePlanning: (result) => {
     const { autoRunAfterPlanning } = usePreferencesStore.getState();
     set({
-      resolvedTarget: result.target,
       generatedPlan: result.plan,
       browserEnvironment: result.environment,
     });
-    setScreen(autoRunAfterPlanning && !result.plan.cookieSync.required ? "testing" : "review-plan");
+    setScreen(autoRunAfterPlanning ? "testing" : "review-plan");
   },
 
   failPlanning: (error) => set({ planningError: error }),
@@ -327,12 +225,7 @@ export const useFlowSessionStore = create<FlowSessionStore>((set, get) => ({
   updateEnvironment: (environment) => set({ browserEnvironment: environment }),
 
   requestPlanApproval: () => {
-    const { generatedPlan, browserEnvironment } = get();
-    setScreen(
-      needsCookieConfirmation(generatedPlan, browserEnvironment)
-        ? "cookie-sync-confirm"
-        : "testing",
-    );
+    setScreen(needsCookieConfirmation() ? "cookie-sync-confirm" : "testing");
   },
 
   approvePlan: () => {
@@ -354,7 +247,7 @@ export const useFlowSessionStore = create<FlowSessionStore>((set, get) => ({
     if (success) {
       set({
         ...RESET_PLAN_STATE,
-        testAction: "test-branch",
+        changesFor: null,
         checkedOutBranch: branch,
         checkedOutPrNumber: prNumber ?? null,
         checkoutError: null,

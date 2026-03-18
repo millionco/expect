@@ -1,9 +1,23 @@
-import type { AgentProvider, EnvironmentOverrides, TestAction } from "@browser-tester/supervisor";
+import type { FileStat } from "@browser-tester/shared/models";
 
-export type { EnvironmentOverrides } from "@browser-tester/supervisor";
+export type { FileStat };
+
+export type AgentProvider = "claude" | "codex" | "cursor";
+
+export interface BrowserEnvironmentHints {
+  baseUrl?: string;
+  headed?: boolean;
+  cookies?: boolean;
+}
+
+export interface EnvironmentOverrides {
+  baseUrl?: string;
+  headed?: boolean;
+  cookies?: boolean;
+}
 
 export interface TestRunConfig {
-  action: TestAction;
+  action: "unstaged" | "branch" | "changes" | "commit";
   commitHash?: string;
   message?: string;
   flowSlug?: string;
@@ -29,7 +43,7 @@ interface CommanderGlobalOptions {
 }
 
 export const resolveTestRunConfig = (
-  action: TestAction,
+  action: TestRunConfig["action"],
   commanderOptions: CommanderGlobalOptions,
   commitHash?: string,
 ): TestRunConfig => {

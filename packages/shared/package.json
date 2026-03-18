@@ -1,5 +1,5 @@
 {
-  "name": "@browser-tester/utils",
+  "name": "@browser-tester/shared",
   "version": "0.0.1",
   "private": true,
   "files": [
@@ -12,6 +12,10 @@
     ".": {
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
+    },
+    "./models": {
+      "types": "./dist/models.d.mts",
+      "import": "./dist/models.mjs"
     }
   },
   "scripts": {
@@ -20,6 +24,9 @@
     "lint": "vp lint && tsc --noEmit",
     "test": "vp test run",
     "test:watch": "vp test"
+  },
+  "dependencies": {
+    "effect": "4.0.0-beta.28"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

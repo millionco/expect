@@ -1,11 +1,37 @@
 import { Option, Schema } from "effect";
-import { FileStat } from "./git/models.js";
-import {
-  DIFF_PREVIEW_CHAR_LIMIT,
-  PLANNER_CHANGED_FILE_LIMIT,
-  PLANNER_MAX_STEP_COUNT,
-  STEP_ID_PAD_LENGTH,
-} from "./constants.js";
+
+export interface ChangedFile {
+  path: string;
+  status: "A" | "M" | "D" | "R" | "C" | "?";
+}
+
+export interface CommitSummary {
+  hash: string;
+  shortHash: string;
+  subject: string;
+}
+
+const PLANNER_CHANGED_FILE_LIMIT = 12;
+const PLANNER_MAX_STEP_COUNT = 8;
+const STEP_ID_PAD_LENGTH = 2;
+
+export class FileStat extends Schema.Class<FileStat>("@ami/FileStat")({
+  relativePath: Schema.String,
+  added: Schema.Number,
+  removed: Schema.Number,
+}) {}
+
+export class GitState extends Schema.Class<GitState>("@supervisor/GitState")({
+  isGitRepo: Schema.Boolean,
+  currentBranch: Schema.String,
+  mainBranch: Schema.UndefinedOr(Schema.String),
+  isOnMain: Schema.Boolean,
+  hasChangesFromMain: Schema.Boolean,
+  hasUnstagedChanges: Schema.Boolean,
+  hasBranchCommits: Schema.Boolean,
+  branchCommitCount: Schema.Number,
+  fileStats: Schema.Array(FileStat),
+}) {}
 
 export const StepId = Schema.String.pipe(Schema.brand("StepId"));
 export type StepId = typeof StepId.Type;
@@ -13,13 +39,28 @@ export type StepId = typeof StepId.Type;
 export const PlanId = Schema.String.pipe(Schema.brand("PlanId"));
 export type PlanId = typeof PlanId.Type;
 
-// Structurally compatible with git service's ChangesFor Data.TaggedEnum
 export const ChangesFor = Schema.Union([
   Schema.Struct({ _tag: Schema.Literal("WorkingTree") }),
   Schema.Struct({ _tag: Schema.Literal("Branch"), branchName: Schema.String, base: Schema.String }),
   Schema.Struct({ _tag: Schema.Literal("Commit"), hash: Schema.String }),
 ]);
 export type ChangesFor = typeof ChangesFor.Type;
+
+export const GhPrListItem = Schema.Struct({
+  number: Schema.Number,
+  headRefName: Schema.String,
+  author: Schema.Struct({ login: Schema.String }),
+  state: Schema.String,
+  updatedAt: Schema.String,
+});
+
+export class RemoteBranch extends Schema.Class<RemoteBranch>("@supervisor/RemoteBranch")({
+  name: Schema.String,
+  author: Schema.String,
+  prNumber: Schema.NullOr(Schema.Number),
+  prStatus: Schema.NullOr(Schema.Literals(["open", "draft", "merged"] as const)),
+  updatedAt: Schema.NullOr(Schema.String),
+}) {}
 
 export class FileDiff extends Schema.Class<FileDiff>("@supervisor/FileDiff")({
   relativePath: Schema.String,
@@ -37,7 +78,7 @@ export class TestPlanStep extends Schema.Class<TestPlanStep>("@supervisor/TestPl
 export class TestPlanDraft extends Schema.Class<TestPlanDraft>("@supervisor/TestPlanDraft")({
   changesFor: ChangesFor,
   currentBranch: Schema.String,
-  diffs: Schema.Array(FileDiff),
+  diffPreview: Schema.String,
   fileStats: Schema.Array(FileStat),
   instruction: Schema.String,
   baseUrl: Schema.Option(Schema.String),
@@ -60,12 +101,7 @@ export class TestPlanDraft extends Schema.Class<TestPlanDraft>("@supervisor/Test
             .join("\n")
         : "  (no changed files)";
 
-    const diffsText =
-      this.diffs.length > 0
-        ? this.diffs
-            .map((file) => `--- ${file.relativePath} ---\n${file.diff.slice(0, DIFF_PREVIEW_CHAR_LIMIT)}`)
-            .join("\n\n")
-        : "(no diffs available)";
+    const diffsText = this.diffPreview || "(no diffs available)";
 
     return [
       "You are planning a browser-based regression test for a developer.",
@@ -151,6 +187,21 @@ export class TestPlan extends TestPlanDraft.extend<TestPlan>("@supervisor/TestPl
   }
 }
 
+export const PlanStepJson = Schema.Struct({
+  id: Schema.optional(Schema.NullOr(Schema.String)),
+  title: Schema.String,
+  instruction: Schema.String,
+  expectedOutcome: Schema.String,
+  routeHint: Schema.optional(Schema.NullOr(Schema.String)),
+});
+
+export const TestPlanJson = Schema.Struct({
+  id: Schema.optional(Schema.NullOr(Schema.String)),
+  title: Schema.String,
+  rationale: Schema.String,
+  steps: Schema.Array(PlanStepJson),
+});
+
 export class RunStarted extends Schema.TaggedClass<RunStarted>()("RunStarted", {
   plan: TestPlan,
 }) {}
@@ -213,6 +264,7 @@ export class TestReport extends Schema.Class<TestReport>("@supervisor/TestReport
   steps: Schema.Array(TestReportStep),
   summary: Schema.String,
   screenshotPaths: Schema.Array(Schema.String),
+  pullRequest: Schema.Option(Schema.suspend(() => PullRequest)),
 }) {
   get status(): "passed" | "failed" {
     return this.steps.every((step) => step.status !== "failed") ? "passed" : "failed";
@@ -223,7 +275,6 @@ export class RunCompleted extends Schema.TaggedClass<RunCompleted>()("RunComplet
   report: TestReport,
 }) {}
 
-// Schema.Union for pubsub (used for encoding/decoding in Updates)
 export const UpdateContent = Schema.Union([
   RunStarted,
   StepStarted,
@@ -237,10 +288,30 @@ export const UpdateContent = Schema.Union([
 ]);
 export type UpdateContent = typeof UpdateContent.Type;
 
-export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>("@supervisor/ExecutedTestPlan")({
+export class Update extends Schema.Class<Update>(
+  "@supervisor/Update",
+)({
+  content: UpdateContent,
+  receivedAt: Schema.DateTimeUtc,
+}) {}
+
+export class PullRequest extends Schema.Class<PullRequest>("@supervisor/PullRequest")({
+  number: Schema.Number,
+  url: Schema.String,
+  title: Schema.String,
+  headRefName: Schema.String,
+}) {}
+
+export const FindPullRequestPayload = Schema.TaggedUnion({
+  Branch: { branchName: Schema.String },
+});
+export type FindPullRequestPayload = typeof FindPullRequestPayload.Type;
+
+export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
+  "@supervisor/ExecutedTestPlan",
+)({
   events: Schema.Array(ExecutionEvent),
 }) {
-
   addEvent(event: ExecutionEvent): ExecutedTestPlan {
     return new ExecutedTestPlan({ ...this, events: [...this.events, event] });
   }
@@ -284,6 +355,7 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>("@superv
       steps: [...stepResults.values()],
       summary,
       screenshotPaths,
+      pullRequest: Option.none(),
     });
   }
 }

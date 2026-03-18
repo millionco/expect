@@ -1,4 +1,4 @@
-import { Effect, Fiber } from "effect";
+import { Cause, Effect, Fiber, Option } from "effect";
 import { useEffect, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import { MouseProvider } from "../hooks/mouse-context.js";
@@ -7,85 +7,115 @@ import { PrPickerScreen } from "./screens/pr-picker-screen.js";
 import { PlanningScreen } from "./screens/planning-screen.js";
 import { PlanReviewScreen } from "./screens/plan-review-screen.js";
 import { CookieSyncConfirmScreen } from "./screens/cookie-sync-confirm-screen.js";
-import { SavedFlowPickerScreen } from "./screens/saved-flow-picker-screen.js";
 import { Spinner } from "./ui/spinner.js";
 import { TestingScreen } from "./screens/testing-screen.js";
 import { ResultsScreen } from "./screens/results-screen.js";
 import { ThemePickerScreen } from "./screens/theme-picker-screen.js";
 import { MainMenu } from "./screens/main-menu-screen.js";
 import { Modeline } from "./ui/modeline.js";
-import {
-  getBrowserEnvironment,
-  Git,
-  planBrowserFlow,
-  resolveBrowserTarget,
-  resolveAgentProvider,
-  saveFlow,
-} from "@browser-tester/supervisor";
+import { Agent } from "@browser-tester/agent";
+import { ChangesFor, Git, Planner, TestPlanDraft } from "@browser-tester/supervisor";
 import { useNavigationStore } from "../stores/use-navigation.js";
 import { usePreferencesStore } from "../stores/use-preferences.js";
 import { useFlowSessionStore } from "../stores/use-flow-session.js";
 import { useGitState } from "../hooks/use-git-state.js";
-import { EMPTY_SAVED_FLOWS, useSavedFlows } from "../hooks/use-saved-flows.js";
 import { queryClient } from "../query-client.js";
-import { CliRuntime } from "../runtime.js";
 import { clearInkDisplay } from "../utils/clear-ink-display.js";
 import { useStdoutDimensions } from "../hooks/use-stdout-dimensions.js";
 
 const usePlanningEffect = () => {
   const screen = useNavigationStore((state) => state.screen);
   const { data: gitState } = useGitState();
-  const testAction = useFlowSessionStore((state) => state.testAction);
+  const changesFor = useFlowSessionStore((state) => state.changesFor);
   const flowInstruction = useFlowSessionStore((state) => state.flowInstruction);
   const selectedCommit = useFlowSessionStore((state) => state.selectedCommit);
   const environmentOverrides = usePreferencesStore((state) => state.environmentOverrides);
   const planningProvider = usePreferencesStore((state) => state.planningProvider);
-  const planningModel = usePreferencesStore((state) => state.planningModel);
   const completePlanning = useFlowSessionStore((state) => state.completePlanning);
   const failPlanning = useFlowSessionStore((state) => state.failPlanning);
 
   useEffect(() => {
-    if (screen !== "planning" || !gitState || !testAction || !flowInstruction.trim()) return;
+    if (screen !== "planning" || !gitState || !changesFor || !flowInstruction.trim()) return;
 
-    const environment = getBrowserEnvironment(environmentOverrides);
-    useFlowSessionStore.setState({ resolvedTarget: undefined, resolvedPlanningProvider: null });
+    const environment = {
+      baseUrl: environmentOverrides?.baseUrl,
+      headed: environmentOverrides?.headed,
+      cookies: environmentOverrides?.cookies,
+    };
+
+    useFlowSessionStore.setState({
+      resolvedPlanningProvider: null,
+    });
+
+    const agentBackend: "claude" | "codex" = planningProvider === "claude" ? "claude" : "codex";
 
     const planningFiber = Effect.runFork(
-      resolveBrowserTarget({
-        action: testAction,
-        commit: selectedCommit ?? undefined,
+      Effect.gen(function* () {
+        const git = yield* Git;
+        const currentBranch = yield* git.getCurrentBranch;
+        const mainBranch = yield* git.getMainBranch;
+
+        const resolvedChangesFor = (() => {
+          if (changesFor._tag === "Commit" && selectedCommit) {
+            return ChangesFor.Commit({ hash: selectedCommit.hash });
+          }
+          if (changesFor._tag === "Branch") {
+            return ChangesFor.Branch({ mainBranch });
+          }
+          if (changesFor._tag === "Changes") {
+            return ChangesFor.Changes({ mainBranch });
+          }
+          return ChangesFor.WorkingTree();
+        })();
+
+        const fileStats = yield* git.getFileStats(resolvedChangesFor);
+        const diffPreview = yield* git.getDiffPreview(resolvedChangesFor);
+
+        yield* Effect.sync(() =>
+          useFlowSessionStore.setState({
+            resolvedPlanningProvider: planningProvider ?? null,
+          }),
+        );
+
+        const schemaChangesFor =
+          resolvedChangesFor._tag === "WorkingTree"
+            ? { _tag: "WorkingTree" as const }
+            : resolvedChangesFor._tag === "Branch"
+              ? {
+                  _tag: "Branch" as const,
+                  branchName: currentBranch,
+                  base: mainBranch,
+                }
+              : resolvedChangesFor._tag === "Changes"
+                ? {
+                    _tag: "Branch" as const,
+                    branchName: currentBranch,
+                    base: mainBranch,
+                  }
+                : { _tag: "Commit" as const, hash: resolvedChangesFor.hash };
+
+        const draft = new TestPlanDraft({
+          changesFor: schemaChangesFor,
+          currentBranch,
+          diffPreview,
+          fileStats: [...fileStats],
+          instruction: flowInstruction,
+          baseUrl: environmentOverrides?.baseUrl
+            ? Option.some(environmentOverrides.baseUrl)
+            : Option.none(),
+          isHeadless: environmentOverrides?.headed === false,
+          requiresCookies: environmentOverrides?.cookies === true,
+        });
+
+        const plan = yield* Planner.use((planner) => planner.plan(draft)).pipe(
+          Effect.provide(Planner.layer),
+          Effect.provide(Agent.layerFor(agentBackend)),
+        );
+
+        yield* Effect.sync(() => completePlanning({ plan, environment }));
       }).pipe(
         Effect.provide(Git.withRepoRoot(process.cwd())),
-        Effect.tap((target) =>
-          Effect.sync(() => useFlowSessionStore.setState({ resolvedTarget: target })),
-        ),
-        Effect.flatMap((target) =>
-          resolveAgentProvider(planningProvider).pipe(
-            Effect.tap((resolvedAgentProvider) =>
-              Effect.sync(() =>
-                useFlowSessionStore.setState({
-                  resolvedPlanningProvider: resolvedAgentProvider.provider,
-                }),
-              ),
-            ),
-            Effect.flatMap(() =>
-              planBrowserFlow({
-                target,
-                userInstruction: flowInstruction,
-                environment,
-                provider: planningProvider,
-                ...(planningModel ? { providerSettings: { model: planningModel } } : {}),
-              }),
-            ),
-            Effect.tap((plan) =>
-              Effect.sync(() => completePlanning({ target, plan, environment })),
-            ),
-          ),
-        ),
-        Effect.catchTags({
-          PlanningError: (planningError) => Effect.sync(() => failPlanning(planningError.message)),
-          GitError: (gitError) => Effect.sync(() => failPlanning(gitError.message)),
-        }),
+        Effect.catchCause((cause) => Effect.sync(() => failPlanning(Cause.pretty(cause)))),
       ),
     );
 
@@ -98,75 +128,30 @@ const usePlanningEffect = () => {
     failPlanning,
     flowInstruction,
     gitState,
-    planningModel,
     planningProvider,
     screen,
     selectedCommit,
-    testAction,
+    changesFor,
   ]);
 };
 
 const useAutoSaveEffect = () => {
   const screen = useNavigationStore((state) => state.screen);
-  const autoSaveFlows = usePreferencesStore((state) => state.autoSaveFlows);
   const autoSaveStatus = useFlowSessionStore((state) => state.autoSaveStatus);
   const planOrigin = useFlowSessionStore((state) => state.planOrigin);
-  const resolvedTarget = useFlowSessionStore((state) => state.resolvedTarget);
-  const generatedPlan = useFlowSessionStore((state) => state.generatedPlan);
-  const browserEnvironment = useFlowSessionStore((state) => state.browserEnvironment);
 
   useEffect(() => {
-    if (
-      screen !== "testing" ||
-      !autoSaveFlows ||
-      autoSaveStatus !== "idle" ||
-      planOrigin !== "generated" ||
-      !resolvedTarget ||
-      !generatedPlan ||
-      !browserEnvironment
-    ) {
+    if (screen !== "testing" || autoSaveStatus !== "idle" || planOrigin !== "generated") {
       return;
     }
 
-    useFlowSessionStore.setState({ autoSaveStatus: "saving" });
-
-    const saveFiber = CliRuntime.runFork(
-      saveFlow({
-        target: resolvedTarget,
-        plan: generatedPlan,
-        environment: browserEnvironment,
-      }).pipe(
-        Effect.tap(() =>
-          Effect.sync(() => {
-            useFlowSessionStore.setState({ autoSaveStatus: "saved" });
-            void queryClient.invalidateQueries({ queryKey: ["saved-flows"] });
-          }),
-        ),
-        Effect.catchTags({
-          FlowStorageError: () =>
-            Effect.sync(() => useFlowSessionStore.setState({ autoSaveStatus: "error" })),
-        }),
-      ),
-    );
-
-    return () => {
-      void Effect.runFork(Fiber.interrupt(saveFiber));
-    };
-  }, [
-    autoSaveFlows,
-    autoSaveStatus,
-    browserEnvironment,
-    generatedPlan,
-    planOrigin,
-    resolvedTarget,
-    screen,
-  ]);
+    void queryClient.invalidateQueries({ queryKey: ["saved-flows"] });
+  }, [autoSaveStatus, planOrigin, screen]);
 };
 
 export const App = () => {
   const screen = useNavigationStore((state) => state.screen);
   const { data: gitState, isLoading: gitStateLoading } = useGitState();
-  const { data: savedFlowSummaries = EMPTY_SAVED_FLOWS } = useSavedFlows();
   const goBack = useFlowSessionStore((state) => state.goBack);
   const planningError = useFlowSessionStore((state) => state.planningError);
   const navigateTo = useNavigationStore((state) => state.navigateTo);
@@ -189,9 +174,6 @@ export const App = () => {
     }
     if (key.ctrl && input === "p" && screen === "main" && gitState?.isGitRepo) {
       navigateTo("select-pr");
-    }
-    if (key.ctrl && input === "r" && screen === "main" && savedFlowSummaries.length > 0) {
-      navigateTo("saved-flow-picker");
     }
     if (key.ctrl && input === "t") {
       navigateTo("theme");
@@ -216,8 +198,6 @@ export const App = () => {
         return <ThemePickerScreen />;
       case "select-pr":
         return <PrPickerScreen />;
-      case "saved-flow-picker":
-        return <SavedFlowPickerScreen />;
       case "planning":
         return (
           <Box flexDirection="column" width="100%">
