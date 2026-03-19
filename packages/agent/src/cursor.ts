@@ -8,7 +8,7 @@ import type {
   LanguageModelV3Content,
 } from "@ai-sdk/provider";
 import { ensureSafeCurrentWorkingDirectory } from "@browser-tester/utils";
-import { Effect, Layer, Predicate, ServiceMap } from "effect";
+import { Effect, Predicate } from "effect";
 import { convertPrompt } from "./convert-prompt";
 import { CursorNotSignedInError, CursorSpawnError } from "./errors";
 import {
@@ -29,7 +29,7 @@ export interface CursorSettings extends AgentProviderSettings {
   executable?: string;
 }
 
-const runGenerate = Effect.fn("CursorAgent.generate")(function* (
+const runGenerate = Effect.fn("CursorModel.generate")(function* (
   options: LanguageModelV3CallOptions,
   settings: CursorSettings,
 ) {
@@ -40,7 +40,7 @@ const runGenerate = Effect.fn("CursorAgent.generate")(function* (
 
   yield* Effect.tryPromise({
     try: async () => {
-      for await (const event of spawnCursorAgent(userPrompt, settings, options.abortSignal)) {
+      for await (const event of spawnCursorProcess(userPrompt, settings, options.abortSignal)) {
         sessionId = extractSessionId(event) ?? sessionId;
         if (event.type === "assistant") content.push(...convertMessageBlocks(event));
         if (
@@ -80,7 +80,7 @@ const runGenerate = Effect.fn("CursorAgent.generate")(function* (
   };
 });
 
-const runStream = Effect.fn("CursorAgent.stream")(function* (
+const runStream = Effect.fn("CursorModel.stream")(function* (
   options: LanguageModelV3CallOptions,
   settings: CursorSettings,
 ) {
@@ -94,7 +94,7 @@ const runStream = Effect.fn("CursorAgent.stream")(function* (
 
       controller.enqueue({ type: "stream-start", warnings: [] });
 
-      for await (const event of spawnCursorAgent(userPrompt, settings, options.abortSignal)) {
+      for await (const event of spawnCursorProcess(userPrompt, settings, options.abortSignal)) {
         const eventSessionId = extractSessionId(event);
         if (eventSessionId) {
           if (!sessionId)
@@ -189,19 +189,6 @@ const runStream = Effect.fn("CursorAgent.stream")(function* (
   return { stream, request: { body: userPrompt } };
 });
 
-const buildCursorAgent = (settings: CursorSettings) =>
-  ({
-    generate: (options: LanguageModelV3CallOptions) => runGenerate(options, settings),
-    stream: (options: LanguageModelV3CallOptions) => runStream(options, settings),
-  }) as const;
-
-export class CursorAgent extends ServiceMap.Service<CursorAgent>()("@browser-tester/CursorAgent", {
-  make: Effect.succeed(buildCursorAgent({})),
-}) {
-  static live = (settings: CursorSettings) =>
-    Layer.succeed(CursorAgent)(buildCursorAgent(settings));
-}
-
 export const createCursorModel = (settings: CursorSettings = {}): LanguageModelV3 => ({
   specificationVersion: "v3",
   provider: PROVIDER_ID,
@@ -295,7 +282,7 @@ const createWorkspaceOverlay = (
   return overlayDir;
 };
 
-const spawnCursorAgent = async function* (
+const spawnCursorProcess = async function* (
   prompt: string,
   settings: CursorSettings,
   signal?: AbortSignal,

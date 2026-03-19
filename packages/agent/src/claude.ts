@@ -7,7 +7,7 @@ import type {
   LanguageModelV3Content,
 } from "@ai-sdk/provider";
 import { ensureSafeCurrentWorkingDirectory } from "@browser-tester/utils";
-import { Effect, Layer, ServiceMap } from "effect";
+import { Effect } from "effect";
 import { convertPrompt } from "./convert-prompt";
 import { ClaudeQueryError } from "./errors";
 import {
@@ -66,7 +66,7 @@ const resolveClaudeExecutablePath = (): string | undefined => {
   }
 };
 
-const runGenerate = Effect.fn("ClaudeAgent.generate")(function* (
+const runGenerate = Effect.fn("ClaudeModel.generate")(function* (
   options: LanguageModelV3CallOptions,
   settings: AgentProviderSettings,
 ) {
@@ -126,7 +126,7 @@ const runGenerate = Effect.fn("ClaudeAgent.generate")(function* (
   };
 });
 
-const runStream = Effect.fn("ClaudeAgent.stream")(function* (
+const runStream = Effect.fn("ClaudeModel.stream")(function* (
   options: LanguageModelV3CallOptions,
   settings: AgentProviderSettings,
 ) {
@@ -179,19 +179,6 @@ const runStream = Effect.fn("ClaudeAgent.stream")(function* (
 
   return { stream, request: { body: userPrompt } };
 });
-
-const buildClaudeAgent = (settings: AgentProviderSettings) =>
-  ({
-    generate: (options: LanguageModelV3CallOptions) => runGenerate(options, settings),
-    stream: (options: LanguageModelV3CallOptions) => runStream(options, settings),
-  }) as const;
-
-export class ClaudeAgent extends ServiceMap.Service<ClaudeAgent>()("@browser-tester/ClaudeAgent", {
-  make: Effect.succeed(buildClaudeAgent({})),
-}) {
-  static live = (settings: AgentProviderSettings) =>
-    Layer.succeed(ClaudeAgent)(buildClaudeAgent(settings));
-}
 
 export const createClaudeModel = (settings: AgentProviderSettings = {}): LanguageModelV3 => ({
   specificationVersion: "v3",

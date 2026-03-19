@@ -1,7 +1,8 @@
 import type { LanguageModelV3 } from "@ai-sdk/provider";
-import type { AgentProviderSettings } from "@browser-tester/agent";
+import type { AgentProviderSettings, AcpAgentName } from "@browser-tester/agent";
 
-export type AgentProvider = "claude" | "codex" | "cursor";
+export type NativeAgentProvider = "claude" | "codex" | "cursor";
+export type AgentProvider = NativeAgentProvider | AcpAgentName | "acp";
 
 export interface DiffStats {
   additions: number;

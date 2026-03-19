@@ -7,13 +7,13 @@ import type {
   LanguageModelV3StreamPart,
 } from "@ai-sdk/provider";
 import { ensureSafeCurrentWorkingDirectory } from "@browser-tester/utils";
-import { Effect, Layer, ServiceMap } from "effect";
+import { Effect } from "effect";
 import { convertPrompt } from "./convert-prompt";
 import { CodexRunError } from "./errors";
 import { EMPTY_USAGE, PROVIDER_ID, STOP_REASON, buildAgentStream } from "./provider-shared";
 import type { AgentProviderSettings } from "./types";
 
-const runGenerate = Effect.fn("CodexAgent.generate")(function* (
+const runGenerate = Effect.fn("CodexModel.generate")(function* (
   options: LanguageModelV3CallOptions,
   settings: AgentProviderSettings,
 ) {
@@ -50,7 +50,7 @@ const runGenerate = Effect.fn("CodexAgent.generate")(function* (
   };
 });
 
-const runStream = Effect.fn("CodexAgent.stream")(function* (
+const runStream = Effect.fn("CodexModel.stream")(function* (
   options: LanguageModelV3CallOptions,
   settings: AgentProviderSettings,
 ) {
@@ -90,19 +90,6 @@ const runStream = Effect.fn("CodexAgent.stream")(function* (
 
   return { stream, request: { body: userPrompt } };
 });
-
-const buildCodexAgent = (settings: AgentProviderSettings) =>
-  ({
-    generate: (options: LanguageModelV3CallOptions) => runGenerate(options, settings),
-    stream: (options: LanguageModelV3CallOptions) => runStream(options, settings),
-  }) as const;
-
-export class CodexAgent extends ServiceMap.Service<CodexAgent>()("@browser-tester/CodexAgent", {
-  make: Effect.succeed(buildCodexAgent({})),
-}) {
-  static live = (settings: AgentProviderSettings) =>
-    Layer.succeed(CodexAgent)(buildCodexAgent(settings));
-}
 
 export const createCodexModel = (settings: AgentProviderSettings = {}): LanguageModelV3 => ({
   specificationVersion: "v3",

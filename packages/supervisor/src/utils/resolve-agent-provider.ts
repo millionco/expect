@@ -1,3 +1,8 @@
+import {
+  isKnownAcpAgent,
+  resolveAcpAgentCommand,
+  resolveAcpAgentDisplayName,
+} from "@browser-tester/agent";
 import { Effect } from "effect";
 import type { AgentProvider } from "../types";
 import { commandExists } from "./command-exists";
@@ -7,12 +12,16 @@ const AUTO_PROVIDER_ORDER: readonly AgentProvider[] = ["codex", "claude", "curso
 const getProviderDisplayName = (provider: AgentProvider): string => {
   if (provider === "claude") return "Claude Code";
   if (provider === "codex") return "Codex";
-  return "Cursor";
+  if (provider === "cursor") return "Cursor";
+  if (isKnownAcpAgent(provider)) return resolveAcpAgentDisplayName(provider);
+  return provider;
 };
 
 const getProviderExecutable = (provider: AgentProvider): string | undefined => {
   if (provider === "codex") return "codex";
   if (provider === "cursor") return "cursor-agent";
+  if (provider === "acp") return undefined;
+  if (isKnownAcpAgent(provider)) return resolveAcpAgentCommand(provider);
   return undefined;
 };
 
@@ -28,16 +37,17 @@ const isProviderAvailable = Effect.fn("isProviderAvailable")(function* (provider
 });
 
 const getUnavailableProviderMessage = (provider: AgentProvider): string => {
+  const displayName = getProviderDisplayName(provider);
   const executable = getProviderExecutable(provider);
 
   if (executable) {
     return [
-      `${getProviderDisplayName(provider)} is not available on this machine.`,
+      `${displayName} is not available on this machine.`,
       `Install or enable \`${executable}\`, or choose a different agent.`,
     ].join(" ");
   }
 
-  return `${getProviderDisplayName(provider)} is not available on this machine. Choose a different agent.`;
+  return `${displayName} is not available on this machine. Choose a different agent.`;
 };
 
 export interface ResolvedAgentProvider {
