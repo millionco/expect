@@ -1,201 +1,194 @@
-import { Effect } from "effect";
-import { Command, InvalidOptionArgumentError } from "commander";
+import { Effect, Option } from "effect";
+import { Command } from "commander";
 import { render } from "ink";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { App } from "./components/app.js";
 import { ALT_SCREEN_OFF, ALT_SCREEN_ON, VERSION } from "./constants.js";
 import { ThemeProvider } from "./components/theme-context.js";
 import { loadThemeName } from "./utils/load-theme.js";
-import { ChangesFor, Git } from "@browser-tester/supervisor";
-import { autoDetectAndTest, runTest } from "./utils/run-test.js";
-import { runHealthcheckHeadless, runHealthcheckInteractive } from "./utils/run-healthcheck.js";
-import { useNavigationStore, type Screen } from "./stores/use-navigation.js";
+import { ChangesFor, Git, TestPlanDraft } from "@browser-tester/supervisor";
+import { runHeadless } from "./utils/run-test.js";
+import { useNavigationStore } from "./stores/use-navigation.js";
 import { usePreferencesStore } from "./stores/use-preferences.js";
-import { useFlowSessionStore } from "./stores/use-flow-session.js";
+import { usePlanStore, Plan } from "./stores/use-plan-store.js";
 import { queryClient } from "./query-client.js";
-import {
-  resolveTestRunConfig,
-  type TestRunConfig,
-  type AgentProvider,
-} from "./utils/test-run-config.js";
 import { setInkInstance } from "./utils/clear-ink-display.js";
 
 const DEFAULT_SKIP_PLANNING = true;
 
-const parseAgentProvider = (value: string): AgentProvider => {
-  if (value === "claude" || value === "codex" || value === "cursor") {
-    return value;
-  }
+const DEFAULT_INSTRUCTION =
+  "Test all changes from main in the browser and verify they work correctly.";
 
-  throw new InvalidOptionArgumentError(
-    `Unsupported agent "${value}". Use one of: claude, codex, cursor.`,
-  );
-};
+interface CommanderOpts {
+  message?: string;
+  flow?: string;
+  yes?: boolean;
+}
 
 const program = new Command()
   .name("testie")
   .description("AI-powered browser testing for your changes")
   .version(VERSION, "-v, --version")
-  .option("-m, --message <instruction>", "natural language instruction for what to test")
+  .option(
+    "-m, --message <instruction>",
+    "natural language instruction for what to test"
+  )
   .option("-f, --flow <slug>", "reuse a saved flow by its slug")
   .option("-y, --yes", "skip plan review and run immediately")
-  .option(
-    "--planner <provider>",
-    "agent for planning (claude, codex, cursor)",
-    parseAgentProvider,
-    "codex",
-  )
-  .option(
-    "--executor <provider>",
-    "agent for execution (claude, codex, cursor)",
-    parseAgentProvider,
-    "codex",
-  )
-  .option("--planning-model <model>", "specific model for the planning agent", "composer-1.5")
-  .option("--execution-model <model>", "specific model for the execution agent", "composer-1.5")
-  .option("--base-url <url>", "browser base URL (overrides BROWSER_TESTER_BASE_URL)")
-  .option("--headed", "run browser visibly instead of headless")
-  .option("--cookies", "sync cookies from your browser profile")
-  .option("--no-cookies", "disable cookie sync")
   .addHelpText(
     "after",
     `
 Examples:
   $ testie                                    open interactive TUI
   $ testie -m "test the login flow" -y        plan and run immediately
-  $ testie branch -m "verify signup" -y       test all branch changes
-
-Environment variables:
-  BROWSER_TESTER_BASE_URL     base URL for the browser (e.g. http://localhost:3000)
-  BROWSER_TESTER_HEADED       run headed by default (true | 1)
-  BROWSER_TESTER_COOKIES      enable cookie sync by default (true | 1)`,
+  $ testie branch -m "verify signup" -y       test all branch changes`
   );
 
 const isHeadless = () => !process.stdin.isTTY;
+// const isHeadless = () => true;
 
 const renderApp = () => {
   const initialTheme = loadThemeName() ?? undefined;
-  process.stdout.write(ALT_SCREEN_ON);
-  process.on("exit", () => process.stdout.write(ALT_SCREEN_OFF));
+  // process.stdout.write(ALT_SCREEN_ON);
+  // process.on("exit", () => process.stdout.write(ALT_SCREEN_OFF));
   const instance = render(
     <QueryClientProvider client={queryClient}>
       <ThemeProvider initialTheme={initialTheme}>
         <App />
       </ThemeProvider>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
   setInkInstance(instance);
 };
 
-const resolveInitialScreen = (config: TestRunConfig): Screen => {
-  if (config.message) return DEFAULT_SKIP_PLANNING ? "testing" : "planning";
-  return "main";
-};
-
-const resolveChangesFor = async (config: TestRunConfig) => {
+const resolveChangesFor = async (
+  action: "unstaged" | "branch" | "changes" | "commit",
+  commitHash?: string
+) => {
   const cwd = process.cwd();
   return Effect.runPromise(
     Effect.gen(function* () {
       const git = yield* Git;
       const mainBranch = yield* git.getMainBranch;
+      const currentBranch = yield* git.getCurrentBranch;
 
-      if (config.action === "commit" && config.commitHash) {
-        const commit = yield* git.getCommitSummary(config.commitHash);
+      if (action === "commit" && commitHash) {
         return {
-          changesFor: ChangesFor.Commit({ hash: config.commitHash }),
-          selectedCommit: commit ?? undefined,
+          changesFor: ChangesFor.makeUnsafe({
+            _tag: "Commit",
+            hash: commitHash,
+          }),
+          currentBranch,
         };
       }
-      if (config.action === "branch") {
-        return { changesFor: ChangesFor.Branch({ mainBranch }), selectedCommit: undefined };
+      if (action === "branch") {
+        return {
+          changesFor: ChangesFor.makeUnsafe({ _tag: "Branch", mainBranch }),
+          currentBranch,
+        };
       }
-      if (config.action === "changes") {
-        return { changesFor: ChangesFor.Changes({ mainBranch }), selectedCommit: undefined };
+      if (action === "changes") {
+        return {
+          changesFor: ChangesFor.makeUnsafe({ _tag: "Changes", mainBranch }),
+          currentBranch,
+        };
       }
-      return { changesFor: ChangesFor.WorkingTree(), selectedCommit: undefined };
-    }).pipe(Effect.provide(Git.withRepoRoot(cwd))),
+      return {
+        changesFor: ChangesFor.makeUnsafe({ _tag: "WorkingTree" }),
+        currentBranch,
+      };
+    }).pipe(Effect.provide(Git.withRepoRoot(cwd)))
   );
 };
 
-const seedStoreFromConfig = async (config: TestRunConfig): Promise<void> => {
-  const { changesFor, selectedCommit } = await resolveChangesFor(config);
-  const screen = resolveInitialScreen(config);
+const seedStores = (
+  opts: CommanderOpts,
+  changesFor: ChangesFor,
+  currentBranch: string
+) => {
+  const hasMessage = Boolean(opts.message);
 
-  useNavigationStore.setState({ screen });
-  usePreferencesStore.setState({
-    autoRunAfterPlanning: config.autoRun ?? false,
-    skipPlanning: DEFAULT_SKIP_PLANNING,
-    planningProvider: config.planningProvider,
-    executionProvider: config.executionProvider,
-    planningModel: config.planningModel,
-    executionModel: config.executionModel,
-    environmentOverrides: config.environmentOverrides,
+  useNavigationStore.setState({
+    screen: hasMessage
+      ? DEFAULT_SKIP_PLANNING
+        ? "testing"
+        : "planning"
+      : "main",
   });
-  useFlowSessionStore.setState({
+  usePreferencesStore.setState({
+    autoRunAfterPlanning: opts.yes ?? false,
+    skipPlanning: DEFAULT_SKIP_PLANNING,
+  });
+
+  if (hasMessage) {
+    const draft = new TestPlanDraft({
+      changesFor,
+      currentBranch,
+      diffPreview: "",
+      fileStats: [],
+      instruction: opts.message!,
+      baseUrl: Option.none(),
+      isHeadless: false,
+      requiresCookies: false,
+    });
+    usePlanStore.setState({ plan: Plan.draft(draft) });
+  }
+};
+
+const runHeadlessForAction = async (
+  action: "unstaged" | "branch" | "changes" | "commit",
+  opts: CommanderOpts,
+  commitHash?: string
+) => {
+  const { changesFor } = await resolveChangesFor(action, commitHash);
+  return runHeadless({
     changesFor,
-    selectedCommit: selectedCommit ?? null,
-    ...(config.message && { flowInstruction: config.message }),
-    ...(!config.message && { planOrigin: "generated" as const }),
+    instruction: opts.message ?? DEFAULT_INSTRUCTION,
   });
 };
 
-const createCommandAction =
-  (action: TestRunConfig["action"]) =>
-  async (commitHash?: string): Promise<void> => {
-    const config = resolveTestRunConfig(action, program.opts(), commitHash);
-    if (isHeadless()) return runTest(config);
-    await seedStoreFromConfig(config);
-    renderApp();
-  };
-
-program
-  .command("healthcheck")
-  .description("check for untested changes")
-  .action(async () => {
-    if (isHeadless()) {
-      await runHealthcheckHeadless();
-      return;
-    }
-    const { shouldTest, scope } = await runHealthcheckInteractive();
-    if (!shouldTest) return;
-    const actionByScope: Record<string, TestRunConfig["action"]> = {
-      changes: "changes",
-      "unstaged-changes": "unstaged",
-      "entire-branch": "branch",
-      default: "changes",
-    };
-    const action = actionByScope[scope] ?? "changes";
-    const config = resolveTestRunConfig(action, program.opts());
-    await seedStoreFromConfig(config);
-    renderApp();
-  });
+const runInteractiveForAction = async (
+  action: "unstaged" | "branch" | "changes" | "commit",
+  opts: CommanderOpts,
+  commitHash?: string
+) => {
+  const { changesFor, currentBranch } = await resolveChangesFor(
+    action,
+    commitHash
+  );
+  seedStores(opts, changesFor, currentBranch);
+  renderApp();
+};
 
 program
   .command("unstaged")
   .description("test current unstaged changes (default)")
-  .action(createCommandAction("unstaged"));
+  .action(async () => {
+    const opts = program.opts<CommanderOpts>();
+    if (isHeadless()) return runHeadlessForAction("unstaged", opts);
+    await runInteractiveForAction("unstaged", opts);
+  });
 
 program
   .command("branch")
   .description("test full branch diff against main")
-  .action(createCommandAction("branch"));
+  .action(async () => {
+    const opts = program.opts<CommanderOpts>();
+    if (isHeadless()) return runHeadlessForAction("branch", opts);
+    await runInteractiveForAction("branch", opts);
+  });
 
 program.action(async () => {
-  const config = resolveTestRunConfig("changes", program.opts());
-  if (isHeadless()) return autoDetectAndTest(config);
-  if (
-    config.message ||
-    config.flowSlug ||
-    config.autoRun ||
-    config.environmentOverrides ||
-    config.planningProvider ||
-    config.executionProvider ||
-    config.planningModel ||
-    config.executionModel
-  ) {
-    await seedStoreFromConfig(config);
+  const opts = program.opts<CommanderOpts>();
+  if (isHeadless()) return runHeadlessForAction("changes", opts);
+
+  const hasOptions = opts.message || opts.flow || opts.yes;
+
+  if (hasOptions) {
+    await runInteractiveForAction("changes", opts);
+  } else {
+    renderApp();
   }
-  renderApp();
 });
 
 program.parse();

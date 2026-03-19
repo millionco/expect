@@ -5,7 +5,7 @@ import { Spinner } from "../ui/spinner.js";
 import { useColors } from "../theme-context.js";
 import { RuledBox } from "../ui/ruled-box.js";
 import { DotField } from "../ui/dot-field.js";
-import { useFlowSessionStore } from "../../stores/use-flow-session.js";
+import { usePlanStore } from "../../stores/use-plan-store.js";
 import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions.js";
 import { formatElapsedTime } from "../../utils/format-elapsed-time.js";
 import { TESTING_TIMER_UPDATE_INTERVAL_MS } from "../../constants.js";
@@ -109,7 +109,8 @@ const getSmoothProgress = (elapsed: number): number => {
 export const PlanningScreen = () => {
   const COLORS = useColors();
   const [columns] = useStdoutDimensions();
-  const flowInstruction = useFlowSessionStore((state) => state.flowInstruction);
+  const plan = usePlanStore((state) => state.plan);
+  const instruction = plan?._tag === "draft" ? plan.instruction : "";
   const [startTime] = useState(() => Date.now());
   const [elapsed, setElapsed] = useState(0);
   const [tipIndex] = useState(() => Math.floor(Math.random() * TIPS.length));
@@ -173,7 +174,7 @@ export const PlanningScreen = () => {
       <DotField rows={3} dimColor="#1a1a1a" brightColor={COLORS.BORDER} />
 
       <RuledBox color={COLORS.BORDER}>
-        <Text color={COLORS.DIM}>{flowInstruction}</Text>
+        <Text color={COLORS.DIM}>{instruction}</Text>
       </RuledBox>
 
       <Box marginTop={1} paddingX={1} justifyContent="space-between">

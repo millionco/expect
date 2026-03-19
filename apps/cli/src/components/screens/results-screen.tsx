@@ -1,60 +1,40 @@
 import { useState } from "react";
 import { Box, Text, useInput } from "ink";
-import { Effect, Option } from "effect";
-import { Github, type TestReport } from "@browser-tester/supervisor";
-import { useFlowSessionStore } from "../../stores/use-flow-session.js";
+import { Option } from "effect";
 import { copyToClipboard } from "../../utils/copy-to-clipboard.js";
 import { useColors } from "../theme-context.js";
 import { RuledBox } from "../ui/ruled-box.js";
 import { ScreenHeading } from "../ui/screen-heading.js";
 import { Image } from "../ui/image.js";
 import { Clickable } from "../ui/clickable.js";
-
-const buildResultsClipboardText = (report: TestReport): string => {
-  const clipboardLines = [`Status: ${report.status}`, `Summary: ${report.summary}`];
-
-  report.steps.forEach((step) => {
-    clipboardLines.push(`${step.status.toUpperCase()} ${step.title}: ${step.summary}`);
-  });
-
-  return clipboardLines.join("\n");
-};
+import { usePostPrComment } from "../../data/github-mutations.js";
+import { usePlanExecutionStore } from "../../stores/use-plan-execution-store.js";
 
 export const ResultsScreen = () => {
   const COLORS = useColors();
-  const latestRunReport = useFlowSessionStore((state) => state.latestRunReport);
-  const [clipboardStatusMessage, setClipboardStatusMessage] = useState<string | null>(null);
-  const [clipboardError, setClipboardError] = useState<string | null>(null);
-  const [isPostingComment, setIsPostingComment] = useState(false);
-  const [commentStatusMessage, setCommentStatusMessage] = useState<string | null>(null);
+  const executedPlan = usePlanExecutionStore((state) => state.executedPlan);
+  const report = executedPlan?.testReport;
+  const [clipboardStatusMessage, setClipboardStatusMessage] = useState<string | undefined>(
+    undefined,
+  );
+  const [clipboardError, setClipboardError] = useState<string | undefined>(undefined);
+  const commentMutation = usePostPrComment();
 
   const handlePostPullRequestComment = () => {
-    if (!latestRunReport || !Option.isSome(latestRunReport.pullRequest)) return;
-    setIsPostingComment(true);
-    setCommentStatusMessage(null);
-    const body = buildResultsClipboardText(latestRunReport);
-    const pullRequest = latestRunReport.pullRequest.value;
-
-    // HACK: Github.layer leaves `undefined` in R due to Effect v4 beta ServiceMap type inference
-    Effect.runPromise(
-      Github.use((github) => github.addComment(process.cwd(), pullRequest, body)).pipe(
-        Effect.provide(Github.layer),
-      ) as Effect.Effect<void>,
-    )
-      .then(() => setCommentStatusMessage("Comment posted to PR."))
-      .catch(() => setCommentStatusMessage("Failed to post PR comment."))
-      .finally(() => setIsPostingComment(false));
+    if (!report || !Option.isSome(report.pullRequest)) return;
+    commentMutation.mutate({
+      pullRequest: report.pullRequest.value,
+      body: report.toPlainText,
+    });
   };
 
   const handleCopyToClipboard = () => {
-    if (!latestRunReport) {
-      return;
-    }
+    if (!report) return;
 
-    setClipboardError(null);
-    setClipboardStatusMessage(null);
+    setClipboardError(undefined);
+    setClipboardStatusMessage(undefined);
 
-    const didCopy = copyToClipboard(buildResultsClipboardText(latestRunReport));
+    const didCopy = copyToClipboard(report.toPlainText);
     if (didCopy) {
       setClipboardStatusMessage("Copied share details to the clipboard.");
       return;
@@ -74,29 +54,26 @@ export const ResultsScreen = () => {
     }
   });
 
-  if (!latestRunReport) return null;
+  if (!report) return null;
 
   return (
     <Box flexDirection="column" width="100%" paddingY={1}>
       <Box paddingX={1}>
-        <ScreenHeading title="Run results" subtitle={`${latestRunReport.status.toUpperCase()}`} />
+        <ScreenHeading title="Run results" subtitle={`${report.status.toUpperCase()}`} />
       </Box>
 
-      <RuledBox
-        color={latestRunReport.status === "passed" ? COLORS.GREEN : COLORS.RED}
-        marginTop={1}
-      >
-        <Text color={latestRunReport.status === "passed" ? COLORS.GREEN : COLORS.RED} bold>
-          {latestRunReport.status === "passed" ? "Plan completed" : "Issues found"}
+      <RuledBox color={report.status === "passed" ? COLORS.GREEN : COLORS.RED} marginTop={1}>
+        <Text color={report.status === "passed" ? COLORS.GREEN : COLORS.RED} bold>
+          {report.status === "passed" ? "Plan completed" : "Issues found"}
         </Text>
-        <Text color={COLORS.TEXT}>{latestRunReport.summary}</Text>
+        <Text color={COLORS.TEXT}>{report.summary}</Text>
       </RuledBox>
 
       <Box flexDirection="column" marginTop={1} paddingX={1}>
         <Text color={COLORS.DIM} bold>
           STEP SUMMARY
         </Text>
-        {latestRunReport.steps.map((step) => (
+        {report.steps.map((step) => (
           <Text
             key={step.stepId}
             color={
@@ -125,19 +102,24 @@ export const ResultsScreen = () => {
         {clipboardError ? <Text color={COLORS.RED}>{clipboardError}</Text> : null}
       </Box>
 
-      {Option.isSome(latestRunReport.pullRequest) ? (
+      {Option.isSome(report.pullRequest) ? (
         <Box flexDirection="column" paddingX={1}>
           <Clickable onClick={handlePostPullRequestComment}>
             <Text color={COLORS.DIM}>
               Press <Text color={COLORS.PRIMARY}>p</Text> to post this summary to the PR.
             </Text>
           </Clickable>
-          {isPostingComment ? <Text color={COLORS.DIM}>Posting PR comment...</Text> : null}
-          {commentStatusMessage ? <Text color={COLORS.GREEN}>{commentStatusMessage}</Text> : null}
+          {commentMutation.isPending ? <Text color={COLORS.DIM}>Posting PR comment...</Text> : null}
+          {commentMutation.isSuccess ? (
+            <Text color={COLORS.GREEN}>Comment posted to PR.</Text>
+          ) : null}
+          {commentMutation.isError ? (
+            <Text color={COLORS.RED}>Failed to post PR comment.</Text>
+          ) : null}
         </Box>
       ) : null}
 
-      {latestRunReport.screenshotPaths.map((screenshotPath) => (
+      {report.screenshotPaths.map((screenshotPath) => (
         <Box key={screenshotPath} paddingX={1}>
           <Image src={screenshotPath} alt={`Screenshot: ${screenshotPath}`} />
         </Box>

@@ -1,4 +1,4 @@
-import { Option, Schema } from "effect";
+import { Match, Option, Predicate, Schema } from "effect";
 
 export interface ChangedFile {
   path: string;
@@ -11,6 +11,15 @@ export interface CommitSummary {
   subject: string;
 }
 
+export const AgentProvider = Schema.Literals(["claude", "codex", "cursor"] as const);
+export type AgentProvider = typeof AgentProvider.Type;
+
+export const AGENT_PROVIDER_DISPLAY_NAMES: Record<AgentProvider, string> = {
+  claude: "Claude",
+  codex: "Codex",
+  cursor: "Cursor",
+};
+const TOOL_CALL_DISPLAY_TEXT_CHAR_LIMIT = 80;
 const PLANNER_CHANGED_FILE_LIMIT = 12;
 const PLANNER_MAX_STEP_COUNT = 8;
 const STEP_ID_PAD_LENGTH = 2;
@@ -20,6 +29,19 @@ export class FileStat extends Schema.Class<FileStat>("@ami/FileStat")({
   added: Schema.Number,
   removed: Schema.Number,
 }) {}
+
+export class Branch extends Schema.Class<Branch>("@ami/Branch")({
+  name: Schema.String,
+  fullRef: Schema.String,
+  authorName: Schema.OptionFromOptionalKey(Schema.String),
+  authorEmail: Schema.OptionFromOptionalKey(Schema.String),
+  subject: Schema.OptionFromOptionalKey(Schema.String),
+  lastCommitTimestampMs: Schema.Number,
+  isMyBranch: Schema.Boolean,
+}) {}
+
+export const formatFileStats = (fileStats: readonly FileStat[]): string =>
+  fileStats.map((stat) => `  ${stat.relativePath} (+${stat.added} -${stat.removed})`).join("\n");
 
 export class GitState extends Schema.Class<GitState>("@supervisor/GitState")({
   isGitRepo: Schema.Boolean,
@@ -31,7 +53,15 @@ export class GitState extends Schema.Class<GitState>("@supervisor/GitState")({
   hasBranchCommits: Schema.Boolean,
   branchCommitCount: Schema.Number,
   fileStats: Schema.Array(FileStat),
-}) {}
+}) {
+  get hasUntestedChanges(): boolean {
+    return this.hasChangesFromMain || this.hasUnstagedChanges;
+  }
+
+  get totalChangedLines(): number {
+    return this.fileStats.reduce((sum, stat) => sum + stat.added + stat.removed, 0);
+  }
+}
 
 export const StepId = Schema.String.pipe(Schema.brand("StepId"));
 export type StepId = typeof StepId.Type;
@@ -39,12 +69,23 @@ export type StepId = typeof StepId.Type;
 export const PlanId = Schema.String.pipe(Schema.brand("PlanId"));
 export type PlanId = typeof PlanId.Type;
 
-export const ChangesFor = Schema.Union([
-  Schema.Struct({ _tag: Schema.Literal("WorkingTree") }),
-  Schema.Struct({ _tag: Schema.Literal("Branch"), branchName: Schema.String, base: Schema.String }),
-  Schema.Struct({ _tag: Schema.Literal("Commit"), hash: Schema.String }),
-]);
+export const ChangesFor = Schema.TaggedUnion({
+  WorkingTree: {},
+  Branch: { mainBranch: Schema.String },
+  Changes: { mainBranch: Schema.String },
+  Commit: { hash: Schema.String },
+});
 export type ChangesFor = typeof ChangesFor.Type;
+
+export const changesForDisplayName = (changesFor: ChangesFor): string =>
+  Match.value(changesFor).pipe(
+    Match.tagsExhaustive({
+      WorkingTree: () => "working tree",
+      Branch: () => "branch",
+      Changes: () => "changes",
+      Commit: ({ hash }) => hash.slice(0, 7),
+    }),
+  );
 
 export const GhPrListItem = Schema.Struct({
   number: Schema.Number,
@@ -54,13 +95,50 @@ export const GhPrListItem = Schema.Struct({
   updatedAt: Schema.String,
 });
 
+export type BranchFilter = "recent" | "all" | "open" | "draft" | "merged" | "no-pr";
+
+export const BRANCH_FILTERS: readonly BranchFilter[] = [
+  "recent",
+  "all",
+  "open",
+  "draft",
+  "merged",
+  "no-pr",
+];
+
 export class RemoteBranch extends Schema.Class<RemoteBranch>("@supervisor/RemoteBranch")({
   name: Schema.String,
   author: Schema.String,
   prNumber: Schema.NullOr(Schema.Number),
   prStatus: Schema.NullOr(Schema.Literals(["open", "draft", "merged"] as const)),
   updatedAt: Schema.NullOr(Schema.String),
-}) {}
+}) {
+  static filterBranches(
+    branches: readonly RemoteBranch[],
+    filter: BranchFilter,
+    searchQuery?: string,
+  ): RemoteBranch[] {
+    let result = branches.filter((branch) => {
+      if (filter === "recent" || filter === "all") return true;
+      if (filter === "no-pr") return branch.prStatus === null;
+      return branch.prStatus === filter;
+    });
+    if (searchQuery) {
+      const lowercaseQuery = searchQuery.toLowerCase();
+      result = result.filter((branch) => branch.name.toLowerCase().includes(lowercaseQuery));
+    }
+    if (filter === "recent") {
+      result = [...result]
+        .filter((branch) => branch.updatedAt !== null)
+        .sort((first, second) => {
+          const firstDate = new Date(first.updatedAt ?? 0).getTime();
+          const secondDate = new Date(second.updatedAt ?? 0).getTime();
+          return secondDate - firstDate;
+        });
+    }
+    return result;
+  }
+}
 
 export class FileDiff extends Schema.Class<FileDiff>("@supervisor/FileDiff")({
   relativePath: Schema.String,
@@ -73,7 +151,13 @@ export class TestPlanStep extends Schema.Class<TestPlanStep>("@supervisor/TestPl
   instruction: Schema.String,
   expectedOutcome: Schema.String,
   routeHint: Schema.Option(Schema.String),
-}) {}
+}) {
+  update(
+    fields: Partial<Pick<TestPlanStep, "title" | "instruction" | "expectedOutcome">>,
+  ): TestPlanStep {
+    return new TestPlanStep({ ...this, ...fields });
+  }
+}
 
 export class TestPlanDraft extends Schema.Class<TestPlanDraft>("@supervisor/TestPlanDraft")({
   changesFor: ChangesFor,
@@ -86,12 +170,14 @@ export class TestPlanDraft extends Schema.Class<TestPlanDraft>("@supervisor/Test
   requiresCookies: Schema.Boolean,
 }) {
   get prompt(): string {
-    const scopeDescription =
-      this.changesFor._tag === "WorkingTree"
-        ? "working tree (unstaged/staged changes)"
-        : this.changesFor._tag === "Branch"
-          ? `branch diff (${this.changesFor.base}..${this.changesFor.branchName})`
-          : `commit ${this.changesFor.hash}`;
+    const scopeDescription = Match.value(this.changesFor).pipe(
+      Match.tagsExhaustive({
+        WorkingTree: () => "working tree (unstaged/staged changes)",
+        Branch: ({ mainBranch }) => `branch diff (${mainBranch}..${this.currentBranch})`,
+        Changes: ({ mainBranch }) => `changes (${mainBranch}..${this.currentBranch})`,
+        Commit: ({ hash }) => `commit ${hash}`,
+      }),
+    );
 
     const fileStatsText =
       this.fileStats.length > 0
@@ -133,6 +219,14 @@ export class TestPlanDraft extends Schema.Class<TestPlanDraft>("@supervisor/Test
       "Return a JSON object with this exact shape:",
       '{"id":"string","title":"string","rationale":"string","steps":[{"id":"string","title":"string","instruction":"string","expectedOutcome":"string","routeHint":"string|null"}]}',
     ].join("\n");
+  }
+
+  update(
+    fields: Partial<
+      Pick<TestPlanDraft, "instruction" | "baseUrl" | "isHeadless" | "requiresCookies">
+    >,
+  ): TestPlanDraft {
+    return new TestPlanDraft({ ...this, ...fields });
   }
 }
 
@@ -185,6 +279,21 @@ export class TestPlan extends TestPlanDraft.extend<TestPlan>("@supervisor/TestPl
         .join("\n"),
     ].join("\n");
   }
+
+  update(
+    fields: Partial<
+      Pick<TestPlanDraft, "instruction" | "baseUrl" | "isHeadless" | "requiresCookies">
+    >,
+  ): TestPlan {
+    return new TestPlan({ ...this, ...fields });
+  }
+
+  updateStep(stepIndex: number, updater: (step: TestPlanStep) => TestPlanStep): TestPlan {
+    return new TestPlan({
+      ...this,
+      steps: this.steps.map((step, index) => (index === stepIndex ? updater(step) : step)),
+    });
+  }
 }
 
 export const PlanStepJson = Schema.Struct({
@@ -224,7 +333,14 @@ export class StepFailed extends Schema.TaggedClass<StepFailed>()("StepFailed", {
 export class ToolCall extends Schema.TaggedClass<ToolCall>()("ToolCall", {
   toolName: Schema.String,
   input: Schema.Unknown,
-}) {}
+}) {
+  get displayText(): string {
+    if (Predicate.isObject(this.input) && "command" in this.input) {
+      return String(this.input.command).slice(0, TOOL_CALL_DISPLAY_TEXT_CHAR_LIMIT);
+    }
+    return this.toolName;
+  }
+}
 
 export class ToolResult extends Schema.TaggedClass<ToolResult>()("ToolResult", {
   toolName: Schema.String,
@@ -253,26 +369,8 @@ export const ExecutionEvent = Schema.Union([
 ]);
 export type ExecutionEvent = typeof ExecutionEvent.Type;
 
-export class TestReportStep extends Schema.Class<TestReportStep>("@supervisor/TestReportStep")({
-  stepId: StepId,
-  title: Schema.String,
-  status: Schema.Literals(["passed", "failed", "not-run"] as const),
-  summary: Schema.String,
-}) {}
-
-export class TestReport extends Schema.Class<TestReport>("@supervisor/TestReport")({
-  steps: Schema.Array(TestReportStep),
-  summary: Schema.String,
-  screenshotPaths: Schema.Array(Schema.String),
-  pullRequest: Schema.Option(Schema.suspend(() => PullRequest)),
-}) {
-  get status(): "passed" | "failed" {
-    return this.steps.every((step) => step.status !== "failed") ? "passed" : "failed";
-  }
-}
-
 export class RunCompleted extends Schema.TaggedClass<RunCompleted>()("RunCompleted", {
-  report: TestReport,
+  report: Schema.suspend((): Schema.Schema<TestReport> => TestReport),
 }) {}
 
 export const UpdateContent = Schema.Union([
@@ -288,9 +386,7 @@ export const UpdateContent = Schema.Union([
 ]);
 export type UpdateContent = typeof UpdateContent.Type;
 
-export class Update extends Schema.Class<Update>(
-  "@supervisor/Update",
-)({
+export class Update extends Schema.Class<Update>("@supervisor/Update")({
   content: UpdateContent,
   receivedAt: Schema.DateTimeUtc,
 }) {}
@@ -301,6 +397,68 @@ export class PullRequest extends Schema.Class<PullRequest>("@supervisor/PullRequ
   title: Schema.String,
   headRefName: Schema.String,
 }) {}
+
+export const TestContext = Schema.TaggedUnion({
+  WorkingTree: {},
+  Branch: { branch: RemoteBranch },
+  PullRequest: { branch: RemoteBranch },
+  Commit: {
+    hash: Schema.String,
+    shortHash: Schema.String,
+    subject: Schema.String,
+  },
+});
+export type TestContext = typeof TestContext.Type;
+
+export const testContextId = (context: TestContext): string =>
+  Match.value(context).pipe(
+    Match.tagsExhaustive({
+      WorkingTree: () => "working-tree",
+      Branch: ({ branch }) => `branch-${branch.name}`,
+      PullRequest: ({ branch }) => `pr-${branch.prNumber}`,
+      Commit: ({ hash }) => `commit-${hash}`,
+    }),
+  );
+
+export const testContextFilterText = (context: TestContext): string =>
+  Match.value(context).pipe(
+    Match.tagsExhaustive({
+      WorkingTree: () => "local changes",
+      Branch: ({ branch }) => branch.name,
+      PullRequest: ({ branch }) => `#${branch.prNumber} ${branch.name} ${branch.author}`,
+      Commit: ({ shortHash, subject }) => `${shortHash} ${subject}`,
+    }),
+  );
+
+export const testContextLabel = (context: TestContext): string =>
+  Match.value(context).pipe(
+    Match.tagsExhaustive({
+      WorkingTree: () => "Local changes",
+      Branch: ({ branch }) => branch.name,
+      PullRequest: ({ branch }) => branch.name,
+      Commit: ({ shortHash }) => shortHash,
+    }),
+  );
+
+export const testContextDescription = (context: TestContext): string =>
+  Match.value(context).pipe(
+    Match.tagsExhaustive({
+      WorkingTree: () => "working tree",
+      Branch: ({ branch }) => (branch.author ? `by ${branch.author}` : ""),
+      PullRequest: ({ branch }) => `#${branch.prNumber} ${branch.prStatus ?? ""}`.trim(),
+      Commit: ({ subject }) => subject,
+    }),
+  );
+
+export const testContextDisplayLabel = (context: TestContext): string =>
+  Match.value(context).pipe(
+    Match.tagsExhaustive({
+      WorkingTree: () => "Local changes",
+      Branch: ({ branch }) => branch.name,
+      PullRequest: ({ branch }) => `#${branch.prNumber}`,
+      Commit: ({ shortHash }) => shortHash,
+    }),
+  );
 
 export const FindPullRequestPayload = Schema.TaggedUnion({
   Branch: { branchName: Schema.String },
@@ -316,46 +474,83 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
     return new ExecutedTestPlan({ ...this, events: [...this.events, event] });
   }
 
-  get testReport(): TestReport {
-    const stepResults = new Map<string, TestReportStep>(
-      this.steps.map((step) => [
-        step.id,
-        new TestReportStep({ stepId: step.id, title: step.title, status: "not-run", summary: "" }),
-      ]),
+  get activeStepId(): StepId | undefined {
+    let activeId: StepId | undefined = undefined;
+    for (const event of this.events) {
+      if (event._tag === "StepStarted") activeId = event.stepId;
+      if (
+        (event._tag === "StepCompleted" || event._tag === "StepFailed") &&
+        activeId === event.stepId
+      ) {
+        activeId = undefined;
+      }
+    }
+    return activeId;
+  }
+
+  get completedStepCount(): number {
+    const completed = new Set<StepId>();
+    for (const event of this.events) {
+      if (event._tag === "StepCompleted" || event._tag === "StepFailed") {
+        completed.add(event.stepId);
+      }
+    }
+    return completed.size;
+  }
+
+  get activeStep(): TestPlanStep | undefined {
+    const stepId = this.activeStepId;
+    if (stepId === undefined) return undefined;
+    return this.steps.find((step) => step.id === stepId);
+  }
+
+  get lastToolCallDisplayText(): string | undefined {
+    const lastToolCall = this.events.findLast((event) => event._tag === "ToolCall");
+    if (!lastToolCall || lastToolCall._tag !== "ToolCall") return undefined;
+    return lastToolCall.displayText;
+  }
+}
+
+export class TestReport extends ExecutedTestPlan.extend<TestReport>("@supervisor/TestReport")({
+  summary: Schema.String,
+  screenshotPaths: Schema.Array(Schema.String),
+  pullRequest: Schema.Option(Schema.suspend(() => PullRequest)),
+}) {
+  get stepStatuses(): ReadonlyMap<
+    StepId,
+    { status: "passed" | "failed" | "not-run"; summary: string }
+  > {
+    const statuses = new Map<StepId, { status: "passed" | "failed" | "not-run"; summary: string }>(
+      this.steps.map((step) => [step.id, { status: "not-run", summary: "" }]),
     );
 
     for (const event of this.events) {
       if (event._tag === "StepCompleted") {
-        const existing = stepResults.get(event.stepId);
-        if (existing) {
-          stepResults.set(
-            event.stepId,
-            new TestReportStep({ ...existing, status: "passed", summary: event.summary }),
-          );
-        }
+        statuses.set(event.stepId, { status: "passed", summary: event.summary });
       } else if (event._tag === "StepFailed") {
-        const existing = stepResults.get(event.stepId);
-        if (existing) {
-          stepResults.set(
-            event.stepId,
-            new TestReportStep({ ...existing, status: "failed", summary: event.message }),
-          );
-        }
+        statuses.set(event.stepId, { status: "failed", summary: event.message });
       }
     }
 
-    const runFinished = this.events.findLast((event) => event._tag === "RunFinished");
-    const summary = runFinished?._tag === "RunFinished" ? runFinished.summary : "Run completed.";
+    return statuses;
+  }
 
-    const screenshotPaths = this.events
-      .filter((event) => event._tag === "ToolResult" && event.toolName.endsWith("__screenshot"))
-      .map((event) => (event._tag === "ToolResult" ? event.result : ""));
+  get status(): "passed" | "failed" {
+    const statuses = this.stepStatuses;
+    for (const { status } of statuses.values()) {
+      if (status === "failed") return "failed";
+    }
+    return "passed";
+  }
 
-    return new TestReport({
-      steps: [...stepResults.values()],
-      summary,
-      screenshotPaths,
-      pullRequest: Option.none(),
-    });
+  get toPlainText(): string {
+    const statuses = this.stepStatuses;
+    const lines = [`Status: ${this.status}`, `Summary: ${this.summary}`];
+    for (const step of this.steps) {
+      const entry = statuses.get(step.id);
+      const stepStatus = entry?.status ?? "not-run";
+      lines.push(`${stepStatus.toUpperCase()} ${step.title}: ${entry?.summary ?? ""}`);
+    }
+    return lines.join("\n");
   }
 }

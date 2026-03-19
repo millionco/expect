@@ -5,9 +5,14 @@ import * as Str from "effect/String";
 import * as F from "effect/Function";
 import simpleGit from "simple-git";
 
-import { FileStat, ChangedFile, CommitSummary, ChangesFor } from "./models.js";
+import {
+  type ChangedFile,
+  ChangesFor,
+  type CommitSummary,
+  FileStat,
+  GitState,
+} from "@browser-tester/shared/models";
 import { GitError, FindRepoRootError } from "./errors.js";
-import { GitState } from "@browser-tester/shared/models";
 
 // ── GitRepoRoot context service ──────────────────────────────────────
 
@@ -269,8 +274,12 @@ export class Git extends ServiceMap.Service<Git>()("@supervisor/Git", {
       const currentBranch = yield* getCurrentBranch;
       const mainBranch = yield* getMainBranch;
       const isOnMain = currentBranch === mainBranch;
-      const branchFileStats = yield* getFileStats(ChangesFor.Changes({ mainBranch }));
-      const workingTreeFileStats = yield* getFileStats(ChangesFor.WorkingTree());
+      const branchFileStats = yield* getFileStats(
+        ChangesFor.makeUnsafe({ _tag: "Changes", mainBranch }),
+      );
+      const workingTreeFileStats = yield* getFileStats(
+        ChangesFor.makeUnsafe({ _tag: "WorkingTree" }),
+      );
       const recentCommits = yield* getRecentCommits(`${mainBranch}..HEAD`);
       return new GitState({
         isGitRepo: true,

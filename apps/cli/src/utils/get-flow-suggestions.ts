@@ -1,5 +1,4 @@
-import type { GitState } from "@browser-tester/shared/models";
-import type { ContextOption } from "./context-options.js";
+import type { GitState, TestContext } from "@browser-tester/shared/models";
 
 const DEFAULT_SUGGESTIONS: readonly string[] = [
   "Test the main user flow end to end",
@@ -32,18 +31,18 @@ const COMMIT_SUGGESTIONS: readonly string[] = [
 ];
 
 export const getFlowSuggestions = (
-  context: ContextOption | null,
+  context: TestContext | null,
   _gitState: GitState | null,
 ): readonly string[] => {
   if (!context) return DEFAULT_SUGGESTIONS;
-  switch (context.type) {
-    case "changes":
+  switch (context._tag) {
+    case "WorkingTree":
       return CHANGES_SUGGESTIONS;
-    case "branch":
+    case "Branch":
       return BRANCH_SUGGESTIONS;
-    case "pr":
+    case "PullRequest":
       return PR_SUGGESTIONS;
-    case "commit":
+    case "Commit":
       return COMMIT_SUGGESTIONS;
     default:
       return DEFAULT_SUGGESTIONS;

@@ -1,9 +1,9 @@
-import { Cause, Effect, Fiber, Stream } from "effect";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Box, Static, Text, useInput } from "ink";
 import figures from "figures";
-import { Agent } from "@browser-tester/agent";
-import { ExecutedTestPlan, Executor, Reporter } from "@browser-tester/supervisor";
+import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
+import { useAtom, useAtomValue } from "@effect/atom-react";
+import { changesForDisplayName } from "@browser-tester/shared/models";
 import {
   PROGRESS_BAR_WIDTH,
   TESTING_TIMER_UPDATE_INTERVAL_MS,
@@ -13,15 +13,15 @@ import { useColors } from "../theme-context.js";
 import { RuledBox } from "../ui/ruled-box.js";
 import { Spinner } from "../ui/spinner.js";
 import { TextShimmer } from "../ui/text-shimmer.js";
-import { useFlowSessionStore } from "../../stores/use-flow-session.js";
-import { usePreferencesStore } from "../../stores/use-preferences.js";
-import { useGitState } from "../../hooks/use-git-state.js";
+import { usePlanStore } from "../../stores/use-plan-store.js";
+import { usePlanExecutionStore } from "../../stores/use-plan-execution-store.js";
+import { useNavigationStore } from "../../stores/use-navigation.js";
 import { ScreenHeading } from "../ui/screen-heading.js";
 import cliTruncate from "cli-truncate";
 import { formatElapsedTime } from "../../utils/format-elapsed-time.js";
 import { Image } from "../ui/image.js";
 import { ErrorMessage } from "../ui/error-message.js";
-import { CliRuntime } from "../../runtime.js";
+import { executePlanFn, screenshotPathsAtom } from "../../data/execution-atom.js";
 
 const TOOL_CALL_DISPLAY_MODE_COMPACT = "compact";
 const TOOL_CALL_DISPLAY_MODE_DETAILED = "detailed";
@@ -40,157 +40,65 @@ const getNextToolCallDisplayMode = (toolCallDisplayMode: string): string => {
 };
 
 export const TestingScreen = () => {
-  const changesFor = useFlowSessionStore((state) => state.changesFor);
-  const selectedCommit = useFlowSessionStore((state) => state.selectedCommit);
-  const plan = useFlowSessionStore((state) => state.generatedPlan);
-  const { data: gitState } = useGitState();
-  const executionProvider = usePreferencesStore((state) => state.executionProvider);
-  const completeTestingRun = useFlowSessionStore((state) => state.completeTestingRun);
-  const exitTesting = useFlowSessionStore((state) => state.exitTesting);
+  const planState = usePlanStore((state) => state.plan);
+  const setScreen = useNavigationStore((state) => state.setScreen);
   const COLORS = useColors();
-  const [executedPlan, setExecutedPlan] = useState<ExecutedTestPlan | null>(null);
-  const [stepStartTimesMs, setStepStartTimesMs] = useState<Map<string, number>>(new Map());
-  const [running, setRunning] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [screenshotPaths, setScreenshotPaths] = useState<string[]>([]);
-  const [runStartedAt, setRunStartedAt] = useState<number | null>(null);
+
+  const testPlan = planState?._tag === "plan" ? planState : undefined;
+  const displayName = testPlan ? changesForDisplayName(testPlan.changesFor) : "working tree";
+
+  const [executionResult, triggerExecute] = useAtom(executePlanFn, { mode: "promiseExit" });
+  const screenshotPaths = useAtomValue(screenshotPathsAtom);
+  const running = AsyncResult.isWaiting(executionResult);
+  const done = AsyncResult.isSuccess(executionResult);
+  const error = AsyncResult.isFailure(executionResult) ? String(executionResult.cause) : undefined;
+  const executedPlan = done ? executionResult.value.executedPlan : undefined;
+
+  const [runStartedAt, setRunStartedAt] = useState<number | undefined>(undefined);
   const [elapsedTimeMs, setElapsedTimeMs] = useState(0);
   const [toolCallDisplayMode, setToolCallDisplayMode] = useState(TOOL_CALL_DISPLAY_MODE_COMPACT);
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
-  const [exitRequested, setExitRequested] = useState(false);
-  const runFiberRef = useRef<Fiber.Fiber<unknown, unknown> | null>(null);
 
   const elapsedTimeLabel = useMemo(() => formatElapsedTime(elapsedTimeMs), [elapsedTimeMs]);
 
+  // HACK: setInterval for elapsed time — no atom equivalent yet
   useEffect(() => {
-    if (!exitRequested || running) return;
-    exitTesting();
-  }, [exitRequested, exitTesting, running]);
-
-  useEffect(() => {
-    if (!running || runStartedAt === null) return;
-
+    if (!running || runStartedAt === undefined) return;
     setElapsedTimeMs(Date.now() - runStartedAt);
-
     const interval = setInterval(() => {
       setElapsedTimeMs(Date.now() - runStartedAt);
     }, TESTING_TIMER_UPDATE_INTERVAL_MS);
-
-    return () => {
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, [runStartedAt, running]);
 
-  const displayName = selectedCommit
-    ? selectedCommit.shortHash
-    : changesFor?._tag === "Branch" || changesFor?._tag === "Changes"
-      ? (gitState?.currentBranch ?? "branch")
-      : "working tree";
-
-  useEffect(() => {
-    if (!changesFor || !plan) return;
-
-    const testPlan = plan;
-    const startedAt = Date.now();
-    setExecutedPlan(new ExecutedTestPlan({ ...testPlan, events: [] }));
-    setStepStartTimesMs(new Map());
-    setRunning(true);
-    setError(null);
-    setScreenshotPaths([]);
-    setRunStartedAt(startedAt);
+  const startExecution = () => {
+    if (!testPlan) return;
+    setRunStartedAt(Date.now());
     setElapsedTimeMs(0);
     setShowCancelConfirmation(false);
-    setExitRequested(false);
-    useFlowSessionStore.setState({
-      resolvedExecutionProvider: executionProvider ?? null,
-    });
+    triggerExecute({ testPlan });
+  };
 
-    const agentBackend = executionProvider === "claude" ? "claude" : "codex";
-
-    runFiberRef.current = CliRuntime.runFork(
-      Effect.gen(function* () {
-        const executor = yield* Executor;
-        // HACK: Effect v4 beta loses Stream element type through ServiceMap.Service inference
-        const executionStream = (yield* executor.executePlan(
-          testPlan,
-        )) as Stream.Stream<ExecutedTestPlan>;
-
-        const finalExecuted = yield* executionStream.pipe(
-          Stream.tap((executed) =>
-            Effect.sync(() => {
-              const lastEvent = executed.events.at(-1);
-              if (lastEvent?._tag === "ToolResult" && lastEvent.toolName.endsWith("__screenshot")) {
-                setScreenshotPaths((previous) => [...previous, lastEvent.result]);
-              }
-              if (lastEvent?._tag === "StepStarted") {
-                setStepStartTimesMs((previous) =>
-                  new Map(previous).set(lastEvent.stepId, Date.now()),
-                );
-              }
-              setExecutedPlan(executed);
-            }),
-          ),
-          Stream.runLast,
-          Effect.map((option) =>
-            option._tag === "Some"
-              ? option.value
-              : new ExecutedTestPlan({ ...testPlan, events: [] }),
-          ),
-        );
-
-        const report = yield* Reporter.use((reporter) => reporter.report(finalExecuted)).pipe(
-          Effect.provide(Reporter.layer),
-        );
-        completeTestingRun(report);
-      }).pipe(
-        Effect.provide(Executor.layer),
-        Effect.provide(Agent.layerFor(agentBackend)),
-        Effect.scoped,
-        Effect.catchCause((cause) =>
-          Cause.hasInterruptsOnly(cause)
-            ? Effect.void
-            : Effect.sync(() => setError(Cause.pretty(cause))),
-        ),
-        Effect.ensuring(
-          Effect.sync(() => {
-            runFiberRef.current = null;
-            setShowCancelConfirmation(false);
-            setRunning(false);
-          }),
-        ),
-      ),
-    );
-
-    return () => {
-      const runFiber = runFiberRef.current;
-      if (runFiber) {
-        void Effect.runFork(Fiber.interrupt(runFiber));
-      }
-    };
-  }, [completeTestingRun, executionProvider, plan, changesFor]);
+  // HACK: trigger execution on mount — this should be driven by the parent
+  useEffect(() => {
+    if (!testPlan) return;
+    startExecution();
+  }, [testPlan]);
 
   useInput((input, key) => {
     const normalizedInput = input.toLowerCase();
 
-    if (exitRequested) {
-      return;
-    }
-
     if (showCancelConfirmation) {
       if (key.return || normalizedInput === "y") {
         setShowCancelConfirmation(false);
-        setExitRequested(true);
-        const runFiber = runFiberRef.current;
-        if (runFiber) {
-          void Effect.runFork(Fiber.interrupt(runFiber));
-        }
+        usePlanStore.getState().setPlan(undefined);
+        usePlanExecutionStore.getState().setExecutedPlan(undefined);
+        setScreen("main");
         return;
       }
-
       if (key.escape || normalizedInput === "n") {
         setShowCancelConfirmation(false);
       }
-
       return;
     }
 
@@ -204,48 +112,33 @@ export const TestingScreen = () => {
         setShowCancelConfirmation(true);
         return;
       }
-
-      exitTesting();
+      if (executedPlan) {
+        usePlanExecutionStore.getState().setExecutedPlan(executedPlan);
+        setScreen("results");
+        return;
+      }
+      usePlanStore.getState().setPlan(undefined);
+      usePlanExecutionStore.getState().setExecutedPlan(undefined);
+      setScreen("main");
     }
   });
 
-  const activeStepId = useMemo(() => {
-    if (!executedPlan) return null;
-    let activeId: string | null = null;
-    for (const event of executedPlan.events) {
-      if (event._tag === "StepStarted") activeId = event.stepId;
-      if (
-        (event._tag === "StepCompleted" || event._tag === "StepFailed") &&
-        activeId === event.stepId
-      ) {
-        activeId = null;
-      }
-    }
-    return activeId;
-  }, [executedPlan]);
+  const activeStepId = executedPlan?.activeStepId ?? undefined;
+  const currentToolCallText =
+    executedPlan && toolCallDisplayMode !== TOOL_CALL_DISPLAY_MODE_HIDDEN
+      ? (executedPlan.lastToolCallDisplayText ?? undefined)
+      : undefined;
 
-  const currentToolCallText = useMemo(() => {
-    if (!executedPlan || toolCallDisplayMode === TOOL_CALL_DISPLAY_MODE_HIDDEN) return null;
-    const lastToolCall = executedPlan.events.findLast((event) => event._tag === "ToolCall");
-    if (!lastToolCall || lastToolCall._tag !== "ToolCall") return null;
-    const input = lastToolCall.input;
-    if (input && typeof input === "object" && "command" in input) {
-      return String((input as Record<string, unknown>).command).slice(0, 80);
-    }
-    return lastToolCall.toolName;
-  }, [executedPlan, toolCallDisplayMode]);
+  if (!testPlan) return null;
 
-  if (!changesFor || !plan || !executedPlan) return null;
+  const testReport = executedPlan?.testReport;
+  const reportStepsById = testReport
+    ? new Map(testReport.steps.map((step) => [step.stepId, step]))
+    : new Map();
 
-  const report = executedPlan.testReport;
-  const reportStepsById = new Map(report.steps.map((step) => [step.stepId, step]));
-
-  const steps = plan.steps.map((step) => {
+  const steps = testPlan.steps.map((step) => {
     const reportStep = reportStepsById.get(step.id);
     const isActive = step.id === activeStepId;
-    const startTimeMs = stepStartTimesMs.get(step.id);
-    const elapsedMs =
-      startTimeMs !== undefined && runStartedAt !== null ? startTimeMs - runStartedAt : null;
     const status = isActive
       ? ("active" as const)
       : reportStep?.status === "not-run"
@@ -253,28 +146,26 @@ export const TestingScreen = () => {
         : (reportStep?.status ?? ("pending" as const));
     const label =
       status === "pending" || status === "active" ? step.title : reportStep?.summary || step.title;
-    return { stepId: step.id, status, label, elapsedMs };
+    return { stepId: step.id, status, label };
   });
 
-  const completedCount = steps.filter(
-    (step) => step.status === "passed" || step.status === "failed",
-  ).length;
+  const completedCount = executedPlan?.completedStepCount ?? 0;
   const totalCount = steps.length;
-  const activeStep = steps.find((step) => step.status === "active");
-  const runStatusLabel = activeStep
-    ? `Running ${activeStep.label}`
+  const currentActiveStep = executedPlan?.activeStep;
+  const runStatusLabel = currentActiveStep
+    ? `Running ${currentActiveStep.title}`
     : completedCount === totalCount
       ? "Finishing up"
       : "Starting";
 
-  const planTitle = plan.title;
+  const planTitle = testPlan.title;
   const filledWidth =
     totalCount > 0 ? Math.round((completedCount / totalCount) * PROGRESS_BAR_WIDTH) : 0;
   const emptyWidth = PROGRESS_BAR_WIDTH - filledWidth;
 
   return (
     <>
-      <Static items={screenshotPaths}>
+      <Static items={[...screenshotPaths]}>
         {(screenshotPath) => (
           <Box key={screenshotPath} paddingX={1}>
             <Image src={screenshotPath} alt={screenshotPath} />
@@ -307,17 +198,11 @@ export const TestingScreen = () => {
               <Box key={step.stepId} flexDirection="column">
                 {step.status === "passed" ? (
                   <Text color={COLORS.GREEN}>
-                    {`  ${figures.tick} ${stepPrefix} ${cliTruncate(
-                      step.label,
-                      TESTING_TOOL_TEXT_CHAR_LIMIT,
-                    )}${step.elapsedMs !== null ? ` ${formatElapsedTime(step.elapsedMs)}` : ""}`}
+                    {`  ${figures.tick} ${stepPrefix} ${cliTruncate(step.label, TESTING_TOOL_TEXT_CHAR_LIMIT)}`}
                   </Text>
                 ) : step.status === "failed" ? (
                   <Text color={COLORS.RED}>
-                    {`  ${figures.cross} ${stepPrefix} ${cliTruncate(
-                      step.label,
-                      TESTING_TOOL_TEXT_CHAR_LIMIT,
-                    )}${step.elapsedMs !== null ? ` ${formatElapsedTime(step.elapsedMs)}` : ""}`}
+                    {`  ${figures.cross} ${stepPrefix} ${cliTruncate(step.label, TESTING_TOOL_TEXT_CHAR_LIMIT)}`}
                   </Text>
                 ) : step.status === "active" ? (
                   <>
@@ -326,9 +211,7 @@ export const TestingScreen = () => {
                       <Spinner />
                       <Text> </Text>
                       <TextShimmer
-                        text={`${stepPrefix} ${step.label} ${formatElapsedTime(
-                          Math.round(elapsedTimeMs),
-                        )}`}
+                        text={`${stepPrefix} ${step.label} ${formatElapsedTime(Math.round(elapsedTimeMs))}`}
                         baseColor={COLORS.SELECTION}
                         highlightColor={COLORS.PRIMARY}
                       />
@@ -365,16 +248,14 @@ export const TestingScreen = () => {
         {running && !showCancelConfirmation ? (
           <Box marginTop={1} paddingX={1}>
             <TextShimmer
-              text={`${exitRequested ? "Stopping" : runStatusLabel}${
-                figures.ellipsis
-              } ${elapsedTimeLabel}`}
+              text={`${runStatusLabel}${figures.ellipsis} ${elapsedTimeLabel}`}
               baseColor={COLORS.DIM}
               highlightColor={COLORS.PRIMARY}
             />
           </Box>
         ) : null}
 
-        {!running && !error ? (
+        {done ? (
           <Box marginTop={1} flexDirection="column" paddingX={1}>
             <Text color={COLORS.GREEN} bold>
               Done
@@ -383,7 +264,7 @@ export const TestingScreen = () => {
         ) : null}
 
         <Box paddingX={1}>
-          <ErrorMessage message={error ? `Error: ${error}` : null} />
+          <ErrorMessage message={error ? `Error: ${error}` : undefined} />
         </Box>
       </Box>
     </>

@@ -10,12 +10,10 @@ export const UntestedChangesBanner = () => {
 
   if (!gitState?.isGitRepo) return null;
 
-  const hasUntestedChanges = gitState.hasChangesFromMain || gitState.hasUnstagedChanges;
-
-  if (!hasUntestedChanges) return null;
+  if (!gitState.hasUntestedChanges) return null;
 
   const fileCount = gitState.fileStats.length;
-  const changedLines = gitState.fileStats.reduce((sum, stat) => sum + stat.added + stat.removed, 0);
+  const changedLines = gitState.totalChangedLines;
 
   const headline =
     changedLines > 0

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions.js";
 import figures from "figures";
@@ -14,73 +14,33 @@ import { RuledBox } from "../ui/ruled-box.js";
 import { stripMouseSequences } from "../../hooks/mouse-context.js";
 import { Clickable } from "../ui/clickable.js";
 import { SearchBar } from "../ui/search-bar.js";
-import type { RemoteBranch } from "@browser-tester/shared/models";
-import { fetchRemoteBranches } from "../../utils/context-options.js";
+import { BRANCH_FILTERS, RemoteBranch, type BranchFilter } from "@browser-tester/shared/models";
+import { useRemoteBranches } from "../../hooks/use-remote-branches.js";
 import { Spinner } from "../ui/spinner.js";
 import cliTruncate from "cli-truncate";
 import { visualPadEnd } from "../../utils/visual-pad-end.js";
 import { useScrollableList } from "../../hooks/use-scrollable-list.js";
-import { useFlowSessionStore } from "../../stores/use-flow-session.js";
+import { usePlanStore } from "../../stores/use-plan-store.js";
+import { useNavigationStore } from "../../stores/use-navigation.js";
+import { checkoutBranch } from "@browser-tester/supervisor";
+import { queryClient } from "../../query-client.js";
 import { ScreenHeading } from "../ui/screen-heading.js";
-
-type PrFilter = "recent" | "all" | "open" | "draft" | "merged" | "no-pr";
-
-const PR_FILTERS: PrFilter[] = ["recent", "all", "open", "draft", "merged", "no-pr"];
 
 export const PrPickerScreen = () => {
   const [columns] = useStdoutDimensions();
-  const storeSwitchBranch = useFlowSessionStore((state) => state.switchBranch);
-  const checkoutError = useFlowSessionStore((state) => state.checkoutError);
-  const clearCheckoutError = useFlowSessionStore((state) => state.clearCheckoutError);
-  const generatedPlan = useFlowSessionStore((state) => state.generatedPlan);
+  const planState = usePlanStore((state) => state.plan);
+  const setScreen = useNavigationStore((state) => state.setScreen);
   const COLORS = useColors();
-  const [confirmBranch, setConfirmBranch] = useState<{
-    name: string;
-    prNumber: number | null;
-  } | null>(null);
+  const [confirmBranch, setConfirmBranch] = useState<RemoteBranch | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState<PrFilter>("recent");
+  const [activeFilter, setActiveFilter] = useState<BranchFilter>("recent");
   const [isSearching, setIsSearching] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | undefined>(undefined);
+  const { data: remoteBranches = [], isLoading } = useRemoteBranches();
 
-  const [remoteBranches, setRemoteBranches] = useState<RemoteBranch[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const hasPlan = planState !== undefined;
 
-  useEffect(() => {
-    let cancelled = false;
-    fetchRemoteBranches(process.cwd())
-      .then((branches) => {
-        if (!cancelled) setRemoteBranches(branches);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const filteredBranches = (() => {
-    let result = remoteBranches.filter((branch) => {
-      if (activeFilter === "recent" || activeFilter === "all") return true;
-      if (activeFilter === "no-pr") return branch.prStatus === null;
-      return branch.prStatus === activeFilter;
-    });
-    if (searchQuery) {
-      const lowercaseQuery = searchQuery.toLowerCase();
-      result = result.filter((branch) => branch.name.toLowerCase().includes(lowercaseQuery));
-    }
-    if (activeFilter === "recent") {
-      result = result
-        .filter((branch) => branch.updatedAt !== null)
-        .sort((first, second) => {
-          const firstDate = new Date(first.updatedAt ?? 0).getTime();
-          const secondDate = new Date(second.updatedAt ?? 0).getTime();
-          return secondDate - firstDate;
-        });
-    }
-    return result;
-  })();
+  const filteredBranches = RemoteBranch.filterBranches(remoteBranches, activeFilter, searchQuery);
 
   const { highlightedIndex, setHighlightedIndex, scrollOffset, handleNavigation } =
     useScrollableList({
@@ -105,11 +65,25 @@ export const PrPickerScreen = () => {
     [setHighlightedIndex],
   );
 
+  const doSwitchBranch = (branchName: string) => {
+    const success = checkoutBranch(process.cwd(), branchName);
+    if (success) {
+      usePlanStore.getState().setPlan(undefined);
+      setCheckoutError(undefined);
+      void queryClient.invalidateQueries({ queryKey: ["git-state"] });
+      setScreen("main");
+    } else {
+      setCheckoutError(
+        `Could not checkout "${branchName}". You may have uncommitted changes or the branch may not exist locally.`,
+      );
+    }
+  };
+
   const cycleFilter = useCallback(
     (direction: 1 | -1) => {
-      const currentIndex = PR_FILTERS.indexOf(activeFilter);
-      const nextIndex = (currentIndex + direction + PR_FILTERS.length) % PR_FILTERS.length;
-      setActiveFilter(PR_FILTERS[nextIndex]);
+      const currentIndex = BRANCH_FILTERS.indexOf(activeFilter);
+      const nextIndex = (currentIndex + direction + BRANCH_FILTERS.length) % BRANCH_FILTERS.length;
+      setActiveFilter(BRANCH_FILTERS[nextIndex]);
       setHighlightedIndex(0);
     },
     [activeFilter, setHighlightedIndex],
@@ -131,14 +105,11 @@ export const PrPickerScreen = () => {
     if (key.return) {
       const selected = filteredBranches[highlightedIndex];
       if (selected) {
-        if (generatedPlan) {
-          setConfirmBranch({
-            name: selected.name,
-            prNumber: selected.prNumber,
-          });
+        if (hasPlan) {
+          setConfirmBranch(selected);
         } else {
-          clearCheckoutError();
-          storeSwitchBranch(selected.name, selected.prNumber);
+          setCheckoutError(undefined);
+          doSwitchBranch(selected.name);
         }
       }
     }
@@ -152,8 +123,8 @@ export const PrPickerScreen = () => {
     (input, key) => {
       if (!confirmBranch) return;
       if (input.toLowerCase() === "y") {
-        clearCheckoutError();
-        storeSwitchBranch(confirmBranch.name, confirmBranch.prNumber);
+        setCheckoutError(undefined);
+        doSwitchBranch(confirmBranch.name);
         setConfirmBranch(null);
       }
       if (input.toLowerCase() === "n" || key.escape) {
@@ -173,10 +144,10 @@ export const PrPickerScreen = () => {
       </Box>
 
       <Box marginTop={1} paddingX={1}>
-        {PR_FILTERS.map((filter, index) => {
+        {BRANCH_FILTERS.map((filter, index) => {
           const isActive = filter === activeFilter;
-          const separator = index < PR_FILTERS.length - 1 ? " · " : "";
-          const filterColors: Record<PrFilter, string> = {
+          const separator = index < BRANCH_FILTERS.length - 1 ? " · " : "";
+          const filterColors: Record<BranchFilter, string> = {
             recent: COLORS.CYAN,
             all: COLORS.TEXT,
             open: COLORS.GREEN,
@@ -224,7 +195,7 @@ export const PrPickerScreen = () => {
                 key={branch.name}
                 onClick={() => {
                   setHighlightedIndex(actualIndex);
-                  storeSwitchBranch(branch.name);
+                  doSwitchBranch(branch.name);
                 }}
               >
                 <Text color={isSelected ? COLORS.PRIMARY : COLORS.DIM}>

@@ -5,7 +5,8 @@ import { useColors } from "../theme-context.js";
 import { Clickable } from "../ui/clickable.js";
 import { RuledBox } from "../ui/ruled-box.js";
 import { ScreenHeading } from "../ui/screen-heading.js";
-import { useFlowSessionStore } from "../../stores/use-flow-session.js";
+import { usePlanStore, Plan } from "../../stores/use-plan-store.js";
+import { useNavigationStore } from "../../stores/use-navigation.js";
 
 interface ConfirmOption {
   id: "enable-sync" | "run-without-sync";
@@ -28,23 +29,19 @@ const CONFIRM_OPTIONS: ConfirmOption[] = [
 
 export const CookieSyncConfirmScreen = () => {
   const COLORS = useColors();
-  const plan = useFlowSessionStore((state) => state.generatedPlan);
-  const environment = useFlowSessionStore((state) => state.browserEnvironment);
-  const updateEnvironment = useFlowSessionStore((state) => state.updateEnvironment);
-  const approvePlan = useFlowSessionStore((state) => state.approvePlan);
+  const planState = usePlanStore((state) => state.plan);
+  const setPlan = usePlanStore((state) => state.setPlan);
+  const setScreen = useNavigationStore((state) => state.setScreen);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  if (!plan) return null;
+  const testPlan = planState?._tag === "plan" ? planState : undefined;
+  if (!testPlan) return null;
 
   const activateOption = (option: ConfirmOption) => {
     if (option.id === "enable-sync") {
-      updateEnvironment({
-        ...(environment ?? {}),
-        cookies: true,
-      });
+      setPlan(Plan.plan(testPlan.update({ requiresCookies: true })));
     }
-
-    approvePlan();
+    setScreen("testing");
   };
 
   useInput((input, key) => {
@@ -72,7 +69,7 @@ export const CookieSyncConfirmScreen = () => {
   return (
     <Box flexDirection="column" width="100%" paddingY={1}>
       <Box paddingX={1}>
-        <ScreenHeading title="Cookie sync is off" subtitle={plan.title} />
+        <ScreenHeading title="Cookie sync is off" subtitle={testPlan.title} />
       </Box>
 
       <RuledBox color={COLORS.RED} marginTop={1}>
@@ -81,11 +78,7 @@ export const CookieSyncConfirmScreen = () => {
         </Text>
         <Text color={COLORS.DIM}>
           Reason:{" "}
-          <Text color={COLORS.TEXT}>
-            {"cookieSync" in plan
-              ? (plan as { cookieSync: { reason: string } }).cookieSync.reason
-              : "Cookie sync required."}
-          </Text>
+          <Text color={COLORS.TEXT}>{testPlan.requiresCookies && "Cookie sync required."}</Text>
         </Text>
         <Text color={COLORS.DIM}>
           Running without synced cookies will make browser testing less reliable and more likely to

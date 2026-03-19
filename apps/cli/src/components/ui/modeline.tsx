@@ -5,23 +5,19 @@ import { useColors, useThemeContext } from "../theme-context.js";
 import { HintBar, HINT_SEPARATOR, type HintSegment } from "./hint-bar.js";
 import { useNavigationStore, type Screen } from "../../stores/use-navigation.js";
 import { usePreferencesStore } from "../../stores/use-preferences.js";
-import { useFlowSessionStore } from "../../stores/use-flow-session.js";
+import { usePlanStore, Plan } from "../../stores/use-plan-store.js";
+import { usePlanExecutionStore } from "../../stores/use-plan-execution-store.js";
 import { useGitState } from "../../hooks/use-git-state.js";
 import { Clickable } from "./clickable.js";
 import { TextShimmer } from "./text-shimmer.js";
 
 const useHintSegments = (screen: Screen): HintSegment[] => {
   const COLORS = useColors();
-  const goBack = useFlowSessionStore((state) => state.goBack);
-  const updateEnvironment = useFlowSessionStore((state) => state.updateEnvironment);
-  const browserEnvironment = useFlowSessionStore((state) => state.browserEnvironment);
-  const requestPlanApproval = useFlowSessionStore((state) => state.requestPlanApproval);
-  const approvePlan = useFlowSessionStore((state) => state.approvePlan);
+  const setScreen = useNavigationStore((state) => state.setScreen);
+  const planState = usePlanStore((state) => state.plan);
+  const setPlan = usePlanStore((state) => state.setPlan);
   const skipPlanning = usePreferencesStore((state) => state.skipPlanning);
-  const liveViewUrl = useFlowSessionStore((state) => state.liveViewUrl);
-  const planningProvider = usePreferencesStore((state) => state.planningProvider);
-  const planningModel = usePreferencesStore((state) => state.planningModel);
-  const resolvedPlanningProvider = useFlowSessionStore((state) => state.resolvedPlanningProvider);
+
   switch (screen) {
     case "main": {
       return [
@@ -37,39 +33,22 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
         { key: "↑↓", label: "nav" },
         { key: "←→", label: "filter" },
         { key: "/", label: "search" },
-        { key: "esc", label: "back", cta: true, onClick: goBack },
+        { key: "esc", label: "back", cta: true, onClick: () => setScreen("main") },
         { key: "enter", label: "select", color: COLORS.PRIMARY, cta: true },
       ];
     case "saved-flow-picker":
       return [
         { key: "↑↓", label: "nav" },
-        { key: "esc", label: "back", cta: true, onClick: goBack },
+        { key: "esc", label: "back", cta: true, onClick: () => setScreen("main") },
         { key: "enter", label: "select", color: COLORS.PRIMARY, cta: true },
       ];
     case "planning": {
-      const planningHints: HintSegment[] = [];
-      const provider = resolvedPlanningProvider ?? planningProvider;
-      const providerName =
-        provider === "claude"
-          ? "Claude"
-          : provider === "codex"
-            ? "Codex"
-            : provider === "cursor"
-              ? "Cursor"
-              : null;
-      if (providerName) {
-        planningHints.push({
-          key: providerName + (planningModel ? ` · ${planningModel}` : ""),
-          label: "agent",
-        });
-      }
-      return [...planningHints, { key: "esc", label: "cancel", cta: true, onClick: goBack }];
+      return [{ key: "esc", label: "cancel", cta: true, onClick: () => setScreen("main") }];
     }
     case "review-plan":
       return [
         { key: "↑↓", label: "nav" },
         { key: "tab", label: "fold" },
-        { key: "s", label: "save plan" },
         { key: "esc", label: "leave" },
         { key: "e", label: "edit", cta: true },
         {
@@ -77,23 +56,30 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
           label: "approve",
           color: COLORS.PRIMARY,
           cta: true,
-          onClick: requestPlanApproval,
+          onClick: () => {
+            const testPlan = planState?._tag === "plan" ? planState : undefined;
+            if (testPlan) {
+              setScreen(testPlan.requiresCookies ? "cookie-sync-confirm" : "testing");
+            }
+          },
         },
       ];
     case "cookie-sync-confirm":
       return [
         { key: "↑↓", label: "nav" },
-        { key: "esc", label: "back", onClick: goBack },
+        {
+          key: "esc",
+          label: "back",
+          onClick: () => setScreen(skipPlanning ? "main" : "review-plan"),
+        },
         {
           key: "c",
           label: "enable sync",
           cta: true,
           onClick: () => {
-            updateEnvironment({
-              ...(browserEnvironment ?? {}),
-              cookies: true,
-            });
-            approvePlan();
+            const testPlan = planState?._tag === "plan" ? planState : undefined;
+            if (testPlan) setPlan(Plan.plan(testPlan.update({ requiresCookies: true })));
+            setScreen("testing");
           },
         },
         {
@@ -101,30 +87,35 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
           label: "run anyway",
           color: COLORS.PRIMARY,
           cta: true,
-          onClick: approvePlan,
+          onClick: () => setScreen("testing"),
         },
       ];
     case "testing": {
-      const hints: HintSegment[] = [
+      return [
         { key: "v", label: "cycle trace" },
         { key: "esc", label: "cancel" },
       ];
-      if (liveViewUrl) {
-        hints.push({ key: "o", label: "open live view", cta: true });
-      }
-      return hints;
     }
     case "results": {
       return [
         { key: "y", label: "copy", color: COLORS.PRIMARY, cta: true },
-        { key: "esc", label: "main menu", cta: true, onClick: goBack },
+        {
+          key: "esc",
+          label: "main menu",
+          cta: true,
+          onClick: () => {
+            usePlanStore.getState().setPlan(undefined);
+            usePlanExecutionStore.getState().setExecutedPlan(undefined);
+            setScreen("main");
+          },
+        },
       ];
     }
     case "theme":
       return [
         { key: "↑↓", label: "nav" },
         { key: "tab", label: "light/dark" },
-        { key: "esc", label: "cancel", cta: true, onClick: goBack },
+        { key: "esc", label: "cancel", cta: true, onClick: () => setScreen("main") },
         { key: "enter", label: "select", color: COLORS.PRIMARY, cta: true },
       ];
     default:
