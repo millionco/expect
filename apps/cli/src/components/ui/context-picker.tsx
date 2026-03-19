@@ -1,23 +1,25 @@
 import { Box, Text, useInput } from "ink";
-import { useColors } from "../theme-context";
-import { RuledBox } from "./ruled-box";
-import type { ContextOption } from "../../utils/context-options";
-import { CONTEXT_PICKER_VISIBLE_COUNT } from "../../constants";
-import { stripMouseSequences } from "../../hooks/mouse-context";
+import { useColors } from "../theme-context.js";
+import { RuledBox } from "./ruled-box.js";
+import { testContextId, type GitState, type TestContext } from "@browser-tester/shared/models";
+import { getContextLabel, getContextDescription } from "../../utils/context-options.js";
+import { CONTEXT_PICKER_VISIBLE_COUNT } from "../../constants.js";
+import { stripMouseSequences } from "../../hooks/mouse-context.js";
 import figures from "figures";
 
 interface ContextPickerProps {
-  readonly options: ContextOption[];
+  readonly options: TestContext[];
   readonly selectedIndex: number;
   readonly isLoading: boolean;
   readonly query: string;
+  readonly gitState: GitState | null;
   readonly onQueryChange: (query: string) => void;
-  readonly onSelect: (option: ContextOption) => void;
+  readonly onSelect: (option: TestContext) => void;
   readonly onNavigate: (index: number) => void;
   readonly onDismiss: () => void;
 }
 
-const StatusDot = ({ status }: { readonly status?: string }) => {
+const StatusDot = ({ status }: { readonly status?: string | null }) => {
   const COLORS = useColors();
   if (status === "open") return <Text color={COLORS.GREEN}>{figures.bullet} </Text>;
   if (status === "merged") return <Text color={COLORS.PURPLE}>{figures.bullet} </Text>;
@@ -34,6 +36,7 @@ export const ContextPicker = ({
   query,
   onQueryChange,
   onDismiss,
+  gitState,
 }: ContextPickerProps) => {
   const COLORS = useColors();
 
@@ -96,37 +99,43 @@ export const ContextPicker = ({
       {visibleOptions.map((option, index) => {
         const actualIndex = index + scrollOffset;
         const isSelected = actualIndex === selectedIndex;
+        const label = getContextLabel(option, gitState);
+        const description = getContextDescription(option, gitState);
+        const prNumber =
+          option._tag === "PullRequest" || option._tag === "Branch" ? option.branch.prNumber : null;
+        const prStatus =
+          option._tag === "PullRequest" || option._tag === "Branch" ? option.branch.prStatus : null;
 
         return (
-          <Box key={option.id}>
+          <Box key={testContextId(option)}>
             <Text color={isSelected ? COLORS.PRIMARY : COLORS.DIM}>
               {isSelected ? `${figures.pointer} ` : "  "}
             </Text>
-            {option.type === "changes" ? <Text color={COLORS.GREEN}>{figures.bullet} </Text> : null}
-            {option.prStatus ? <StatusDot status={option.prStatus} /> : null}
+            {option._tag === "WorkingTree" ? (
+              <Text color={COLORS.GREEN}>{figures.bullet} </Text>
+            ) : null}
+            {prStatus ? <StatusDot status={prStatus} /> : null}
             <Text color={isSelected ? COLORS.PRIMARY : COLORS.TEXT} bold={isSelected}>
-              {option.label}
+              {label}
             </Text>
-            {option.prNumber ? (
+            {prNumber ? (
               <Text>
                 {" "}
                 <Text
                   color={
-                    option.prStatus === "open"
+                    prStatus === "open"
                       ? COLORS.GREEN
-                      : option.prStatus === "merged"
+                      : prStatus === "merged"
                         ? COLORS.PURPLE
                         : COLORS.DIM
                   }
                 >
-                  #{option.prNumber}
+                  #{prNumber}
                 </Text>
-                {option.prStatus ? <Text color={COLORS.DIM}> {option.prStatus}</Text> : null}
+                {prStatus ? <Text color={COLORS.DIM}> {prStatus}</Text> : null}
               </Text>
             ) : null}
-            {option.description && !option.prNumber ? (
-              <Text color={COLORS.DIM}> {option.description}</Text>
-            ) : null}
+            {description && !prNumber ? <Text color={COLORS.DIM}> {description}</Text> : null}
           </Box>
         );
       })}

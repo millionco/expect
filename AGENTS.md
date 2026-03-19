@@ -318,6 +318,31 @@ For services like `BrowserDetector`, use `layerWindows`, `layerMac`, `layerLinux
 
 Constrain the number of schemas. Avoid proliferating models like `BrowserProfile`, `BrowserInfo`, `ProfileMetadata`, `CdpRawCookie`. Consolidate into a small set (e.g. `Browser` and `Cookie`) so you always know what a function should return.
 
+## Prefer Getters on Existing Domain Models
+
+When you need derived/computed data from a domain model, add a getter to the existing schema class. Never invent a new wrapper type or compute derived state in the UI layer.
+
+```ts
+// BAD — computing derived state in a React component
+const activeStepId = useMemo(() => {
+  for (const event of executedPlan.events) { ... }
+}, [executedPlan]);
+
+// BAD — computing derived state in a utility function
+const getActiveStepId = (plan: ExecutedTestPlan): string | null => { ... }
+
+// BAD — inventing a new type to carry derived state
+interface TestRunState { activeStepId: string | null; stepStatuses: ... }
+
+// GOOD — getter on the domain model
+export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(...)({
+  events: Schema.Array(ExecutionEvent),
+}) {
+  get activeStepId(): StepId | undefined { ... }
+  get completedCount(): number { ... }
+}
+```
+
 ## Structured Logging
 
 Use `Effect.logInfo`, `Effect.logWarning`, `Effect.logDebug` with structured data:
