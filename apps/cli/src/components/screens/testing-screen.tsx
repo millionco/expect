@@ -3,7 +3,7 @@ import { Box, Static, Text, useInput } from "ink";
 import figures from "figures";
 import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
 import { useAtom, useAtomValue } from "@effect/atom-react";
-import { changesForDisplayName } from "@browser-tester/shared/models";
+import { changesForDisplayName, type TestPlan } from "@browser-tester/shared/models";
 import {
   PROGRESS_BAR_WIDTH,
   TESTING_TIMER_UPDATE_INTERVAL_MS,
@@ -15,7 +15,7 @@ import { Spinner } from "../ui/spinner.js";
 import { TextShimmer } from "../ui/text-shimmer.js";
 import { usePlanStore } from "../../stores/use-plan-store.js";
 import { usePlanExecutionStore } from "../../stores/use-plan-execution-store.js";
-import { useNavigationStore } from "../../stores/use-navigation.js";
+import { useNavigationStore, Screen } from "../../stores/use-navigation.js";
 import { ScreenHeading } from "../ui/screen-heading.js";
 import cliTruncate from "cli-truncate";
 import { formatElapsedTime } from "../../utils/format-elapsed-time.js";
@@ -39,13 +39,15 @@ const getNextToolCallDisplayMode = (toolCallDisplayMode: string): string => {
   }
 };
 
-export const TestingScreen = () => {
-  const planState = usePlanStore((state) => state.plan);
+interface TestingScreenProps {
+  plan: TestPlan;
+}
+
+export const TestingScreen = ({ plan }: TestingScreenProps) => {
   const setScreen = useNavigationStore((state) => state.setScreen);
   const COLORS = useColors();
 
-  const testPlan = planState?._tag === "plan" ? planState : undefined;
-  const displayName = testPlan ? changesForDisplayName(testPlan.changesFor) : "working tree";
+  const displayName = changesForDisplayName(plan.changesFor);
 
   const [executionResult, triggerExecute] = useAtom(executePlanFn, { mode: "promiseExit" });
   const screenshotPaths = useAtomValue(screenshotPathsAtom);
@@ -53,6 +55,7 @@ export const TestingScreen = () => {
   const done = AsyncResult.isSuccess(executionResult);
   const error = AsyncResult.isFailure(executionResult) ? String(executionResult.cause) : undefined;
   const executedPlan = done ? executionResult.value.executedPlan : undefined;
+  const report = done ? executionResult.value.report : undefined;
 
   const [runStartedAt, setRunStartedAt] = useState<number | undefined>(undefined);
   const [elapsedTimeMs, setElapsedTimeMs] = useState(0);
@@ -72,18 +75,16 @@ export const TestingScreen = () => {
   }, [runStartedAt, running]);
 
   const startExecution = () => {
-    if (!testPlan) return;
     setRunStartedAt(Date.now());
     setElapsedTimeMs(0);
     setShowCancelConfirmation(false);
-    triggerExecute({ testPlan });
+    triggerExecute({ testPlan: plan });
   };
 
   // HACK: trigger execution on mount — this should be driven by the parent
   useEffect(() => {
-    if (!testPlan) return;
     startExecution();
-  }, [testPlan]);
+  }, [plan]);
 
   useInput((input, key) => {
     const normalizedInput = input.toLowerCase();
@@ -93,7 +94,7 @@ export const TestingScreen = () => {
         setShowCancelConfirmation(false);
         usePlanStore.getState().setPlan(undefined);
         usePlanExecutionStore.getState().setExecutedPlan(undefined);
-        setScreen("main");
+        setScreen(Screen.Main());
         return;
       }
       if (key.escape || normalizedInput === "n") {
@@ -112,14 +113,14 @@ export const TestingScreen = () => {
         setShowCancelConfirmation(true);
         return;
       }
-      if (executedPlan) {
+      if (executedPlan && report) {
         usePlanExecutionStore.getState().setExecutedPlan(executedPlan);
-        setScreen("results");
+        setScreen(Screen.Results({ report }));
         return;
       }
       usePlanStore.getState().setPlan(undefined);
       usePlanExecutionStore.getState().setExecutedPlan(undefined);
-      setScreen("main");
+      setScreen(Screen.Main());
     }
   });
 
@@ -129,23 +130,18 @@ export const TestingScreen = () => {
       ? (executedPlan.lastToolCallDisplayText ?? undefined)
       : undefined;
 
-  if (!testPlan) return null;
+  const stepStatuses = report?.stepStatuses ?? new Map();
 
-  const testReport = executedPlan?.testReport;
-  const reportStepsById = testReport
-    ? new Map(testReport.steps.map((step) => [step.stepId, step]))
-    : new Map();
-
-  const steps = testPlan.steps.map((step) => {
-    const reportStep = reportStepsById.get(step.id);
+  const steps = plan.steps.map((step) => {
+    const entry = stepStatuses.get(step.id);
     const isActive = step.id === activeStepId;
     const status = isActive
       ? ("active" as const)
-      : reportStep?.status === "not-run"
+      : entry?.status === "not-run"
         ? ("pending" as const)
-        : (reportStep?.status ?? ("pending" as const));
+        : (entry?.status ?? ("pending" as const));
     const label =
-      status === "pending" || status === "active" ? step.title : reportStep?.summary || step.title;
+      status === "pending" || status === "active" ? step.title : entry?.summary || step.title;
     return { stepId: step.id, status, label };
   });
 
@@ -158,7 +154,6 @@ export const TestingScreen = () => {
       ? "Finishing up"
       : "Starting";
 
-  const planTitle = testPlan.title;
   const filledWidth =
     totalCount > 0 ? Math.round((completedCount / totalCount) * PROGRESS_BAR_WIDTH) : 0;
   const emptyWidth = PROGRESS_BAR_WIDTH - filledWidth;
@@ -176,7 +171,7 @@ export const TestingScreen = () => {
         <Box paddingX={1}>
           <ScreenHeading
             title="Executing browser plan"
-            subtitle={`${planTitle} │ ${displayName}`}
+            subtitle={`${plan.title} │ ${displayName}`}
           />
         </Box>
 

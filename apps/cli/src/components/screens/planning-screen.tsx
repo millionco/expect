@@ -5,7 +5,6 @@ import { Spinner } from "../ui/spinner.js";
 import { useColors } from "../theme-context.js";
 import { RuledBox } from "../ui/ruled-box.js";
 import { DotField } from "../ui/dot-field.js";
-import { usePlanStore } from "../../stores/use-plan-store.js";
 import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions.js";
 import { formatElapsedTime } from "../../utils/format-elapsed-time.js";
 import { TESTING_TIMER_UPDATE_INTERVAL_MS } from "../../constants.js";
@@ -106,11 +105,13 @@ const getSmoothProgress = (elapsed: number): number => {
   return (stageIndex + stageProgress) / PLANNING_STAGES.length;
 };
 
-export const PlanningScreen = () => {
+interface PlanningScreenProps {
+  instruction: string;
+}
+
+export const PlanningScreen = ({ instruction }: PlanningScreenProps) => {
   const COLORS = useColors();
   const [columns] = useStdoutDimensions();
-  const plan = usePlanStore((state) => state.plan);
-  const instruction = plan?._tag === "draft" ? plan.instruction : "";
   const [startTime] = useState(() => Date.now());
   const [elapsed, setElapsed] = useState(0);
   const [tipIndex] = useState(() => Math.floor(Math.random() * TIPS.length));

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Box, Text, useInput } from "ink";
 import { Option } from "effect";
+import type { TestReport } from "@browser-tester/supervisor";
 import { copyToClipboard } from "../../utils/copy-to-clipboard.js";
 import { useColors } from "../theme-context.js";
 import { RuledBox } from "../ui/ruled-box.js";
@@ -8,12 +9,13 @@ import { ScreenHeading } from "../ui/screen-heading.js";
 import { Image } from "../ui/image.js";
 import { Clickable } from "../ui/clickable.js";
 import { usePostPrComment } from "../../data/github-mutations.js";
-import { usePlanExecutionStore } from "../../stores/use-plan-execution-store.js";
 
-export const ResultsScreen = () => {
+interface ResultsScreenProps {
+  report: TestReport;
+}
+
+export const ResultsScreen = ({ report }: ResultsScreenProps) => {
   const COLORS = useColors();
-  const executedPlan = usePlanExecutionStore((state) => state.executedPlan);
-  const report = executedPlan?.testReport;
   const [clipboardStatusMessage, setClipboardStatusMessage] = useState<string | undefined>(
     undefined,
   );
@@ -21,7 +23,7 @@ export const ResultsScreen = () => {
   const commentMutation = usePostPrComment();
 
   const handlePostPullRequestComment = () => {
-    if (!report || !Option.isSome(report.pullRequest)) return;
+    if (!Option.isSome(report.pullRequest)) return;
     commentMutation.mutate({
       pullRequest: report.pullRequest.value,
       body: report.toPlainText,
@@ -29,8 +31,6 @@ export const ResultsScreen = () => {
   };
 
   const handleCopyToClipboard = () => {
-    if (!report) return;
-
     setClipboardError(undefined);
     setClipboardStatusMessage(undefined);
 
@@ -54,8 +54,6 @@ export const ResultsScreen = () => {
     }
   });
 
-  if (!report) return null;
-
   return (
     <Box flexDirection="column" width="100%" paddingY={1}>
       <Box paddingX={1}>
@@ -73,23 +71,27 @@ export const ResultsScreen = () => {
         <Text color={COLORS.DIM} bold>
           STEP SUMMARY
         </Text>
-        {report.steps.map((step) => (
-          <Text
-            key={step.stepId}
-            color={
-              step.status === "passed"
-                ? COLORS.GREEN
-                : step.status === "failed"
-                  ? COLORS.RED
-                  : COLORS.YELLOW
-            }
-          >
-            {"• "}
-            {step.title}
-            {": "}
-            <Text color={COLORS.TEXT}>{step.summary}</Text>
-          </Text>
-        ))}
+        {report.steps.map((step) => {
+          const entry = report.stepStatuses.get(step.id);
+          const stepStatus = entry?.status ?? "not-run";
+          return (
+            <Text
+              key={step.id}
+              color={
+                stepStatus === "passed"
+                  ? COLORS.GREEN
+                  : stepStatus === "failed"
+                    ? COLORS.RED
+                    : COLORS.YELLOW
+              }
+            >
+              {"• "}
+              {step.title}
+              {": "}
+              <Text color={COLORS.TEXT}>{entry?.summary ?? ""}</Text>
+            </Text>
+          );
+        })}
       </Box>
 
       <Box flexDirection="column" paddingX={1} marginTop={1}>

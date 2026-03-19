@@ -21,7 +21,7 @@ import cliTruncate from "cli-truncate";
 import { visualPadEnd } from "../../utils/visual-pad-end.js";
 import { useScrollableList } from "../../hooks/use-scrollable-list.js";
 import { usePlanStore } from "../../stores/use-plan-store.js";
-import { useNavigationStore } from "../../stores/use-navigation.js";
+import { useNavigationStore, Screen } from "../../stores/use-navigation.js";
 import { checkoutBranch } from "@browser-tester/supervisor";
 import { queryClient } from "../../query-client.js";
 import { ScreenHeading } from "../ui/screen-heading.js";
@@ -71,7 +71,7 @@ export const PrPickerScreen = () => {
       usePlanStore.getState().setPlan(undefined);
       setCheckoutError(undefined);
       void queryClient.invalidateQueries({ queryKey: ["git-state"] });
-      setScreen("main");
+      setScreen(Screen.Main());
     } else {
       setCheckoutError(
         `Could not checkout "${branchName}". You may have uncommitted changes or the branch may not exist locally.`,

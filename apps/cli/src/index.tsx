@@ -8,7 +8,7 @@ import { ThemeProvider } from "./components/theme-context.js";
 import { loadThemeName } from "./utils/load-theme.js";
 import { ChangesFor, Git, TestPlanDraft } from "@browser-tester/supervisor";
 import { runHeadless } from "./utils/run-test.js";
-import { useNavigationStore } from "./stores/use-navigation.js";
+import { useNavigationStore, Screen } from "./stores/use-navigation.js";
 import { usePreferencesStore } from "./stores/use-preferences.js";
 import { usePlanStore, Plan } from "./stores/use-plan-store.js";
 import { queryClient } from "./query-client.js";
@@ -29,10 +29,7 @@ const program = new Command()
   .name("testie")
   .description("AI-powered browser testing for your changes")
   .version(VERSION, "-v, --version")
-  .option(
-    "-m, --message <instruction>",
-    "natural language instruction for what to test"
-  )
+  .option("-m, --message <instruction>", "natural language instruction for what to test")
   .option("-f, --flow <slug>", "reuse a saved flow by its slug")
   .option("-y, --yes", "skip plan review and run immediately")
   .addHelpText(
@@ -41,29 +38,28 @@ const program = new Command()
 Examples:
   $ testie                                    open interactive TUI
   $ testie -m "test the login flow" -y        plan and run immediately
-  $ testie branch -m "verify signup" -y       test all branch changes`
+  $ testie branch -m "verify signup" -y       test all branch changes`,
   );
 
 const isHeadless = () => !process.stdin.isTTY;
-// const isHeadless = () => true;
 
 const renderApp = () => {
   const initialTheme = loadThemeName() ?? undefined;
-  // process.stdout.write(ALT_SCREEN_ON);
-  // process.on("exit", () => process.stdout.write(ALT_SCREEN_OFF));
+  process.stdout.write(ALT_SCREEN_ON);
+  process.on("exit", () => process.stdout.write(ALT_SCREEN_OFF));
   const instance = render(
     <QueryClientProvider client={queryClient}>
       <ThemeProvider initialTheme={initialTheme}>
         <App />
       </ThemeProvider>
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
   setInkInstance(instance);
 };
 
 const resolveChangesFor = async (
   action: "unstaged" | "branch" | "changes" | "commit",
-  commitHash?: string
+  commitHash?: string,
 ) => {
   const cwd = process.cwd();
   return Effect.runPromise(
@@ -74,10 +70,7 @@ const resolveChangesFor = async (
 
       if (action === "commit" && commitHash) {
         return {
-          changesFor: ChangesFor.makeUnsafe({
-            _tag: "Commit",
-            hash: commitHash,
-          }),
+          changesFor: ChangesFor.makeUnsafe({ _tag: "Commit", hash: commitHash }),
           currentBranch,
         };
       }
@@ -97,48 +90,38 @@ const resolveChangesFor = async (
         changesFor: ChangesFor.makeUnsafe({ _tag: "WorkingTree" }),
         currentBranch,
       };
-    }).pipe(Effect.provide(Git.withRepoRoot(cwd)))
+    }).pipe(Effect.provide(Git.withRepoRoot(cwd))),
   );
 };
 
-const seedStores = (
-  opts: CommanderOpts,
-  changesFor: ChangesFor,
-  currentBranch: string
-) => {
-  const hasMessage = Boolean(opts.message);
-
-  useNavigationStore.setState({
-    screen: hasMessage
-      ? DEFAULT_SKIP_PLANNING
-        ? "testing"
-        : "planning"
-      : "main",
-  });
+const seedStores = (opts: CommanderOpts, changesFor: ChangesFor, currentBranch: string) => {
   usePreferencesStore.setState({
     autoRunAfterPlanning: opts.yes ?? false,
     skipPlanning: DEFAULT_SKIP_PLANNING,
   });
 
-  if (hasMessage) {
+  if (opts.message) {
     const draft = new TestPlanDraft({
       changesFor,
       currentBranch,
       diffPreview: "",
       fileStats: [],
-      instruction: opts.message!,
+      instruction: opts.message,
       baseUrl: Option.none(),
       isHeadless: false,
       requiresCookies: false,
     });
     usePlanStore.setState({ plan: Plan.draft(draft) });
+    useNavigationStore.setState({ screen: Screen.Planning({ instruction: opts.message }) });
+  } else {
+    useNavigationStore.setState({ screen: Screen.Main() });
   }
 };
 
 const runHeadlessForAction = async (
   action: "unstaged" | "branch" | "changes" | "commit",
   opts: CommanderOpts,
-  commitHash?: string
+  commitHash?: string,
 ) => {
   const { changesFor } = await resolveChangesFor(action, commitHash);
   return runHeadless({
@@ -150,12 +133,9 @@ const runHeadlessForAction = async (
 const runInteractiveForAction = async (
   action: "unstaged" | "branch" | "changes" | "commit",
   opts: CommanderOpts,
-  commitHash?: string
+  commitHash?: string,
 ) => {
-  const { changesFor, currentBranch } = await resolveChangesFor(
-    action,
-    commitHash
-  );
+  const { changesFor, currentBranch } = await resolveChangesFor(action, commitHash);
   seedStores(opts, changesFor, currentBranch);
   renderApp();
 };

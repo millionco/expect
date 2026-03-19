@@ -3,7 +3,7 @@ import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions.js";
 import stringWidth from "string-width";
 import { useColors, useThemeContext } from "../theme-context.js";
 import { HintBar, HINT_SEPARATOR, type HintSegment } from "./hint-bar.js";
-import { useNavigationStore, type Screen } from "../../stores/use-navigation.js";
+import { useNavigationStore, Screen } from "../../stores/use-navigation.js";
 import { usePreferencesStore } from "../../stores/use-preferences.js";
 import { usePlanStore, Plan } from "../../stores/use-plan-store.js";
 import { usePlanExecutionStore } from "../../stores/use-plan-execution-store.js";
@@ -14,12 +14,11 @@ import { TextShimmer } from "./text-shimmer.js";
 const useHintSegments = (screen: Screen): HintSegment[] => {
   const COLORS = useColors();
   const setScreen = useNavigationStore((state) => state.setScreen);
-  const planState = usePlanStore((state) => state.plan);
   const setPlan = usePlanStore((state) => state.setPlan);
   const skipPlanning = usePreferencesStore((state) => state.skipPlanning);
 
-  switch (screen) {
-    case "main": {
+  switch (screen._tag) {
+    case "Main": {
       return [
         {
           key: "shift+tab",
@@ -28,24 +27,24 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
         },
       ];
     }
-    case "select-pr":
+    case "SelectPr":
       return [
         { key: "↑↓", label: "nav" },
         { key: "←→", label: "filter" },
         { key: "/", label: "search" },
-        { key: "esc", label: "back", cta: true, onClick: () => setScreen("main") },
+        { key: "esc", label: "back", cta: true, onClick: () => setScreen(Screen.Main()) },
         { key: "enter", label: "select", color: COLORS.PRIMARY, cta: true },
       ];
-    case "saved-flow-picker":
+    case "SavedFlowPicker":
       return [
         { key: "↑↓", label: "nav" },
-        { key: "esc", label: "back", cta: true, onClick: () => setScreen("main") },
+        { key: "esc", label: "back", cta: true, onClick: () => setScreen(Screen.Main()) },
         { key: "enter", label: "select", color: COLORS.PRIMARY, cta: true },
       ];
-    case "planning": {
-      return [{ key: "esc", label: "cancel", cta: true, onClick: () => setScreen("main") }];
+    case "Planning": {
+      return [{ key: "esc", label: "cancel", cta: true, onClick: () => setScreen(Screen.Main()) }];
     }
-    case "review-plan":
+    case "ReviewPlan":
       return [
         { key: "↑↓", label: "nav" },
         { key: "tab", label: "fold" },
@@ -57,29 +56,31 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
           color: COLORS.PRIMARY,
           cta: true,
           onClick: () => {
-            const testPlan = planState?._tag === "plan" ? planState : undefined;
-            if (testPlan) {
-              setScreen(testPlan.requiresCookies ? "cookie-sync-confirm" : "testing");
+            if (screen.plan.requiresCookies) {
+              setScreen(Screen.CookieSyncConfirm({ plan: screen.plan }));
+            } else {
+              setScreen(Screen.Testing({ plan: screen.plan }));
             }
           },
         },
       ];
-    case "cookie-sync-confirm":
+    case "CookieSyncConfirm":
       return [
         { key: "↑↓", label: "nav" },
         {
           key: "esc",
           label: "back",
-          onClick: () => setScreen(skipPlanning ? "main" : "review-plan"),
+          onClick: () =>
+            setScreen(skipPlanning ? Screen.Main() : Screen.ReviewPlan({ plan: screen.plan })),
         },
         {
           key: "c",
           label: "enable sync",
           cta: true,
           onClick: () => {
-            const testPlan = planState?._tag === "plan" ? planState : undefined;
-            if (testPlan) setPlan(Plan.plan(testPlan.update({ requiresCookies: true })));
-            setScreen("testing");
+            const updated = screen.plan.update({ requiresCookies: true });
+            setPlan(Plan.plan(updated));
+            setScreen(Screen.Testing({ plan: updated }));
           },
         },
         {
@@ -87,16 +88,16 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
           label: "run anyway",
           color: COLORS.PRIMARY,
           cta: true,
-          onClick: () => setScreen("testing"),
+          onClick: () => setScreen(Screen.Testing({ plan: screen.plan })),
         },
       ];
-    case "testing": {
+    case "Testing": {
       return [
         { key: "v", label: "cycle trace" },
         { key: "esc", label: "cancel" },
       ];
     }
-    case "results": {
+    case "Results": {
       return [
         { key: "y", label: "copy", color: COLORS.PRIMARY, cta: true },
         {
@@ -106,16 +107,16 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
           onClick: () => {
             usePlanStore.getState().setPlan(undefined);
             usePlanExecutionStore.getState().setExecutedPlan(undefined);
-            setScreen("main");
+            setScreen(Screen.Main());
           },
         },
       ];
     }
-    case "theme":
+    case "Theme":
       return [
         { key: "↑↓", label: "nav" },
         { key: "tab", label: "light/dark" },
-        { key: "esc", label: "cancel", cta: true, onClick: () => setScreen("main") },
+        { key: "esc", label: "cancel", cta: true, onClick: () => setScreen(Screen.Main()) },
         { key: "enter", label: "select", color: COLORS.PRIMARY, cta: true },
       ];
     default:
@@ -152,7 +153,7 @@ export const Modeline = () => {
 
   return (
     <Box flexDirection="column">
-      {screen === "testing" ? (
+      {screen._tag === "Testing" ? (
         <TextShimmer
           text={"─".repeat(columns)}
           baseColor={theme.border}

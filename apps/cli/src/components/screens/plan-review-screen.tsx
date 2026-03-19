@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import { Option } from "effect";
-import { TestPlanDraft, ChangesFor } from "@browser-tester/supervisor";
+import { TestPlanDraft, ChangesFor, type TestPlan } from "@browser-tester/supervisor";
 import { Input } from "../ui/input.js";
 import { useColors } from "../theme-context.js";
 import { stripMouseSequences } from "../../hooks/mouse-context.js";
@@ -11,7 +11,7 @@ import { ContextPicker } from "../ui/context-picker.js";
 import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions.js";
 import { changesForDisplayName } from "@browser-tester/shared/models";
 import { usePlanStore, Plan } from "../../stores/use-plan-store.js";
-import { useNavigationStore } from "../../stores/use-navigation.js";
+import { useNavigationStore, Screen } from "../../stores/use-navigation.js";
 import { usePreferencesStore } from "../../stores/use-preferences.js";
 import { useGitState } from "../../hooks/use-git-state.js";
 import { useContextPicker } from "../../hooks/use-context-picker.js";
@@ -29,10 +29,13 @@ type RailItem =
   | { kind: "details"; section: RailSection }
   | { kind: "step"; stepIndex: number; section: RailSection };
 
-export const PlanReviewScreen = () => {
+interface PlanReviewScreenProps {
+  plan: TestPlan;
+}
+
+export const PlanReviewScreen = ({ plan }: PlanReviewScreenProps) => {
   const COLORS = useColors();
   const [columns] = useStdoutDimensions();
-  const planState = usePlanStore((state) => state.plan);
   const setPlan = usePlanStore((state) => state.setPlan);
   const setScreen = useNavigationStore((state) => state.setScreen);
   const { data: gitState } = useGitState();
@@ -43,8 +46,7 @@ export const PlanReviewScreen = () => {
   const [exitConfirmationVisible, setExitConfirmationVisible] = useState(false);
   const [resubmitConfirmVisible, setResubmitConfirmVisible] = useState(false);
 
-  const testPlan = planState?._tag === "plan" ? planState : undefined;
-  const instruction = testPlan?.instruction ?? "";
+  const instruction = plan.instruction;
   const [topFocus, setTopFocus] = useState<"branch" | "input" | null>(null);
   const [inputValue, setInputValue] = useState(instruction);
   const inputFocused = topFocus === "input";
@@ -63,22 +65,20 @@ export const PlanReviewScreen = () => {
     [picker],
   );
 
-  if (!testPlan) return null;
-
-  const displayName = changesForDisplayName(testPlan.changesFor);
+  const displayName = changesForDisplayName(plan.changesFor);
 
   const editingStep =
-    editingState?.kind === "step" ? (testPlan.steps[editingState.stepIndex] ?? null) : null;
+    editingState?.kind === "step" ? (plan.steps[editingState.stepIndex] ?? null) : null;
   const editingStepIndex = editingState?.kind === "step" ? editingState.stepIndex : null;
 
   const railItems: RailItem[] = useMemo(() => {
     const result: RailItem[] = [];
     result.push({ kind: "details", section: "info" });
-    testPlan.steps.forEach((_, index) => {
+    plan.steps.forEach((_, index) => {
       result.push({ kind: "step", stepIndex: index, section: "steps" });
     });
     return result;
-  }, [testPlan]);
+  }, [plan]);
 
   const totalItems = railItems.length;
   const currentRailItem = railItems[selectedIndex];
@@ -98,13 +98,10 @@ export const PlanReviewScreen = () => {
         setEditingValue("");
       }
       if (key.return && !key.shift && editingStepIndex !== null && editingValue.trim()) {
-        setPlan(
-          Plan.plan(
-            testPlan.updateStep(editingStepIndex, (step) =>
-              step.update({ instruction: editingValue.trim() }),
-            ),
-          ),
+        const updatedPlan = plan.updateStep(editingStepIndex, (step) =>
+          step.update({ instruction: editingValue.trim() }),
         );
+        setPlan(Plan.plan(updatedPlan));
         setEditingState(null);
         setEditingValue("");
       }
@@ -129,7 +126,7 @@ export const PlanReviewScreen = () => {
         });
         usePreferencesStore.getState().rememberInstruction(trimmedInput);
         setPlan(Plan.draft(draft));
-        setScreen("planning");
+        setScreen(Screen.Planning({ instruction: trimmedInput }));
       }
       if (input.toLowerCase() === "n" || key.escape) {
         setResubmitConfirmVisible(false);
@@ -142,7 +139,7 @@ export const PlanReviewScreen = () => {
   useInput(
     (input, key) => {
       if (input.toLowerCase() === "y") {
-        setScreen("main");
+        setScreen(Screen.Main());
       }
       if (input.toLowerCase() === "n" || key.escape) setExitConfirmationVisible(false);
     },
@@ -162,7 +159,7 @@ export const PlanReviewScreen = () => {
       if (branchFocused) {
         if (key.escape) setTopFocus(null);
         if ((key.tab && !key.shift) || key.downArrow) setTopFocus("input");
-        if (key.return) navigateTo("select-pr");
+        if (key.return) navigateTo(Screen.SelectPr());
       }
     },
     { isActive: topFocus !== null && !resubmitConfirmVisible },
@@ -189,7 +186,7 @@ export const PlanReviewScreen = () => {
       if (key.shift && key.tab) setTopFocus("input");
 
       if (input === "e" && currentRailItem?.kind === "step") {
-        const step = testPlan.steps[currentRailItem.stepIndex];
+        const step = plan.steps[currentRailItem.stepIndex];
         if (step) {
           setEditingState({ kind: "step", stepIndex: currentRailItem.stepIndex });
           setEditingValue(step.instruction);
@@ -197,8 +194,11 @@ export const PlanReviewScreen = () => {
       }
 
       if (input === "a" || key.return) {
-        const requiresCookies = testPlan.requiresCookies;
-        setScreen(requiresCookies ? "cookie-sync-confirm" : "testing");
+        if (plan.requiresCookies) {
+          setScreen(Screen.CookieSyncConfirm({ plan }));
+        } else {
+          setScreen(Screen.Testing({ plan }));
+        }
       }
     },
     {
@@ -320,12 +320,12 @@ export const PlanReviewScreen = () => {
                   </Clickable>
                   {isSelected ? (
                     <Box flexDirection="column">
-                      {testPlan.rationale ? (
+                      {plan.rationale ? (
                         <Box>
                           <Text color={railColor}>{`${continuation}  `}</Text>
                           <Box flexShrink={1}>
                             <Text color={COLORS.DIM} wrap="wrap">
-                              {testPlan.rationale}
+                              {plan.rationale}
                             </Text>
                           </Box>
                         </Box>
@@ -336,7 +336,7 @@ export const PlanReviewScreen = () => {
               );
             }
 
-            const step = testPlan.steps[item.stepIndex];
+            const step = plan.steps[item.stepIndex];
             return (
               <Box key={step.id} flexDirection="column">
                 {sectionBreak ? (

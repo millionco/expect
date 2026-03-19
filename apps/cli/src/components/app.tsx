@@ -13,7 +13,7 @@ import { ResultsScreen } from "./screens/results-screen.js";
 import { ThemePickerScreen } from "./screens/theme-picker-screen.js";
 import { MainMenu } from "./screens/main-menu-screen.js";
 import { Modeline } from "./ui/modeline.js";
-import { useNavigationStore } from "../stores/use-navigation.js";
+import { useNavigationStore, Screen } from "../stores/use-navigation.js";
 import { usePreferencesStore } from "../stores/use-preferences.js";
 import { usePlanStore, Plan } from "../stores/use-plan-store.js";
 import { usePlanExecutionStore } from "../stores/use-plan-execution-store.js";
@@ -25,23 +25,16 @@ import { createPlanFn } from "../data/planning-atom.js";
 export const App = () => {
   const screen = useNavigationStore((state) => state.screen);
   const setScreen = useNavigationStore((state) => state.setScreen);
-  const { data: gitState, isLoading: gitStateLoading } = useGitState();
   const navigateTo = useNavigationStore((state) => state.navigateTo);
+  const { data: gitState, isLoading: gitStateLoading } = useGitState();
   const COLORS = useColors();
   const triggerCreatePlan = useAtomSet(createPlanFn, { mode: "promise" });
-  const [planningError, setPlanningError] = useState<string | undefined>(
-    undefined
-  );
+  const [planningError, setPlanningError] = useState<string | undefined>(undefined);
 
   const handlePlanningStart = async () => {
     const plan = usePlanStore.getState().plan;
     console.error("[app] handlePlanningStart, plan._tag:", plan?._tag);
     if (plan?._tag !== "draft") return;
-
-    console.error("[app] triggering createPlan with:", {
-      changesFor: plan.changesFor._tag,
-      instruction: plan.instruction.slice(0, 50),
-    });
 
     try {
       const testPlan = await triggerCreatePlan({
@@ -50,8 +43,12 @@ export const App = () => {
       });
       console.error("[app] planning succeeded:", testPlan.title);
       usePlanStore.getState().setPlan(Plan.plan(testPlan));
-      const { autoRunAfterPlanning } = usePreferencesStore.getState();
-      setScreen(autoRunAfterPlanning ? "testing" : "review-plan");
+      const { autoRunAfterPlanning, skipPlanning } = usePreferencesStore.getState();
+      if (autoRunAfterPlanning || skipPlanning) {
+        setScreen(Screen.Testing({ plan: testPlan }));
+      } else {
+        setScreen(Screen.ReviewPlan({ plan: testPlan }));
+      }
     } catch (error) {
       console.error("[app] planning failed:", String(error));
       setPlanningError(String(error));
@@ -61,23 +58,27 @@ export const App = () => {
   const goBack = () => {
     const { skipPlanning } = usePreferencesStore.getState();
 
-    if (screen === "review-plan" || screen === "planning") {
+    if (screen._tag === "ReviewPlan" || screen._tag === "Planning") {
       setPlanningError(undefined);
-      setScreen("main");
+      setScreen(Screen.Main());
       return;
     }
-    if (screen === "cookie-sync-confirm") {
-      setScreen(skipPlanning ? "main" : "review-plan");
+    if (screen._tag === "CookieSyncConfirm") {
+      if (skipPlanning) {
+        setScreen(Screen.Main());
+      } else {
+        setScreen(Screen.ReviewPlan({ plan: screen.plan }));
+      }
       return;
     }
-    if (screen === "results") {
+    if (screen._tag === "Results") {
       usePlanStore.getState().setPlan(undefined);
       usePlanExecutionStore.getState().setExecutedPlan(undefined);
-      setScreen("main");
+      setScreen(Screen.Main());
       return;
     }
-    if (screen !== "testing") {
-      setScreen("main");
+    if (screen._tag !== "Testing") {
+      setScreen(Screen.Main());
     }
   };
 
@@ -90,14 +91,14 @@ export const App = () => {
       setRefreshTick((previous) => previous + 1);
       return;
     }
-    if (key.escape && screen !== "main" && screen !== "review-plan") {
+    if (key.escape && screen._tag !== "Main" && screen._tag !== "ReviewPlan") {
       goBack();
     }
-    if (key.ctrl && input === "p" && screen === "main" && gitState?.isGitRepo) {
-      navigateTo("select-pr");
+    if (key.ctrl && input === "p" && screen._tag === "Main" && gitState?.isGitRepo) {
+      navigateTo(Screen.SelectPr());
     }
     if (key.ctrl && input === "t") {
-      navigateTo("theme");
+      navigateTo(Screen.Theme());
     }
   });
 
@@ -109,27 +110,24 @@ export const App = () => {
     );
   }
 
-  if (screen === "planning" && !planningError) {
-    console.error("[app] screen=planning, triggering handlePlanningStart");
+  if (screen._tag === "Planning" && !planningError) {
     void handlePlanningStart();
-  } else if (screen === "testing") {
-    console.error("[app] screen=testing, plan._tag:", usePlanStore.getState().plan?._tag);
   }
 
   const renderScreen = () => {
-    switch (screen) {
-      case "testing":
-        return <TestingScreen />;
-      case "results":
-        return <ResultsScreen />;
-      case "theme":
+    switch (screen._tag) {
+      case "Testing":
+        return <TestingScreen plan={screen.plan} />;
+      case "Results":
+        return <ResultsScreen report={screen.report} />;
+      case "Theme":
         return <ThemePickerScreen />;
-      case "select-pr":
+      case "SelectPr":
         return <PrPickerScreen />;
-      case "planning":
+      case "Planning":
         return (
           <Box flexDirection="column" width="100%">
-            <PlanningScreen />
+            <PlanningScreen instruction={screen.instruction} />
             {planningError ? (
               <Box flexDirection="column" paddingX={2}>
                 <Text color={COLORS.RED}>Planning failed: {planningError}</Text>
@@ -138,12 +136,12 @@ export const App = () => {
             ) : null}
           </Box>
         );
-      case "review-plan":
-        return <PlanReviewScreen />;
-      case "cookie-sync-confirm":
-        return <CookieSyncConfirmScreen />;
+      case "ReviewPlan":
+        return <PlanReviewScreen plan={screen.plan} />;
+      case "CookieSyncConfirm":
+        return <CookieSyncConfirmScreen plan={screen.plan} />;
       default:
-        return <MainMenu />;
+        return <MainMenu gitState={gitState} />;
     }
   };
 

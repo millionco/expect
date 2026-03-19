@@ -2,11 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import { Option } from "effect";
 import { TestPlanDraft, ChangesFor, checkoutBranch } from "@browser-tester/supervisor";
-import type { TestContext } from "@browser-tester/shared/models";
+import type { GitState, TestContext } from "@browser-tester/shared/models";
 import { usePreferencesStore } from "../../stores/use-preferences.js";
 import { usePlanStore, Plan } from "../../stores/use-plan-store.js";
-import { useNavigationStore } from "../../stores/use-navigation.js";
-import { useGitState } from "../../hooks/use-git-state.js";
+import { useNavigationStore, Screen } from "../../stores/use-navigation.js";
 import { useColors } from "../theme-context.js";
 import { Clickable } from "../ui/clickable.js";
 import { Input } from "../ui/input.js";
@@ -20,12 +19,14 @@ import { getFlowSuggestions } from "../../utils/get-flow-suggestions.js";
 import { getContextDisplayLabel, getContextDescription } from "../../utils/context-options.js";
 import { queryClient } from "../../query-client.js";
 
-export const MainMenu = () => {
+interface MainMenuProps {
+  gitState: GitState;
+}
+
+export const MainMenu = ({ gitState }: MainMenuProps) => {
   const COLORS = useColors();
   const [columns] = useStdoutDimensions();
-  const { data: gitState } = useGitState();
   const toggleSkipPlanning = usePreferencesStore((state) => state.toggleSkipPlanning);
-  const skipPlanning = usePreferencesStore((state) => state.skipPlanning);
   const setScreen = useNavigationStore((state) => state.setScreen);
   const plan = usePlanStore((state) => state.plan);
   const [selectedContext, setSelectedContext] = useState<TestContext | undefined>(undefined);
@@ -38,18 +39,17 @@ export const MainMenu = () => {
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
 
   const picker = useContextPicker({
-    gitState: gitState ?? null,
+    gitState,
     onSelect: setSelectedContext,
   });
 
   const defaultContext = useMemo(() => {
-    if (!gitState) return undefined;
     return picker.localOptions.find((option) => option._tag === "WorkingTree") ?? undefined;
-  }, [gitState, picker.localOptions]);
+  }, [picker.localOptions]);
 
   const activeContext = selectedContext ?? defaultContext ?? null;
   const suggestions = useMemo(
-    () => getFlowSuggestions(activeContext, gitState ?? null),
+    () => getFlowSuggestions(activeContext, gitState),
     [activeContext, gitState],
   );
 
@@ -66,7 +66,7 @@ export const MainMenu = () => {
         return;
       }
 
-      const mainBranch = gitState?.mainBranch ?? "main";
+      const mainBranch = gitState.mainBranch ?? "main";
       let changesFor: ChangesFor;
 
       console.error("[main-menu] activeContext:", activeContext?._tag ?? "none");
@@ -87,7 +87,7 @@ export const MainMenu = () => {
 
       const draft = new TestPlanDraft({
         changesFor,
-        currentBranch: gitState?.currentBranch ?? "",
+        currentBranch: gitState.currentBranch ?? "",
         diffPreview: "",
         fileStats: [],
         instruction: trimmed,
@@ -96,15 +96,12 @@ export const MainMenu = () => {
         requiresCookies: false,
       });
 
-      console.error("[main-menu] draft created, setting plan + navigating");
-      console.error("[main-menu] skipPlanning:", skipPlanning);
+      console.error("[main-menu] draft created, navigating to planning");
       usePreferencesStore.getState().rememberInstruction(trimmed);
       usePlanStore.getState().setPlan(Plan.draft(draft));
-      console.error("[main-menu] plan set, _tag:", usePlanStore.getState().plan?._tag);
-      setScreen(skipPlanning ? "testing" : "planning");
-      console.error("[main-menu] screen set to:", skipPlanning ? "testing" : "planning");
+      setScreen(Screen.Planning({ instruction: trimmed }));
     },
-    [value, activeContext, gitState, skipPlanning, setScreen],
+    [value, activeContext, gitState, setScreen],
   );
 
   const valueRef = useRef(value);
@@ -150,8 +147,6 @@ export const MainMenu = () => {
     },
     { isActive: true },
   );
-
-  if (!gitState) return null;
 
   return (
     <Box flexDirection="column" width="100%" paddingY={1}>
