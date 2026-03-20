@@ -1,0 +1,23 @@
+.github/workflows/e2e.yml
+  9699654c3290f005 22-23,25-26,28-30,32,36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "f49a71cff49e36e185c40e4c302dca0e35136400",
+  "prompts": {
+    "9699654c3290f005": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9755182b-cf92-404b-86bb-4db1cc12ac74",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 9,
+      "total_deletions": 6,
+      "accepted_lines": 9,
+      "overriden_lines": 0
+    }
+  }
+}
