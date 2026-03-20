@@ -749,7 +749,10 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
         ...this,
         steps: this.steps.map((step) =>
           step.id === marker.stepId
-            ? step.update({ status: "passed", summary: marker.summary })
+            ? step.update({
+                status: "passed",
+                summary: Option.some(marker.summary),
+              })
             : step
         ),
       });
@@ -759,7 +762,10 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
         ...this,
         steps: this.steps.map((step) =>
           step.id === marker.stepId
-            ? step.update({ status: "failed", summary: marker.message })
+            ? step.update({
+                status: "failed",
+                summary: Option.some(marker.message),
+              })
             : step
         ),
       });
@@ -793,6 +799,7 @@ export class TestReport extends ExecutedTestPlan.extend<TestReport>(
   screenshotPaths: Schema.Array(Schema.String),
   pullRequest: Schema.Option(Schema.suspend(() => PullRequest)),
 }) {
+  /** @todo(rasmus): UNUSED */
   get stepStatuses(): ReadonlyMap<
     StepId,
     { status: "passed" | "failed" | "not-run"; summary: string }
