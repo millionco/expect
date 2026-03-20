@@ -1,0 +1,23 @@
+.github/workflows/code-quality.yml
+  5a15c7deb173ce48 38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "db922059f337b7981b2ab138962e5693db77c25b",
+  "prompts": {
+    "5a15c7deb173ce48": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "37d675cb-7990-42e0-b69d-a73cab64f6f7",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 2,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
