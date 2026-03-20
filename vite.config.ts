@@ -5,29 +5,35 @@ export default defineConfig({
     "*.{js,ts,tsx}": "vp check --fix",
   },
   lint: {
-    ignorePatterns: ["archive", "playground"],
+    ignorePatterns: ["archive", ".next", "dist"],
     plugins: ["typescript", "react", "import"],
-    jsPlugins: ["./lint-rules/node-namespace-imports.js"],
     rules: {
       "require-yield": "off",
-      "node-imports/namespace-imports": "error",
-      "no-restricted-imports": [
-        "error",
-        {
-          paths: [
+    },
+    overrides: [
+      {
+        files: ["packages/**/*.{ts,tsx}"],
+        rules: {
+          "no-restricted-imports": [
+            "error",
             {
-              name: "react",
-              importNames: ["useEffect"],
-              message:
-                "useEffect is banned. Use derived state, event handlers, data-fetching libraries, or useMountEffect. See .agents/skills/react-best-practices/rules/no-use-effect.md",
+              paths: [
+                {
+                  name: "react",
+                  importNames: ["useEffect"],
+                  message:
+                    "useEffect is banned. Use derived state, event handlers, data-fetching libraries, or useMountEffect. See .agents/skills/react-best-practices/rules/no-use-effect.md",
+                },
+              ],
             },
           ],
         },
-      ],
-    },
+      },
+    ],
   },
   fmt: {
     semi: true,
     singleQuote: false,
+    ignorePatterns: ["archive", ".next", "dist"],
   },
 });

@@ -45,12 +45,7 @@ export { isRunningInAgent } from "./utils/is-running-in-agent";
 export { resolveAgentProvider } from "./utils/resolve-agent-provider";
 export { fetchRemoteBranches, type RemoteBranch } from "./remote-branches";
 export { resolveTestTarget } from "./resolve-test-target";
-export {
-  getGitState,
-  getRecommendedScope,
-  type GitState,
-  type TestScope,
-} from "./get-git-state";
+export { getGitState, getRecommendedScope, type GitState, type TestScope } from "./get-git-state";
 export {
   generateBrowserPlan,
   getBrowserEnvironment,

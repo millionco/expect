@@ -19,6 +19,10 @@
       "dependsOn": ["^format"],
       "outputs": ["*.ts"]
     },
+    "format:check": {
+      "dependsOn": ["^format:check"],
+      "outputs": ["*.ts"]
+    },
     "check": {
       "dependsOn": ["^check"],
       "outputs": ["*.ts"]
