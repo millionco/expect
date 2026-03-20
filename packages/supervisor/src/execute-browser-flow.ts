@@ -10,8 +10,7 @@ import {
   DEFAULT_BROWSER_MCP_SERVER_NAME,
   EXECUTION_MODEL_EFFORT,
   REPLAY_FILE_NAME,
-  VIDEO_DIRECTORY_PREFIX,
-  VIDEO_FILE_NAME,
+  RUN_DIRECTORY_PREFIX,
 } from "./constants";
 import { buildBrowserMcpSettings } from "./browser-mcp-config";
 import { createBrowserRunReport } from "./create-browser-run-report";
@@ -36,21 +35,18 @@ import { resolveLiveViewUrl } from "./utils/resolve-live-view-url";
 export const buildExecutionModelSettings = (
   options: Pick<
     ExecuteBrowserFlowOptions,
-    | "provider"
-    | "providerSettings"
-    | "target"
-    | "browserMcpServerName"
-    | "videoOutputPath"
-    | "liveViewUrl"
+    "provider" | "providerSettings" | "target" | "browserMcpServerName" | "liveViewUrl"
   > & { replayOutputPath?: string },
 ): AgentProviderSettings => {
   const provider = options.provider ?? DEFAULT_AGENT_PROVIDER;
   const browserMcpServerName = options.browserMcpServerName ?? DEFAULT_BROWSER_MCP_SERVER_NAME;
 
+  const providerDefaultModel = provider === "claude" ? BROWSER_TEST_MODEL : undefined;
+
   return buildBrowserMcpSettings({
     providerSettings: {
       cwd: options.target.cwd,
-      ...(provider === "claude" ? { model: BROWSER_TEST_MODEL } : {}),
+      ...(providerDefaultModel ? { model: providerDefaultModel } : {}),
       ...options.providerSettings,
       effort: EXECUTION_MODEL_EFFORT,
       tools: ["open", "playwright", "screenshot", "close"].map(
@@ -58,14 +54,13 @@ export const buildExecutionModelSettings = (
       ),
     },
     browserMcpServerName,
-    videoOutputPath: options.videoOutputPath,
     replayOutputPath: options.replayOutputPath,
     liveViewUrl: options.liveViewUrl,
   });
 };
 
 const buildExecutionPrompt = (options: ExecuteBrowserFlowOptions): string => {
-  const { plan, target, environment, browserMcpServerName, videoOutputPath } = options;
+  const { plan, target, environment, browserMcpServerName } = options;
   const mcpName = browserMcpServerName ?? DEFAULT_BROWSER_MCP_SERVER_NAME;
 
   return [
@@ -75,7 +70,7 @@ const buildExecutionPrompt = (options: ExecuteBrowserFlowOptions): string => {
     "1. open — Launch a browser and navigate to a URL.",
     "2. playwright — Execute Playwright code in Node. Globals: page (Page), context (BrowserContext), browser (Browser), ref(id) (resolves a snapshot ref like 'e4' to a Playwright Locator). Supports await. Return a value to get it back as JSON.",
     "3. screenshot — Capture page state. Set mode: 'snapshot' (ARIA accessibility tree, default and preferred), 'screenshot' (PNG image), or 'annotated' (PNG with numbered labels on interactive elements).",
-    "4. close — Close the browser and flush the video recording.",
+    "4. close — Close the browser and end the session.",
     "",
     "Strongly prefer screenshot with mode 'snapshot' for observing page state — the ARIA tree is fast, cheap, and sufficient for almost all assertions.",
     "Only use mode 'screenshot' or 'annotated' when you need to verify something purely visual (layout, colors, images) that the accessibility tree cannot capture.",
@@ -109,7 +104,6 @@ const buildExecutionPrompt = (options: ExecuteBrowserFlowOptions): string => {
     "",
     "Follow the approved steps in order. You may adapt to UI details, but do not invent a different goal.",
     "Execution style: assertion-first. For each step, think in loops: navigate, act, validate, recover, then fail if still blocked.",
-    "A browser video recording is enabled for this run.",
     "",
     "Before and after each step, emit these exact status lines on their own lines:",
     "STEP_START|<step-id>|<step-title>",
@@ -136,13 +130,12 @@ const buildExecutionPrompt = (options: ExecuteBrowserFlowOptions): string => {
     "- Use playwright with ref() to scroll the target into view or retry the interaction once.",
     "- If still blocked, classify the blocker with one allowed failure category and include that classification in ASSERTION_FAILED.",
     "",
-    "Before emitting RUN_COMPLETED, call the close tool exactly once so the browser session flushes the video to disk.",
+    "Before emitting RUN_COMPLETED, call the close tool exactly once to end the browser session.",
     "",
     "Environment:",
     `- Base URL: ${environment?.baseUrl ?? "not provided"}`,
     `- Headed mode preference: ${environment?.headed === true ? "headed" : "headless or not specified"}`,
     `- Reuse browser cookies: ${environment?.cookies === true ? "yes" : "no or not specified"}`,
-    `- Video output path: ${videoOutputPath ?? "not configured"}`,
     "",
     "Testing target context:",
     `- Scope: ${target.scope}`,
@@ -224,7 +217,6 @@ const createBrowserRunEventIterable = (options: {
   target: ExecuteBrowserFlowOptions["target"];
   plan: ExecuteBrowserFlowOptions["plan"];
   browserMcpServerName: string;
-  videoOutputPath: string;
   replayOutputPath: string;
   liveViewUrl?: string;
   stream: ReadableStream<LanguageModelV3StreamPart>;
@@ -266,7 +258,6 @@ const createBrowserRunEventIterable = (options: {
               completionEvent = {
                 ...event,
                 sessionId: streamState.sessionId,
-                videoPath: options.videoOutputPath,
                 replaySessionPath: options.replayOutputPath,
               };
             } else {
@@ -352,6 +343,29 @@ const createBrowserRunEventIterable = (options: {
           continue;
         }
 
+        if (part.type === "error") {
+          const errorEvent: BrowserRunEvent = {
+            type: "error",
+            timestamp: Date.now(),
+            message:
+              "error" in part
+                ? String((part as Record<string, unknown>).error)
+                : "Agent stream error",
+          };
+          emittedEvents.push(errorEvent);
+          yield errorEvent;
+
+          completionEvent = {
+            type: "run-completed",
+            timestamp: Date.now(),
+            status: "failed",
+            summary: errorEvent.message,
+            sessionId: streamState.sessionId,
+            replaySessionPath: options.replayOutputPath,
+          };
+          continue;
+        }
+
         const sessionId = extractStreamSessionId(part);
         if (sessionId) {
           streamState = {
@@ -370,7 +384,7 @@ const createBrowserRunEventIterable = (options: {
                 completionEvent = {
                   ...event,
                   sessionId: streamState.sessionId,
-                  videoPath: options.videoOutputPath,
+
                   replaySessionPath: options.replayOutputPath,
                 };
               } else {
@@ -382,7 +396,6 @@ const createBrowserRunEventIterable = (options: {
             completionEvent = {
               ...trailingEvent,
               sessionId: streamState.sessionId,
-              videoPath: options.videoOutputPath,
               replaySessionPath: options.replayOutputPath,
             };
           } else {
@@ -400,7 +413,6 @@ const createBrowserRunEventIterable = (options: {
           status: "passed",
           summary: "Run completed.",
           sessionId: streamState.sessionId,
-          videoPath: options.videoOutputPath,
           replaySessionPath: options.replayOutputPath,
         } satisfies Extract<BrowserRunEvent, { type: "run-completed" }>);
 
@@ -410,7 +422,6 @@ const createBrowserRunEventIterable = (options: {
         plan: options.plan,
         events: emittedEvents,
         completionEvent: resolvedCompletionEvent,
-        rawVideoPath: options.videoOutputPath,
         replaySessionPath: options.replayOutputPath,
         screenshotPaths,
         onProgress: (text) => {
@@ -466,7 +477,6 @@ const createModelStreamResult = Effect.fn("createModelStreamResult")(function* (
   prompt: string,
   provider: NonNullable<ExecuteBrowserFlowOptions["provider"]>,
   browserMcpServerName: string,
-  videoOutputPath: string,
   replayOutputPath: string,
   liveViewUrl?: string,
   abortController?: AbortController,
@@ -480,7 +490,6 @@ const createModelStreamResult = Effect.fn("createModelStreamResult")(function* (
         providerSettings: options.providerSettings,
         target: options.target,
         browserMcpServerName,
-        videoOutputPath,
         replayOutputPath,
         liveViewUrl,
       }),
@@ -504,7 +513,6 @@ const resolveExecutionStreamResult = Effect.fn("resolveExecutionStreamResult")(f
   options: ExecuteBrowserFlowOptions,
   prompt: string,
   browserMcpServerName: string,
-  videoOutputPath: string,
   replayOutputPath: string,
   liveViewUrl: string | undefined,
   abortController: AbortController,
@@ -515,7 +523,6 @@ const resolveExecutionStreamResult = Effect.fn("resolveExecutionStreamResult")(f
       prompt,
       options.provider ?? DEFAULT_AGENT_PROVIDER,
       browserMcpServerName,
-      videoOutputPath,
       replayOutputPath,
       liveViewUrl,
       abortController,
@@ -542,7 +549,6 @@ const resolveExecutionStreamResult = Effect.fn("resolveExecutionStreamResult")(f
         prompt,
         provider,
         browserMcpServerName,
-        videoOutputPath,
         replayOutputPath,
         liveViewUrl,
         abortController,
@@ -582,23 +588,22 @@ const buildExecutionStream = Effect.fn("executeBrowserFlow")(function* (
   });
 
   const browserMcpServerName = options.browserMcpServerName ?? DEFAULT_BROWSER_MCP_SERVER_NAME;
-  const videoOutputPath =
-    options.videoOutputPath ??
-    path.join(mkdtempSync(path.join(os.tmpdir(), VIDEO_DIRECTORY_PREFIX)), VIDEO_FILE_NAME);
-  const replayOutputPath = path.join(path.dirname(videoOutputPath), REPLAY_FILE_NAME);
+  const replayOutputPath = path.join(
+    mkdtempSync(path.join(os.tmpdir(), RUN_DIRECTORY_PREFIX)),
+    REPLAY_FILE_NAME,
+  );
   const liveViewUrl =
     options.liveViewUrl ??
     (yield* Effect.tryPromise({
       try: () => resolveLiveViewUrl(),
       catch: (cause) => new ExecutionError({ stage: "resolve live view url", cause }),
     }).pipe(Effect.catchTag("ExecutionError", () => Effect.succeed(undefined))));
-  const prompt = buildExecutionPrompt({ ...options, browserMcpServerName, videoOutputPath });
+  const prompt = buildExecutionPrompt({ ...options, browserMcpServerName });
   const abortController = new AbortController();
   const streamResult = yield* resolveExecutionStreamResult(
     options,
     prompt,
     browserMcpServerName,
-    videoOutputPath,
     replayOutputPath,
     liveViewUrl,
     abortController,
@@ -609,7 +614,6 @@ const buildExecutionStream = Effect.fn("executeBrowserFlow")(function* (
       target: options.target,
       plan: options.plan,
       browserMcpServerName,
-      videoOutputPath,
       replayOutputPath,
       liveViewUrl,
       stream: streamResult.stream,

@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vite-plus/test";
-import { BROWSER_TESTER_VIDEO_OUTPUT_ENV_NAME } from "@browser-tester/browser/mcp";
-import { buildBrowserMcpServerEnv, buildBrowserMcpSettings } from "../src/browser-mcp-config";
+import { BROWSER_TESTER_REPLAY_OUTPUT_ENV_NAME } from "@browser-tester/browser/mcp";
+import { buildBrowserMcpServerEnv, buildBrowserMcpSettings } from "../src/browser-mcp-config.js";
 
 describe("buildBrowserMcpServerEnv", () => {
   it("returns undefined when no server defaults are needed", () => {
     expect(buildBrowserMcpServerEnv({})).toBeUndefined();
   });
 
-  it("includes video output when configured", () => {
+  it("includes replay output when configured", () => {
     expect(
       buildBrowserMcpServerEnv({
-        videoOutputPath: "/tmp/browser-flow.webm",
+        replayOutputPath: "/tmp/browser-flow.ndjson",
       }),
     ).toEqual({
-      [BROWSER_TESTER_VIDEO_OUTPUT_ENV_NAME]: "/tmp/browser-flow.webm",
+      [BROWSER_TESTER_REPLAY_OUTPUT_ENV_NAME]: "/tmp/browser-flow.ndjson",
     });
   });
 
@@ -32,7 +32,7 @@ describe("buildBrowserMcpServerEnv", () => {
           },
         },
       },
-      videoOutputPath: "/tmp/browser-flow.webm",
+      replayOutputPath: "/tmp/browser-flow.ndjson",
     });
 
     expect(settings.mcpServers).toEqual({
@@ -42,7 +42,7 @@ describe("buildBrowserMcpServerEnv", () => {
         args: expect.any(Array),
         env: {
           EXISTING_BROWSER_ENV: "1",
-          [BROWSER_TESTER_VIDEO_OUTPUT_ENV_NAME]: "/tmp/browser-flow.webm",
+          [BROWSER_TESTER_REPLAY_OUTPUT_ENV_NAME]: "/tmp/browser-flow.ndjson",
         },
       },
     });

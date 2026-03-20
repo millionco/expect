@@ -25,7 +25,7 @@ const VIEWER_HTML = `<!doctype html>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Browser Tester Live View</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/rrweb-player@latest/dist/style.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/rrweb-player@2.0.0-alpha.18/dist/style.css" />
     <style>
       :root { color-scheme: dark }
       body { margin: 0; font-family: ui-sans-serif, system-ui, sans-serif; background: #111827; color: #f9fafb }
@@ -41,7 +41,7 @@ const VIEWER_HTML = `<!doctype html>
       </div>
     </main>
     <script type="module">
-      import rrwebPlayer from 'https://cdn.jsdelivr.net/npm/rrweb-player@latest/dist/index.esm.js';
+      import rrwebPlayer from 'https://cdn.jsdelivr.net/npm/rrweb-player@2.0.0-alpha.18/dist/rrweb-player.js';
 
       const container = document.getElementById('player-container');
       const statusEl = document.getElementById('status');

@@ -187,8 +187,6 @@ export const createBrowserMcpServer = <E>(
           const session = yield* McpSession;
           const result = yield* session.close();
           if (!result) return textResult("No browser open.");
-          if (result.savedVideoPath)
-            return textResult(`Browser closed. Video saved to ${result.savedVideoPath}`);
           return textResult("Browser closed.");
         }),
       ),

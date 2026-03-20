@@ -1,21 +1,16 @@
-import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { basename, dirname, extname, join, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
-import { promisify } from "node:util";
 import {
-  HIGHLIGHT_OVERLAY_FONT_SIZE_PX,
-  HIGHLIGHT_OVERLAY_HEIGHT_PX,
-  HIGHLIGHT_OVERLAY_OPACITY,
-  HIGHLIGHT_OVERLAY_PADDING_X_PX,
-  HIGHLIGHT_VIDEO_FILE_NAME,
-  HIGHLIGHT_WINDOW_LEADING_MS,
-  HIGHLIGHT_WINDOW_MERGE_GAP_MS,
-  HIGHLIGHT_WINDOW_MIN_DURATION_MS,
-  HIGHLIGHT_WINDOW_TRAILING_MS,
-  MIN_RUN_DURATION_MS,
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { basename, extname, join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import {
   SHARE_ASSET_DIRECTORY_NAME,
   SHARE_DIRECTORY_PREFIX,
   SHARE_REPORT_FILE_NAME,
@@ -37,44 +32,14 @@ interface CreateBrowserRunReportOptions {
   plan: BrowserFlowPlan;
   events: BrowserRunEvent[];
   completionEvent: Extract<BrowserRunEvent, { type: "run-completed" }>;
-  rawVideoPath?: string;
   replaySessionPath?: string;
   screenshotPaths: string[];
   onProgress?: (message: string) => Promise<void> | void;
 }
 
-interface TimeWindow {
-  startMs: number;
-  endMs: number;
-  title?: string;
-}
-
 interface ArtifactPreparationResult {
   artifacts: BrowserRunArtifacts;
-  warnings: string[];
 }
-
-const execFileAsync = promisify(execFile);
-
-const commandExists = async (command: string): Promise<boolean> => {
-  try {
-    await execFileAsync("which", [command], { encoding: "utf-8" });
-    return true;
-  } catch {
-    return false;
-  }
-};
-
-const ffmpegFilterAvailable = async (filterName: string): Promise<boolean> => {
-  try {
-    const { stdout } = await execFileAsync("ffmpeg", ["-hide_banner", "-filters"], {
-      encoding: "utf-8",
-    });
-    return stdout.includes(filterName);
-  } catch {
-    return false;
-  }
-};
 
 const normalizeText = (value: string): string => value.trim().toLowerCase();
 
@@ -205,167 +170,6 @@ const getRiskAreaSummary = (
   };
 };
 
-const isInterestingToolName = (toolName: string): boolean => {
-  const ignoredSuffixes = ["__close"];
-  return !ignoredSuffixes.some((suffix) => toolName.endsWith(suffix));
-};
-
-export const escapeFilterText = (text: string): string => text.replaceAll("'", "''");
-
-export const buildStepTitleOverlayFilter = (title: string): string => {
-  const escapedTitle = escapeFilterText(title);
-  return [
-    `drawbox=x=0:y=0:w=iw:h=${HIGHLIGHT_OVERLAY_HEIGHT_PX}:color=black@${HIGHLIGHT_OVERLAY_OPACITY}:t=fill`,
-    `drawtext=text='${escapedTitle}':fontsize=${HIGHLIGHT_OVERLAY_FONT_SIZE_PX}:fontcolor=white:x=${HIGHLIGHT_OVERLAY_PADDING_X_PX}:y=(${HIGHLIGHT_OVERLAY_HEIGHT_PX}-text_h)/2`,
-  ].join(",");
-};
-
-export const getHighlightWindows = (events: BrowserRunEvent[]): TimeWindow[] => {
-  const runStartedAt =
-    events.find((event) => event.type === "run-started")?.timestamp ?? Date.now();
-  const lastTimestamp = events.at(-1)?.timestamp ?? runStartedAt + MIN_RUN_DURATION_MS;
-  const runDurationMs = Math.max(lastTimestamp - runStartedAt, MIN_RUN_DURATION_MS);
-
-  let currentStepTitle: string | undefined;
-  const interestingMoments: Array<{ timestampMs: number; title?: string }> = [];
-
-  for (const event of events) {
-    if (event.type === "step-started") {
-      currentStepTitle = event.title;
-    }
-
-    const isInteresting =
-      event.type === "step-started" ||
-      event.type === "step-completed" ||
-      event.type === "assertion-failed" ||
-      (event.type === "tool-call" && isInterestingToolName(event.toolName));
-
-    if (isInteresting) {
-      interestingMoments.push({
-        timestampMs: Math.max(0, event.timestamp - runStartedAt),
-        title: currentStepTitle,
-      });
-    }
-  }
-
-  if (interestingMoments.length === 0) {
-    return [{ startMs: 0, endMs: runDurationMs }];
-  }
-
-  const windows = interestingMoments
-    .map((moment) => ({
-      startMs: Math.max(0, moment.timestampMs - HIGHLIGHT_WINDOW_LEADING_MS),
-      endMs: Math.min(
-        runDurationMs,
-        Math.max(
-          moment.timestampMs + HIGHLIGHT_WINDOW_TRAILING_MS,
-          moment.timestampMs + HIGHLIGHT_WINDOW_MIN_DURATION_MS,
-        ),
-      ),
-      title: moment.title,
-    }))
-    .sort((leftWindow, rightWindow) => leftWindow.startMs - rightWindow.startMs);
-
-  const mergedWindows: TimeWindow[] = [];
-  for (const window of windows) {
-    const previousWindow = mergedWindows.at(-1);
-    if (previousWindow && window.startMs <= previousWindow.endMs + HIGHLIGHT_WINDOW_MERGE_GAP_MS) {
-      previousWindow.endMs = Math.max(previousWindow.endMs, window.endMs);
-      previousWindow.title ??= window.title;
-      continue;
-    }
-    mergedWindows.push(window);
-  }
-
-  return mergedWindows;
-};
-
-const createHighlightVideo = async (
-  rawVideoPath: string | undefined,
-  events: BrowserRunEvent[],
-  onProgress?: (message: string) => Promise<void> | void,
-) => {
-  if (!rawVideoPath || !existsSync(rawVideoPath)) {
-    return { highlightVideoPath: undefined, warning: undefined };
-  }
-
-  await onProgress?.("Generating highlight video");
-
-  if (!(await commandExists("ffmpeg"))) {
-    return {
-      highlightVideoPath: undefined,
-      warning: "Highlight reel skipped because ffmpeg is not installed.",
-    };
-  }
-
-  const windows = getHighlightWindows(events);
-  if (windows.length === 0) {
-    return { highlightVideoPath: undefined, warning: undefined };
-  }
-
-  const canDrawText = await ffmpegFilterAvailable("drawtext");
-  const temporaryDirectoryPath = mkdtempSync(join(tmpdir(), "browser-tester-highlight-"));
-  const highlightVideoPath = join(dirname(resolve(rawVideoPath)), HIGHLIGHT_VIDEO_FILE_NAME);
-
-  try {
-    const segmentPaths: string[] = [];
-
-    for (const [index, window] of windows.entries()) {
-      const segmentPath = join(temporaryDirectoryPath, `segment-${index}.webm`);
-      const ffmpegArguments = [
-        "-y",
-        "-ss",
-        String(window.startMs / 1000),
-        "-to",
-        String(window.endMs / 1000),
-        "-i",
-        rawVideoPath,
-      ];
-
-      if (window.title && canDrawText) {
-        ffmpegArguments.push("-vf", buildStepTitleOverlayFilter(window.title));
-      }
-
-      ffmpegArguments.push("-c:v", "libvpx-vp9", "-c:a", "libopus", segmentPath);
-      await execFileAsync("ffmpeg", ffmpegArguments);
-      segmentPaths.push(segmentPath);
-    }
-
-    const concatFilePath = join(temporaryDirectoryPath, "segments.txt");
-    writeFileSync(
-      concatFilePath,
-      segmentPaths
-        .map((segmentPath) => `file '${segmentPath.replaceAll("'", "'\\''")}'`)
-        .join("\n"),
-      "utf-8",
-    );
-
-    await execFileAsync("ffmpeg", [
-      "-y",
-      "-f",
-      "concat",
-      "-safe",
-      "0",
-      "-i",
-      concatFilePath,
-      "-c:v",
-      "libvpx-vp9",
-      "-c:a",
-      "libopus",
-      highlightVideoPath,
-    ]);
-
-    return { highlightVideoPath, warning: undefined };
-  } catch {
-    return {
-      highlightVideoPath: undefined,
-      warning: "Highlight reel generation failed.",
-    };
-  } finally {
-    rmSync(temporaryDirectoryPath, { recursive: true, force: true });
-  }
-};
-
 const copyArtifact = (
   assetDirectoryPath: string,
   filePath: string,
@@ -397,17 +201,24 @@ const createShareBundle = (options: {
   const assetDirectoryPath = join(shareBundlePath, SHARE_ASSET_DIRECTORY_NAME);
   mkdirSync(assetDirectoryPath, { recursive: true });
 
-  const sharedVideoPath = options.artifacts.highlightVideoPath ?? options.artifacts.rawVideoPath;
   const sharedScreenshotPaths = options.artifacts.screenshotPaths;
+  const sharedReplayPath = options.artifacts.replaySessionPath;
 
-  const bundledVideoRelativePath = sharedVideoPath
-    ? copyArtifact(assetDirectoryPath, sharedVideoPath, "video")
-    : undefined;
   const bundledScreenshotRelativePaths = sharedScreenshotPaths
     .map((screenshotPath, index) =>
       copyArtifact(assetDirectoryPath, screenshotPath, `screenshot-${index}`),
     )
     .filter((relativePath): relativePath is string => Boolean(relativePath));
+
+  let replayEventsJson: string | undefined;
+  if (sharedReplayPath && existsSync(sharedReplayPath)) {
+    copyArtifact(assetDirectoryPath, sharedReplayPath, "replay");
+    const ndjson = readFileSync(sharedReplayPath, "utf-8").trim();
+    if (ndjson.length > 0) {
+      const events = ndjson.split("\n").map((line) => JSON.parse(line));
+      replayEventsJson = JSON.stringify(events);
+    }
+  }
 
   const shareSummaryPath = join(shareBundlePath, SHARE_SUMMARY_FILE_NAME);
   const shareReportPath = join(shareBundlePath, SHARE_REPORT_FILE_NAME);
@@ -444,11 +255,8 @@ const createShareBundle = (options: {
       .join("")}</ul>`,
   ];
 
-  if (bundledVideoRelativePath) {
-    htmlSections.push(
-      "<h2>Video</h2>",
-      `<video controls style="max-width: 100%;" src="${bundledVideoRelativePath}"></video>`,
-    );
+  if (replayEventsJson) {
+    htmlSections.push("<h2>Session Replay</h2>", '<div id="replay-container"></div>');
   }
 
   if (bundledScreenshotRelativePaths.length > 0) {
@@ -463,6 +271,19 @@ const createShareBundle = (options: {
     );
   }
 
+  const replayHeadTags = replayEventsJson
+    ? [
+        '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/rrweb-player@2.0.0-alpha.18/dist/style.css" />',
+      ]
+    : [];
+
+  const replayScriptTags = replayEventsJson
+    ? [
+        `<script>var __replayEvents=${replayEventsJson};</script>`,
+        '<script type="module">import rrwebPlayer from "https://cdn.jsdelivr.net/npm/rrweb-player@2.0.0-alpha.18/dist/rrweb-player.js";if(__replayEvents&&__replayEvents.length>0){new rrwebPlayer({target:document.getElementById("replay-container"),props:{events:__replayEvents,showController:true,autoPlay:false}})}</script>',
+      ]
+    : [];
+
   writeFileSync(shareSummaryPath, summaryLines.join("\n"), "utf-8");
   writeFileSync(
     shareReportPath,
@@ -472,10 +293,12 @@ const createShareBundle = (options: {
       "<head>",
       '<meta charset="utf-8" />',
       `<title>${options.report.title}</title>`,
-      "<style>body{font-family:ui-sans-serif,system-ui,sans-serif;max-width:960px;margin:0 auto;padding:32px;background:#0f172a;color:#e2e8f0}h1,h2{color:#f8fafc}a{color:#93c5fd}</style>",
+      "<style>body{font-family:ui-sans-serif,system-ui,sans-serif;max-width:960px;margin:0 auto;padding:32px;background:#0f172a;color:#e2e8f0}h1,h2{color:#f8fafc}a{color:#93c5fd}#replay-container{margin:16px 0;border-radius:8px;overflow:hidden}</style>",
+      ...replayHeadTags,
       "</head>",
       "<body>",
       ...htmlSections,
+      ...replayScriptTags,
       "</body>",
       "</html>",
     ].join(""),
@@ -492,28 +315,18 @@ const createShareBundle = (options: {
   };
 };
 
-const prepareArtifacts = async (
-  rawVideoPath: string | undefined,
+const prepareArtifacts = (
   replaySessionPath: string | undefined,
   screenshotPaths: string[],
-  events: BrowserRunEvent[],
-  onProgress?: (message: string) => Promise<void> | void,
-): Promise<ArtifactPreparationResult> => {
-  const warnings: string[] = [];
+): ArtifactPreparationResult => {
   const existingScreenshotPaths = screenshotPaths.filter((screenshotPath) =>
     existsSync(screenshotPath),
   );
-  const existingRawVideoPath = rawVideoPath && existsSync(rawVideoPath) ? rawVideoPath : undefined;
   const existingReplaySessionPath =
     replaySessionPath && existsSync(replaySessionPath) ? replaySessionPath : undefined;
-  const highlightVideoResult = await createHighlightVideo(existingRawVideoPath, events, onProgress);
-  if (highlightVideoResult.warning) warnings.push(highlightVideoResult.warning);
 
   return {
-    warnings,
     artifacts: {
-      rawVideoPath: existingRawVideoPath,
-      highlightVideoPath: highlightVideoResult.highlightVideoPath,
       replaySessionPath: existingReplaySessionPath,
       screenshotPaths: existingScreenshotPaths,
     },
@@ -529,13 +342,7 @@ export const createBrowserRunReport = async (
   const riskAreaSummary = getRiskAreaSummary(options.plan, stepResults, findings);
   await options.onProgress?.("Looking up pull request");
   const [artifactPreparation, pullRequest] = await Promise.all([
-    prepareArtifacts(
-      options.rawVideoPath,
-      options.replaySessionPath,
-      options.screenshotPaths,
-      options.events,
-      options.onProgress,
-    ),
+    prepareArtifacts(options.replaySessionPath, options.screenshotPaths),
     getPullRequestForBranch(options.target.cwd, options.target.branch.current),
   ]);
 
@@ -545,7 +352,7 @@ export const createBrowserRunReport = async (
     summary: options.completionEvent.summary,
     findings,
     stepResults,
-    warnings: artifactPreparation.warnings,
+    warnings: [] as string[],
     pullRequest,
     ...riskAreaSummary,
   };

@@ -80,13 +80,6 @@ export const buildPullRequestCommentBody = (report: BrowserRunReport): string =>
   if (isRemoteShareUrl(report.artifacts.shareUrl)) {
     artifactLines.push(`- Full report: ${report.artifacts.shareUrl}`);
   }
-  if (report.artifacts.highlightVideoPath) {
-    artifactLines.push(
-      `- Highlight reel saved locally at \`${report.artifacts.highlightVideoPath}\``,
-    );
-  } else if (report.artifacts.rawVideoPath) {
-    artifactLines.push(`- Raw video saved locally at \`${report.artifacts.rawVideoPath}\``);
-  }
   if (report.artifacts.screenshotPaths.length > 0) {
     artifactLines.push(`- ${report.artifacts.screenshotPaths.length} screenshot(s) saved locally`);
   }

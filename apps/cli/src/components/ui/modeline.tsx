@@ -65,10 +65,7 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
         },
       ];
     case "testing": {
-      const hints: HintSegment[] = [
-        { key: "v", label: "cycle trace" },
-        { key: "esc", label: "cancel" },
-      ];
+      const hints: HintSegment[] = [{ key: "esc", label: "cancel" }];
       if (liveViewUrl) {
         hints.push({ key: "o", label: "open live view", cta: true });
       }
@@ -76,13 +73,6 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
     }
     case "results": {
       const resultsHints: HintSegment[] = [];
-      const videoPath = latestRunReport?.artifacts.rawVideoPath;
-      if (videoPath) {
-        resultsHints.push({ key: "v", label: "open video" });
-      }
-      if (latestRunReport?.artifacts.highlightVideoPath) {
-        resultsHints.push({ key: "h", label: "highlight reel" });
-      }
       if (latestRunReport?.artifacts.shareUrl) {
         resultsHints.push({ key: "o", label: "open report" });
       }

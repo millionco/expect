@@ -60,7 +60,6 @@ export interface BrowserRunCompletedEvent extends BrowserRunBaseEvent {
   status: "passed" | "failed";
   summary: string;
   sessionId?: string;
-  videoPath?: string;
   replaySessionPath?: string;
   report?: import("./types.js").BrowserRunReport;
 }

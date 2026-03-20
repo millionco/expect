@@ -1,5 +1,5 @@
 import { Cause, Effect, Fiber, Stream } from "effect";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Static, Text, useInput } from "ink";
 import figures from "figures";
 import { executeBrowserFlow, type BrowserRunEvent } from "@browser-tester/supervisor";
@@ -8,46 +8,28 @@ import {
   PROGRESS_BAR_WIDTH,
   TESTING_TIMER_UPDATE_INTERVAL_MS,
   TESTING_TOOL_TEXT_CHAR_LIMIT,
-} from "../../constants";
-import { useColors } from "../theme-context";
-import { RuledBox } from "../ui/ruled-box";
-import { Spinner } from "../ui/spinner";
-import { TextShimmer } from "../ui/text-shimmer";
-import { useFlowSessionStore } from "../../stores/use-flow-session";
-import { usePreferencesStore } from "../../stores/use-preferences";
-import { ScreenHeading } from "../ui/screen-heading";
+} from "../../constants.js";
+import { useColors } from "../theme-context.js";
+import { RuledBox } from "../ui/ruled-box.js";
+import { Spinner } from "../ui/spinner.js";
+import { TextShimmer } from "../ui/text-shimmer.js";
+import { useFlowSessionStore } from "../../stores/use-flow-session.js";
+import { usePreferencesStore } from "../../stores/use-preferences.js";
+import { ScreenHeading } from "../ui/screen-heading.js";
 import cliTruncate from "cli-truncate";
-import { formatElapsedTime } from "../../utils/format-elapsed-time";
-import { extractScreenshotPath } from "../../utils/extract-screenshot-path";
-import { Image } from "../ui/image";
-import { FileLink } from "../ui/file-link";
-import { ErrorMessage } from "../ui/error-message";
+import { formatElapsedTime } from "../../utils/format-elapsed-time.js";
+import { extractScreenshotPath } from "../../utils/extract-screenshot-path.js";
+import { Image } from "../ui/image.js";
+import { ErrorMessage } from "../ui/error-message.js";
 import { deriveTestingState, saveTestedFingerprint } from "@browser-tester/supervisor";
-import { openUrl } from "../../utils/open-url";
-import { persistRunLearnings } from "../../utils/persist-run-learnings";
+import { openUrl } from "../../utils/open-url.js";
 
-const TOOL_CALL_DISPLAY_MODE_COMPACT = "compact";
-const TOOL_CALL_DISPLAY_MODE_DETAILED = "detailed";
-const TOOL_CALL_DISPLAY_MODE_HIDDEN = "hidden";
-const TRACE_DISPLAY_SHORTCUT_KEY = "v";
 const LIVE_VIEW_SHORTCUT_KEY = "o";
-
-const getNextToolCallDisplayMode = (toolCallDisplayMode: string): string => {
-  switch (toolCallDisplayMode) {
-    case TOOL_CALL_DISPLAY_MODE_COMPACT:
-      return TOOL_CALL_DISPLAY_MODE_DETAILED;
-    case TOOL_CALL_DISPLAY_MODE_DETAILED:
-      return TOOL_CALL_DISPLAY_MODE_HIDDEN;
-    default:
-      return TOOL_CALL_DISPLAY_MODE_COMPACT;
-  }
-};
 
 export const TestingScreen = () => {
   const target = useFlowSessionStore((state) => state.resolvedTarget);
-  const userInstruction = useFlowSessionStore((state) => state.flowInstruction);
+  const plan = useFlowSessionStore((state) => state.generatedPlan);
   const environment = useFlowSessionStore((state) => state.browserEnvironment);
-  const pendingSavedFlow = useFlowSessionStore((state) => state.pendingSavedFlow);
   const executionProvider = usePreferencesStore((state) => state.executionProvider);
   const executionModel = usePreferencesStore((state) => state.executionModel);
   const completeTestingRun = useFlowSessionStore((state) => state.completeTestingRun);
@@ -58,111 +40,95 @@ export const TestingScreen = () => {
   const [events, setEvents] = useState<BrowserRunEvent[]>([]);
   const [running, setRunning] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [videoPath, setVideoPath] = useState<string | null>(null);
   const [screenshotPaths, setScreenshotPaths] = useState<string[]>([]);
   const [runStartedAt, setRunStartedAt] = useState<number | null>(null);
   const [elapsedTimeMs, setElapsedTimeMs] = useState(0);
-  const [toolCallDisplayMode, setToolCallDisplayMode] = useState(TOOL_CALL_DISPLAY_MODE_COMPACT);
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
   const [exitRequested, setExitRequested] = useState(false);
   const [pendingLiveViewUrl, setPendingLiveViewUrl] = useState<string | null>(null);
   const runFiberRef = useRef<Fiber.Fiber<unknown, unknown> | null>(null);
-  const emittedEventsRef = useRef<BrowserRunEvent[]>([]);
 
   const derivedState = useMemo(
-    () => deriveTestingState(events, toolCallDisplayMode),
-    [events, toolCallDisplayMode],
+    () => (plan ? deriveTestingState(plan, events) : null),
+    [plan, events],
   );
 
   const elapsedTimeLabel = useMemo(() => formatElapsedTime(elapsedTimeMs), [elapsedTimeMs]);
 
-  const exitTriggeredRef = useRef(false);
-  if (exitRequested && !running && !exitTriggeredRef.current) {
-    exitTriggeredRef.current = true;
+  useEffect(() => {
+    if (!exitRequested || running) return;
     exitTesting();
-  }
+  }, [exitRequested, exitTesting, running]);
 
-  const timerIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
-  const previousTimerDepsRef = useRef({ running, runStartedAt });
-  if (
-    previousTimerDepsRef.current.running !== running ||
-    previousTimerDepsRef.current.runStartedAt !== runStartedAt
-  ) {
-    previousTimerDepsRef.current = { running, runStartedAt };
-    if (timerIntervalRef.current !== undefined) {
-      clearInterval(timerIntervalRef.current);
-      timerIntervalRef.current = undefined;
-    }
-    if (running && runStartedAt !== null) {
+  useEffect(() => {
+    if (!running || runStartedAt === null) return;
+
+    setElapsedTimeMs(Date.now() - runStartedAt);
+
+    const interval = setInterval(() => {
       setElapsedTimeMs(Date.now() - runStartedAt);
-      timerIntervalRef.current = setInterval(() => {
-        setElapsedTimeMs(Date.now() - runStartedAt);
-      }, TESTING_TIMER_UPDATE_INTERVAL_MS);
-    }
-  }
+    }, TESTING_TIMER_UPDATE_INTERVAL_MS);
 
-  const liveViewPollRef = useRef<{
-    url: string | null;
-    intervalId: ReturnType<typeof setInterval> | undefined;
-  }>({ url: null, intervalId: undefined });
-  if (liveViewPollRef.current.url !== pendingLiveViewUrl) {
-    if (liveViewPollRef.current.intervalId !== undefined) {
-      clearInterval(liveViewPollRef.current.intervalId);
-    }
-    liveViewPollRef.current.url = pendingLiveViewUrl;
-    liveViewPollRef.current.intervalId = undefined;
-    if (pendingLiveViewUrl) {
-      const url = pendingLiveViewUrl;
-      const intervalId = setInterval(async () => {
-        try {
-          const response = await fetch(url);
-          if (response.ok) {
-            setLiveViewUrl(url);
-            clearInterval(intervalId);
-            liveViewPollRef.current.intervalId = undefined;
-          }
-        } catch {
-          // HACK: server not ready yet, keep polling
+    return () => {
+      clearInterval(interval);
+    };
+  }, [runStartedAt, running]);
+
+  useEffect(() => {
+    if (!pendingLiveViewUrl) return;
+
+    let cancelled = false;
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch(pendingLiveViewUrl);
+        if (response.ok && !cancelled) {
+          setLiveViewUrl(pendingLiveViewUrl);
+          clearInterval(interval);
         }
-      }, LIVE_VIEW_READY_POLL_INTERVAL_MS);
-      liveViewPollRef.current.intervalId = intervalId;
-    }
-  }
+      } catch {
+        // HACK: server not ready yet, keep polling
+      }
+    }, LIVE_VIEW_READY_POLL_INTERVAL_MS);
 
-  const flowStartedRef = useRef(false);
-  if (!flowStartedRef.current && target && userInstruction && environment) {
-    flowStartedRef.current = true;
-    setRunStartedAt(Date.now());
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [pendingLiveViewUrl, setLiveViewUrl]);
+
+  useEffect(() => {
+    if (!target || !plan || !environment) return;
+
+    const startedAt = Date.now();
+    setEvents([]);
+    setRunning(true);
+    setError(null);
+    setScreenshotPaths([]);
+    setRunStartedAt(startedAt);
+    setElapsedTimeMs(0);
+    setShowCancelConfirmation(false);
+    setExitRequested(false);
     useFlowSessionStore.setState({ resolvedExecutionProvider: executionProvider ?? null });
     runFiberRef.current = Effect.runFork(
       Stream.runForEach(
         executeBrowserFlow({
           target,
-          userInstruction,
+          plan,
           environment,
-          savedFlow: pendingSavedFlow ?? undefined,
           provider: executionProvider,
           ...(executionModel ? { providerSettings: { model: executionModel } } : {}),
         }),
         (event) =>
           Effect.sync(() => {
-            const nextEvents = [...emittedEventsRef.current, event];
-            emittedEventsRef.current = nextEvents;
             if (event.type === "run-started" && event.liveViewUrl) {
               setPendingLiveViewUrl(event.liveViewUrl);
             }
             if (event.type === "run-completed") {
-              setVideoPath(event.report?.artifacts.rawVideoPath ?? event.videoPath ?? null);
               if (event.report) {
-                void persistRunLearnings({
-                  cwd: target.cwd,
-                  events: nextEvents,
-                  report: event.report,
-                });
                 if (event.report.status === "passed") {
                   saveTestedFingerprint();
                 }
-                completeTestingRun(event.report, nextEvents);
+                completeTestingRun(event.report);
               }
             }
             if (event.type === "tool-result") {
@@ -188,7 +154,22 @@ export const TestingScreen = () => {
         ),
       ),
     );
-  }
+
+    return () => {
+      const runFiber = runFiberRef.current;
+      if (runFiber) {
+        void Effect.runFork(Fiber.interrupt(runFiber));
+      }
+    };
+  }, [
+    completeTestingRun,
+    environment,
+    executionModel,
+    executionProvider,
+    plan,
+    setLiveViewUrl,
+    target,
+  ]);
 
   useInput((input, key) => {
     const normalizedInput = input.toLowerCase();
@@ -220,11 +201,6 @@ export const TestingScreen = () => {
       return;
     }
 
-    if (input === TRACE_DISPLAY_SHORTCUT_KEY) {
-      setToolCallDisplayMode((previous) => getNextToolCallDisplayMode(previous));
-      return;
-    }
-
     if (key.escape) {
       if (running) {
         setShowCancelConfirmation(true);
@@ -235,9 +211,9 @@ export const TestingScreen = () => {
     }
   });
 
-  if (!target || !userInstruction || !environment) return null;
+  if (!target || !plan || !environment || !derivedState) return null;
 
-  const { steps, currentToolCallText, completedCount, totalCount, runStatusLabel } = derivedState;
+  const { steps, completedCount, totalCount, runStatusLabel } = derivedState;
   const filledWidth =
     totalCount > 0 ? Math.round((completedCount / totalCount) * PROGRESS_BAR_WIDTH) : 0;
   const emptyWidth = PROGRESS_BAR_WIDTH - filledWidth;
@@ -254,8 +230,8 @@ export const TestingScreen = () => {
       <Box flexDirection="column" width="100%" paddingY={1}>
         <Box paddingX={1}>
           <ScreenHeading
-            title="Executing browser test"
-            subtitle={`${userInstruction} │ ${target.displayName}`}
+            title="Executing browser plan"
+            subtitle={`${plan.title} │ ${target.displayName}`}
           />
         </Box>
 
@@ -295,11 +271,6 @@ export const TestingScreen = () => {
                         highlightColor={COLORS.PRIMARY}
                       />
                     </Box>
-                    {currentToolCallText ? (
-                      <Text color={COLORS.DIM}>
-                        {`    ${figures.pointerSmall} ${currentToolCallText}`}
-                      </Text>
-                    ) : null}
                   </>
                 ) : (
                   <Text color={COLORS.DIM}>{`  ○ ${stepPrefix} ${step.label}`}</Text>
@@ -339,11 +310,6 @@ export const TestingScreen = () => {
             <Text color={COLORS.GREEN} bold>
               Done
             </Text>
-            {videoPath ? (
-              <Text color={COLORS.DIM}>
-                Video saved to <FileLink path={videoPath} />
-              </Text>
-            ) : null}
           </Box>
         ) : null}
 

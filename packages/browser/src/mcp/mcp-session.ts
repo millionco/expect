@@ -1,18 +1,17 @@
 import { dirname } from "node:path";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import type { Browser as PlaywrightBrowser, BrowserContext, Page } from "playwright";
 import type { eventWithTime } from "@rrweb/types";
 import { Config, Effect, Layer, Option, ServiceMap } from "effect";
 import { Browser } from "../browser.js";
 import { NavigationError } from "../errors.js";
-import { collectAllEvents, saveSession } from "../recorder.js";
+import { collectAllEvents } from "../recorder.js";
 import { evaluateRuntime } from "../utils/evaluate-runtime.js";
 import { EVENT_COLLECT_INTERVAL_MS } from "../constants.js";
 import type { AnnotatedScreenshotOptions, SnapshotOptions, SnapshotResult } from "../types.js";
 import {
   BROWSER_TESTER_LIVE_VIEW_URL_ENV_NAME,
   BROWSER_TESTER_REPLAY_OUTPUT_ENV_NAME,
-  BROWSER_TESTER_VIDEO_OUTPUT_ENV_NAME,
 } from "./constants.js";
 import { McpSessionNotOpenError } from "./errors.js";
 import { startLiveViewServer, type LiveViewServer } from "./live-view-server.js";
@@ -37,8 +36,6 @@ export interface BrowserSessionData {
   page: Page;
   consoleMessages: ConsoleEntry[];
   networkRequests: NetworkEntry[];
-  videoOutputPath: string | undefined;
-  savedVideoPath: string | undefined;
   replayOutputPath: string | undefined;
   accumulatedReplayEvents: eventWithTime[];
   trackedPages: Set<Page>;
@@ -56,7 +53,6 @@ export interface OpenResult {
 }
 
 export interface CloseResult {
-  savedVideoPath: string | undefined;
   replaySessionPath: string | undefined;
 }
 
@@ -93,9 +89,6 @@ const setupPageTracking = (page: Page, sessionData: BrowserSessionData) => {
 export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSession", {
   make: Effect.gen(function* () {
     const browserService = yield* Browser;
-    const videoOutputPath = yield* Config.option(
-      Config.string(BROWSER_TESTER_VIDEO_OUTPUT_ENV_NAME),
-    );
     const replayOutputPath = yield* Config.option(
       Config.string(BROWSER_TESTER_REPLAY_OUTPUT_ENV_NAME),
     );
@@ -132,15 +125,10 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
     const open = Effect.fn("McpSession.open")(function* (url: string, options: OpenOptions = {}) {
       yield* Effect.annotateCurrentSpan({ url });
 
-      const videoDir = Option.map(videoOutputPath, (path) => dirname(path));
       const pageResult = yield* browserService.createPage(url, {
         headed: options.headed,
         cookies: options.cookies,
         waitUntil: options.waitUntil,
-        video: Option.match(videoDir, {
-          onNone: () => undefined,
-          onSome: (dir) => ({ dir }),
-        }),
       });
 
       const sessionData: BrowserSessionData = {
@@ -149,8 +137,6 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         page: pageResult.page,
         consoleMessages: [],
         networkRequests: [],
-        videoOutputPath: Option.getOrUndefined(videoOutputPath),
-        savedVideoPath: undefined,
         replayOutputPath: Option.getOrUndefined(replayOutputPath),
         accumulatedReplayEvents: [],
         trackedPages: new Set(),
@@ -219,7 +205,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       sessionData.lastSnapshot = snapshotResult;
     });
 
-    const close = Effect.fn("McpSession.close")(function* (outputPath?: string) {
+    const close = Effect.fn("McpSession.close")(function* () {
       if (!currentSession) return undefined;
 
       const activeSession = currentSession;
@@ -238,39 +224,33 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         );
       }
 
-      let replaySessionPath: string | undefined;
-      if (!activeSession.page.isClosed()) {
-        const finalEvents = yield* collectAllEvents(activeSession.page).pipe(
-          Effect.catchTag("RecorderInjectionError", () => Effect.succeed([] as const)),
-        );
-        if (finalEvents.length > 0) {
-          activeSession.accumulatedReplayEvents.push(...finalEvents);
+      const replaySessionPath = yield* Effect.gen(function* () {
+        if (!activeSession.page.isClosed()) {
+          const finalEvents = yield* collectAllEvents(activeSession.page).pipe(
+            Effect.catchCause(() => Effect.succeed([] as const)),
+          );
+          if (finalEvents.length > 0) {
+            activeSession.accumulatedReplayEvents.push(...finalEvents);
+          }
         }
-      }
 
-      const resolvedReplayOutputPath = activeSession.replayOutputPath;
-      if (resolvedReplayOutputPath && activeSession.accumulatedReplayEvents.length > 0) {
-        yield* Effect.sync(() => mkdirSync(dirname(resolvedReplayOutputPath), { recursive: true }));
-        yield* saveSession(activeSession.accumulatedReplayEvents, resolvedReplayOutputPath).pipe(
-          Effect.catchTag("PlatformError", () => Effect.void),
-        );
-        replaySessionPath = resolvedReplayOutputPath;
-      }
-
-      const resolvedOutputPath = outputPath ?? activeSession.videoOutputPath;
-      let savedVideoPath = activeSession.savedVideoPath;
-      if (resolvedOutputPath && !savedVideoPath) {
-        yield* Effect.sync(() => mkdirSync(dirname(resolvedOutputPath), { recursive: true }));
-        savedVideoPath = yield* browserService
-          .saveVideo(activeSession.page, resolvedOutputPath)
-          .pipe(Effect.catchTag("BrowserLaunchError", () => Effect.succeed(undefined)));
-      }
+        const resolvedReplayOutputPath = activeSession.replayOutputPath;
+        if (resolvedReplayOutputPath && activeSession.accumulatedReplayEvents.length > 0) {
+          mkdirSync(dirname(resolvedReplayOutputPath), { recursive: true });
+          const ndjson =
+            activeSession.accumulatedReplayEvents.map((event) => JSON.stringify(event)).join("\n") +
+            "\n";
+          writeFileSync(resolvedReplayOutputPath, ndjson, "utf-8");
+          return resolvedReplayOutputPath;
+        }
+        return undefined;
+      }).pipe(Effect.catchCause(() => Effect.succeed(undefined)));
 
       yield* Effect.tryPromise(() => activeSession.browser.close()).pipe(
         Effect.catchTag("UnknownError", () => Effect.void),
       );
 
-      return { savedVideoPath, replaySessionPath } as CloseResult;
+      return { replaySessionPath } as CloseResult;
     });
 
     return {

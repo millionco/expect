@@ -1,6 +1,5 @@
 import { Browsers, Cookies, layerLive } from "@browser-tester/cookies";
 import type { Browser as BrowserProfile } from "@browser-tester/cookies";
-import * as os from "node:os";
 import { chromium } from "playwright";
 import type { Locator, Page } from "playwright";
 import { Effect, Layer, Option, ServiceMap } from "effect";
@@ -8,8 +7,6 @@ import { Effect, Layer, Option, ServiceMap } from "effect";
 const cookiesLayer = Layer.mergeAll(layerLive, Cookies.layer);
 import {
   CONTENT_ROLES,
-  DEFAULT_VIDEO_HEIGHT_PX,
-  DEFAULT_VIDEO_WIDTH_PX,
   HEADLESS_CHROMIUM_ARGS,
   INTERACTIVE_ROLES,
   NAVIGATION_DETECT_DELAY_MS,
@@ -35,7 +32,6 @@ import type {
   CreatePageOptions,
   RefMap,
   SnapshotOptions,
-  VideoOptions,
 } from "./types";
 
 const shouldAssignRef = (role: string, name: string, interactive?: boolean): boolean => {
@@ -102,24 +98,6 @@ const extractDefaultBrowserCookies = Effect.fn("Browser.extractDefaultBrowserCoo
   );
   return results.flat();
 }, Effect.provide(cookiesLayer));
-
-const resolveContextOptions = (
-  video: boolean | VideoOptions | undefined,
-  locale: string | undefined,
-) => {
-  const defaultSize = { width: DEFAULT_VIDEO_WIDTH_PX, height: DEFAULT_VIDEO_HEIGHT_PX };
-  const recordVideo = video
-    ? video === true
-      ? { dir: os.tmpdir(), size: defaultSize }
-      : { ...video, size: video.size ?? defaultSize }
-    : undefined;
-
-  if (!recordVideo && !locale) return undefined;
-  return {
-    ...(recordVideo ? { recordVideo } : {}),
-    ...(locale ? { locale } : {}),
-  };
-};
 
 const appendCursorInteractiveElements = Effect.fn("Browser.appendCursorInteractive")(function* (
   page: Page,
@@ -188,7 +166,7 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
             : undefined;
 
         const context = yield* Effect.tryPromise({
-          try: () => browser.newContext(resolveContextOptions(options.video, profileLocale)),
+          try: () => browser.newContext(profileLocale ? { locale: profileLocale } : undefined),
           catch: toBrowserLaunchError,
         });
 
@@ -353,20 +331,6 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
       );
     });
 
-    const saveVideo = Effect.fn("Browser.saveVideo")(function* (page: Page, outputPath: string) {
-      const video = page.video();
-      if (!video) return undefined;
-      yield* Effect.tryPromise({
-        try: () => page.close(),
-        catch: toBrowserLaunchError,
-      });
-      yield* Effect.tryPromise({
-        try: () => video.saveAs(outputPath),
-        catch: toBrowserLaunchError,
-      });
-      return outputPath;
-    });
-
     const waitForNavigationSettle = Effect.fn("Browser.waitForNavigationSettle")(function* (
       page: Page,
       urlBefore: string,
@@ -401,7 +365,6 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
       snapshot,
       act,
       annotatedScreenshot,
-      saveVideo,
       waitForNavigationSettle,
       preExtractCookies,
     } as const;

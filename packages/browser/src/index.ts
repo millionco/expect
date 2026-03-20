@@ -34,5 +34,4 @@ export type {
   SnapshotOptions,
   SnapshotResult,
   SnapshotStats,
-  VideoOptions,
 } from "./types";

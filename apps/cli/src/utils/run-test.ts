@@ -146,9 +146,6 @@ export const runTest = async (config: TestRunConfig): Promise<void> => {
       saveTestedFingerprint();
     }
 
-    if (latestRunReport?.artifacts.highlightVideoPath) {
-      process.stdout.write(`Highlight reel: ${latestRunReport.artifacts.highlightVideoPath}\n`);
-    }
     if (latestRunReport?.artifacts.shareUrl) {
       process.stdout.write(`Report: ${latestRunReport.artifacts.shareUrl}\n`);
     }

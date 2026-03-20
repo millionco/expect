@@ -41,17 +41,11 @@ export interface SnapshotResult {
   locator: (ref: string) => Effect.Effect<Locator, RefNotFoundError>;
 }
 
-export interface VideoOptions {
-  dir: string;
-  size?: { width: number; height: number };
-}
-
 export interface CreatePageOptions {
   headed?: boolean;
   executablePath?: string;
   cookies?: boolean | Cookie[];
   waitUntil?: "load" | "domcontentloaded" | "networkidle" | "commit";
-  video?: boolean | VideoOptions;
 }
 
 export interface AnnotatedScreenshotOptions extends SnapshotOptions {

@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import { DEFAULT_VIDEO_HEIGHT_PX, DEFAULT_VIDEO_WIDTH_PX } from "../src/constants";
 
 const {
   defaultBrowserMock,
@@ -164,79 +163,5 @@ describe("Browser.createPage cookie reuse", () => {
     expect(addCookiesMock).toHaveBeenCalledWith(
       fallbackCookies.map((cookie) => cookie.playwrightFormat),
     );
-  });
-});
-
-describe("Browser.createPage video recording", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-
-    gotoMock.mockResolvedValue(undefined);
-    newPageMock.mockResolvedValue({ goto: gotoMock });
-    addInitScriptMock.mockResolvedValue(undefined);
-    newContextMock.mockResolvedValue({ newPage: newPageMock, addInitScript: addInitScriptMock });
-    closeMock.mockResolvedValue(undefined);
-    launchMock.mockResolvedValue({
-      newContext: newContextMock,
-      close: closeMock,
-    });
-  });
-
-  it("uses the default HD recording size when video is enabled", async () => {
-    await runBrowser((browser) => browser.createPage("https://example.com", { video: true }));
-
-    expect(newContextMock).toHaveBeenCalledWith({
-      recordVideo: {
-        dir: expect.any(String),
-        size: {
-          width: DEFAULT_VIDEO_WIDTH_PX,
-          height: DEFAULT_VIDEO_HEIGHT_PX,
-        },
-      },
-    });
-  });
-
-  it("preserves an explicit recording size", async () => {
-    await runBrowser((browser) =>
-      browser.createPage("https://example.com", {
-        video: {
-          dir: "/tmp/videos",
-          size: {
-            width: 1920,
-            height: 1080,
-          },
-        },
-      }),
-    );
-
-    expect(newContextMock).toHaveBeenCalledWith({
-      recordVideo: {
-        dir: "/tmp/videos",
-        size: {
-          width: 1920,
-          height: 1080,
-        },
-      },
-    });
-  });
-
-  it("fills in the default recording size when only a directory is provided", async () => {
-    await runBrowser((browser) =>
-      browser.createPage("https://example.com", {
-        video: {
-          dir: "/tmp/videos",
-        },
-      }),
-    );
-
-    expect(newContextMock).toHaveBeenCalledWith({
-      recordVideo: {
-        dir: "/tmp/videos",
-        size: {
-          width: DEFAULT_VIDEO_WIDTH_PX,
-          height: DEFAULT_VIDEO_HEIGHT_PX,
-        },
-      },
-    });
   });
 });

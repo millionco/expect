@@ -1,12 +1,9 @@
-import type { BrowserRunEvent } from "./events";
-import { formatBrowserToolCall } from "./utils/format-browser-tool-call";
+import type { BrowserFlowPlan } from "./types.js";
+import type { BrowserRunEvent } from "./events.js";
 
-const TOOL_CALL_HIDDEN = "hidden";
-const TOOL_CALL_DETAILED = "detailed";
 const RUN_STATUS_LABELS = new Set([
   "Analyzing results",
   "Looking up pull request",
-  "Generating highlight video",
   "Building report",
 ]);
 
@@ -19,62 +16,51 @@ export interface StepDisplayState {
 
 export interface DerivedTestingState {
   steps: StepDisplayState[];
-  currentToolCallText: string | null;
   completedCount: number;
   totalCount: number;
   runStatusLabel: string;
 }
 
 export const deriveTestingState = (
+  plan: BrowserFlowPlan,
   events: BrowserRunEvent[],
-  toolCallDisplayMode: string,
 ): DerivedTestingState => {
   const stepStateById = new Map<string, StepDisplayState>();
-  const stepOrder: string[] = [];
+
+  for (const step of plan.steps) {
+    stepStateById.set(step.id, {
+      stepId: step.id,
+      status: "pending",
+      label: step.title,
+      elapsedMs: null,
+    });
+  }
 
   let activeStepId: string | null = null;
-  let currentToolCallText: string | null = null;
   let runStatusLabel = "Testing";
+  let hasRunStarted = false;
+  let hasRunCompleted = false;
   let runStartedAt: number | null = null;
 
-  const ensureStepState = (stepId: string, title: string): StepDisplayState => {
-    const existingStepState = stepStateById.get(stepId);
-    if (existingStepState) {
-      if (existingStepState.label !== title && existingStepState.status === "pending") {
-        existingStepState.label = title;
+  const activateNextPendingStep = () => {
+    for (const planStep of plan.steps) {
+      const state = stepStateById.get(planStep.id);
+      if (state?.status === "pending") {
+        state.status = "active";
+        activeStepId = state.stepId;
+        return;
       }
-      return existingStepState;
-    }
-
-    const nextStepState: StepDisplayState = {
-      stepId,
-      status: "pending",
-      label: title,
-      elapsedMs: null,
-    };
-    stepStateById.set(stepId, nextStepState);
-    stepOrder.push(stepId);
-    return nextStepState;
-  };
-
-  const finalizeStep = (
-    stepId: string,
-    status: "passed" | "failed",
-    label: string,
-    timestamp: number,
-  ) => {
-    const stepState = ensureStepState(stepId, stepId);
-    stepState.status = status;
-    stepState.label = label;
-    if (runStartedAt !== null) {
-      stepState.elapsedMs = Math.round(timestamp - runStartedAt);
     }
   };
 
   for (const event of events) {
     switch (event.type) {
       case "run-started": {
+        hasRunStarted = true;
         runStartedAt = event.timestamp;
+        if (activeStepId === null) {
+          activateNextPendingStep();
+        }
         break;
       }
       case "step-started": {
@@ -87,46 +73,49 @@ export const deriveTestingState = (
             }
           }
         }
-        const stepState = ensureStepState(event.stepId, event.title);
-        stepState.status = "active";
-        stepState.label = event.title;
-        activeStepId = event.stepId;
-        currentToolCallText = null;
+        const stepState = stepStateById.get(event.stepId);
+        if (stepState) {
+          stepState.status = "active";
+          activeStepId = event.stepId;
+        }
         break;
       }
       case "step-completed": {
-        finalizeStep(event.stepId, "passed", event.summary, event.timestamp);
-        if (activeStepId === event.stepId) {
-          activeStepId = null;
-          currentToolCallText = null;
+        const stepState = stepStateById.get(event.stepId);
+        if (stepState) {
+          stepState.status = "passed";
+          stepState.label = event.summary;
+          if (runStartedAt !== null) {
+            stepState.elapsedMs = Math.round(event.timestamp - runStartedAt);
+          }
+          if (activeStepId === event.stepId) {
+            activeStepId = null;
+          }
+        }
+        if (activeStepId === null) {
+          activateNextPendingStep();
         }
         break;
       }
       case "assertion-failed": {
-        finalizeStep(event.stepId, "failed", event.message, event.timestamp);
-        if (activeStepId === event.stepId) {
-          activeStepId = null;
-          currentToolCallText = null;
-        }
-        break;
-      }
-      case "tool-call": {
-        if (activeStepId && toolCallDisplayMode !== TOOL_CALL_HIDDEN) {
-          const formatted = formatBrowserToolCall(event.toolName, event.input, {
-            includeRelevantInputs: toolCallDisplayMode === TOOL_CALL_DETAILED,
-          });
-          if (formatted) {
-            currentToolCallText = `${formatted} ${event.input}`;
+        const stepState = stepStateById.get(event.stepId);
+        if (stepState) {
+          stepState.status = "failed";
+          stepState.label = event.message;
+          if (runStartedAt !== null) {
+            stepState.elapsedMs = Math.round(event.timestamp - runStartedAt);
           }
+          if (activeStepId === event.stepId) {
+            activeStepId = null;
+          }
+        }
+        if (activeStepId === null) {
+          activateNextPendingStep();
         }
         break;
       }
       case "run-completed": {
-        if (activeStepId) {
-          finalizeStep(activeStepId, event.status, event.summary, event.timestamp);
-          activeStepId = null;
-          currentToolCallText = null;
-        }
+        hasRunCompleted = true;
         break;
       }
       case "text": {
@@ -138,12 +127,16 @@ export const deriveTestingState = (
     }
   }
 
-  const steps = stepOrder.map(
-    (stepId): StepDisplayState =>
-      stepStateById.get(stepId) ?? {
-        stepId,
+  if (hasRunStarted && !hasRunCompleted && activeStepId === null) {
+    activateNextPendingStep();
+  }
+
+  const steps = plan.steps.map(
+    (planStep): StepDisplayState =>
+      stepStateById.get(planStep.id) ?? {
+        stepId: planStep.id,
         status: "pending",
-        label: stepId,
+        label: planStep.title,
         elapsedMs: null,
       },
   );
@@ -154,7 +147,6 @@ export const deriveTestingState = (
 
   return {
     steps,
-    currentToolCallText,
     completedCount,
     totalCount: steps.length,
     runStatusLabel,

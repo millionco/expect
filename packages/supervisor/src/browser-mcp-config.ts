@@ -2,7 +2,6 @@ import * as url from "node:url";
 import {
   BROWSER_TESTER_LIVE_VIEW_URL_ENV_NAME,
   BROWSER_TESTER_REPLAY_OUTPUT_ENV_NAME,
-  BROWSER_TESTER_VIDEO_OUTPUT_ENV_NAME,
 } from "@browser-tester/browser/mcp";
 import { DEFAULT_BROWSER_MCP_SERVER_NAME } from "./constants";
 import type { AgentProviderSettings, McpServerConfig } from "@browser-tester/agent";
@@ -11,14 +10,10 @@ export const getBrowserMcpEntrypoint = (): string =>
   url.fileURLToPath(import.meta.resolve("@browser-tester/browser/cli"));
 
 export const buildBrowserMcpServerEnv = (options: {
-  videoOutputPath?: string;
   replayOutputPath?: string;
   liveViewUrl?: string;
 }): Record<string, string> | undefined => {
   const env: Record<string, string> = {};
-  if (options.videoOutputPath) {
-    env[BROWSER_TESTER_VIDEO_OUTPUT_ENV_NAME] = options.videoOutputPath;
-  }
   if (options.replayOutputPath) {
     env[BROWSER_TESTER_REPLAY_OUTPUT_ENV_NAME] = options.replayOutputPath;
   }
@@ -40,13 +35,11 @@ const buildBrowserTesterMcpServerConfig = (
 export const buildBrowserMcpSettings = (options: {
   providerSettings?: AgentProviderSettings;
   browserMcpServerName?: string;
-  videoOutputPath?: string;
   replayOutputPath?: string;
   liveViewUrl?: string;
 }): AgentProviderSettings => {
   const browserMcpServerName = options.browserMcpServerName ?? DEFAULT_BROWSER_MCP_SERVER_NAME;
   const serverEnv = buildBrowserMcpServerEnv({
-    videoOutputPath: options.videoOutputPath,
     replayOutputPath: options.replayOutputPath,
     liveViewUrl: options.liveViewUrl,
   });
