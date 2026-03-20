@@ -13,11 +13,14 @@ export class CodexCommandExecution extends Schema.Class<CodexCommandExecution>(
   type: Schema.Literal("command_execution"),
   command: Schema.String,
   aggregated_output: Schema.String,
-  exit_code: Schema.optional(Schema.Number),
+  exit_code: Schema.optional(Schema.NullOr(Schema.Number)),
   status: CommandExecutionStatus,
 }) {
   get isError() {
-    return this.status === "failed" || (this.exit_code !== undefined && this.exit_code !== 0);
+    return (
+      this.status === "failed" ||
+      (this.exit_code !== undefined && this.exit_code !== null && this.exit_code !== 0)
+    );
   }
 
   get toolName() {

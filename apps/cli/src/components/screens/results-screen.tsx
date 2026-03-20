@@ -71,27 +71,23 @@ export const ResultsScreen = ({ report }: ResultsScreenProps) => {
         <Text color={COLORS.DIM} bold>
           STEP SUMMARY
         </Text>
-        {report.steps.map((step) => {
-          const entry = report.stepStatuses.get(step.id);
-          const stepStatus = entry?.status ?? "not-run";
-          return (
-            <Text
-              key={step.id}
-              color={
-                stepStatus === "passed"
-                  ? COLORS.GREEN
-                  : stepStatus === "failed"
-                    ? COLORS.RED
-                    : COLORS.YELLOW
-              }
-            >
-              {"• "}
-              {step.title}
-              {": "}
-              <Text color={COLORS.TEXT}>{entry?.summary ?? ""}</Text>
-            </Text>
-          );
-        })}
+        {report.steps.map((step) => (
+          <Text
+            key={step.id}
+            color={
+              step.status === "passed"
+                ? COLORS.GREEN
+                : step.status === "failed"
+                  ? COLORS.RED
+                  : COLORS.YELLOW
+            }
+          >
+            {"• "}
+            {step.title}
+            {": "}
+            <Text color={COLORS.TEXT}>{step.summary}</Text>
+          </Text>
+        ))}
       </Box>
 
       <Box flexDirection="column" paddingX={1} marginTop={1}>

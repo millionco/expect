@@ -133,30 +133,17 @@ export const TestingScreen = ({ plan }: TestingScreenProps) => {
     }
   });
 
-  const activeStepId = executedPlan?.activeStepId ?? undefined;
+  const planToRender = executedPlan ?? plan;
   const currentToolCallText =
     executedPlan && toolCallDisplayMode !== TOOL_CALL_DISPLAY_MODE_HIDDEN
       ? (executedPlan.lastToolCallDisplayText ?? undefined)
       : undefined;
 
-  const stepStatuses = report?.stepStatuses ?? new Map();
-
-  const steps = plan.steps.map((step) => {
-    const entry = stepStatuses.get(step.id);
-    const isActive = step.id === activeStepId;
-    const status = isActive
-      ? ("active" as const)
-      : entry?.status === "not-run"
-        ? ("pending" as const)
-        : (entry?.status ?? ("pending" as const));
-    const label =
-      status === "pending" || status === "active" ? step.title : entry?.summary || step.title;
-    return { stepId: step.id, status, label };
-  });
-
-  const completedCount = executedPlan?.completedStepCount ?? 0;
-  const totalCount = steps.length;
-  const currentActiveStep = executedPlan?.activeStep;
+  const completedCount = planToRender.steps.filter(
+    (step) => step.status === "passed" || step.status === "failed",
+  ).length;
+  const totalCount = planToRender.steps.length;
+  const currentActiveStep = planToRender.steps.find((step) => step.status === "active");
   const runStatusLabel = currentActiveStep
     ? `Running ${currentActiveStep.title}`
     : completedCount === totalCount
@@ -219,17 +206,18 @@ export const TestingScreen = ({ plan }: TestingScreenProps) => {
         </Box>
 
         <Box flexDirection="column" marginTop={1} paddingX={1}>
-          {steps.map((step, stepIndex) => {
+          {planToRender.steps.map((step, stepIndex) => {
             const stepPrefix = `Step ${stepIndex + 1}`;
+            const label = step.summary || step.title;
             return (
-              <Box key={step.stepId} flexDirection="column">
+              <Box key={step.id} flexDirection="column">
                 {step.status === "passed" ? (
                   <Text color={COLORS.GREEN}>
-                    {`  ${figures.tick} ${stepPrefix} ${cliTruncate(step.label, TESTING_TOOL_TEXT_CHAR_LIMIT)}`}
+                    {`  ${figures.tick} ${stepPrefix} ${cliTruncate(label, TESTING_TOOL_TEXT_CHAR_LIMIT)}`}
                   </Text>
                 ) : step.status === "failed" ? (
                   <Text color={COLORS.RED}>
-                    {`  ${figures.cross} ${stepPrefix} ${cliTruncate(step.label, TESTING_TOOL_TEXT_CHAR_LIMIT)}`}
+                    {`  ${figures.cross} ${stepPrefix} ${cliTruncate(label, TESTING_TOOL_TEXT_CHAR_LIMIT)}`}
                   </Text>
                 ) : step.status === "active" ? (
                   <>
@@ -238,7 +226,7 @@ export const TestingScreen = ({ plan }: TestingScreenProps) => {
                       <Spinner />
                       <Text> </Text>
                       <TextShimmer
-                        text={`${stepPrefix} ${step.label} ${formatElapsedTime(Math.round(elapsedTimeMs))}`}
+                        text={`${stepPrefix} ${step.title} ${formatElapsedTime(Math.round(elapsedTimeMs))}`}
                         baseColor={COLORS.SELECTION}
                         highlightColor={COLORS.PRIMARY}
                       />
@@ -250,7 +238,7 @@ export const TestingScreen = ({ plan }: TestingScreenProps) => {
                     ) : null}
                   </>
                 ) : (
-                  <Text color={COLORS.DIM}>{`  ○ ${stepPrefix} ${step.label}`}</Text>
+                  <Text color={COLORS.DIM}>{`  ○ ${stepPrefix} ${step.title}`}</Text>
                 )}
               </Box>
             );
