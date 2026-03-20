@@ -1,5 +1,5 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
+import { existsSync, rmSync } from "node:fs";
+import { dirname } from "node:path";
 import { Effect, Stream } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 import type {
@@ -8,7 +8,7 @@ import type {
   LanguageModelV3StreamPart,
 } from "@ai-sdk/provider";
 import { buildExecutionModelSettings, executeBrowserFlow } from "../src/execute-browser-flow";
-import type { TestTarget } from "../src/types";
+import type { BrowserFlowPlan, TestTarget } from "../src/types";
 
 const createStreamModel = (
   parts: LanguageModelV3StreamPart[],
@@ -111,6 +111,30 @@ const testTarget: TestTarget = {
   changedFiles: [{ status: "M", path: "src/onboarding.tsx" }],
   recentCommits: [],
   diffPreview: "src/onboarding.tsx | 9 ++++++++-",
+};
+
+const testPlan: BrowserFlowPlan = {
+  title: "Onboarding import regression plan",
+  rationale: "Verify onboarding import still works after the changes.",
+  targetSummary: "Cover onboarding and import entry points.",
+  userInstruction: "Go through onboarding and click Import Projects.",
+  assumptions: [],
+  riskAreas: ["Onboarding", "Project import"],
+  targetUrls: ["/onboarding"],
+  cookieSync: {
+    required: false,
+    reason: "This test can run without an existing signed-in session.",
+  },
+  steps: [
+    {
+      id: "step-01",
+      title: "Open onboarding",
+      instruction: "Navigate to onboarding.",
+      expectedOutcome: "The onboarding page loads.",
+      routeHint: "/onboarding",
+      changedFileEvidence: ["src/onboarding.tsx"],
+    },
+  ],
 };
 
 describe("executeBrowserFlow", () => {
@@ -219,7 +243,7 @@ describe("executeBrowserFlow", () => {
       Stream.runCollect(
         executeBrowserFlow({
           target: testTarget,
-          plan: testPlan,
+          userInstruction: "Test error handling",
           model: createStreamModel(
             [
               { type: "stream-start", warnings: [] },
@@ -333,7 +357,7 @@ describe("executeBrowserFlow", () => {
 
     const screenshotPath = screenshotToolResultEvent.result.replace("Screenshot saved to ", "");
 
-    expect(fs.existsSync(screenshotPath)).toBe(true);
+    expect(existsSync(screenshotPath)).toBe(true);
     expect(events.find((event) => event.type === "run-completed")).toMatchObject({
       type: "run-completed",
       report: {
@@ -343,7 +367,7 @@ describe("executeBrowserFlow", () => {
       },
     });
 
-    fs.rmSync(path.dirname(screenshotPath), { recursive: true, force: true });
+    rmSync(dirname(screenshotPath), { recursive: true, force: true });
   });
 
   it("serializes object tool results instead of object Object", async () => {

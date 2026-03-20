@@ -146,7 +146,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       currentSession = sessionData;
 
       yield* evaluateRuntime(pageResult.page, "startRecording").pipe(
-        Effect.catchCause(() => Effect.void),
+        Effect.catchCause((cause) => Effect.logDebug("rrweb recording failed to start", { cause })),
       );
 
       if (Option.isSome(liveViewUrl) && !currentLiveView) {
@@ -236,11 +236,17 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
 
         const resolvedReplayOutputPath = activeSession.replayOutputPath;
         if (resolvedReplayOutputPath && activeSession.accumulatedReplayEvents.length > 0) {
-          mkdirSync(dirname(resolvedReplayOutputPath), { recursive: true });
-          const ndjson =
-            activeSession.accumulatedReplayEvents.map((event) => JSON.stringify(event)).join("\n") +
-            "\n";
-          writeFileSync(resolvedReplayOutputPath, ndjson, "utf-8");
+          yield* Effect.try({
+            try: () => {
+              mkdirSync(dirname(resolvedReplayOutputPath), { recursive: true });
+              const ndjson =
+                activeSession.accumulatedReplayEvents
+                  .map((event) => JSON.stringify(event))
+                  .join("\n") + "\n";
+              writeFileSync(resolvedReplayOutputPath, ndjson, "utf-8");
+            },
+            catch: (cause) => cause,
+          });
           return resolvedReplayOutputPath;
         }
         return undefined;

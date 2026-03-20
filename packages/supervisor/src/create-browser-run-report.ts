@@ -1,8 +1,8 @@
-import { randomUUID } from "node:crypto";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { basename, extname, join, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import * as crypto from "node:crypto";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+import * as url from "node:url";
 import { buildReplayViewerHtml } from "@browser-tester/browser";
 import {
   SHARE_ASSET_DIRECTORY_NAME,
@@ -13,7 +13,6 @@ import {
 import type { BrowserRunEvent } from "./events";
 import { getPullRequestForBranch } from "./github-comment";
 import type {
-  BrowserFlowPlan,
   BrowserRunArtifacts,
   BrowserRunFinding,
   BrowserRunReport,
@@ -23,7 +22,7 @@ import type {
 
 interface CreateBrowserRunReportOptions {
   target: TestTarget;
-  plan: BrowserFlowPlan;
+  userInstruction: string;
   events: BrowserRunEvent[];
   completionEvent: Extract<BrowserRunEvent, { type: "run-completed" }>;
   replaySessionPath?: string;
@@ -35,45 +34,51 @@ interface ArtifactPreparationResult {
   artifacts: BrowserRunArtifacts;
 }
 
-const normalizeText = (value: string): string => value.trim().toLowerCase();
-
-const matchesRiskArea = (riskArea: string, texts: string[]): boolean => {
-  const normalizedRiskArea = normalizeText(riskArea);
-  return texts.some((text) => normalizeText(text).includes(normalizedRiskArea));
-};
-
 const getStepResults = (
-  plan: BrowserFlowPlan,
   events: BrowserRunEvent[],
   completionEvent: Extract<BrowserRunEvent, { type: "run-completed" }>,
 ): BrowserRunStepResult[] => {
   const stepResultById = new Map<string, BrowserRunStepResult>();
+  const stepOrder: string[] = [];
 
-  for (const step of plan.steps) {
-    stepResultById.set(step.id, {
-      stepId: step.id,
-      title: step.title,
-      status: "not-run",
+  const ensureStepResult = (stepId: string, title: string): BrowserRunStepResult => {
+    const existingStepResult = stepResultById.get(stepId);
+    if (existingStepResult) {
+      if (existingStepResult.title !== title) {
+        stepResultById.set(stepId, { ...existingStepResult, title });
+      }
+      return stepResultById.get(stepId)!;
+    }
+
+    const stepResult = {
+      stepId,
+      title,
+      status: "not-run" as const,
       summary: "Step was not completed.",
-    });
-  }
+    };
+    stepResultById.set(stepId, stepResult);
+    stepOrder.push(stepId);
+    return stepResult;
+  };
 
   for (const event of events) {
+    if (event.type === "step-started") {
+      ensureStepResult(event.stepId, event.title);
+    }
+
     if (event.type === "step-completed") {
-      const existingStepResult = stepResultById.get(event.stepId);
-      if (!existingStepResult) continue;
+      const stepResult = ensureStepResult(event.stepId, event.stepId);
       stepResultById.set(event.stepId, {
-        ...existingStepResult,
+        ...stepResult,
         status: "passed",
         summary: event.summary,
       });
     }
 
     if (event.type === "assertion-failed") {
-      const existingStepResult = stepResultById.get(event.stepId);
-      if (!existingStepResult) continue;
+      const stepResult = ensureStepResult(event.stepId, event.stepId);
       stepResultById.set(event.stepId, {
-        ...existingStepResult,
+        ...stepResult,
         status: "failed",
         summary: event.message,
       });
@@ -88,14 +93,13 @@ const getStepResults = (
     }
   }
 
-  return plan.steps
-    .map((step) => stepResultById.get(step.id))
+  return stepOrder
+    .map((stepId) => stepResultById.get(stepId))
     .filter((stepResult): stepResult is BrowserRunStepResult => Boolean(stepResult));
 };
 
 const getFindings = (
   events: BrowserRunEvent[],
-  plan: BrowserFlowPlan,
   completionEvent: Extract<BrowserRunEvent, { type: "run-completed" }>,
 ): BrowserRunFinding[] => {
   const findings: BrowserRunFinding[] = [];
@@ -103,14 +107,12 @@ const getFindings = (
   for (const event of events) {
     if (event.type !== "assertion-failed") continue;
 
-    const planStep = plan.steps.find((step) => step.id === event.stepId);
     findings.push({
       id: `${event.stepId}-${findings.length + 1}`,
       severity: "error",
-      title: planStep ? `${planStep.title} failed` : `${event.stepId} failed`,
+      title: `${event.stepId} failed`,
       detail: event.message,
       stepId: event.stepId,
-      stepTitle: planStep?.title,
     });
   }
 
@@ -126,57 +128,19 @@ const getFindings = (
   return findings;
 };
 
-const getRiskAreaSummary = (
-  plan: BrowserFlowPlan,
-  stepResults: BrowserRunStepResult[],
-  findings: BrowserRunFinding[],
-): Pick<BrowserRunReport, "confirmedRiskAreas" | "clearedRiskAreas" | "unresolvedRiskAreas"> => {
-  const confirmedRiskAreas: string[] = [];
-  const clearedRiskAreas: string[] = [];
-  const unresolvedRiskAreas: string[] = [];
-
-  const failedTexts = stepResults
-    .filter((stepResult) => stepResult.status === "failed")
-    .flatMap((stepResult) => [stepResult.title, stepResult.summary]);
-  const findingTexts = findings.flatMap((finding) => [finding.title, finding.detail]);
-  const passedTexts = stepResults
-    .filter((stepResult) => stepResult.status === "passed")
-    .flatMap((stepResult) => [stepResult.title, stepResult.summary]);
-
-  for (const riskArea of plan.riskAreas) {
-    if (matchesRiskArea(riskArea, [...failedTexts, ...findingTexts])) {
-      confirmedRiskAreas.push(riskArea);
-      continue;
-    }
-
-    if (matchesRiskArea(riskArea, passedTexts)) {
-      clearedRiskAreas.push(riskArea);
-      continue;
-    }
-
-    unresolvedRiskAreas.push(riskArea);
-  }
-
-  return {
-    confirmedRiskAreas,
-    clearedRiskAreas,
-    unresolvedRiskAreas,
-  };
-};
-
 const copyArtifact = (
   assetDirectoryPath: string,
   filePath: string,
   preferredPrefix: string,
 ): string | undefined => {
-  if (!existsSync(filePath)) return undefined;
+  if (!fs.existsSync(filePath)) return undefined;
 
-  const targetPath = join(
+  const targetPath = path.join(
     assetDirectoryPath,
-    `${preferredPrefix}-${randomUUID().slice(0, 8)}${extname(filePath)}`,
+    `${preferredPrefix}-${crypto.randomUUID().slice(0, 8)}${path.extname(filePath)}`,
   );
-  copyFileSync(filePath, targetPath);
-  return `${SHARE_ASSET_DIRECTORY_NAME}/${basename(targetPath)}`;
+  fs.copyFileSync(filePath, targetPath);
+  return `${SHARE_ASSET_DIRECTORY_NAME}/${path.basename(targetPath)}`;
 };
 
 const createShareBundle = (options: {
@@ -185,15 +149,15 @@ const createShareBundle = (options: {
 }): Pick<BrowserRunArtifacts, "shareBundlePath" | "shareSummaryPath" | "shareUrl"> => {
   const shareOutputDirectoryPath = process.env.BROWSER_TESTER_SHARE_OUTPUT_DIR;
   const shareBaseUrl = process.env.BROWSER_TESTER_SHARE_BASE_URL;
-  const bundleId = randomUUID().slice(0, 8);
+  const bundleId = crypto.randomUUID().slice(0, 8);
   const shareBundlePath =
     shareOutputDirectoryPath && shareBaseUrl
-      ? join(resolve(shareOutputDirectoryPath), bundleId)
-      : mkdtempSync(join(tmpdir(), SHARE_DIRECTORY_PREFIX));
+      ? path.join(path.resolve(shareOutputDirectoryPath), bundleId)
+      : fs.mkdtempSync(path.join(os.tmpdir(), SHARE_DIRECTORY_PREFIX));
 
-  mkdirSync(shareBundlePath, { recursive: true });
-  const assetDirectoryPath = join(shareBundlePath, SHARE_ASSET_DIRECTORY_NAME);
-  mkdirSync(assetDirectoryPath, { recursive: true });
+  fs.mkdirSync(shareBundlePath, { recursive: true });
+  const assetDirectoryPath = path.join(shareBundlePath, SHARE_ASSET_DIRECTORY_NAME);
+  fs.mkdirSync(assetDirectoryPath, { recursive: true });
 
   const sharedScreenshotPaths = options.artifacts.screenshotPaths;
   const sharedReplayPath = options.artifacts.replaySessionPath;
@@ -205,12 +169,12 @@ const createShareBundle = (options: {
     .filter((relativePath): relativePath is string => Boolean(relativePath));
 
   let replayNdjsonRelativePath: string | undefined;
-  if (sharedReplayPath && existsSync(sharedReplayPath)) {
+  if (sharedReplayPath && fs.existsSync(sharedReplayPath)) {
     replayNdjsonRelativePath = copyArtifact(assetDirectoryPath, sharedReplayPath, "replay");
   }
 
-  const shareSummaryPath = join(shareBundlePath, SHARE_SUMMARY_FILE_NAME);
-  const shareReportPath = join(shareBundlePath, SHARE_REPORT_FILE_NAME);
+  const shareSummaryPath = path.join(shareBundlePath, SHARE_SUMMARY_FILE_NAME);
+  const shareReportPath = path.join(shareBundlePath, SHARE_REPORT_FILE_NAME);
 
   const summaryLines = [
     `# ${options.report.title}`,
@@ -262,8 +226,8 @@ const createShareBundle = (options: {
     eventsSource: replayNdjsonRelativePath ? { ndjsonPath: replayNdjsonRelativePath } : undefined,
   });
 
-  writeFileSync(shareSummaryPath, summaryLines.join("\n"), "utf-8");
-  writeFileSync(shareReportPath, reportHtml, "utf-8");
+  fs.writeFileSync(shareSummaryPath, summaryLines.join("\n"), "utf-8");
+  fs.writeFileSync(shareReportPath, reportHtml, "utf-8");
 
   return {
     shareBundlePath,
@@ -271,7 +235,7 @@ const createShareBundle = (options: {
     shareUrl:
       shareOutputDirectoryPath && shareBaseUrl
         ? `${shareBaseUrl.replace(/\/$/, "")}/${bundleId}/${SHARE_REPORT_FILE_NAME}`
-        : pathToFileURL(shareReportPath).href,
+        : url.pathToFileURL(shareReportPath).href,
   };
 };
 
@@ -280,10 +244,10 @@ const prepareArtifacts = (
   screenshotPaths: string[],
 ): ArtifactPreparationResult => {
   const existingScreenshotPaths = screenshotPaths.filter((screenshotPath) =>
-    existsSync(screenshotPath),
+    fs.existsSync(screenshotPath),
   );
   const existingReplaySessionPath =
-    replaySessionPath && existsSync(replaySessionPath) ? replaySessionPath : undefined;
+    replaySessionPath && fs.existsSync(replaySessionPath) ? replaySessionPath : undefined;
 
   return {
     artifacts: {
@@ -297,9 +261,8 @@ export const createBrowserRunReport = async (
   options: CreateBrowserRunReportOptions,
 ): Promise<BrowserRunReport> => {
   await options.onProgress?.("Analyzing results");
-  const stepResults = getStepResults(options.plan, options.events, options.completionEvent);
-  const findings = getFindings(options.events, options.plan, options.completionEvent);
-  const riskAreaSummary = getRiskAreaSummary(options.plan, stepResults, findings);
+  const stepResults = getStepResults(options.events, options.completionEvent);
+  const findings = getFindings(options.events, options.completionEvent);
   await options.onProgress?.("Looking up pull request");
   const [artifactPreparation, pullRequest] = await Promise.all([
     prepareArtifacts(options.replaySessionPath, options.screenshotPaths),
@@ -307,14 +270,13 @@ export const createBrowserRunReport = async (
   ]);
 
   const partialReport = {
-    title: options.plan.title,
+    title: options.userInstruction,
     status: options.completionEvent.status,
     summary: options.completionEvent.summary,
     findings,
     stepResults,
     warnings: [] as string[],
     pullRequest,
-    ...riskAreaSummary,
   };
 
   await options.onProgress?.("Building report");

@@ -1,57 +1,12 @@
 import { describe, expect, it } from "vite-plus/test";
-import type { BrowserFlowPlan, BrowserRunEvent } from "@browser-tester/supervisor";
+import type { BrowserRunEvent } from "@browser-tester/supervisor";
 import { deriveTestingState } from "@browser-tester/supervisor";
 
-const plan: BrowserFlowPlan = {
-  title: "Regression plan",
-  rationale: "Verify the changed flow still works.",
-  targetSummary: "Check the browser flow.",
-  userInstruction: "Run the flow.",
-  assumptions: [],
-  riskAreas: [],
-  targetUrls: [],
-  cookieSync: {
-    required: false,
-    reason: "No stored session is required.",
-  },
-  steps: [
-    {
-      id: "step-1",
-      title: "Open the page",
-      instruction: "Open the page.",
-      expectedOutcome: "The page loads.",
-      routeHint: "/",
-      changedFileEvidence: [],
-    },
-    {
-      id: "step-2",
-      title: "Submit the form",
-      instruction: "Submit the form.",
-      expectedOutcome: "The form submits.",
-      routeHint: "/submit",
-      changedFileEvidence: [],
-    },
-  ],
-};
-
 describe("deriveTestingState", () => {
-  it("does not mark a pending step active before it starts", () => {
-    const state = deriveTestingState(plan, []);
+  it("starts with no discovered steps before execution emits them", () => {
+    const state = deriveTestingState([], "compact");
 
-    expect(state.steps).toEqual([
-      {
-        stepId: "step-1",
-        status: "pending",
-        label: "Open the page",
-        elapsedMs: null,
-      },
-      {
-        stepId: "step-2",
-        status: "pending",
-        label: "Submit the form",
-        elapsedMs: null,
-      },
-    ]);
+    expect(state.steps).toEqual([]);
   });
 
   it("keeps only the latest started step active", () => {
@@ -70,7 +25,7 @@ describe("deriveTestingState", () => {
       },
     ];
 
-    const state = deriveTestingState(plan, events);
+    const state = deriveTestingState(events, "compact");
 
     expect(state.steps).toEqual([
       {
@@ -104,19 +59,13 @@ describe("deriveTestingState", () => {
       },
     ];
 
-    const state = deriveTestingState(plan, events);
+    const state = deriveTestingState(events, "compact");
 
     expect(state.steps).toEqual([
       {
         stepId: "step-1",
         status: "passed",
         label: "Opened the page",
-        elapsedMs: null,
-      },
-      {
-        stepId: "step-2",
-        status: "active",
-        label: "Submit the form",
         elapsedMs: null,
       },
     ]);
@@ -127,7 +76,7 @@ describe("deriveTestingState", () => {
       {
         type: "run-started",
         timestamp: 0,
-        planTitle: "Regression plan",
+        title: "Regression test",
         liveViewUrl: undefined,
       },
       {
@@ -156,7 +105,7 @@ describe("deriveTestingState", () => {
       },
     ];
 
-    const state = deriveTestingState(plan, events);
+    const state = deriveTestingState(events, "compact");
 
     expect(state.steps).toEqual([
       {

@@ -300,6 +300,8 @@ importers:
 
   packages/testie: {}
 
+  packages/testie-skill: {}
+
   packages/utils:
     devDependencies:
       '@types/node':

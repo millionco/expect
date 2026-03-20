@@ -23,16 +23,6 @@ export const collectAllEvents = Effect.fn("Recorder.collectAllEvents")(function*
   );
 });
 
-export const saveSession = Effect.fn("Recorder.saveSession")(function* (
-  events: ReadonlyArray<eventWithTime>,
-  outputPath: string,
-) {
-  const fileSystem = yield* FileSystem;
-  const lines = events.map((event) => JSON.stringify(event));
-  const content = lines.join("\n") + "\n";
-  yield* fileSystem.writeFileString(outputPath, content);
-});
-
 export const loadSession = Effect.fn("Recorder.loadSession")(function* (sessionPath: string) {
   const fileSystem = yield* FileSystem;
   const content = yield* fileSystem
