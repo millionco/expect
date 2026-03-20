@@ -1,0 +1,241 @@
+packages/utils/src/get-safe-current-working-directory.ts
+  12a436958e690cc6 1-2,8,28
+packages/cookies/src/layers.ts
+  12a436958e690cc6 1,60
+packages/cookies/src/chromium.ts
+  12a436958e690cc6 2,42,49,76
+packages/agent/src/cursor.ts
+  12a436958e690cc6 1-4,275-276,278,280,283-285,289,329,371
+packages/browser/tests/cookie-injection.test.ts
+  0eea7b2607102f09 4,22,120
+packages/supervisor/src/utils/resolve-live-view-url.ts
+  b76ab53142d801e8 1,5
+packages/supervisor/src/remote-branches.ts
+  b76ab53142d801e8 1,66
+apps/website/hooks/use-sliding-highlight.tsx
+  12a436958e690cc6 3,105
+packages/cookies/package.json
+  da008334fc7e2690 25-26
+packages/supervisor/src/utils/save-browser-image-result.ts
+  b76ab53142d801e8 1-3,67-68,70,73
+packages/supervisor/package.json
+  da008334fc7e2690 25-26
+apps/website/components/ui/tooltip.tsx
+  12a436958e690cc6 3,19
+apps/website/components/terminal-demo.tsx
+  12a436958e690cc6 3,219,227-231,233-234,248,253-254
+packages/cookies/tests/services.test.ts
+  12a436958e690cc6 1-2,5,40,150,183,189,192,211,219,234,253
+apps/website/components/ui/button.tsx
+  12a436958e690cc6 1,45
+packages/utils/src/estimate-browser-capacity.ts
+  12a436958e690cc6 1,29,32,42,50-52,56-57
+apps/website/components/ui/tabs.tsx
+  12a436958e690cc6 3,73-74,92,97,110
+packages/replay/package.json
+  da008334fc7e2690 30-31
+packages/browser/tests/mcp-server.test.ts
+  0eea7b2607102f09 1,43
+  3e744b56b61522d1 25
+packages/supervisor/src/execute-browser-flow.ts
+  b76ab53142d801e8 1,3,622
+playground/minecraft-ui/src/components/CraftingTable.tsx
+  12a436958e690cc6 3,393-394,396-399,405-416,545-546
+packages/agent/package.json
+  da008334fc7e2690 25-26
+apps/cli/src/components/screens/pr-picker-screen.tsx
+  c19ab189485845bd 1,41-43,45,47-48
+packages/supervisor/src/utils/command-exists.ts
+  b76ab53142d801e8 1,5
+apps/cli/src/components/ui/input.tsx
+  c19ab189485845bd 1,84-90,101
+apps/website/components/theme-toggle.tsx
+  12a436958e690cc6 3,7-10,12
+packages/cookies/src/utils/crypto.ts
+  12a436958e690cc6 1,15,65,77
+packages/cookies/src/firefox.ts
+  12a436958e690cc6 2,32,37,42
+packages/replay/scripts/build-runtime.js
+  12a436958e690cc6 2-4,6,9,20,22-24
+packages/supervisor/src/browser-mcp-config.ts
+  b76ab53142d801e8 1,10
+packages/browser/package.json
+  da008334fc7e2690 33-34
+apps/cli/src/components/ui/dot-field.tsx
+  c19ab189485845bd 1,20-23,26-28
+packages/supervisor/src/flow-storage-errors.ts
+  e2e22b64054157c6 5
+packages/supervisor/src/types.ts
+  e2e22b64054157c6 114
+apps/cli/src/components/screens/main-menu-screen.tsx
+  c19ab189485845bd 50-53,60-63,82-84,103-105,111
+packages/cookies/src/safari.ts
+  12a436958e690cc6 2,32
+apps/cli/src/hooks/use-stdout-dimensions.ts
+  c19ab189485845bd 1,18-22
+packages/supervisor/src/generate-flow.ts
+  e2e22b64054157c6 10
+packages/supervisor/src/create-browser-run-report.ts
+  0eea7b2607102f09 270,356,358,360,362-363,372,375-376,378-380,394-395,473,485,487
+  b76ab53142d801e8 1-7,55,289-290,296,316-317,347,448-449
+apps/cli/src/components/ui/text-shimmer.tsx
+  c19ab189485845bd 1,16-24,26,28,30-32
+packages/browser/src/browser.ts
+  0eea7b2607102f09 3,113
+packages/supervisor/tests/execute-browser-flow.test.ts
+  b76ab53142d801e8 1-2,307,317
+apps/cli/src/components/screens/testing-screen.tsx
+  c19ab189485845bd 79-81,85-93,95-99,101-110,112,114-119,122,126-129,185
+apps/cli/src/components/ui/image.tsx
+  3e744b56b61522d1 1,16
+  c19ab189485845bd 20,26
+packages/utils/package.json
+  da008334fc7e2690 25-26
+packages/cookies/tests/cdp-client.test.ts
+  12a436958e690cc6 1,11
+packages/browser/tests/browser-e2e.test.ts
+  0eea7b2607102f09 3,14,116
+packages/supervisor/src/git.ts
+  b76ab53142d801e8 1,15,148
+packages/cookies/tests/cookies.test.ts
+  12a436958e690cc6 1,26,57,76,114
+packages/agent/tests/cursor.test.ts
+  12a436958e690cc6 1-2,15-16
+packages/cookies/src/chromium-sqlite.ts
+  12a436958e690cc6 5,144,334
+apps/cli/src/utils/build-image-sequence.ts
+  3e744b56b61522d1 1,61,69
+packages/supervisor/src/utils/categorize-changed-files.ts
+  b76ab53142d801e8 1,27
+apps/website/package.json
+  da008334fc7e2690 13-14
+apps/cli/src/components/screens/theme-picker-screen.tsx
+  c19ab189485845bd 1,54-56,59
+packages/utils/tests/get-safe-current-working-directory.test.ts
+  12a436958e690cc6 1-2,16,22,31
+apps/cli/src/utils/copy-to-clipboard.ts
+  3e744b56b61522d1 1,5
+packages/browser/scripts/build-runtime.js
+  0eea7b2607102f09 2,38-39,44,46
+packages/supervisor/src/tested-state.ts
+  b76ab53142d801e8 1-4,11,30,40,54-56,59,64,66
+packages/utils/tests/estimate-browser-capacity.test.ts
+  12a436958e690cc6 15,26,29-30,37-41,82,97,108,111,122,125,159,233,236
+apps/cli/src/utils/load-theme.ts
+  3e744b56b61522d1 1-3,5-6,10,17-18
+packages/browser/src/mcp/live-view-server.ts
+  0eea7b2607102f09 1,28,147,165,196
+apps/cli/src/hooks/use-scrollable-list.ts
+  c19ab189485845bd 1,24-26,28
+packages/browser/src/mcp/mcp-session.ts
+  0eea7b2607102f09 1-2,137,219
+apps/cli/src/utils/open-url.ts
+  3e744b56b61522d1 1,7
+packages/supervisor/src/github-comment.ts
+  b76ab53142d801e8 1-5,11,120-122
+  e2e22b64054157c6 77
+apps/cli/src/components/ui/clickable.tsx
+  c19ab189485845bd 1,33-35,37-39,42,47,53,57
+packages/agent/src/claude.ts
+  12a436958e690cc6 2,58
+apps/cli/src/hooks/mouse-context.tsx
+  c19ab189485845bd 34-36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "b86305e8e077094842c02d711bdc7d2c6542612e",
+  "prompts": {
+    "0eea7b2607102f09": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "eb654976-ff45-4ffa-9ef0-de3e7ba3e861",
+        "model": "composer-2"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 51,
+      "total_deletions": 49,
+      "accepted_lines": 43,
+      "overriden_lines": 0
+    },
+    "12a436958e690cc6": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "10b3f694-18fb-4838-8d4f-d1945546aea6",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 205,
+      "total_deletions": 210,
+      "accepted_lines": 161,
+      "overriden_lines": 0
+    },
+    "3e744b56b61522d1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "facae9ca-9cfb-431f-9adc-de4b6c9ef230",
+        "model": "composer-2"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 19,
+      "total_deletions": 19,
+      "accepted_lines": 18,
+      "overriden_lines": 0
+    },
+    "b76ab53142d801e8": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b4fee807-e67a-49b1-b0a5-b64353ed2bdc",
+        "model": "composer-2"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 73,
+      "total_deletions": 73,
+      "accepted_lines": 65,
+      "overriden_lines": 0
+    },
+    "c19ab189485845bd": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "87588d7c-7e63-4c2e-9a21-518bff0bbdc3",
+        "model": "claude-4.6-opus-high-thinking-fast"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 173,
+      "total_deletions": 188,
+      "accepted_lines": 126,
+      "overriden_lines": 0
+    },
+    "da008334fc7e2690": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "bd135850-ee40-4c08-b52e-7243ab886b42",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 18,
+      "total_deletions": 9,
+      "accepted_lines": 18,
+      "overriden_lines": 0
+    },
+    "e2e22b64054157c6": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f45d74fa-5a1b-4dab-b3f3-11b5e693b51b",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 12,
+      "total_deletions": 15,
+      "accepted_lines": 10,
+      "overriden_lines": 0
+    }
+  }
+}
