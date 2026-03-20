@@ -1,0 +1,110 @@
+apps/cli/src/index.tsx
+  09fa1ec5e3d74698 12,39,57-58,91,101-110
+apps/cli/src/components/screens/cookie-sync-confirm-screen.tsx
+  09fa1ec5e3d74698 31,34,37,47,75,80,83,85
+apps/cli/src/utils/run-test.ts
+  09fa1ec5e3d74698 8,13,19,36-48,52,93-104,106,112,114,120,137-143
+apps/cli/src/utils/derive-testing-state.test.ts
+  09fa1ec5e3d74698 2,6-7,9,28,62,79,108
+apps/cli/src/stores/use-flow-session.ts
+  09fa1ec5e3d74698 4,7,10,13-14,33,35-38,50-58,64-82,84-88,90-103,105,110,112-115,119,145,147-150,166,172,180,189,206,214-216,218,221-223,226-227,231,235,237,241-243,245-254,256-260,262-295,298-317,321,323-327,341,350,352
+apps/cli/src/components/screens/saved-flow-picker-screen.tsx
+  09fa1ec5e3d74698 1,4,6-7,9,11,13-16,29,33-40,45,47-67,72-75,78,80,82-83,94-101,105-107,109-110,113-114,118,126-129,132-163,165-191,214
+packages/supervisor/tests/execute-browser-flow.test.ts
+  09fa1ec5e3d74698 11,167,186-187,236,325
+packages/supervisor/src/learnings-storage.ts
+  09fa1ec5e3d74698 1-43
+apps/cli/src/components/screens/results-screen.tsx
+  09fa1ec5e3d74698 2-3,21-23,69-72,128,131-136,152-153,169-171,173,197,291-305,331
+packages/supervisor/src/parse-execution-stream.ts
+  09fa1ec5e3d74698 9,23-24,29-30,34-40,46-47,51-54,60-61,65-68,75-76,80-83,90-91,94-97,104,110,113,115-116,122
+apps/cli/src/components/ui/modeline.tsx
+  09fa1ec5e3d74698 18,23-26,39-40,56,64,91
+apps/cli/src/stores/use-preferences.ts
+  09fa1ec5e3d74698 10
+apps/cli/src/runtime.ts
+  09fa1ec5e3d74698 1
+packages/supervisor/src/create-browser-run-report.ts
+  09fa1ec5e3d74698 36,82-91,93,96,98-102,105-108,110,119,128-138,146-147,156-162,167,171,519
+apps/cli/src/components/screens/testing-screen.tsx
+  09fa1ec5e3d74698 27,48,50,70,121,133,139,141,147-148,155-159,163,201,204,252,271-272
+packages/agent/src/types.ts
+  09fa1ec5e3d74698 8
+packages/supervisor/src/saved-flow-file.ts
+  09fa1ec5e3d74698 2,4-46,51,53-58,62-66,68-69,71-72,74,77-85,87-131,133-137,139-143,145-147,149-152,154,157-160,162-163,166-174,177
+packages/supervisor/src/generate-flow.ts
+  09fa1ec5e3d74698 1-118
+packages/supervisor/src/execute-browser-flow.ts
+  09fa1ec5e3d74698 11,13,22,67-86,88,90-115,118,156-162,203-213,215-217,219-233,282,294,301,419,421-422,451,629-633,636-637,652
+vite.config.ts
+  05b19a561708f487 10,12
+packages/supervisor/src/derive-testing-state.ts
+  09fa1ec5e3d74698 33,40-44,46-70,90-94,98,106,125-129,141-143,146
+packages/supervisor/tests/highlight-windows.test.ts
+  09fa1ec5e3d74698 14
+packages/supervisor/src/events.ts
+  09fa1ec5e3d74698 7
+apps/cli/src/components/app.tsx
+  09fa1ec5e3d74698 40
+packages/supervisor/src/utils/get-testie-project-path-segments.ts
+  09fa1ec5e3d74698 1-57
+packages/supervisor/src/utils/get-saved-flow-directory-path.ts
+  09fa1ec5e3d74698 1-12
+packages/supervisor/src/generate-learnings.ts
+  09fa1ec5e3d74698 1-115
+packages/supervisor/src/flow-storage-errors.ts
+  09fa1ec5e3d74698 5-6,13,15,20-22,24
+apps/cli/src/utils/persist-run-learnings.ts
+  09fa1ec5e3d74698 1-26
+lint-rules/node-namespace-imports.js
+  05b19a561708f487 1-117
+apps/cli/src/components/ui/file-link.tsx
+  09fa1ec5e3d74698 11-14
+packages/supervisor/src/flow-storage.ts
+  09fa1ec5e3d74698 1-2,43,65,71-73,75,83,91,97-98,114,139,148,166,177
+packages/supervisor/src/constants.ts
+  09fa1ec5e3d74698 11-17,25-28
+packages/supervisor/src/index.ts
+  09fa1ec5e3d74698 6,9-10,22-25,47,49,52,95,97-99
+packages/supervisor/src/types.ts
+  09fa1ec5e3d74698 104-112,114-136,141,143
+apps/cli/src/hooks/use-saved-flows.ts
+  05b19a561708f487 2,9
+packages/supervisor/src/generate-flow-suggestions.ts
+  09fa1ec5e3d74698 2
+packages/supervisor/tests/saved-flow-file.test.ts
+  09fa1ec5e3d74698 1-58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "984643d759873c94760bec56facb4a3673dfa20a",
+  "prompts": {
+    "05b19a561708f487": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "17276837-2acf-4889-873b-c9641bdb9e56",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 135,
+      "total_deletions": 6,
+      "accepted_lines": 129,
+      "overriden_lines": 0
+    },
+    "09fa1ec5e3d74698": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "0347164e-ef9f-4310-8c0f-f4db7f458c26",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 2184,
+      "total_deletions": 1369,
+      "accepted_lines": 1550,
+      "overriden_lines": 1
+    }
+  }
+}
