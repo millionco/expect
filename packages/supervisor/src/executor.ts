@@ -7,13 +7,7 @@ import {
 import { Effect, Layer, Option, Schema, ServiceMap, Stream } from "effect";
 import {
   ExecutedTestPlan,
-  ExecutionEvent,
-  RunFinished,
   RunStarted,
-  StepCompleted,
-  StepFailed,
-  StepId,
-  StepStarted,
   type TestPlan,
 } from "@browser-tester/shared/models";
 import { NodeServices } from "@effect/platform-node";
@@ -41,30 +35,23 @@ export class Executor extends ServiceMap.Service<Executor>()(
           events: [new RunStarted({ plan })],
         });
 
-        return agent
-          .stream(
-            new AgentStreamOptions({
-              cwd: process.cwd(),
-              sessionId: Option.none(),
-              prompt: plan.prompt,
-              systemPrompt: Option.none(),
-            })
-          )
-          .pipe(
-            Stream.mapAccum(
-              () => initial,
-              (executed, part) => {
-                const next = executed.addEvent(part);
-                return [next, [next]] as const;
-              }
-            ),
-            Stream.tap((x) => {
-              console.error(`recv ExecutedTestPlan events:`);
-              console.error(x.events);
-              return Effect.void;
-            }),
-            Stream.mapError((reason) => new ExecutionError({ reason }))
-          );
+        const streamOptions = new AgentStreamOptions({
+          cwd: process.cwd(),
+          sessionId: Option.none(),
+          prompt: plan.prompt,
+          systemPrompt: Option.none(),
+        });
+
+        return agent.stream(streamOptions).pipe(
+          Stream.mapAccum(
+            () => initial,
+            (executed, part) => {
+              const next = executed.addEvent(part);
+              return [next, [next]] as const;
+            }
+          ),
+          Stream.mapError((reason) => new ExecutionError({ reason }))
+        );
       },
       Stream.unwrap);
 

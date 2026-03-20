@@ -1,4 +1,4 @@
-export { AgentStreamOptions, McpServerConfig } from "./types.js";
+export { AgentStreamOptions, McpServerConfig, type McpSdkServer } from "./types.js";
 export { ClaudeQueryError, CodexRunError } from "./errors.js";
 export { Agent } from "./agent.js";
 export { CurrentModel } from "./current-model.js";

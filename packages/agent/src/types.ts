@@ -1,3 +1,4 @@
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Schema } from "effect";
 
 export class McpServerConfig extends Schema.Class<McpServerConfig>("McpServerConfig")({
@@ -5,6 +6,11 @@ export class McpServerConfig extends Schema.Class<McpServerConfig>("McpServerCon
   args: Schema.Array(Schema.String),
   env: Schema.Record(Schema.String, Schema.String),
 }) {}
+
+export interface McpSdkServer {
+  readonly name: string;
+  readonly instance: McpServer;
+}
 
 export class AgentStreamOptions extends Schema.Class<AgentStreamOptions>("AgentStreamOptions")({
   cwd: Schema.String,
