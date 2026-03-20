@@ -1,15 +1,9 @@
 import { randomUUID } from "node:crypto";
-import {
-  copyFileSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  writeFileSync,
-} from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, extname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { buildReplayViewerHtml } from "@browser-tester/browser";
 import {
   SHARE_ASSET_DIRECTORY_NAME,
   SHARE_DIRECTORY_PREFIX,
@@ -210,14 +204,9 @@ const createShareBundle = (options: {
     )
     .filter((relativePath): relativePath is string => Boolean(relativePath));
 
-  let replayEventsJson: string | undefined;
+  let replayNdjsonRelativePath: string | undefined;
   if (sharedReplayPath && existsSync(sharedReplayPath)) {
-    copyArtifact(assetDirectoryPath, sharedReplayPath, "replay");
-    const ndjson = readFileSync(sharedReplayPath, "utf-8").trim();
-    if (ndjson.length > 0) {
-      const events = ndjson.split("\n").map((line) => JSON.parse(line));
-      replayEventsJson = JSON.stringify(events);
-    }
+    replayNdjsonRelativePath = copyArtifact(assetDirectoryPath, sharedReplayPath, "replay");
   }
 
   const shareSummaryPath = join(shareBundlePath, SHARE_SUMMARY_FILE_NAME);
@@ -236,7 +225,7 @@ const createShareBundle = (options: {
       : ["- No blocking findings detected."]),
   ];
 
-  const htmlSections = [
+  const bodyHtmlParts = [
     `<h1>${options.report.title}</h1>`,
     `<p><strong>Status:</strong> ${options.report.status}</p>`,
     `<p>${options.report.summary}</p>`,
@@ -255,12 +244,8 @@ const createShareBundle = (options: {
       .join("")}</ul>`,
   ];
 
-  if (replayEventsJson) {
-    htmlSections.push("<h2>Session Replay</h2>", '<div id="replay-container"></div>');
-  }
-
   if (bundledScreenshotRelativePaths.length > 0) {
-    htmlSections.push(
+    bodyHtmlParts.push(
       "<h2>Screenshots</h2>",
       bundledScreenshotRelativePaths
         .map(
@@ -271,39 +256,14 @@ const createShareBundle = (options: {
     );
   }
 
-  const replayHeadTags = replayEventsJson
-    ? [
-        '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/rrweb-player@2.0.0-alpha.18/dist/style.css" />',
-      ]
-    : [];
-
-  const replayScriptTags = replayEventsJson
-    ? [
-        `<script>var __replayEvents=${replayEventsJson};</script>`,
-        '<script type="module">import rrwebPlayer from "https://cdn.jsdelivr.net/npm/rrweb-player@2.0.0-alpha.18/dist/rrweb-player.js";if(__replayEvents&&__replayEvents.length>0){new rrwebPlayer({target:document.getElementById("replay-container"),props:{events:__replayEvents,showController:true,autoPlay:false}})}</script>',
-      ]
-    : [];
+  const reportHtml = buildReplayViewerHtml({
+    title: options.report.title,
+    bodyHtml: bodyHtmlParts.join(""),
+    eventsSource: replayNdjsonRelativePath ? { ndjsonPath: replayNdjsonRelativePath } : undefined,
+  });
 
   writeFileSync(shareSummaryPath, summaryLines.join("\n"), "utf-8");
-  writeFileSync(
-    shareReportPath,
-    [
-      "<!doctype html>",
-      "<html>",
-      "<head>",
-      '<meta charset="utf-8" />',
-      `<title>${options.report.title}</title>`,
-      "<style>body{font-family:ui-sans-serif,system-ui,sans-serif;max-width:960px;margin:0 auto;padding:32px;background:#0f172a;color:#e2e8f0}h1,h2{color:#f8fafc}a{color:#93c5fd}#replay-container{margin:16px 0;border-radius:8px;overflow:hidden}</style>",
-      ...replayHeadTags,
-      "</head>",
-      "<body>",
-      ...htmlSections,
-      ...replayScriptTags,
-      "</body>",
-      "</html>",
-    ].join(""),
-    "utf-8",
-  );
+  writeFileSync(shareReportPath, reportHtml, "utf-8");
 
   return {
     shareBundlePath,
