@@ -1,7 +1,13 @@
 import { Layer, Logger, LogLevel, Ref, References } from "effect";
 import * as Atom from "effect/unstable/reactivity/Atom";
 import { DevTools } from "effect/unstable/devtools";
-import { Executor, Git, Planner, Reporter, Updates } from "@browser-tester/supervisor";
+import {
+  Executor,
+  Git,
+  Planner,
+  Reporter,
+  Updates,
+} from "@browser-tester/supervisor";
 import { Agent } from "@browser-tester/agent";
 
 const stderrLogger = Logger.make(({ logLevel, message, date }) => {
@@ -15,10 +21,10 @@ export const cliAtomRuntime = Atom.runtime(
     Reporter.layer,
     Updates.layer,
     DevTools.layer(),
-    Git.withRepoRoot(process.cwd()),
+    Git.withRepoRoot(process.cwd())
   ).pipe(
-    Layer.provideMerge(Agent.layerFor("claude")),
+    Layer.provideMerge(Agent.layerFor("codex")),
     Layer.provideMerge(Logger.layer([stderrLogger])),
-    Layer.provideMerge(Layer.succeed(References.MinimumLogLevel, "All")),
-  ),
+    Layer.provideMerge(Layer.succeed(References.MinimumLogLevel, "All"))
+  )
 );
