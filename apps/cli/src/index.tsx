@@ -6,7 +6,7 @@ import { App } from "./components/app.js";
 import { ALT_SCREEN_OFF, ALT_SCREEN_ON, VERSION } from "./constants.js";
 import { ThemeProvider } from "./components/theme-context.js";
 import { loadThemeName } from "./utils/load-theme.js";
-import { ChangesFor, Git, TestPlanDraft } from "@browser-tester/supervisor";
+import { ChangesFor, Git, TestPlanDraft, DraftId } from "@browser-tester/supervisor";
 import { runHeadless } from "./utils/run-test.js";
 import { useNavigationStore, Screen } from "./stores/use-navigation.js";
 import { usePreferencesStore } from "./stores/use-preferences.js";
@@ -102,6 +102,7 @@ const seedStores = (opts: CommanderOpts, changesFor: ChangesFor, currentBranch: 
 
   if (opts.message) {
     const draft = new TestPlanDraft({
+      id: DraftId.makeUnsafe(crypto.randomUUID()),
       changesFor,
       currentBranch,
       diffPreview: "",

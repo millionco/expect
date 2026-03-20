@@ -57,6 +57,7 @@ export const TestingScreen = ({ plan }: TestingScreenProps) => {
   const executedPlan = done ? executionResult.value.executedPlan : undefined;
   const report = done ? executionResult.value.report : undefined;
 
+  const [started, setStarted] = useState(false);
   const [runStartedAt, setRunStartedAt] = useState<number | undefined>(undefined);
   const [elapsedTimeMs, setElapsedTimeMs] = useState(0);
   const [toolCallDisplayMode, setToolCallDisplayMode] = useState(TOOL_CALL_DISPLAY_MODE_COMPACT);
@@ -74,20 +75,25 @@ export const TestingScreen = ({ plan }: TestingScreenProps) => {
     return () => clearInterval(interval);
   }, [runStartedAt, running]);
 
-  const startExecution = () => {
+  const startRun = () => {
+    console.error("[testing-screen] starting execution");
+    setStarted(true);
     setRunStartedAt(Date.now());
-    setElapsedTimeMs(0);
-    setShowCancelConfirmation(false);
     triggerExecute({ testPlan: plan });
   };
 
-  // HACK: trigger execution on mount — this should be driven by the parent
-  useEffect(() => {
-    startExecution();
-  }, [plan]);
-
   useInput((input, key) => {
     const normalizedInput = input.toLowerCase();
+
+    if (!started) {
+      if (key.return || normalizedInput === "y") {
+        startRun();
+      }
+      if (key.escape || normalizedInput === "n") {
+        setScreen(Screen.Main());
+      }
+      return;
+    }
 
     if (showCancelConfirmation) {
       if (key.return || normalizedInput === "y") {
@@ -157,6 +163,29 @@ export const TestingScreen = ({ plan }: TestingScreenProps) => {
   const filledWidth =
     totalCount > 0 ? Math.round((completedCount / totalCount) * PROGRESS_BAR_WIDTH) : 0;
   const emptyWidth = PROGRESS_BAR_WIDTH - filledWidth;
+
+  if (!started) {
+    return (
+      <Box flexDirection="column" width="100%" paddingY={1}>
+        <Box paddingX={1}>
+          <ScreenHeading title="Ready to execute" subtitle={`${plan.title} │ ${displayName}`} />
+        </Box>
+        <Box flexDirection="column" marginTop={1} paddingX={1}>
+          {plan.steps.map((step, index) => (
+            <Text key={step.id} color={COLORS.DIM}>
+              {`  ${index + 1}. ${step.title}`}
+            </Text>
+          ))}
+        </Box>
+        <Box marginTop={1} paddingX={1}>
+          <Text color={COLORS.DIM}>
+            Press <Text color={COLORS.PRIMARY}>Enter</Text> or <Text color={COLORS.PRIMARY}>y</Text>{" "}
+            to start, or <Text color={COLORS.PRIMARY}>Esc</Text> to go back.
+          </Text>
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <>

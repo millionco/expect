@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import { Option } from "effect";
-import { TestPlanDraft, ChangesFor, type TestPlan } from "@browser-tester/supervisor";
+import { TestPlanDraft, ChangesFor, DraftId, type TestPlan } from "@browser-tester/supervisor";
 import { Input } from "../ui/input.js";
 import { useColors } from "../theme-context.js";
 import { stripMouseSequences } from "../../hooks/mouse-context.js";
@@ -115,6 +115,7 @@ export const PlanReviewScreen = ({ plan }: PlanReviewScreenProps) => {
         const trimmedInput = inputValue.trim();
         const mainBranch = gitState?.mainBranch ?? "main";
         const draft = new TestPlanDraft({
+          id: DraftId.makeUnsafe(crypto.randomUUID()),
           changesFor: ChangesFor.makeUnsafe({ _tag: "Changes", mainBranch }),
           currentBranch: gitState?.currentBranch ?? "",
           diffPreview: "",

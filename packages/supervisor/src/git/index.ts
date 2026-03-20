@@ -5,6 +5,7 @@ export {
   Branch,
   type ChangedFile,
   ChangesFor,
+  DraftId,
   changesForDisplayName,
   type CommitSummary,
   ExecutedTestPlan,

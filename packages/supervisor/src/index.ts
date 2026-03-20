@@ -6,6 +6,7 @@ export {
   AgentProvider,
   type ChangedFile,
   ChangesFor,
+  DraftId,
   type CommitSummary,
   ExecutedTestPlan,
   type ExecutionEvent,

@@ -1,6 +1,8 @@
+import * as crypto from "node:crypto";
 import { Cause, Effect, Option, Stream } from "effect";
 import { changesForDisplayName, type ChangesFor } from "@browser-tester/shared/models";
 import {
+  DraftId,
   Executor,
   ExecutedTestPlan,
   Git,
@@ -35,6 +37,7 @@ export const runHeadless = async (options: HeadlessRunOptions): Promise<void> =>
         const diffPreview = yield* git.getDiffPreview(options.changesFor);
 
         return new TestPlanDraft({
+          id: DraftId.makeUnsafe(crypto.randomUUID()),
           changesFor: options.changesFor,
           currentBranch,
           diffPreview,

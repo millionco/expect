@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import { Option } from "effect";
-import { TestPlanDraft, ChangesFor, checkoutBranch } from "@browser-tester/supervisor";
+import { TestPlanDraft, ChangesFor, checkoutBranch, DraftId } from "@browser-tester/supervisor";
 import type { GitState, TestContext } from "@browser-tester/shared/models";
 import { usePreferencesStore } from "../../stores/use-preferences.js";
 import { usePlanStore, Plan } from "../../stores/use-plan-store.js";
@@ -86,6 +86,7 @@ export const MainMenu = ({ gitState }: MainMenuProps) => {
       console.error("[main-menu] changesFor:", changesFor._tag);
 
       const draft = new TestPlanDraft({
+        id: DraftId.makeUnsafe(crypto.randomUUID()),
         changesFor,
         currentBranch: gitState.currentBranch ?? "",
         diffPreview: "",

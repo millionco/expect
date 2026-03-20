@@ -41,14 +41,26 @@ export const App = () => {
         changesFor: plan.changesFor,
         flowInstruction: plan.instruction,
       });
-      console.error("[app] planning succeeded:", testPlan.title);
+      console.error("[app] planning succeeded:", testPlan.title, "steps:", testPlan.steps.length);
       usePlanStore.getState().setPlan(Plan.plan(testPlan));
       const { autoRunAfterPlanning, skipPlanning } = usePreferencesStore.getState();
-      if (autoRunAfterPlanning || skipPlanning) {
+      console.error(
+        "[app] autoRunAfterPlanning:",
+        autoRunAfterPlanning,
+        "skipPlanning:",
+        skipPlanning,
+      );
+      const nextScreen = autoRunAfterPlanning || skipPlanning ? "Testing" : "ReviewPlan";
+      console.error("[app] navigating to:", nextScreen);
+      if (nextScreen === "Testing") {
         setScreen(Screen.Testing({ plan: testPlan }));
       } else {
         setScreen(Screen.ReviewPlan({ plan: testPlan }));
       }
+      console.error(
+        "[app] setScreen called, current screen._tag:",
+        useNavigationStore.getState().screen._tag,
+      );
     } catch (error) {
       console.error("[app] planning failed:", String(error));
       setPlanningError(String(error));
