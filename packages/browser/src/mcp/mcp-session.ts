@@ -3,18 +3,18 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import type { Browser as PlaywrightBrowser, BrowserContext, Page } from "playwright";
 import type { eventWithTime } from "@rrweb/types";
 import { Config, Effect, Layer, Option, ServiceMap } from "effect";
-import { Browser } from "../browser.js";
-import { NavigationError } from "../errors.js";
-import { collectAllEvents } from "../recorder.js";
-import { evaluateRuntime } from "../utils/evaluate-runtime.js";
-import { EVENT_COLLECT_INTERVAL_MS } from "../constants.js";
-import type { AnnotatedScreenshotOptions, SnapshotOptions, SnapshotResult } from "../types.js";
+import { Browser } from "../browser";
+import { NavigationError } from "../errors";
+import { collectAllEvents } from "../recorder";
+import { evaluateRuntime } from "../utils/evaluate-runtime";
+import { EVENT_COLLECT_INTERVAL_MS } from "../constants";
+import type { AnnotatedScreenshotOptions, SnapshotOptions, SnapshotResult } from "../types";
 import {
   BROWSER_TESTER_LIVE_VIEW_URL_ENV_NAME,
   BROWSER_TESTER_REPLAY_OUTPUT_ENV_NAME,
-} from "./constants.js";
-import { McpSessionNotOpenError } from "./errors.js";
-import { startLiveViewServer, type LiveViewServer } from "./live-view-server.js";
+} from "./constants";
+import { McpSessionNotOpenError } from "./errors";
+import { startLiveViewServer, type LiveViewServer } from "./live-view-server";
 
 interface ConsoleEntry {
   type: string;

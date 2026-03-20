@@ -1,5 +1,5 @@
-import type { BrowserFlowPlan } from "./types.js";
-import type { BrowserRunEvent } from "./events.js";
+import type { BrowserFlowPlan } from "./types";
+import type { BrowserRunEvent } from "./events";
 
 const RUN_STATUS_LABELS = new Set([
   "Analyzing results",

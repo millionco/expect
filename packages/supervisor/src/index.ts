@@ -1,4 +1,4 @@
-export { buildBrowserMcpSettings, getBrowserMcpEntrypoint } from "./browser-mcp-config.js";
+export { buildBrowserMcpSettings, getBrowserMcpEntrypoint } from "./browser-mcp-config";
 export {
   BROWSER_TOOL_PREFIX,
   DIRECT_RUN_CHANGED_FILE_LIMIT,
@@ -13,16 +13,16 @@ export {
   SAVED_FLOW_FORMAT_VERSION,
   TESTED_FINGERPRINT_FILE,
   TESTIE_STATE_DIR,
-} from "./constants.js";
-export { createBrowserRunReport } from "./create-browser-run-report.js";
-export { ExecutionError, PlanParseError, PlanningError } from "./errors.js";
-export type { BrowserRunEvent } from "./events.js";
-export { executeBrowserFlow } from "./execute-browser-flow.js";
+} from "./constants";
+export { createBrowserRunReport } from "./create-browser-run-report";
+export { ExecutionError, PlanParseError, PlanningError } from "./errors";
+export type { BrowserRunEvent } from "./events";
+export { executeBrowserFlow } from "./execute-browser-flow";
 export {
   buildPullRequestCommentBody,
   getPullRequestForBranch,
   postPullRequestComment,
-} from "./github-comment.js";
+} from "./github-comment";
 export {
   checkoutBranch,
   getBranchChangedFiles,
@@ -37,38 +37,38 @@ export {
   getUnstagedChangedFiles,
   getUnstagedDiffStats,
   isInsideGitRepo,
-} from "./git.js";
-export { generateFlowSuggestions } from "./generate-flow-suggestions.js";
-export { planBrowserFlow } from "./plan-browser-flow.js";
-export { formatDiffStats } from "./utils/format-diff-stats.js";
-export { isRunningInAgent } from "./utils/is-running-in-agent.js";
-export { resolveAgentProvider } from "./utils/resolve-agent-provider.js";
-export { fetchRemoteBranches, type RemoteBranch } from "./remote-branches.js";
-export { resolveTestTarget } from "./resolve-test-target.js";
+} from "./git";
+export { generateFlowSuggestions } from "./generate-flow-suggestions";
+export { planBrowserFlow } from "./plan-browser-flow";
+export { formatDiffStats } from "./utils/format-diff-stats";
+export { isRunningInAgent } from "./utils/is-running-in-agent";
+export { resolveAgentProvider } from "./utils/resolve-agent-provider";
+export { fetchRemoteBranches, type RemoteBranch } from "./remote-branches";
+export { resolveTestTarget } from "./resolve-test-target";
 export {
   getGitState,
   getRecommendedScope,
   type GitState,
   type TestScope,
-} from "./get-git-state.js";
+} from "./get-git-state";
 export {
   generateBrowserPlan,
   getBrowserEnvironment,
   resolveBrowserTarget,
   type EnvironmentOverrides,
   type GenerateBrowserPlanResult,
-} from "./browser-agent.js";
-export { createDirectRunPlan } from "./create-direct-run-plan.js";
+} from "./browser-agent";
+export { createDirectRunPlan } from "./create-direct-run-plan";
 export {
   getFlowSuggestionsFromContext,
   type ContextType,
-} from "./get-flow-suggestions-from-context.js";
-export { getHealthcheckReport, type HealthcheckReport } from "./get-healthcheck-report.js";
+} from "./get-flow-suggestions-from-context";
+export { getHealthcheckReport, type HealthcheckReport } from "./get-healthcheck-report";
 export {
   computeTestedFingerprint,
   isCurrentStateTested,
   saveTestedFingerprint,
-} from "./tested-state.js";
+} from "./tested-state";
 export {
   FlowStorage,
   listSavedFlows,
@@ -80,21 +80,21 @@ export {
   type SaveFlowOptions,
   type SaveFlowResult,
   type SavedFlowSummary,
-} from "./flow-storage.js";
-export { FlowNotFoundError, FlowParseError, FlowStorageError } from "./flow-storage-errors.js";
+} from "./flow-storage";
+export { FlowNotFoundError, FlowParseError, FlowStorageError } from "./flow-storage-errors";
 export {
   deriveTestingState,
   type DerivedTestingState,
   type StepDisplayState,
-} from "./derive-testing-state.js";
+} from "./derive-testing-state";
 export {
   categorizeChangedFiles,
   formatFileCategories,
   type ChangedFileSummary,
   type FileCategory,
-} from "./utils/categorize-changed-files.js";
-export { slugify } from "./utils/slugify.js";
-export { getSavedFlowDirectoryPath } from "./utils/get-saved-flow-directory-path.js";
+} from "./utils/categorize-changed-files";
+export { slugify } from "./utils/slugify";
+export { getSavedFlowDirectoryPath } from "./utils/get-saved-flow-directory-path";
 export type {
   AgentProvider,
   BrowserEnvironmentHints,
@@ -115,4 +115,4 @@ export type {
   TestTarget,
   TestTargetBranch,
   TestTargetSelection,
-} from "./types.js";
+} from "./types";

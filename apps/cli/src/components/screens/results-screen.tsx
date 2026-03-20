@@ -2,17 +2,17 @@ import { useEffect, useRef, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import Link from "ink-link";
 import { postPullRequestComment, type BrowserRunReport } from "@browser-tester/supervisor";
-import { useFlowSessionStore } from "../../stores/use-flow-session.js";
-import { copyToClipboard } from "../../utils/copy-to-clipboard.js";
-import { openUrl } from "../../utils/open-url.js";
-import { serveDirectory } from "../../utils/serve-directory.js";
-import { useColors } from "../theme-context.js";
-import { RuledBox } from "../ui/ruled-box.js";
-import { ScreenHeading } from "../ui/screen-heading.js";
-import { FileLink } from "../ui/file-link.js";
-import { Image } from "../ui/image.js";
-import { ErrorMessage } from "../ui/error-message.js";
-import { Clickable } from "../ui/clickable.js";
+import { useFlowSessionStore } from "../../stores/use-flow-session";
+import { copyToClipboard } from "../../utils/copy-to-clipboard";
+import { openUrl } from "../../utils/open-url";
+import { serveDirectory } from "../../utils/serve-directory";
+import { useColors } from "../theme-context";
+import { RuledBox } from "../ui/ruled-box";
+import { ScreenHeading } from "../ui/screen-heading";
+import { FileLink } from "../ui/file-link";
+import { Image } from "../ui/image";
+import { ErrorMessage } from "../ui/error-message";
+import { Clickable } from "../ui/clickable";
 
 const isUrl = (value: string | undefined): boolean =>
   typeof value === "string" &&

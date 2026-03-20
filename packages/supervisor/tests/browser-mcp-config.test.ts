@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import { BROWSER_TESTER_REPLAY_OUTPUT_ENV_NAME } from "@browser-tester/browser/mcp";
-import { buildBrowserMcpServerEnv, buildBrowserMcpSettings } from "../src/browser-mcp-config.js";
+import { buildBrowserMcpServerEnv, buildBrowserMcpSettings } from "../src/browser-mcp-config";
 
 describe("buildBrowserMcpServerEnv", () => {
   it("returns undefined when no server defaults are needed", () => {
