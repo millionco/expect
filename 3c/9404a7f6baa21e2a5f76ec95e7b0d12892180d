@@ -1,0 +1,39 @@
+apps/website/tsconfig.json
+  9136da08521c465b 33
+packages/agent/tsconfig.json
+  9136da08521c465b 5-6
+packages/utils/tsconfig.json
+  9136da08521c465b 5-6
+packages/browser/src/mcp/live-view-server.ts
+  9136da08521c465b 214
+apps/cli/tsconfig.json
+  9136da08521c465b 6-7
+packages/supervisor/src/index.ts
+  9136da08521c465b 20
+packages/supervisor/tsconfig.json
+  9136da08521c465b 5-6
+packages/browser/tsconfig.json
+  9136da08521c465b 5-6
+apps/website/declarations.d.ts
+  9136da08521c465b 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "3c9404a7f6baa21e2a5f76ec95e7b0d12892180d",
+  "prompts": {
+    "9136da08521c465b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b958dcb1-4e2b-449c-ab5f-1298696977e1",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 14,
+      "total_deletions": 8,
+      "accepted_lines": 14,
+      "overriden_lines": 0
+    }
+  }
+}
