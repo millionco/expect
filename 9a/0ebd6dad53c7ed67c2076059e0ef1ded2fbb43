@@ -1,0 +1,48 @@
+apps/cli/src/stores/use-flow-session.ts
+  7f899ff22e18f727 3,7,64,131,363-370,372-373
+packages/supervisor/src/constants.ts
+  7f899ff22e18f727 50-51
+apps/cli/src/components/screens/main-menu-screen.tsx
+  7f899ff22e18f727 36-37,44-45,213-218,256-259,264-266,268-298,387-388
+packages/testie-skill/SKILL.md
+  5a88b3a88ec0c0f2 1-181
+packages/supervisor/src/prompt-history.ts
+  7f899ff22e18f727 1-73
+packages/testie-skill/package.json
+  5a88b3a88ec0c0f2 1-10
+packages/supervisor/src/index.ts
+  7f899ff22e18f727 48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "9a0ebd6dad53c7ed67c2076059e0ef1ded2fbb43",
+  "prompts": {
+    "5a88b3a88ec0c0f2": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c51ffcb2-206e-4825-bba1-9de196a7f749",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 191,
+      "total_deletions": 0,
+      "accepted_lines": 191,
+      "overriden_lines": 0
+    },
+    "7f899ff22e18f727": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e2f98665-4636-4598-ad0a-a54e30a19f30",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 156,
+      "total_deletions": 12,
+      "accepted_lines": 141,
+      "overriden_lines": 1
+    }
+  }
+}
