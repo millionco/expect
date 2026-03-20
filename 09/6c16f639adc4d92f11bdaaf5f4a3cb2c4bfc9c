@@ -1,0 +1,23 @@
+packages/replay/package.json
+  cf624ba07f9d31aa 25,31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "096c16f639adc4d92f11bdaaf5f4a3cb2c4bfc9c",
+  "prompts": {
+    "cf624ba07f9d31aa": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "516bc3db-59c0-41f8-b54c-850359e77992",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 2,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}
