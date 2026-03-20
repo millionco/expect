@@ -1,0 +1,23 @@
+packages/supervisor/src/execute-browser-flow.ts
+  c20c83368606d37d 92-93,98-99,105-106,109-114,157-159,163-170,191,198-204
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "c6875b0abb0cf5cbac6b9426f696ed0419df5ff2",
+  "prompts": {
+    "c20c83368606d37d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9db31af1-423e-4954-974f-27f0cdde48eb",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 41,
+      "total_deletions": 20,
+      "accepted_lines": 31,
+      "overriden_lines": 0
+    }
+  }
+}
