@@ -1,0 +1,23 @@
+package.json
+  a50d5f6a8c19b5ff 9,11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "3474b70e4c011ce537298c4be53d3ef820c48612",
+  "prompts": {
+    "a50d5f6a8c19b5ff": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "bc335c30-67a3-4a06-b2ef-2f5f8d15ec84",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 2,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}
