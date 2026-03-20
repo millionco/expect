@@ -73,7 +73,8 @@ export class ChromiumPlatform extends ServiceMap.Service<
 
       const programFiles = process.env["ProgramFiles"] ?? "C:\\Program Files";
       const programFilesX86 = process.env["ProgramFiles(x86)"] ?? "C:\\Program Files (x86)";
-      const localAppData = process.env["LOCALAPPDATA"] ?? path.join(os.homedir(), "AppData", "Local");
+      const localAppData =
+        process.env["LOCALAPPDATA"] ?? path.join(os.homedir(), "AppData", "Local");
 
       return {
         executableCandidates: (config: ChromiumConfig) => {

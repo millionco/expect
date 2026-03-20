@@ -12,12 +12,14 @@ const FIELD_SEPARATOR = "\u001f";
 
 const execGit = (cwd: string, command: string): string => {
   try {
-    return child_process.execSync(command, {
-      cwd,
-      encoding: "utf-8",
-      stdio: "pipe",
-      timeout: GIT_TIMEOUT_MS,
-    }).trim();
+    return child_process
+      .execSync(command, {
+        cwd,
+        encoding: "utf-8",
+        stdio: "pipe",
+        timeout: GIT_TIMEOUT_MS,
+      })
+      .trim();
   } catch {
     return "";
   }

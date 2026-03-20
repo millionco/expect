@@ -286,8 +286,13 @@ const createHighlightVideo = async (
   }
 
   const canDrawText = await ffmpegFilterAvailable("drawtext");
-  const temporaryDirectoryPath = fs.mkdtempSync(path.join(os.tmpdir(), "browser-tester-highlight-"));
-  const highlightVideoPath = path.join(path.dirname(path.resolve(rawVideoPath)), HIGHLIGHT_VIDEO_FILE_NAME);
+  const temporaryDirectoryPath = fs.mkdtempSync(
+    path.join(os.tmpdir(), "browser-tester-highlight-"),
+  );
+  const highlightVideoPath = path.join(
+    path.dirname(path.resolve(rawVideoPath)),
+    HIGHLIGHT_VIDEO_FILE_NAME,
+  );
 
   try {
     const segmentPaths: string[] = [];
@@ -484,7 +489,8 @@ const prepareArtifacts = async (
   const existingScreenshotPaths = screenshotPaths.filter((screenshotPath) =>
     fs.existsSync(screenshotPath),
   );
-  const existingRawVideoPath = rawVideoPath && fs.existsSync(rawVideoPath) ? rawVideoPath : undefined;
+  const existingRawVideoPath =
+    rawVideoPath && fs.existsSync(rawVideoPath) ? rawVideoPath : undefined;
   const highlightVideoResult = await createHighlightVideo(existingRawVideoPath, events, onProgress);
   if (highlightVideoResult.warning) warnings.push(highlightVideoResult.warning);
 

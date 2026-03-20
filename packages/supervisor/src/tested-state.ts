@@ -8,12 +8,14 @@ const NULL_SEPARATOR = "\0";
 
 const execGitQuiet = (command: string): string => {
   try {
-    return child_process.execSync(command, {
-      cwd: process.cwd(),
-      encoding: "utf-8",
-      stdio: "pipe",
-      timeout: GIT_FINGERPRINT_TIMEOUT_MS,
-    }).trim();
+    return child_process
+      .execSync(command, {
+        cwd: process.cwd(),
+        encoding: "utf-8",
+        stdio: "pipe",
+        timeout: GIT_FINGERPRINT_TIMEOUT_MS,
+      })
+      .trim();
   } catch {
     return "";
   }
@@ -37,7 +39,8 @@ export const computeTestedFingerprint = (): string | null => {
   const unstaged = execGitQuiet("git diff");
   const staged = execGitQuiet("git diff --cached");
 
-  return crypto.createHash("sha256")
+  return crypto
+    .createHash("sha256")
     .update(head)
     .update(NULL_SEPARATOR)
     .update(unstaged)

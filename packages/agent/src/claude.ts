@@ -55,7 +55,9 @@ const assertNoDebugLogErrors = (debugLogPath: string) => {
 };
 
 const resolveClaudeExecutablePath = (): string | undefined => {
-  const require = nodeModule.createRequire(typeof __filename !== "undefined" ? __filename : import.meta.url);
+  const require = nodeModule.createRequire(
+    typeof __filename !== "undefined" ? __filename : import.meta.url,
+  );
 
   try {
     const sdkEntryPath = require.resolve("@anthropic-ai/claude-agent-sdk");

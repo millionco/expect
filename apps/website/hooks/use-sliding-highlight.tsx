@@ -26,9 +26,7 @@ interface SlidingHighlightConfig {
 }
 
 const useSlidingHighlight = (config: SlidingHighlightConfig = {}) => {
-  const [highlightPosition, setHighlightPosition] = useState<SlidingHighlightPosition | null>(
-    null,
-  );
+  const [highlightPosition, setHighlightPosition] = useState<SlidingHighlightPosition | null>(null);
   const [highlightVariant, setHighlightVariant] = useState("default");
 
   const setActiveElement = useCallback(

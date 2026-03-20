@@ -58,7 +58,10 @@ export const MainMenu = () => {
   }
 
   const previousPickerDepsRef = useRef({ pickerOpen, gitState });
-  if (previousPickerDepsRef.current.pickerOpen !== pickerOpen || previousPickerDepsRef.current.gitState !== gitState) {
+  if (
+    previousPickerDepsRef.current.pickerOpen !== pickerOpen ||
+    previousPickerDepsRef.current.gitState !== gitState
+  ) {
     previousPickerDepsRef.current = { pickerOpen, gitState };
     if (pickerOpen && gitState) {
       setRemoteLoading(true);
@@ -101,7 +104,10 @@ export const MainMenu = () => {
   const suggestions = aiSuggestions ?? staticSuggestions;
 
   const previousSuggestionDepsRef = useRef({ activeContext, gitState });
-  if (previousSuggestionDepsRef.current.activeContext !== activeContext || previousSuggestionDepsRef.current.gitState !== gitState) {
+  if (
+    previousSuggestionDepsRef.current.activeContext !== activeContext ||
+    previousSuggestionDepsRef.current.gitState !== gitState
+  ) {
     previousSuggestionDepsRef.current = { activeContext, gitState };
     setSuggestionIndex(0);
     setAiSuggestions(null);

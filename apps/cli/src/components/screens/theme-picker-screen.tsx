@@ -52,7 +52,10 @@ export const ThemePickerScreen = () => {
   });
 
   const previousThemeDepsRef = useRef({ selectedIndex, variantFilter });
-  if (previousThemeDepsRef.current.selectedIndex !== selectedIndex || previousThemeDepsRef.current.variantFilter !== variantFilter) {
+  if (
+    previousThemeDepsRef.current.selectedIndex !== selectedIndex ||
+    previousThemeDepsRef.current.variantFilter !== variantFilter
+  ) {
     previousThemeDepsRef.current = { selectedIndex, variantFilter };
     const nextTheme = filteredThemeNames[selectedIndex];
     if (nextTheme) setTheme(nextTheme);

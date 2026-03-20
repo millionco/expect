@@ -84,7 +84,10 @@ export const TestingScreen = () => {
 
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const previousTimerDepsRef = useRef({ running, runStartedAt });
-  if (previousTimerDepsRef.current.running !== running || previousTimerDepsRef.current.runStartedAt !== runStartedAt) {
+  if (
+    previousTimerDepsRef.current.running !== running ||
+    previousTimerDepsRef.current.runStartedAt !== runStartedAt
+  ) {
     previousTimerDepsRef.current = { running, runStartedAt };
     if (timerIntervalRef.current !== undefined) {
       clearInterval(timerIntervalRef.current);
@@ -98,7 +101,10 @@ export const TestingScreen = () => {
     }
   }
 
-  const liveViewPollRef = useRef<{ url: string | null; intervalId: ReturnType<typeof setInterval> | undefined }>({ url: null, intervalId: undefined });
+  const liveViewPollRef = useRef<{
+    url: string | null;
+    intervalId: ReturnType<typeof setInterval> | undefined;
+  }>({ url: null, intervalId: undefined });
   if (liveViewPollRef.current.url !== pendingLiveViewUrl) {
     if (liveViewPollRef.current.intervalId !== undefined) {
       clearInterval(liveViewPollRef.current.intervalId);
