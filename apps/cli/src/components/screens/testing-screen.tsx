@@ -28,7 +28,8 @@ const LIVE_VIEW_SHORTCUT_KEY = "o";
 
 export const TestingScreen = () => {
   const target = useFlowSessionStore((state) => state.resolvedTarget);
-  const plan = useFlowSessionStore((state) => state.generatedPlan);
+  const flowInstruction = useFlowSessionStore((state) => state.flowInstruction);
+  const pendingSavedFlow = useFlowSessionStore((state) => state.pendingSavedFlow);
   const environment = useFlowSessionStore((state) => state.browserEnvironment);
   const executionProvider = usePreferencesStore((state) => state.executionProvider);
   const executionModel = usePreferencesStore((state) => state.executionModel);
@@ -38,6 +39,7 @@ export const TestingScreen = () => {
   const setLiveViewUrl = useFlowSessionStore((state) => state.setLiveViewUrl);
   const COLORS = useColors();
   const [events, setEvents] = useState<BrowserRunEvent[]>([]);
+  const collectedEventsRef = useRef<BrowserRunEvent[]>([]);
   const [running, setRunning] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [screenshotPaths, setScreenshotPaths] = useState<string[]>([]);
@@ -49,8 +51,8 @@ export const TestingScreen = () => {
   const runFiberRef = useRef<Fiber.Fiber<unknown, unknown> | null>(null);
 
   const derivedState = useMemo(
-    () => (plan ? deriveTestingState(plan, events) : null),
-    [plan, events],
+    () => (events.length > 0 ? deriveTestingState(events, "hidden") : null),
+    [events],
   );
 
   const elapsedTimeLabel = useMemo(() => formatElapsedTime(elapsedTimeMs), [elapsedTimeMs]);
@@ -97,10 +99,11 @@ export const TestingScreen = () => {
   }, [pendingLiveViewUrl, setLiveViewUrl]);
 
   useEffect(() => {
-    if (!target || !plan || !environment) return;
+    if (!target || !flowInstruction || !environment) return;
 
     const startedAt = Date.now();
     setEvents([]);
+    collectedEventsRef.current = [];
     setRunning(true);
     setError(null);
     setScreenshotPaths([]);
@@ -113,8 +116,9 @@ export const TestingScreen = () => {
       Stream.runForEach(
         executeBrowserFlow({
           target,
-          plan,
+          userInstruction: flowInstruction,
           environment,
+          savedFlow: pendingSavedFlow ?? undefined,
           provider: executionProvider,
           ...(executionModel ? { providerSettings: { model: executionModel } } : {}),
         }),
@@ -128,7 +132,7 @@ export const TestingScreen = () => {
                 if (event.report.status === "passed") {
                   saveTestedFingerprint();
                 }
-                completeTestingRun(event.report);
+                completeTestingRun(event.report, collectedEventsRef.current);
               }
             }
             if (event.type === "tool-result") {
@@ -137,7 +141,8 @@ export const TestingScreen = () => {
                 setScreenshotPaths((previous) => [...previous, screenshotPath]);
               }
             }
-            setEvents((previous) => [...previous, event]);
+            collectedEventsRef.current = [...collectedEventsRef.current, event];
+            setEvents(collectedEventsRef.current);
           }),
       ).pipe(
         Effect.catchCause((cause) =>
@@ -166,7 +171,8 @@ export const TestingScreen = () => {
     environment,
     executionModel,
     executionProvider,
-    plan,
+    flowInstruction,
+    pendingSavedFlow,
     setLiveViewUrl,
     target,
   ]);
@@ -211,9 +217,14 @@ export const TestingScreen = () => {
     }
   });
 
-  if (!target || !plan || !environment || !derivedState) return null;
+  if (!target || !flowInstruction || !environment) return null;
 
-  const { steps, completedCount, totalCount, runStatusLabel } = derivedState;
+  const { steps, completedCount, totalCount, runStatusLabel } = derivedState ?? {
+    steps: [],
+    completedCount: 0,
+    totalCount: 0,
+    runStatusLabel: "Testing",
+  };
   const filledWidth =
     totalCount > 0 ? Math.round((completedCount / totalCount) * PROGRESS_BAR_WIDTH) : 0;
   const emptyWidth = PROGRESS_BAR_WIDTH - filledWidth;
@@ -231,7 +242,7 @@ export const TestingScreen = () => {
         <Box paddingX={1}>
           <ScreenHeading
             title="Executing browser plan"
-            subtitle={`${plan.title} │ ${target.displayName}`}
+            subtitle={`${flowInstruction} │ ${target.displayName}`}
           />
         </Box>
 

@@ -220,31 +220,6 @@ export const ResultsScreen = () => {
         ))}
       </Box>
 
-      {latestRunReport.confirmedRiskAreas.length > 0 ||
-      latestRunReport.clearedRiskAreas.length > 0 ||
-      latestRunReport.unresolvedRiskAreas.length > 0 ? (
-        <Box flexDirection="column" marginTop={1} paddingX={1}>
-          <Text color={COLORS.DIM} bold>
-            RISK AREAS
-          </Text>
-          {latestRunReport.confirmedRiskAreas.map((riskArea) => (
-            <Text key={`confirmed-${riskArea}`} color={COLORS.RED}>
-              • Confirmed risk: <Text color={COLORS.TEXT}>{riskArea}</Text>
-            </Text>
-          ))}
-          {latestRunReport.clearedRiskAreas.map((riskArea) => (
-            <Text key={`cleared-${riskArea}`} color={COLORS.GREEN}>
-              • Cleared: <Text color={COLORS.TEXT}>{riskArea}</Text>
-            </Text>
-          ))}
-          {latestRunReport.unresolvedRiskAreas.map((riskArea) => (
-            <Text key={`unresolved-${riskArea}`} color={COLORS.YELLOW}>
-              • Needs follow-up: <Text color={COLORS.TEXT}>{riskArea}</Text>
-            </Text>
-          ))}
-        </Box>
-      ) : null}
-
       <Box flexDirection="column" marginTop={1} paddingX={1}>
         <Text color={COLORS.DIM} bold>
           ARTIFACTS
