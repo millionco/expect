@@ -5,7 +5,7 @@ pnpm monorepo.
 ## Verify changes
 
 ```bash
-pnpm lint && pnpm format:check
+pnpm check
 ```
 
 ## Code style

@@ -23,6 +23,7 @@ const TOOL_CALL_DISPLAY_TEXT_CHAR_LIMIT = 80;
 const PLANNER_CHANGED_FILE_LIMIT = 12;
 const PLANNER_MAX_STEP_COUNT = 8;
 const STEP_ID_PAD_LENGTH = 2;
+const DIFF_PREVIEW_CHAR_LIMIT = 12_000;
 
 export class FileStat extends Schema.Class<FileStat>("@ami/FileStat")({
   relativePath: Schema.String,
@@ -150,7 +151,7 @@ export class TestPlanStep extends Schema.Class<TestPlanStep>("@supervisor/TestPl
   title: Schema.String,
   instruction: Schema.String,
   expectedOutcome: Schema.String,
-  routeHint: Schema.Option(Schema.String),
+  routeHint: Schema.OptionFromNullOr(Schema.String),
 }) {
   update(
     fields: Partial<Pick<TestPlanStep, "title" | "instruction" | "expectedOutcome">>,
@@ -159,7 +160,11 @@ export class TestPlanStep extends Schema.Class<TestPlanStep>("@supervisor/TestPl
   }
 }
 
+export const DraftId = Schema.String.pipe(Schema.brand("DraftId"));
+export type DraftId = typeof DraftId.Type;
+
 export class TestPlanDraft extends Schema.Class<TestPlanDraft>("@supervisor/TestPlanDraft")({
+  id: DraftId,
   changesFor: ChangesFor,
   currentBranch: Schema.String,
   diffPreview: Schema.String,
@@ -187,11 +192,14 @@ export class TestPlanDraft extends Schema.Class<TestPlanDraft>("@supervisor/Test
             .join("\n")
         : "  (no changed files)";
 
-    const diffsText = this.diffPreview || "(no diffs available)";
+    const rawDiff = this.diffPreview || "(no diffs available)";
+    const diffsText =
+      rawDiff.length > DIFF_PREVIEW_CHAR_LIMIT
+        ? rawDiff.slice(0, DIFF_PREVIEW_CHAR_LIMIT) + "\n... (truncated)"
+        : rawDiff;
 
     return [
       "You are planning a browser-based regression test for a developer.",
-      "Return JSON only — no prose before or after the JSON object.",
       "",
       "Testing context:",
       `- Scope: ${scopeDescription}`,
@@ -216,9 +224,36 @@ export class TestPlanDraft extends Schema.Class<TestPlanDraft>("@supervisor/Test
       `- Maximum ${PLANNER_MAX_STEP_COUNT} steps.`,
       `- Pad step IDs to ${STEP_ID_PAD_LENGTH} digits (e.g. step-01, step-02).`,
       "",
-      "Return a JSON object with this exact shape:",
-      '{"id":"string","title":"string","rationale":"string","steps":[{"id":"string","title":"string","instruction":"string","expectedOutcome":"string","routeHint":"string|null"}]}',
+      "Once you have planned the steps, WRITE the plan as a JSON file.",
+      "The JSON file path will be provided at the end of this prompt.",
+      "You MUST follow this exact JSON schema:",
+      "",
+      "{",
+      '  "id": "plan-01",',
+      '  "title": "Short descriptive title",',
+      '  "rationale": "Why these steps were chosen",',
+      '  "steps": [',
+      "    {",
+      '      "id": "step-01",',
+      '      "title": "Short step title",',
+      '      "instruction": "Detailed instruction for the browser agent",',
+      '      "expectedOutcome": "Concrete assertion target",',
+      '      "routeHint": "/path or null"',
+      "    }",
+      "  ]",
+      "}",
     ].join("\n");
+  }
+
+  get planFileName(): string {
+    const slug = this.instruction
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 10)
+      .replace(/-$/, "");
+    const shortId = this.id.slice(0, 6);
+    return `plan-${slug || "draft"}-${shortId}.json`;
   }
 
   update(
@@ -526,9 +561,15 @@ export class TestReport extends ExecutedTestPlan.extend<TestReport>("@supervisor
 
     for (const event of this.events) {
       if (event._tag === "StepCompleted") {
-        statuses.set(event.stepId, { status: "passed", summary: event.summary });
+        statuses.set(event.stepId, {
+          status: "passed",
+          summary: event.summary,
+        });
       } else if (event._tag === "StepFailed") {
-        statuses.set(event.stepId, { status: "failed", summary: event.message });
+        statuses.set(event.stepId, {
+          status: "failed",
+          summary: event.message,
+        });
       }
     }
 

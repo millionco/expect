@@ -16,7 +16,9 @@ import { GitError, FindRepoRootError } from "./errors.js";
 
 // ── GitRepoRoot context service ──────────────────────────────────────
 
-export const GitRepoRoot: ServiceMap.Service<string, string> = ServiceMap.Service("GitRepoRoot");
+export class GitRepoRoot extends ServiceMap.Service<GitRepoRoot, string>()(
+  "@supervisor/GitRepoRoot",
+) {}
 
 // ── Git Service ──────────────────────────────────────────────────────
 
@@ -257,7 +259,11 @@ export class Git extends ServiceMap.Service<Git>()("@supervisor/Git", {
     });
 
     const getState = Effect.fn("Git.getState")(function* () {
+      yield* Effect.logInfo("FOO BAR");
+      console.error("getState 1");
       const isInside = yield* isInsideWorkTree;
+      yield* Effect.logInfo("FOO BAR 2");
+      console.error("getState 2");
       if (!isInside) {
         return new GitState({
           isGitRepo: false,
@@ -271,12 +277,18 @@ export class Git extends ServiceMap.Service<Git>()("@supervisor/Git", {
           fileStats: [],
         });
       }
+      console.error("getState 3");
+      yield* Effect.logInfo("FOO BAR3");
       const currentBranch = yield* getCurrentBranch;
+      console.error("getState 4");
       const mainBranch = yield* getMainBranch;
+      console.error("getState 5");
       const isOnMain = currentBranch === mainBranch;
+      console.error("getState 6");
       const branchFileStats = yield* getFileStats(
         ChangesFor.makeUnsafe({ _tag: "Changes", mainBranch }),
       );
+      console.error("getState 7");
       const workingTreeFileStats = yield* getFileStats(
         ChangesFor.makeUnsafe({ _tag: "WorkingTree" }),
       );
