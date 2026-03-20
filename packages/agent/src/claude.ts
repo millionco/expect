@@ -36,6 +36,8 @@ const createAgentDebugLogPath = (cwd?: string): string => {
   return path.join(tracesDirectory, `${timestamp}.log`);
 };
 
+const isMcpServerError = (errorMessage: string): boolean => errorMessage.startsWith("MCP server ");
+
 const assertNoDebugLogErrors = (debugLogPath: string) => {
   let content: string;
   try {
@@ -46,7 +48,10 @@ const assertNoDebugLogErrors = (debugLogPath: string) => {
   const uniqueErrors = new Set<string>();
   for (const line of content.split("\n")) {
     if (line.includes("[ERROR]")) {
-      uniqueErrors.add(line.replace(/^\S+\s+\[ERROR\]\s*/, ""));
+      const errorMessage = line.replace(/^\S+\s+\[ERROR\]\s*/, "");
+      if (!isMcpServerError(errorMessage)) {
+        uniqueErrors.add(errorMessage);
+      }
     }
   }
   if (uniqueErrors.size > 0) {

@@ -9,8 +9,14 @@ const getProviderDisplayName = (provider: AgentProvider): string => {
   return "Cursor";
 };
 
+const stripMcpServerErrors = (value: string): string =>
+  value
+    .split("\n")
+    .filter((line) => !line.startsWith("MCP server "))
+    .join("\n");
+
 export const detectAuthError = (provider: AgentProvider, cause: unknown): string | undefined => {
-  const normalizedCause = String(cause).toLowerCase();
+  const normalizedCause = stripMcpServerErrors(String(cause)).toLowerCase();
 
   if (provider === "codex") {
     if (
