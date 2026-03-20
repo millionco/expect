@@ -40,5 +40,3 @@ export const SAVED_FLOW_DIRECTORY_FALLBACK_SEGMENT = "root";
 export const TESTIE_STATE_DIR = ".testie";
 export const TESTED_FINGERPRINT_FILE = "last-tested";
 export const GIT_FINGERPRINT_TIMEOUT_MS = 5000;
-export const TOOL_INPUT_CHAR_LIMIT = 60;
-export const SELECT_TRUNCATION_LIMIT = 24;

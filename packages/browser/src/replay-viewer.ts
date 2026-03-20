@@ -20,8 +20,9 @@ const buildLoadEventsScript = (source: EventsSource): string => {
       es.onerror = () => { if (statusEl) statusEl.textContent = 'Connection lost. Retrying...'; };`;
   }
 
+  const escapedPath = source.ndjsonPath.replaceAll("'", "\\'");
   return `
-      const res = await fetch('${source.ndjsonPath}');
+      const res = await fetch('${escapedPath}');
       if (res.ok) {
         allEvents = (await res.text()).trim().split('\\n').map(l => JSON.parse(l));
         if (allEvents.length >= 2) initPlayer(allEvents);

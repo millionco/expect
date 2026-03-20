@@ -384,7 +384,6 @@ const createBrowserRunEventIterable = (options: {
                 completionEvent = {
                   ...event,
                   sessionId: streamState.sessionId,
-
                   replaySessionPath: options.replayOutputPath,
                 };
               } else {

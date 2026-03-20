@@ -1,7 +1,7 @@
 export { Browser, runBrowser } from "./browser";
 export { buildReplayViewerHtml } from "./replay-viewer";
 export { diffSnapshots } from "./diff";
-export { collectEvents, collectAllEvents, saveSession, loadSession } from "./recorder";
+export { collectEvents, collectAllEvents, loadSession } from "./recorder";
 export type {
   Browser as BrowserProfile,
   BrowserKey,

@@ -214,6 +214,39 @@ describe("executeBrowserFlow", () => {
     });
   });
 
+  it("surfaces agent stream errors as a failed run", async () => {
+    const events = await Effect.runPromise(
+      Stream.runCollect(
+        executeBrowserFlow({
+          target: testTarget,
+          plan: testPlan,
+          model: createStreamModel(
+            [
+              { type: "stream-start", warnings: [] },
+              { type: "text-start", id: "t1" },
+              { type: "text-delta", id: "t1", delta: "Starting up..." },
+              { type: "text-end", id: "t1" },
+              {
+                type: "error",
+                error: new Error("Model not available"),
+              } as LanguageModelV3StreamPart,
+            ],
+            () => {},
+          ),
+        }),
+      ),
+    );
+
+    const errorEvent = events.find((event) => event.type === "error");
+    expect(errorEvent).toBeDefined();
+
+    const completionEvent = events.find((event) => event.type === "run-completed");
+    expect(completionEvent).toMatchObject({
+      type: "run-completed",
+      status: "failed",
+    });
+  });
+
   it("stores browser screenshots in /tmp and emits the saved path", async () => {
     const screenshotBase64 = Buffer.from("fake screenshot").toString("base64");
     const screenshotResult = JSON.stringify({

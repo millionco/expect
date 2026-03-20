@@ -7,8 +7,6 @@ const MIME_TYPES: Record<string, string> = {
   ".css": "text/css",
   ".js": "application/javascript",
   ".json": "application/json",
-  ".webm": "video/webm",
-  ".mp4": "video/mp4",
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".ndjson": "application/x-ndjson",
