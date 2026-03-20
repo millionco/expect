@@ -3,7 +3,11 @@ import { Box, Static, Text, useInput } from "ink";
 import figures from "figures";
 import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
 import { useAtom, useAtomValue } from "@effect/atom-react";
-import { changesForDisplayName, type TestPlan } from "@browser-tester/shared/models";
+import {
+  changesForDisplayName,
+  type TestPlan,
+  type ExecutedTestPlan,
+} from "@browser-tester/shared/models";
 import {
   PROGRESS_BAR_WIDTH,
   TESTING_TIMER_UPDATE_INTERVAL_MS,
@@ -54,9 +58,9 @@ export const TestingScreen = ({ plan }: TestingScreenProps) => {
   const running = AsyncResult.isWaiting(executionResult);
   const done = AsyncResult.isSuccess(executionResult);
   const error = AsyncResult.isFailure(executionResult) ? String(executionResult.cause) : undefined;
-  const executedPlan = done ? executionResult.value.executedPlan : undefined;
   const report = done ? executionResult.value.report : undefined;
 
+  const [executedPlan, setExecutedPlan] = useState<ExecutedTestPlan | undefined>(undefined);
   const [started, setStarted] = useState(false);
   const [runStartedAt, setRunStartedAt] = useState<number | undefined>(undefined);
   const [elapsedTimeMs, setElapsedTimeMs] = useState(0);
@@ -76,10 +80,9 @@ export const TestingScreen = ({ plan }: TestingScreenProps) => {
   }, [runStartedAt, running]);
 
   const startRun = () => {
-    console.error("[testing-screen] starting execution");
     setStarted(true);
     setRunStartedAt(Date.now());
-    triggerExecute({ testPlan: plan });
+    triggerExecute({ testPlan: plan, onUpdate: setExecutedPlan });
   };
 
   useInput((input, key) => {
