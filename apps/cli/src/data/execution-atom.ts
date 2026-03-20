@@ -6,6 +6,7 @@ import { cliAtomRuntime } from "./runtime.js";
 
 interface ExecutePlanInput {
   readonly testPlan: TestPlan;
+  readonly onUpdate: (executed: ExecutedTestPlan) => void;
 }
 
 export interface ExecutionResult {
@@ -28,7 +29,7 @@ export const executePlanFn = cliAtomRuntime.fn(
       const finalExecuted = yield* executor.executePlan(input.testPlan).pipe(
         Stream.tap((executed) =>
           Effect.sync(() => {
-            console.error("[execution-atom] stream event, events:", executed.events.length);
+            input.onUpdate(executed);
             const lastEvent = executed.events.at(-1);
             if (lastEvent?._tag === "ToolResult" && lastEvent.toolName.endsWith("__screenshot")) {
               Atom.update(screenshotPathsAtom, (previous) => [...previous, lastEvent.result]);

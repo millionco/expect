@@ -1,14 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  Array,
-  Effect,
-  FileSystem,
-  Layer,
-  Option,
-  Schema,
-  Stream,
-  String,
-} from "effect";
+import { Array, Effect, FileSystem, Layer, Option, Schema, Stream, String } from "effect";
 import { NodeServices } from "@effect/platform-node";
 import { Agent } from "@browser-tester/agent";
 import {
@@ -56,9 +47,7 @@ const loadFixtureParts = Effect.gen(function* () {
     .pipe(
       Effect.map(String.split("\n")),
       Effect.map(Array.filter((line) => line.trim().length > 0)),
-      Effect.map(
-        Array.map((line) => JSON.parse(line) as LanguageModelV3StreamPart)
-      )
+      Effect.map(Array.map((line) => JSON.parse(line) as LanguageModelV3StreamPart)),
     );
 }).pipe(Effect.provide(NodeServices.layer));
 
@@ -81,7 +70,7 @@ describe("reducer", () => {
     console.log("Total events:", executed.events.length);
     console.log(
       "Event tags:",
-      executed.events.map((event) => event._tag)
+      executed.events.map((event) => event._tag),
     );
 
     console.log("FINISHED EXECUTED:");
@@ -89,15 +78,9 @@ describe("reducer", () => {
 
     expect(executed.events.length).toBeGreaterThan(0);
 
-    const hasToolCalls = executed.events.some(
-      (event) => event._tag === "ToolCall"
-    );
-    const hasToolResults = executed.events.some(
-      (event) => event._tag === "ToolResult"
-    );
-    const hasThinking = executed.events.some(
-      (event) => event._tag === "AgentThinking"
-    );
+    const hasToolCalls = executed.events.some((event) => event._tag === "ToolCall");
+    const hasToolResults = executed.events.some((event) => event._tag === "ToolResult");
+    const hasThinking = executed.events.some((event) => event._tag === "AgentThinking");
 
     expect(hasToolCalls).toBe(true);
     expect(hasToolResults).toBe(true);
