@@ -8,6 +8,10 @@ import { ClaudeQueryError } from "./errors.js";
 import { CurrentModel } from "./current-model.js";
 import { ClaudeStreamEvent } from "./schemas/claude-stream.js";
 import { AgentStreamOptions } from "./types.js";
+import {
+  createBrowserMcpServer,
+  McpRuntime,
+} from "@browser-tester/browser/mcp";
 import { buildClaudeProcessEnv } from "./utils/build-claude-process-env.js";
 
 const AGENT_TRACES_DIRECTORY_NAME = ".testie-agent-traces";
@@ -20,7 +24,9 @@ const createAgentDebugLogPath = (cwd: string): string => {
 };
 
 const resolveClaudeExecutablePath = (): string | undefined => {
-  const require = createRequire(typeof __filename !== "undefined" ? __filename : import.meta.url);
+  const require = createRequire(
+    typeof __filename !== "undefined" ? __filename : import.meta.url
+  );
 
   try {
     const sdkEntryPath = require.resolve("@anthropic-ai/claude-agent-sdk");
@@ -31,56 +37,68 @@ const resolveClaudeExecutablePath = (): string | undefined => {
   }
 };
 
-const buildQueryOptions = (options: AgentStreamOptions, model: string) => {
-  const explicitExecutablePath = resolveClaudeExecutablePath();
-  const env = buildClaudeProcessEnv();
-  const debugLogPath = createAgentDebugLogPath(options.cwd);
-
-  return {
-    model,
-    cwd: options.cwd,
-    allowDangerouslySkipPermissions: true,
-    permissionMode: "bypassPermissions" as const,
-    debugFile: debugLogPath,
-    ...(Option.isSome(options.sessionId) ? { resume: options.sessionId.value } : {}),
-    ...(Option.isSome(options.systemPrompt)
-      ? { appendSystemPrompt: options.systemPrompt.value }
-      : {}),
-    env,
-    ...(explicitExecutablePath ? { pathToClaudeCodeExecutable: explicitExecutablePath } : {}),
-  };
-};
-
 export class ClaudeProvider extends ServiceMap.Service<
   ClaudeProvider,
   {
     readonly stream: (
-      options: AgentStreamOptions,
+      options: AgentStreamOptions
     ) => Stream.Stream<LanguageModelV3StreamPart, ClaudeQueryError>;
   }
 >()("@browser-tester/ClaudeProvider") {
   static layer = Layer.effect(ClaudeProvider)(
     Effect.gen(function* () {
       const model = yield* CurrentModel;
+      const browserMcpServer = createBrowserMcpServer(McpRuntime);
+      const mcpServers = {
+        browser: {
+          type: "sdk" as const,
+          name: "browser",
+          instance: browserMcpServer,
+        },
+      };
+
       return ClaudeProvider.of({
         stream: (options) => {
+          const explicitExecutablePath = resolveClaudeExecutablePath();
+          const env = buildClaudeProcessEnv();
+          const debugLogPath = createAgentDebugLogPath(options.cwd);
+
           const claudeQuery = query({
             prompt: options.prompt,
-            options: buildQueryOptions(options, model),
+            options: {
+              model,
+              cwd: options.cwd,
+              allowDangerouslySkipPermissions: true,
+              permissionMode: "bypassPermissions" as const,
+              debugFile: debugLogPath,
+              ...(Option.isSome(options.sessionId)
+                ? { resume: options.sessionId.value }
+                : {}),
+              ...(Option.isSome(options.systemPrompt)
+                ? { appendSystemPrompt: options.systemPrompt.value }
+                : {}),
+              env,
+              ...(explicitExecutablePath
+                ? { pathToClaudeCodeExecutable: explicitExecutablePath }
+                : {}),
+              mcpServers,
+            },
           });
 
           return Stream.fromAsyncIterable(
             claudeQuery,
-            (cause) => new ClaudeQueryError({ cause: String(cause) }),
+            (cause) => new ClaudeQueryError({ cause: String(cause) })
           ).pipe(
-            Stream.mapEffect((rawEvent) => Schema.decodeUnknownEffect(ClaudeStreamEvent)(rawEvent)),
+            Stream.mapEffect((rawEvent) =>
+              Schema.decodeUnknownEffect(ClaudeStreamEvent)(rawEvent)
+            ),
             Stream.map((event) => event.streamParts),
             Stream.filter(Option.isSome),
             Stream.flatMap((option) => Stream.fromIterable(option.value)),
-            Stream.ensuring(Effect.sync(() => claudeQuery.close())),
+            Stream.ensuring(Effect.sync(() => claudeQuery.close()))
           );
         },
       });
-    }),
+    })
   );
 }

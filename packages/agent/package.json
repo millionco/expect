@@ -28,7 +28,9 @@
   "dependencies": {
     "@ai-sdk/provider": "^3.0.8",
     "@anthropic-ai/claude-agent-sdk": "^0.2.77",
+    "@browser-tester/browser": "workspace:*",
     "@browser-tester/shared": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "@openai/codex-sdk": "^0.114.0",
     "effect": "4.0.0-beta.28",
     "zod": "^4.3.6"

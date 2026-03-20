@@ -664,6 +664,7 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
     if (part.type === "text-delta") {
       const lastEvent = this.events.at(-1);
       if (lastEvent?._tag !== "AgentText") return this;
+      console.error(part.delta);
       return new ExecutedTestPlan({
         ...this,
         events: [
@@ -681,6 +682,7 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
         .split("\n")
         .map(parseMarker)
         .filter(Predicate.isNotUndefined);
+      console.error(`MARKERS`, foundMarkers);
       return foundMarkers.length === 0
         ? this
         : new ExecutedTestPlan({
@@ -690,6 +692,7 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
     }
 
     if (part.type === "tool-call") {
+      console.error(`tool call: ${part.toolName}`);
       return new ExecutedTestPlan({
         ...this,
         events: [
@@ -700,6 +703,7 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
     }
 
     if (part.type === "tool-result") {
+      console.error(`tool result: ${part.toolName}`);
       return new ExecutedTestPlan({
         ...this,
         events: [
