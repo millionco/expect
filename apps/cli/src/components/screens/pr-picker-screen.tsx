@@ -60,10 +60,11 @@ export const PrPickerScreen = () => {
     if (activeFilter === "recent") {
       result = result
         .filter((branch) => branch.updatedAt !== null)
-        .sort((first, second) => {
-          const firstDate = new Date(first.updatedAt ?? 0).getTime();
-          const secondDate = new Date(second.updatedAt ?? 0).getTime();
-          return secondDate - firstDate;
+        .toSorted((first, second) => {
+          if (first.prStatus === "merged" !== (second.prStatus === "merged")) {
+            return first.prStatus === "merged" ? 1 : -1;
+          }
+          return new Date(second.updatedAt ?? 0).getTime() - new Date(first.updatedAt ?? 0).getTime();
         });
     }
     return result;

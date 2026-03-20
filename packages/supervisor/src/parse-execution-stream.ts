@@ -98,12 +98,20 @@ export const parseMarkerLine = (
   };
 };
 
+const MARKER_PATTERN = /(STEP_START|STEP_DONE|ASSERTION_FAILED|RUN_COMPLETED)\|/g;
+
+const normalizeMarkerBoundaries = (text: string): string =>
+  text.replace(MARKER_PATTERN, (match, _group, offset) => {
+    if (offset === 0 || text[offset - 1] === "\n") return match;
+    return `\n${match}`;
+  });
+
 export const parseTextDelta = (
   delta: string,
   state: ExecutionStreamState,
   _context: ExecutionStreamContext,
 ): ExecutionStreamParseResult => {
-  const combinedText = `${state.bufferedText}${delta}`;
+  const combinedText = normalizeMarkerBoundaries(`${state.bufferedText}${delta}`);
   const lines = combinedText.split("\n");
   const bufferedText = lines.pop() ?? "";
   const events: BrowserRunEvent[] = [];
