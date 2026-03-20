@@ -27,44 +27,6 @@ export class ExecutionError extends Schema.ErrorClass<ExecutionError>(
   message = `Execution failed: ${this.reason.message}`;
 }
 
-const parseMarker = (line: string): ExecutionEvent | null => {
-  const pipeIndex = line.indexOf("|");
-  if (pipeIndex === -1) return null;
-
-  const marker = line.slice(0, pipeIndex);
-  const rest = line.slice(pipeIndex + 1);
-  const secondPipeIndex = rest.indexOf("|");
-  const first = secondPipeIndex === -1 ? rest : rest.slice(0, secondPipeIndex);
-  const second = secondPipeIndex === -1 ? "" : rest.slice(secondPipeIndex + 1);
-
-  if (marker === "STEP_START") {
-    return new StepStarted({
-      stepId: Schema.decodeSync(StepId)(first),
-      title: second,
-    });
-  }
-  if (marker === "STEP_DONE") {
-    return new StepCompleted({
-      stepId: Schema.decodeSync(StepId)(first),
-      summary: second,
-    });
-  }
-  if (marker === "ASSERTION_FAILED") {
-    return new StepFailed({
-      stepId: Schema.decodeSync(StepId)(first),
-      message: second,
-    });
-  }
-  if (marker === "RUN_COMPLETED") {
-    const status = Schema.decodeSync(
-      Schema.Literals(["passed", "failed"] as const)
-    )(first === "failed" ? "failed" : "passed");
-    return new RunFinished({ status, summary: second });
-  }
-
-  return null;
-};
-
 export class Executor extends ServiceMap.Service<Executor>()(
   "@supervisor/Executor",
   {
@@ -96,6 +58,11 @@ export class Executor extends ServiceMap.Service<Executor>()(
                 return [next, [next]] as const;
               }
             ),
+            Stream.tap((x) => {
+              console.error(`recv ExecutedTestPlan events:`);
+              console.error(x.events);
+              return Effect.void;
+            }),
             Stream.mapError((reason) => new ExecutionError({ reason }))
           );
       },
