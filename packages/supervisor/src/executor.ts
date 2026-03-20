@@ -4,33 +4,18 @@ import {
   ClaudeQueryError,
   CodexRunError,
 } from "@browser-tester/agent";
-import type { LanguageModelV3StreamPart } from "@ai-sdk/provider";
+import { Effect, Layer, Option, Schema, ServiceMap, Stream } from "effect";
 import {
-  Effect,
-  FileSystem,
-  Layer,
-  Option,
-  Ref,
-  Schema,
-  ServiceMap,
-  Stream,
-} from "effect";
-
-import {
-  AgentThinking,
   ExecutedTestPlan,
+  ExecutionEvent,
   RunFinished,
   RunStarted,
   StepCompleted,
   StepFailed,
   StepId,
   StepStarted,
-  ToolCall,
-  ToolResult,
-  type ExecutionEvent,
   type TestPlan,
 } from "@browser-tester/shared/models";
-import { serializeToolResult } from "./utils/serialize-tool-result.js";
 import { NodeServices } from "@effect/platform-node";
 
 export class ExecutionError extends Schema.ErrorClass<ExecutionError>(
@@ -80,62 +65,19 @@ const parseMarker = (line: string): ExecutionEvent | null => {
   return null;
 };
 
-const streamPartToUpdate = (
-  part: LanguageModelV3StreamPart,
-  buffer: Ref.Ref<string>
-): Effect.Effect<readonly ExecutionEvent[]> =>
-  Effect.gen(function* () {
-    if (part.type === "text-delta") {
-      const buffered = yield* Ref.get(buffer);
-      const combined = buffered + part.delta;
-      const lines = combined.split("\n");
-      const remaining = lines.pop() ?? "";
-      yield* Ref.set(buffer, remaining);
-
-      const events: ExecutionEvent[] = [];
-      for (const line of lines) {
-        const event = parseMarker(line.trim());
-        if (event) events.push(event);
-      }
-      return events;
-    }
-
-    if (part.type === "reasoning-delta") {
-      return [new AgentThinking({ text: part.delta })];
-    }
-
-    if (part.type === "tool-call") {
-      return [new ToolCall({ toolName: part.toolName, input: part.input })];
-    }
-
-    if (part.type === "tool-result") {
-      return [
-        new ToolResult({
-          toolName: part.toolName,
-          result: serializeToolResult(part.result),
-          isError: Boolean(part.isError),
-        }),
-      ];
-    }
-
-    return [];
-  });
-
 export class Executor extends ServiceMap.Service<Executor>()(
   "@supervisor/Executor",
   {
     make: Effect.gen(function* () {
       const agent = yield* Agent;
-      const fs = yield* FileSystem.FileSystem;
 
       const executePlan = Effect.fn("Executor.executePlan")(function* (
         plan: TestPlan
       ) {
-        const runStarted = new RunStarted({ plan });
-        const buffer = yield* Ref.make("");
-        const initial = new ExecutedTestPlan({ ...plan, events: [runStarted] });
-
-        const FIXTURE_PATH = `/Users/rasmus/dev/browser-tester/fixtures/execute-1.jsonl`;
+        const initial = new ExecutedTestPlan({
+          ...plan,
+          events: [new RunStarted({ plan })],
+        });
 
         return agent
           .stream(
@@ -147,17 +89,10 @@ export class Executor extends ServiceMap.Service<Executor>()(
             })
           )
           .pipe(
-            /* Stream.tap((part) =>
-              fs.writeFileString(FIXTURE_PATH, JSON.stringify(part) + "\n", {
-                flag: "a+",
-              })
-              ), */
-            Stream.mapEffect((part) => streamPartToUpdate(part, buffer)),
-            Stream.flatMap((events) => Stream.fromIterable(events)),
             Stream.mapAccum(
               () => initial,
-              (executed, event) => {
-                const next = executed.addEvent(event);
+              (executed, part) => {
+                const next = executed.addEvent(part);
                 return [next, [next]] as const;
               }
             ),
