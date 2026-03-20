@@ -451,6 +451,10 @@ export class AgentThinking extends Schema.TaggedClass<AgentThinking>()(
   }
 ) {}
 
+export class AgentText extends Schema.TaggedClass<AgentText>()("AgentText", {
+  text: Schema.String,
+}) {}
+
 export class RunFinished extends Schema.TaggedClass<RunFinished>()(
   "RunFinished",
   {
@@ -476,9 +480,9 @@ const serializeToolResult = (value: unknown): string => {
   }
 };
 
-const parseMarker = (line: string): ExecutionEvent | null => {
+const parseMarker = (line: string): ExecutionEvent | undefined => {
   const pipeIndex = line.indexOf("|");
-  if (pipeIndex === -1) return null;
+  if (pipeIndex === -1) return undefined;
 
   const marker = line.slice(0, pipeIndex);
   const rest = line.slice(pipeIndex + 1);
@@ -506,7 +510,7 @@ const parseMarker = (line: string): ExecutionEvent | null => {
       first === "failed" ? ("failed" as const) : ("passed" as const);
     return new RunFinished({ status, summary: second });
   }
-  return null;
+  return undefined;
 };
 
 export const ExecutionEvent = Schema.Union([
@@ -517,6 +521,7 @@ export const ExecutionEvent = Schema.Union([
   ToolCall,
   ToolResult,
   AgentThinking,
+  AgentText,
   RunFinished,
 ]);
 export type ExecutionEvent = typeof ExecutionEvent.Type;
@@ -647,6 +652,41 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
           new AgentThinking({ text: lastEvent.text + part.delta }),
         ],
       });
+    }
+
+    if (part.type === "text-start") {
+      return new ExecutedTestPlan({
+        ...this,
+        events: [...this.events, new AgentText({ text: "" })],
+      });
+    }
+
+    if (part.type === "text-delta") {
+      const lastEvent = this.events.at(-1);
+      if (lastEvent?._tag !== "AgentText") return this;
+      return new ExecutedTestPlan({
+        ...this,
+        events: [
+          ...this.events.slice(0, -1),
+          new AgentText({ text: lastEvent.text + part.delta }),
+        ],
+      });
+    }
+
+    /** @note(rasmus): handle markers when the text block ends */
+    if (part.type === "text-end") {
+      const lastEvent = this.events.at(-1);
+      if (lastEvent?._tag !== "AgentText") return this;
+      const foundMarkers = lastEvent.text
+        .split("\n")
+        .map(parseMarker)
+        .filter(Predicate.isNotUndefined);
+      return foundMarkers.length === 0
+        ? this
+        : new ExecutedTestPlan({
+            ...this,
+            events: [...this.events, ...foundMarkers],
+          });
     }
 
     if (part.type === "tool-call") {
