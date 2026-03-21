@@ -1,0 +1,23 @@
+packages/agent/src/codex.ts
+  74185f2845689e1f 60-64,71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "98eb9c940d321b806350316873a3c87523b9db9e",
+  "prompts": {
+    "74185f2845689e1f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ffc604bc-d9a3-4d8a-b31b-b46990142d84",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 6,
+      "total_deletions": 2,
+      "accepted_lines": 6,
+      "overriden_lines": 0
+    }
+  }
+}
