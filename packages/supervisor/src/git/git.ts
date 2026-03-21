@@ -27,6 +27,8 @@ export class GitRepoRoot extends ServiceMap.Service<GitRepoRoot, string>()(
 
 export class Git extends ServiceMap.Service<Git>()("@supervisor/Git", {
   make: Effect.gen(function* () {
+    const fileSystem = yield* FileSystem.FileSystem;
+
     // ── Low-level helpers ────────────────────────────────────
 
     const raw = (options: { args: string[]; operation: string; trim?: boolean }) =>
@@ -301,7 +303,6 @@ export class Git extends ServiceMap.Service<Git>()("@supervisor/Git", {
 
     const loadSavedFingerprint = Effect.fn("Git.loadSavedFingerprint")(function* () {
       const fingerprintPath = yield* getFingerprintPath;
-      const fileSystem = yield* FileSystem.FileSystem;
       return yield* fileSystem.readFileString(fingerprintPath).pipe(
         Effect.map(Str.trim),
         Effect.catchTag("PlatformError", () => Effect.succeed(undefined as string | undefined)),
@@ -313,7 +314,6 @@ export class Git extends ServiceMap.Service<Git>()("@supervisor/Git", {
       if (!fingerprint) return;
 
       const fingerprintPath = yield* getFingerprintPath;
-      const fileSystem = yield* FileSystem.FileSystem;
       const directory = path.dirname(fingerprintPath);
 
       yield* fileSystem
