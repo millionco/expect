@@ -25,12 +25,7 @@ export {
 } from "./git/index.js";
 export { checkoutBranch, getLocalBranches } from "./git.js";
 export { Github, GitHubCommandError } from "./github.js";
-export { loadPromptHistory, appendPrompt } from "./prompt-history.js";
-export {
-  computeTestedFingerprint,
-  isCurrentStateTested,
-  saveTestedFingerprint,
-} from "./tested-state.js";
+export { promptHistoryStorage } from "./prompt-history.js";
 export {
   categorizeChangedFiles,
   formatFileCategories,

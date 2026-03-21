@@ -1,10 +1,6 @@
 import figures from "figures";
 import { Text } from "ink";
-import {
-  isCurrentStateTested,
-  categorizeChangedFiles,
-  formatFileCategories,
-} from "@browser-tester/supervisor";
+import { categorizeChangedFiles, formatFileCategories } from "@browser-tester/supervisor";
 import { useGitState } from "../../hooks/use-git-state.js";
 import { useColors } from "../theme-context.js";
 import { RuledBox } from "./ruled-box.js";
@@ -17,7 +13,7 @@ export const UntestedChangesBanner = () => {
 
   if (!gitState.hasUntestedChanges) return null;
 
-  if (isCurrentStateTested()) return null;
+  if (gitState.isCurrentStateTested) return null;
 
   const fileCount = gitState.fileStats.length;
   const changedLines = gitState.totalChangedLines;

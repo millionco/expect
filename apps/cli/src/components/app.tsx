@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Box, useInput } from "ink";
 import { MouseProvider } from "../hooks/mouse-context.js";
 import { PrPickerScreen } from "./screens/pr-picker-screen.js";
@@ -11,7 +11,6 @@ import { ThemePickerScreen } from "./screens/theme-picker-screen.js";
 import { MainMenu } from "./screens/main-menu-screen.js";
 import { Modeline } from "./ui/modeline.js";
 import { useNavigationStore, Screen } from "../stores/use-navigation.js";
-import { usePreferencesStore } from "../stores/use-preferences.js";
 import { usePlanStore } from "../stores/use-plan-store.js";
 import { usePlanExecutionStore } from "../stores/use-plan-execution-store.js";
 import { useGitState } from "../hooks/use-git-state.js";
@@ -23,10 +22,6 @@ export const App = () => {
   const setScreen = useNavigationStore((state) => state.setScreen);
   const navigateTo = useNavigationStore((state) => state.navigateTo);
   const { data: gitState, isLoading: gitStateLoading } = useGitState();
-
-  useEffect(() => {
-    usePreferencesStore.getState().hydrateHistory();
-  }, []);
 
   const goBack = () => {
     if (screen._tag === "ReviewPlan") {

@@ -14,9 +14,8 @@ export class ExecutionError extends Schema.ErrorClass<ExecutionError>("@supervis
 
 export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Executor", {
   make: Effect.gen(function* () {
-    const agent = yield* Agent;
-
     const executePlan = Effect.fn("Executor.executePlan")(function* (plan: TestPlan) {
+      const agent = yield* Agent;
       const initial = new ExecutedTestPlan({
         ...plan,
         events: [new RunStarted({ plan })],

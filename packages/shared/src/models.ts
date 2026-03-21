@@ -55,6 +55,8 @@ export class GitState extends Schema.Class<GitState>("@supervisor/GitState")({
   hasBranchCommits: Schema.Boolean,
   branchCommitCount: Schema.Number,
   fileStats: Schema.Array(FileStat),
+  fingerprint: Schema.UndefinedOr(Schema.String),
+  savedFingerprint: Schema.UndefinedOr(Schema.String),
 }) {
   get hasUntestedChanges(): boolean {
     return this.hasChangesFromMain || this.hasUnstagedChanges;
@@ -62,6 +64,11 @@ export class GitState extends Schema.Class<GitState>("@supervisor/GitState")({
 
   get totalChangedLines(): number {
     return this.fileStats.reduce((sum, stat) => sum + stat.added + stat.removed, 0);
+  }
+
+  get isCurrentStateTested(): boolean {
+    if (!this.fingerprint || !this.savedFingerprint) return false;
+    return this.fingerprint === this.savedFingerprint;
   }
 }
 

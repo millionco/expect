@@ -14,7 +14,6 @@ import { usePreferencesStore } from "./stores/use-preferences.js";
 import { usePlanStore, Plan } from "./stores/use-plan-store.js";
 import { queryClient } from "./query-client.js";
 import { setInkInstance } from "./utils/clear-ink-display.js";
-import { setAgentBackend } from "./data/runtime.js";
 
 const DEFAULT_SKIP_PLANNING = true;
 
@@ -101,11 +100,8 @@ const resolveChangesFor = async (
 };
 
 const seedStores = (opts: CommanderOpts, changesFor: ChangesFor, currentBranch: string) => {
-  if (opts.agent) {
-    setAgentBackend(opts.agent);
-  }
-
   usePreferencesStore.setState({
+    ...(opts.agent ? { agentBackend: opts.agent } : {}),
     autoRunAfterPlanning: opts.yes ?? false,
     skipPlanning: DEFAULT_SKIP_PLANNING,
   });

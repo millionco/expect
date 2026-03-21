@@ -29,8 +29,8 @@ import cliTruncate from "cli-truncate";
 import { formatElapsedTime } from "../../utils/format-elapsed-time.js";
 import { Image } from "../ui/image.js";
 import { ErrorMessage } from "../ui/error-message.js";
-import { getCreatePlanFn } from "../../data/planning-atom.js";
-import { getExecutePlanFn, screenshotPathsAtom } from "../../data/execution-atom.js";
+import { createPlanFn } from "../../data/planning-atom.js";
+import { executePlanFn, screenshotPathsAtom } from "../../data/execution-atom.js";
 
 interface TestingScreenProps {
   changesFor: ChangesFor;
@@ -47,8 +47,9 @@ export const TestingScreen = ({ changesFor, instruction }: TestingScreenProps) =
   const [testPlan, setTestPlan] = useState<TestPlan | undefined>(initialPlan);
   const [planningError, setPlanningError] = useState<string | undefined>(undefined);
 
-  const triggerCreatePlan = useAtomSet(getCreatePlanFn(), { mode: "promise" });
-  const [executionResult, triggerExecute] = useAtom(getExecutePlanFn(), { mode: "promiseExit" });
+  const agentBackend = usePreferencesStore((state) => state.agentBackend);
+  const triggerCreatePlan = useAtomSet(createPlanFn, { mode: "promise" });
+  const [executionResult, triggerExecute] = useAtom(executePlanFn, { mode: "promiseExit" });
   const screenshotPaths = useAtomValue(screenshotPathsAtom);
   const running = testPlan ? AsyncResult.isWaiting(executionResult) : false;
   const done = AsyncResult.isSuccess(executionResult);
@@ -93,7 +94,7 @@ export const TestingScreen = ({ changesFor, instruction }: TestingScreenProps) =
     planningStartedRef.current = true;
     setRunStartedAt(Date.now());
 
-    triggerCreatePlan({ changesFor, flowInstruction: instruction })
+    triggerCreatePlan({ changesFor, flowInstruction: instruction, agentBackend })
       .then((plan) => {
         usePlanStore.getState().setReadyTestPlan(plan);
 
@@ -107,7 +108,7 @@ export const TestingScreen = ({ changesFor, instruction }: TestingScreenProps) =
       .catch((planError) => {
         setPlanningError(planError instanceof Error ? planError.message : String(planError));
       });
-  }, [testPlan, changesFor, instruction, triggerCreatePlan, setScreen]);
+  }, [testPlan, changesFor, instruction, agentBackend, triggerCreatePlan, setScreen]);
 
   // Execution phase: start when plan becomes available
   const executionStartedRef = useRef(false);
@@ -117,8 +118,8 @@ export const TestingScreen = ({ changesFor, instruction }: TestingScreenProps) =
     if (runStartedAt === undefined) {
       setRunStartedAt(Date.now());
     }
-    triggerExecute({ testPlan, onUpdate: handlePlanUpdate });
-  }, [testPlan, triggerExecute, handlePlanUpdate, runStartedAt, exitRequested]);
+    triggerExecute({ testPlan, agentBackend, onUpdate: handlePlanUpdate });
+  }, [testPlan, agentBackend, triggerExecute, handlePlanUpdate, runStartedAt, exitRequested]);
 
   // Exit when exitRequested and no longer running/planning
   useEffect(() => {

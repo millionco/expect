@@ -1,8 +1,10 @@
 import { NodeServices } from "@effect/platform-node";
-import { Effect, Layer, ServiceMap } from "effect";
+import { Effect, FileSystem, Layer, ServiceMap } from "effect";
 import * as Arr from "effect/Array";
 import * as Str from "effect/String";
 import * as F from "effect/Function";
+import * as crypto from "node:crypto";
+import * as path from "node:path";
 import simpleGit from "simple-git";
 
 import {
@@ -12,6 +14,7 @@ import {
   FileStat,
   GitState,
 } from "@browser-tester/shared/models";
+import { TESTED_FINGERPRINT_FILE, TESTIE_STATE_DIR } from "../constants.js";
 import { GitError, FindRepoRootError } from "./errors.js";
 
 // ── GitRepoRoot context service ──────────────────────────────────────
@@ -258,12 +261,71 @@ export class Git extends ServiceMap.Service<Git>()("@supervisor/Git", {
       );
     });
 
+    // ── Fingerprint ──────────────────────────────────────────
+
+    const NULL_SEPARATOR = "\0";
+
+    const computeFingerprint = Effect.fn("Git.computeFingerprint")(function* () {
+      const head = yield* raw({
+        args: ["rev-parse", "HEAD"],
+        operation: "getting HEAD for fingerprint",
+        trim: true,
+      }).pipe(Effect.catchTag("GitError", () => Effect.succeed("")));
+
+      if (!head) return undefined;
+
+      const unstaged = yield* raw({
+        args: ["diff"],
+        operation: "getting unstaged diff for fingerprint",
+      }).pipe(Effect.catchTag("GitError", () => Effect.succeed("")));
+
+      const staged = yield* raw({
+        args: ["diff", "--cached"],
+        operation: "getting staged diff for fingerprint",
+      }).pipe(Effect.catchTag("GitError", () => Effect.succeed("")));
+
+      return crypto
+        .createHash("sha256")
+        .update(head)
+        .update(NULL_SEPARATOR)
+        .update(unstaged)
+        .update(NULL_SEPARATOR)
+        .update(staged)
+        .digest("hex");
+    });
+
+    const getFingerprintPath = Effect.gen(function* () {
+      const repoRoot = yield* GitRepoRoot;
+      return path.join(repoRoot, TESTIE_STATE_DIR, TESTED_FINGERPRINT_FILE);
+    });
+
+    const loadSavedFingerprint = Effect.fn("Git.loadSavedFingerprint")(function* () {
+      const fingerprintPath = yield* getFingerprintPath;
+      const fileSystem = yield* FileSystem.FileSystem;
+      return yield* fileSystem.readFileString(fingerprintPath).pipe(
+        Effect.map(Str.trim),
+        Effect.catchTag("SystemError", () => Effect.succeed(undefined as string | undefined)),
+      );
+    });
+
+    const saveTestedFingerprint = Effect.fn("Git.saveTestedFingerprint")(function* () {
+      const fingerprint = yield* computeFingerprint();
+      if (!fingerprint) return;
+
+      const fingerprintPath = yield* getFingerprintPath;
+      const fileSystem = yield* FileSystem.FileSystem;
+      const directory = path.dirname(fingerprintPath);
+
+      yield* fileSystem
+        .makeDirectory(directory, { recursive: true })
+        .pipe(Effect.catchTag("SystemError", () => Effect.void));
+      yield* fileSystem.writeFileString(fingerprintPath, fingerprint);
+    });
+
+    // ── State ─────────────────────────────────────────────────
+
     const getState = Effect.fn("Git.getState")(function* () {
-      yield* Effect.logInfo("FOO BAR");
-      console.error("getState 1");
       const isInside = yield* isInsideWorkTree;
-      yield* Effect.logInfo("FOO BAR 2");
-      console.error("getState 2");
       if (!isInside) {
         return new GitState({
           isGitRepo: false,
@@ -275,24 +337,24 @@ export class Git extends ServiceMap.Service<Git>()("@supervisor/Git", {
           hasBranchCommits: false,
           branchCommitCount: 0,
           fileStats: [],
+          fingerprint: undefined,
+          savedFingerprint: undefined,
         });
       }
-      console.error("getState 3");
-      yield* Effect.logInfo("FOO BAR3");
+
       const currentBranch = yield* getCurrentBranch;
-      console.error("getState 4");
       const mainBranch = yield* getMainBranch;
-      console.error("getState 5");
       const isOnMain = currentBranch === mainBranch;
-      console.error("getState 6");
       const branchFileStats = yield* getFileStats(
         ChangesFor.makeUnsafe({ _tag: "Changes", mainBranch }),
       );
-      console.error("getState 7");
       const workingTreeFileStats = yield* getFileStats(
         ChangesFor.makeUnsafe({ _tag: "WorkingTree" }),
       );
       const recentCommits = yield* getRecentCommits(`${mainBranch}..HEAD`);
+      const fingerprint = yield* computeFingerprint();
+      const savedFingerprint = yield* loadSavedFingerprint();
+
       return new GitState({
         isGitRepo: true,
         currentBranch,
@@ -303,6 +365,8 @@ export class Git extends ServiceMap.Service<Git>()("@supervisor/Git", {
         hasBranchCommits: recentCommits.length > 0,
         branchCommitCount: recentCommits.length,
         fileStats: branchFileStats,
+        fingerprint,
+        savedFingerprint,
       });
     });
 
@@ -317,6 +381,8 @@ export class Git extends ServiceMap.Service<Git>()("@supervisor/Git", {
       getRecentCommits,
       getCommitSummary,
       getState,
+      computeFingerprint,
+      saveTestedFingerprint,
     } as const;
   }),
 }) {

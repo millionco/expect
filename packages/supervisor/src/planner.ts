@@ -77,9 +77,8 @@ const parsePlanFile = (
 
 export class Planner extends ServiceMap.Service<Planner>()("@supervisor/Planner", {
   make: Effect.gen(function* () {
-    const agent = yield* Agent;
-
     const plan = Effect.fn("Planner.plan")(function* (draft: TestPlanDraft) {
+      const agent = yield* Agent;
       const stateDir = path.join(process.cwd(), TESTIE_STATE_DIR);
       fs.mkdirSync(stateDir, { recursive: true });
       const sentinelPath = path.join(stateDir, draft.planFileName);
