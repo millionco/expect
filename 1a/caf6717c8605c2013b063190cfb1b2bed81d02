@@ -1,0 +1,25 @@
+packages/supervisor/tests/execute-browser-flow.test.ts
+  c1a3de9295f8e62e 185
+packages/browser/tests/mcp-server.test.ts
+  c1a3de9295f8e62e 70,75-76,79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "1acaf6717c8605c2013b063190cfb1b2bed81d02",
+  "prompts": {
+    "c1a3de9295f8e62e": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "22361605-c311-4bc1-834b-7bae85641ce3",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 10,
+      "total_deletions": 3,
+      "accepted_lines": 5,
+      "overriden_lines": 0
+    }
+  }
+}
