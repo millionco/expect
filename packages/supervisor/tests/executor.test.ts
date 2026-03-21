@@ -1,9 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { Array, Effect, FileSystem, Layer, Option, Schema, Stream, String } from "effect";
+import { Array, Effect, FileSystem, Option, String } from "effect";
 import { NodeServices } from "@effect/platform-node";
-import { Agent } from "@browser-tester/agent";
 import {
-  DraftId,
   ExecutedTestPlan,
   TestPlan,
   TestPlanStep,
@@ -11,10 +9,14 @@ import {
   PlanId,
   ChangesFor,
 } from "@browser-tester/shared/models";
-import { Executor } from "../src/executor.js";
 import type { LanguageModelV3StreamPart } from "@ai-sdk/provider";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const FIXTURE_PATH = `/Users/rasmus/dev/browser-tester/fixtures/execute-1.jsonl`;
+const FIXTURE_PATH = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "../../../fixtures/execute-1.jsonl",
+);
 
 const makeTestPlan = (): TestPlan =>
   new TestPlan({
