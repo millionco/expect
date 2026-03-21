@@ -304,7 +304,7 @@ export class Git extends ServiceMap.Service<Git>()("@supervisor/Git", {
       const fileSystem = yield* FileSystem.FileSystem;
       return yield* fileSystem.readFileString(fingerprintPath).pipe(
         Effect.map(Str.trim),
-        Effect.catchTag("SystemError", () => Effect.succeed(undefined as string | undefined)),
+        Effect.catchTag("PlatformError", () => Effect.succeed(undefined as string | undefined)),
       );
     });
 
@@ -318,7 +318,7 @@ export class Git extends ServiceMap.Service<Git>()("@supervisor/Git", {
 
       yield* fileSystem
         .makeDirectory(directory, { recursive: true })
-        .pipe(Effect.catchTag("SystemError", () => Effect.void));
+        .pipe(Effect.catchTag("PlatformError", () => Effect.void));
       yield* fileSystem.writeFileString(fingerprintPath, fingerprint);
     });
 
