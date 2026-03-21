@@ -29,12 +29,8 @@ describe("Agent", () => {
         }).pipe(Effect.provide(layer), Effect.runPromise);
 
         const textParts = parts.filter(
-          (
-            part
-          ): part is Extract<
-            LanguageModelV3StreamPart,
-            { type: "text-delta" }
-          > => part.type === "text-delta"
+          (part): part is Extract<LanguageModelV3StreamPart, { type: "text-delta" }> =>
+            part.type === "text-delta",
         );
         const fullText = textParts.map((part) => part.delta).join("");
         expect(fullText.toLowerCase()).toContain("hello");
@@ -50,22 +46,16 @@ describe("Agent", () => {
                 sessionId: Option.none(),
                 prompt: "run pwd and tell me the result",
                 systemPrompt: Option.none(),
-              })
+              }),
             )
             .pipe(Stream.runCollect);
         }).pipe(Effect.provide(layer), Effect.runPromise);
 
         const toolResults = parts.filter(
-          (
-            part
-          ): part is Extract<
-            LanguageModelV3StreamPart,
-            { type: "tool-result" }
-          > => part.type === "tool-result"
+          (part): part is Extract<LanguageModelV3StreamPart, { type: "tool-result" }> =>
+            part.type === "tool-result",
         );
-        expect(toolResults.some((part) => part.result.includes("/tmp"))).toBe(
-          true
-        );
+        expect(toolResults.some((part) => part.result.includes("/tmp"))).toBe(true);
       }, 60_000);
 
       it("resumes session with sessionId", async () => {
@@ -76,12 +66,9 @@ describe("Agent", () => {
             .pipe(Stream.runCollect);
         }).pipe(Effect.provide(layer), Effect.runPromise);
 
-        const finishPart = firstParts.find(
-          (part) => part.type === "response-metadata"
-        );
+        const finishPart = firstParts.find((part) => part.type === "response-metadata");
         expect(finishPart).toBeDefined();
-        const sessionId =
-          finishPart?.type === "response-metadata" ? finishPart.id ?? "" : "";
+        const sessionId = finishPart?.type === "response-metadata" ? (finishPart.id ?? "") : "";
         expect(sessionId.length).toBeGreaterThan(0);
 
         const secondParts = await Effect.gen(function* () {
@@ -93,24 +80,20 @@ describe("Agent", () => {
                 sessionId: Option.some(sessionId),
                 prompt: "what was the last word I asked you to say?",
                 systemPrompt: Option.none(),
-              })
+              }),
             )
             .pipe(Stream.runCollect);
         }).pipe(Effect.provide(layer), Effect.runPromise);
 
         const textParts = secondParts.filter(
-          (
-            part
-          ): part is Extract<
-            LanguageModelV3StreamPart,
-            { type: "text-delta" }
-          > => part.type === "text-delta"
+          (part): part is Extract<LanguageModelV3StreamPart, { type: "text-delta" }> =>
+            part.type === "text-delta",
         );
         expect(
           textParts
             .map((part) => part.delta)
             .join("")
-            .toLowerCase()
+            .toLowerCase(),
         ).toContain("ping");
       }, 60_000);
     });

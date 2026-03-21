@@ -39,10 +39,14 @@ export const CookieSyncConfirmScreen = ({ plan }: CookieSyncConfirmScreenProps) 
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const activateOption = (option: ConfirmOption) => {
+    const finalPlan = option.id === "enable-sync" ? plan.update({ requiresCookies: true }) : plan;
     if (option.id === "enable-sync") {
-      setPlan(Plan.plan(plan.update({ requiresCookies: true })));
+      setPlan(Plan.plan(finalPlan));
     }
-    setScreen(Screen.Testing({ plan }));
+    usePlanStore.getState().setReadyTestPlan(finalPlan);
+    setScreen(
+      Screen.Testing({ changesFor: finalPlan.changesFor, instruction: finalPlan.instruction }),
+    );
   };
 
   useInput((input, key) => {

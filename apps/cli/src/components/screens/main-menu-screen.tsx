@@ -27,6 +27,7 @@ export const MainMenu = ({ gitState }: MainMenuProps) => {
   const COLORS = useColors();
   const [columns] = useStdoutDimensions();
   const toggleSkipPlanning = usePreferencesStore((state) => state.toggleSkipPlanning);
+  const instructionHistory = usePreferencesStore((state) => state.instructionHistory);
   const setScreen = useNavigationStore((state) => state.setScreen);
   const plan = usePlanStore((state) => state.plan);
   const [selectedContext, setSelectedContext] = useState<TestContext | undefined>(undefined);
@@ -37,11 +38,39 @@ export const MainMenu = ({ gitState }: MainMenuProps) => {
   const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [hasCycled, setHasCycled] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [savedCurrentInput, setSavedCurrentInput] = useState("");
+
+  const navigateHistoryBack = useCallback(() => {
+    if (instructionHistory.length === 0) return;
+    const nextIndex = historyIndex + 1;
+    if (nextIndex >= instructionHistory.length) return;
+    if (historyIndex === -1) {
+      setSavedCurrentInput(value);
+    }
+    setHistoryIndex(nextIndex);
+    setValue(instructionHistory[nextIndex]!);
+    setInputKey((previous) => previous + 1);
+  }, [historyIndex, instructionHistory, value]);
+
+  const navigateHistoryForward = useCallback(() => {
+    if (historyIndex <= -1) return;
+    const nextIndex = historyIndex - 1;
+    setHistoryIndex(nextIndex);
+    if (nextIndex === -1) {
+      setValue(savedCurrentInput);
+    } else {
+      setValue(instructionHistory[nextIndex]!);
+    }
+    setInputKey((previous) => previous + 1);
+  }, [historyIndex, instructionHistory, savedCurrentInput]);
 
   const picker = useContextPicker({
     gitState,
     onSelect: setSelectedContext,
   });
+
+  const inputFocused = !picker.pickerOpen;
 
   const defaultContext = useMemo(() => {
     return picker.localOptions.find((option) => option._tag === "WorkingTree") ?? undefined;
@@ -97,10 +126,11 @@ export const MainMenu = ({ gitState }: MainMenuProps) => {
         requiresCookies: false,
       });
 
-      console.error("[main-menu] draft created, navigating to planning");
+      console.error("[main-menu] draft created, navigating");
       usePreferencesStore.getState().rememberInstruction(trimmed);
       usePlanStore.getState().setPlan(Plan.draft(draft));
-      setScreen(Screen.Planning({ instruction: trimmed }));
+      usePlanStore.getState().setReadyTestPlan(undefined);
+      setScreen(Screen.Testing({ changesFor, instruction: trimmed }));
     },
     [value, activeContext, gitState, setScreen],
   );
@@ -186,7 +216,11 @@ export const MainMenu = ({ gitState }: MainMenuProps) => {
           </Clickable>
         </Box>
         <Clickable>
-          <RuledBox color={COLORS.PRIMARY} marginTop={1} paddingX={0}>
+          <RuledBox
+            color={inputFocused ? COLORS.PRIMARY : COLORS.BORDER}
+            marginTop={1}
+            paddingX={0}
+          >
             <Box justifyContent="space-between">
               <Box>
                 <Text color={COLORS.PRIMARY}>{"❯ "}</Text>
@@ -197,7 +231,8 @@ export const MainMenu = ({ gitState }: MainMenuProps) => {
                   placeholder={currentSuggestion ? `${currentSuggestion}  [tab]` : ""}
                   value={value}
                   onSubmit={submit}
-                  onDownArrowAtBottom={() => {}}
+                  onUpArrowAtTop={navigateHistoryBack}
+                  onDownArrowAtBottom={navigateHistoryForward}
                   onChange={handleInputChange}
                 />
               </Box>

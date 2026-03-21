@@ -10,7 +10,7 @@ import {
   Reporter,
   TestPlanDraft,
 } from "@browser-tester/supervisor";
-import { Agent } from "@browser-tester/agent";
+import { Agent, type AgentBackend } from "@browser-tester/agent";
 import figures from "figures";
 import { VERSION } from "../constants.js";
 import { CliRuntime } from "../runtime.js";
@@ -18,6 +18,7 @@ import { CliRuntime } from "../runtime.js";
 interface HeadlessRunOptions {
   changesFor: ChangesFor;
   instruction: string;
+  agent?: AgentBackend;
 }
 
 export const runHeadless = async (options: HeadlessRunOptions): Promise<void> => {
@@ -53,7 +54,7 @@ export const runHeadless = async (options: HeadlessRunOptions): Promise<void> =>
     const testPlan = await CliRuntime.runPromise(
       Planner.use((planner) => planner.plan(draft)).pipe(
         Effect.provide(Planner.layer),
-        Effect.provide(Agent.layerFor("claude")),
+        Effect.provide(Agent.layerFor(options.agent ?? "claude")),
       ),
     );
     console.error(`Plan: ${testPlan.title} (${testPlan.steps.length} steps)\n`);
@@ -61,12 +62,7 @@ export const runHeadless = async (options: HeadlessRunOptions): Promise<void> =>
     await CliRuntime.runPromise(
       Effect.gen(function* () {
         const executor = yield* Executor;
-        // HACK: Effect v4 beta loses Stream element type through ServiceMap.Service inference
-        const executionStream = (yield* executor.executePlan(
-          testPlan,
-        )) as Stream.Stream<ExecutedTestPlan>;
-
-        const finalExecuted = yield* executionStream.pipe(
+        const finalExecuted = yield* executor.executePlan(testPlan).pipe(
           Stream.tap((executed) =>
             Effect.sync(() => {
               const lastEvent = executed.events.at(-1);
@@ -102,7 +98,7 @@ export const runHeadless = async (options: HeadlessRunOptions): Promise<void> =>
         console.error(report.summary);
       }).pipe(
         Effect.provide(Executor.layer),
-        Effect.provide(Agent.layerFor("claude")),
+        Effect.provide(Agent.layerFor(options.agent ?? "claude")),
         Effect.catchCause((cause) =>
           Effect.sync(() => {
             if (!cause.reasons.every(Cause.isInterruptReason)) {

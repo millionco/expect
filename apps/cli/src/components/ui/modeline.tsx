@@ -3,6 +3,7 @@ import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions.js";
 import stringWidth from "string-width";
 import { useColors, useThemeContext } from "../theme-context.js";
 import { HintBar, HINT_SEPARATOR, type HintSegment } from "./hint-bar.js";
+import { Option } from "effect";
 import { useNavigationStore, Screen } from "../../stores/use-navigation.js";
 import { usePreferencesStore } from "../../stores/use-preferences.js";
 import { usePlanStore, Plan } from "../../stores/use-plan-store.js";
@@ -25,6 +26,18 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
           label: `skip planning ${skipPlanning ? "on" : "off"}`,
           color: skipPlanning ? COLORS.GREEN : undefined,
         },
+        {
+          key: "ctrl+p",
+          label: "pick pr",
+          cta: true,
+          onClick: () => setScreen(Screen.SelectPr()),
+        },
+        {
+          key: "ctrl+t",
+          label: "theme",
+          cta: true,
+          onClick: () => setScreen(Screen.Theme()),
+        },
       ];
     }
     case "SelectPr":
@@ -41,9 +54,6 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
         { key: "esc", label: "back", cta: true, onClick: () => setScreen(Screen.Main()) },
         { key: "enter", label: "select", color: COLORS.PRIMARY, cta: true },
       ];
-    case "Planning": {
-      return [{ key: "esc", label: "cancel", cta: true, onClick: () => setScreen(Screen.Main()) }];
-    }
     case "ReviewPlan":
       return [
         { key: "↑↓", label: "nav" },
@@ -56,10 +66,16 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
           color: COLORS.PRIMARY,
           cta: true,
           onClick: () => {
+            usePlanStore.getState().setReadyTestPlan(screen.plan);
             if (screen.plan.requiresCookies) {
               setScreen(Screen.CookieSyncConfirm({ plan: screen.plan }));
             } else {
-              setScreen(Screen.Testing({ plan: screen.plan }));
+              setScreen(
+                Screen.Testing({
+                  changesFor: screen.plan.changesFor,
+                  instruction: screen.plan.instruction,
+                }),
+              );
             }
           },
         },
@@ -80,7 +96,13 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
           onClick: () => {
             const updated = screen.plan.update({ requiresCookies: true });
             setPlan(Plan.plan(updated));
-            setScreen(Screen.Testing({ plan: updated }));
+            usePlanStore.getState().setReadyTestPlan(updated);
+            setScreen(
+              Screen.Testing({
+                changesFor: updated.changesFor,
+                instruction: updated.instruction,
+              }),
+            );
           },
         },
         {
@@ -88,29 +110,36 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
           label: "run anyway",
           color: COLORS.PRIMARY,
           cta: true,
-          onClick: () => setScreen(Screen.Testing({ plan: screen.plan })),
-        },
-      ];
-    case "Testing": {
-      return [
-        { key: "v", label: "cycle trace" },
-        { key: "esc", label: "cancel" },
-      ];
-    }
-    case "Results": {
-      return [
-        { key: "y", label: "copy", color: COLORS.PRIMARY, cta: true },
-        {
-          key: "esc",
-          label: "main menu",
-          cta: true,
           onClick: () => {
-            usePlanStore.getState().setPlan(undefined);
-            usePlanExecutionStore.getState().setExecutedPlan(undefined);
-            setScreen(Screen.Main());
+            usePlanStore.getState().setReadyTestPlan(screen.plan);
+            setScreen(
+              Screen.Testing({
+                changesFor: screen.plan.changesFor,
+                instruction: screen.plan.instruction,
+              }),
+            );
           },
         },
       ];
+    case "Testing": {
+      return [{ key: "esc", label: "cancel" }];
+    }
+    case "Results": {
+      const hints: HintSegment[] = [{ key: "y", label: "copy", color: COLORS.PRIMARY, cta: true }];
+      if (Option.isSome(screen.report.pullRequest)) {
+        hints.push({ key: "p", label: "post to PR", cta: true });
+      }
+      hints.push({
+        key: "esc",
+        label: "main menu",
+        cta: true,
+        onClick: () => {
+          usePlanStore.getState().setPlan(undefined);
+          usePlanExecutionStore.getState().setExecutedPlan(undefined);
+          setScreen(Screen.Main());
+        },
+      });
+      return hints;
     }
     case "Theme":
       return [

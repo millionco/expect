@@ -8,10 +8,7 @@ import { ClaudeQueryError } from "./errors.js";
 import { CurrentModel } from "./current-model.js";
 import { ClaudeStreamEvent } from "./schemas/claude-stream.js";
 import { AgentStreamOptions } from "./types.js";
-import {
-  createBrowserMcpServer,
-  McpRuntime,
-} from "@browser-tester/browser/mcp";
+import { createBrowserMcpServer, McpRuntime } from "@browser-tester/browser/mcp";
 import { buildClaudeProcessEnv } from "./utils/build-claude-process-env.js";
 
 const AGENT_TRACES_DIRECTORY_NAME = ".testie-agent-traces";
@@ -24,9 +21,7 @@ const createAgentDebugLogPath = (cwd: string): string => {
 };
 
 const resolveClaudeExecutablePath = (): string | undefined => {
-  const require = createRequire(
-    typeof __filename !== "undefined" ? __filename : import.meta.url
-  );
+  const require = createRequire(typeof __filename !== "undefined" ? __filename : import.meta.url);
 
   try {
     const sdkEntryPath = require.resolve("@anthropic-ai/claude-agent-sdk");
@@ -41,7 +36,7 @@ export class ClaudeProvider extends ServiceMap.Service<
   ClaudeProvider,
   {
     readonly stream: (
-      options: AgentStreamOptions
+      options: AgentStreamOptions,
     ) => Stream.Stream<LanguageModelV3StreamPart, ClaudeQueryError>;
   }
 >()("@browser-tester/ClaudeProvider") {
@@ -71,9 +66,7 @@ export class ClaudeProvider extends ServiceMap.Service<
               allowDangerouslySkipPermissions: true,
               permissionMode: "bypassPermissions" as const,
               debugFile: debugLogPath,
-              ...(Option.isSome(options.sessionId)
-                ? { resume: options.sessionId.value }
-                : {}),
+              ...(Option.isSome(options.sessionId) ? { resume: options.sessionId.value } : {}),
               ...(Option.isSome(options.systemPrompt)
                 ? { appendSystemPrompt: options.systemPrompt.value }
                 : {}),
@@ -87,18 +80,20 @@ export class ClaudeProvider extends ServiceMap.Service<
 
           return Stream.fromAsyncIterable(
             claudeQuery,
-            (cause) => new ClaudeQueryError({ cause: String(cause) })
+            (cause) => new ClaudeQueryError({ cause: String(cause) }),
           ).pipe(
             Stream.mapEffect((rawEvent) =>
-              Schema.decodeUnknownEffect(ClaudeStreamEvent)(rawEvent)
+              Schema.decodeUnknownEffect(ClaudeStreamEvent)(rawEvent).pipe(
+                Effect.catchTag("SchemaError", Effect.die),
+              ),
             ),
             Stream.map((event) => event.streamParts),
             Stream.filter(Option.isSome),
             Stream.flatMap((option) => Stream.fromIterable(option.value)),
-            Stream.ensuring(Effect.sync(() => claudeQuery.close()))
+            Stream.ensuring(Effect.sync(() => claudeQuery.close())),
           );
         },
       });
-    })
+    }),
   );
 }

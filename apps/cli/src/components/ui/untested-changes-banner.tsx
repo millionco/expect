@@ -1,5 +1,10 @@
 import figures from "figures";
 import { Text } from "ink";
+import {
+  isCurrentStateTested,
+  categorizeChangedFiles,
+  formatFileCategories,
+} from "@browser-tester/supervisor";
 import { useGitState } from "../../hooks/use-git-state.js";
 import { useColors } from "../theme-context.js";
 import { RuledBox } from "./ruled-box.js";
@@ -12,6 +17,8 @@ export const UntestedChangesBanner = () => {
 
   if (!gitState.hasUntestedChanges) return null;
 
+  if (isCurrentStateTested()) return null;
+
   const fileCount = gitState.fileStats.length;
   const changedLines = gitState.totalChangedLines;
 
@@ -20,14 +27,19 @@ export const UntestedChangesBanner = () => {
       ? `${changedLines} changed line${changedLines === 1 ? "" : "s"} not tested`
       : "Untested changes detected";
 
-  const detail = `${fileCount} file${fileCount === 1 ? "" : "s"} changed`;
+  const filePaths = gitState.fileStats.map((stat) => stat.relativePath);
+  const summary = categorizeChangedFiles(filePaths);
+  const categoryText =
+    summary.categories.length > 0
+      ? `${formatFileCategories(summary.categories)} across ${fileCount} file${fileCount === 1 ? "" : "s"}`
+      : `${fileCount} file${fileCount === 1 ? "" : "s"} changed`;
 
   return (
     <RuledBox color={COLORS.YELLOW} marginBottom={1}>
       <Text color={COLORS.YELLOW} bold>
         {figures.warning} {headline}
       </Text>
-      <Text color={COLORS.DIM}>{detail}</Text>
+      <Text color={COLORS.DIM}>{categoryText}</Text>
     </RuledBox>
   );
 };

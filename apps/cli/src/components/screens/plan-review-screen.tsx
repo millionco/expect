@@ -125,9 +125,11 @@ export const PlanReviewScreen = ({ plan }: PlanReviewScreenProps) => {
           isHeadless: false,
           requiresCookies: false,
         });
+        const changesFor = ChangesFor.makeUnsafe({ _tag: "Changes", mainBranch });
         usePreferencesStore.getState().rememberInstruction(trimmedInput);
         setPlan(Plan.draft(draft));
-        setScreen(Screen.Planning({ instruction: trimmedInput }));
+        usePlanStore.getState().setReadyTestPlan(undefined);
+        setScreen(Screen.Testing({ changesFor, instruction: trimmedInput }));
       }
       if (input.toLowerCase() === "n" || key.escape) {
         setResubmitConfirmVisible(false);
@@ -195,10 +197,11 @@ export const PlanReviewScreen = ({ plan }: PlanReviewScreenProps) => {
       }
 
       if (input === "a" || key.return) {
+        usePlanStore.getState().setReadyTestPlan(plan);
         if (plan.requiresCookies) {
           setScreen(Screen.CookieSyncConfirm({ plan }));
         } else {
-          setScreen(Screen.Testing({ plan }));
+          setScreen(Screen.Testing({ changesFor: plan.changesFor, instruction: plan.instruction }));
         }
       }
     },

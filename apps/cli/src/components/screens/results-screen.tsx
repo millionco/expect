@@ -57,7 +57,10 @@ export const ResultsScreen = ({ report }: ResultsScreenProps) => {
   return (
     <Box flexDirection="column" width="100%" paddingY={1}>
       <Box paddingX={1}>
-        <ScreenHeading title="Run results" subtitle={`${report.status.toUpperCase()}`} />
+        <ScreenHeading
+          title="Run results"
+          subtitle={`${report.title} │ ${report.status.toUpperCase()}`}
+        />
       </Box>
 
       <RuledBox color={report.status === "passed" ? COLORS.GREEN : COLORS.RED} marginTop={1}>
@@ -65,6 +68,11 @@ export const ResultsScreen = ({ report }: ResultsScreenProps) => {
           {report.status === "passed" ? "Plan completed" : "Issues found"}
         </Text>
         <Text color={COLORS.TEXT}>{report.summary}</Text>
+        {Option.isSome(report.pullRequest) ? (
+          <Text color={COLORS.DIM}>
+            PR: {report.pullRequest.value.title} (#{report.pullRequest.value.number})
+          </Text>
+        ) : null}
       </RuledBox>
 
       <Box flexDirection="column" marginTop={1} paddingX={1}>

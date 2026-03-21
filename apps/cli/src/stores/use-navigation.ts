@@ -1,14 +1,13 @@
 import { create } from "zustand";
 import * as Data from "effect/Data";
-import type { TestPlan, TestReport } from "@browser-tester/supervisor";
+import type { ChangesFor, TestPlan, TestReport } from "@browser-tester/shared/models";
 
 export type Screen = Data.TaggedEnum<{
   Main: {};
   SelectPr: {};
-  Planning: { instruction: string };
   ReviewPlan: { plan: TestPlan };
   CookieSyncConfirm: { plan: TestPlan };
-  Testing: { plan: TestPlan };
+  Testing: { changesFor: ChangesFor; instruction: string };
   Results: { report: TestReport };
   Theme: {};
   SavedFlowPicker: {};

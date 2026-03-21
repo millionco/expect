@@ -1,10 +1,7 @@
-import { useState } from "react";
-import { Box, Text, useInput } from "ink";
-import { useAtomSet } from "@effect/atom-react";
+import { useEffect, useState } from "react";
+import { Box, useInput } from "ink";
 import { MouseProvider } from "../hooks/mouse-context.js";
-import { useColors } from "./theme-context.js";
 import { PrPickerScreen } from "./screens/pr-picker-screen.js";
-import { PlanningScreen } from "./screens/planning-screen.js";
 import { PlanReviewScreen } from "./screens/plan-review-screen.js";
 import { CookieSyncConfirmScreen } from "./screens/cookie-sync-confirm-screen.js";
 import { Spinner } from "./ui/spinner.js";
@@ -15,76 +12,34 @@ import { MainMenu } from "./screens/main-menu-screen.js";
 import { Modeline } from "./ui/modeline.js";
 import { useNavigationStore, Screen } from "../stores/use-navigation.js";
 import { usePreferencesStore } from "../stores/use-preferences.js";
-import { usePlanStore, Plan } from "../stores/use-plan-store.js";
+import { usePlanStore } from "../stores/use-plan-store.js";
 import { usePlanExecutionStore } from "../stores/use-plan-execution-store.js";
 import { useGitState } from "../hooks/use-git-state.js";
 import { clearInkDisplay } from "../utils/clear-ink-display.js";
 import { useStdoutDimensions } from "../hooks/use-stdout-dimensions.js";
-import { createPlanFn } from "../data/planning-atom.js";
 
 export const App = () => {
   const screen = useNavigationStore((state) => state.screen);
   const setScreen = useNavigationStore((state) => state.setScreen);
   const navigateTo = useNavigationStore((state) => state.navigateTo);
   const { data: gitState, isLoading: gitStateLoading } = useGitState();
-  const COLORS = useColors();
-  const triggerCreatePlan = useAtomSet(createPlanFn, { mode: "promise" });
-  const [planningError, setPlanningError] = useState<string | undefined>(undefined);
 
-  const handlePlanningStart = async () => {
-    const plan = usePlanStore.getState().plan;
-    console.error("[app] handlePlanningStart, plan._tag:", plan?._tag);
-    if (plan?._tag !== "draft") return;
-
-    try {
-      const testPlan = await triggerCreatePlan({
-        changesFor: plan.changesFor,
-        flowInstruction: plan.instruction,
-      });
-      console.error("[app] planning succeeded:", testPlan.title, "steps:", testPlan.steps.length);
-      usePlanStore.getState().setPlan(Plan.plan(testPlan));
-      const { autoRunAfterPlanning, skipPlanning } = usePreferencesStore.getState();
-      console.error(
-        "[app] autoRunAfterPlanning:",
-        autoRunAfterPlanning,
-        "skipPlanning:",
-        skipPlanning,
-      );
-      const nextScreen = autoRunAfterPlanning || skipPlanning ? "Testing" : "ReviewPlan";
-      console.error("[app] navigating to:", nextScreen);
-      if (nextScreen === "Testing") {
-        setScreen(Screen.Testing({ plan: testPlan }));
-      } else {
-        setScreen(Screen.ReviewPlan({ plan: testPlan }));
-      }
-      console.error(
-        "[app] setScreen called, current screen._tag:",
-        useNavigationStore.getState().screen._tag,
-      );
-    } catch (error) {
-      console.error("[app] planning failed:", String(error));
-      setPlanningError(String(error));
-    }
-  };
+  useEffect(() => {
+    usePreferencesStore.getState().hydrateHistory();
+  }, []);
 
   const goBack = () => {
-    const { skipPlanning } = usePreferencesStore.getState();
-
-    if (screen._tag === "ReviewPlan" || screen._tag === "Planning") {
-      setPlanningError(undefined);
+    if (screen._tag === "ReviewPlan") {
       setScreen(Screen.Main());
       return;
     }
     if (screen._tag === "CookieSyncConfirm") {
-      if (skipPlanning) {
-        setScreen(Screen.Main());
-      } else {
-        setScreen(Screen.ReviewPlan({ plan: screen.plan }));
-      }
+      setScreen(Screen.ReviewPlan({ plan: screen.plan }));
       return;
     }
     if (screen._tag === "Results") {
       usePlanStore.getState().setPlan(undefined);
+      usePlanStore.getState().setReadyTestPlan(undefined);
       usePlanExecutionStore.getState().setExecutedPlan(undefined);
       setScreen(Screen.Main());
       return;
@@ -122,32 +77,16 @@ export const App = () => {
     );
   }
 
-  if (screen._tag === "Planning" && !planningError) {
-    void handlePlanningStart();
-  }
-
   const renderScreen = () => {
     switch (screen._tag) {
       case "Testing":
-        return <TestingScreen plan={screen.plan} />;
+        return <TestingScreen changesFor={screen.changesFor} instruction={screen.instruction} />;
       case "Results":
         return <ResultsScreen report={screen.report} />;
       case "Theme":
         return <ThemePickerScreen />;
       case "SelectPr":
         return <PrPickerScreen />;
-      case "Planning":
-        return (
-          <Box flexDirection="column" width="100%">
-            <PlanningScreen instruction={screen.instruction} />
-            {planningError ? (
-              <Box flexDirection="column" paddingX={2}>
-                <Text color={COLORS.RED}>Planning failed: {planningError}</Text>
-                <Text color={COLORS.DIM}>Press esc to go back.</Text>
-              </Box>
-            ) : null}
-          </Box>
-        );
       case "ReviewPlan":
         return <PlanReviewScreen plan={screen.plan} />;
       case "CookieSyncConfirm":

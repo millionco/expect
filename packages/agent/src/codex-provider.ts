@@ -31,7 +31,7 @@ export class CodexProvider extends ServiceMap.Service<
   CodexProvider,
   {
     readonly stream: (
-      options: AgentStreamOptions
+      options: AgentStreamOptions,
     ) => Stream.Stream<LanguageModelV3StreamPart, CodexRunError>;
   }
 >()("@browser-tester/CodexProvider") {
@@ -49,21 +49,23 @@ export class CodexProvider extends ServiceMap.Service<
                 const { events } = await thread.runStreamed(input, { signal });
                 return Stream.fromAsyncIterable(
                   events,
-                  (cause) => new CodexRunError({ cause: String(cause) })
+                  (cause) => new CodexRunError({ cause: String(cause) }),
                 );
               },
               catch: (cause) => new CodexRunError({ cause: String(cause) }),
-            })
+            }),
           ).pipe(
             Stream.mapEffect((rawEvent) =>
-              Schema.decodeUnknownEffect(CodexThreadEvent)(rawEvent)
+              Schema.decodeUnknownEffect(CodexThreadEvent)(rawEvent).pipe(
+                Effect.catchTag("SchemaError", Effect.die),
+              ),
             ),
             Stream.map((event) => event.streamParts),
             Stream.filter(Option.isSome),
-            Stream.flatMap((option) => Stream.fromIterable(option.value))
+            Stream.flatMap((option) => Stream.fromIterable(option.value)),
           );
         },
       });
-    })
+    }),
   );
 }

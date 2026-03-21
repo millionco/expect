@@ -8,11 +8,13 @@ import { ThemeProvider } from "./components/theme-context.js";
 import { loadThemeName } from "./utils/load-theme.js";
 import { ChangesFor, Git, TestPlanDraft, DraftId } from "@browser-tester/supervisor";
 import { runHeadless } from "./utils/run-test.js";
+import type { AgentBackend } from "@browser-tester/agent";
 import { useNavigationStore, Screen } from "./stores/use-navigation.js";
 import { usePreferencesStore } from "./stores/use-preferences.js";
 import { usePlanStore, Plan } from "./stores/use-plan-store.js";
 import { queryClient } from "./query-client.js";
 import { setInkInstance } from "./utils/clear-ink-display.js";
+import { setAgentBackend } from "./data/runtime.js";
 
 const DEFAULT_SKIP_PLANNING = true;
 
@@ -23,6 +25,7 @@ interface CommanderOpts {
   message?: string;
   flow?: string;
   yes?: boolean;
+  agent?: AgentBackend;
 }
 
 const program = new Command()
@@ -32,6 +35,7 @@ const program = new Command()
   .option("-m, --message <instruction>", "natural language instruction for what to test")
   .option("-f, --flow <slug>", "reuse a saved flow by its slug")
   .option("-y, --yes", "skip plan review and run immediately")
+  .option("-a, --agent <provider>", "agent provider to use (claude or codex)")
   .addHelpText(
     "after",
     `
@@ -43,7 +47,7 @@ Examples:
 
 const isHeadless = () => !process.stdin.isTTY;
 
-const renderApp = () => {
+const renderApp = async () => {
   const initialTheme = loadThemeName() ?? undefined;
   process.stdout.write(ALT_SCREEN_ON);
   process.on("exit", () => process.stdout.write(ALT_SCREEN_OFF));
@@ -55,6 +59,8 @@ const renderApp = () => {
     </QueryClientProvider>,
   );
   setInkInstance(instance);
+  await instance.waitUntilExit();
+  process.exit(0);
 };
 
 const resolveChangesFor = async (
@@ -95,6 +101,10 @@ const resolveChangesFor = async (
 };
 
 const seedStores = (opts: CommanderOpts, changesFor: ChangesFor, currentBranch: string) => {
+  if (opts.agent) {
+    setAgentBackend(opts.agent);
+  }
+
   usePreferencesStore.setState({
     autoRunAfterPlanning: opts.yes ?? false,
     skipPlanning: DEFAULT_SKIP_PLANNING,
@@ -112,8 +122,10 @@ const seedStores = (opts: CommanderOpts, changesFor: ChangesFor, currentBranch: 
       isHeadless: false,
       requiresCookies: false,
     });
-    usePlanStore.setState({ plan: Plan.draft(draft) });
-    useNavigationStore.setState({ screen: Screen.Planning({ instruction: opts.message }) });
+    usePlanStore.setState({ plan: Plan.draft(draft), readyTestPlan: undefined });
+    useNavigationStore.setState({
+      screen: Screen.Testing({ changesFor, instruction: opts.message }),
+    });
   } else {
     useNavigationStore.setState({ screen: Screen.Main() });
   }
@@ -128,6 +140,7 @@ const runHeadlessForAction = async (
   return runHeadless({
     changesFor,
     instruction: opts.message ?? DEFAULT_INSTRUCTION,
+    agent: opts.agent,
   });
 };
 
