@@ -69,23 +69,21 @@ describe("Agent", () => {
       }, 60_000);
 
       it("resumes session with sessionId", async () => {
-        const firstParts = await Effect.gen(function* () {
-          const agent = yield* Agent;
-          return yield* agent
-            .stream(makeOptions("respond with just the word ping"))
-            .pipe(Stream.runCollect);
-        }).pipe(Effect.provide(layer), Effect.runPromise);
-
-        const finishPart = firstParts.find(
-          (part) => part.type === "response-metadata"
-        );
-        expect(finishPart).toBeDefined();
-        const sessionId =
-          finishPart?.type === "response-metadata" ? finishPart.id ?? "" : "";
-        expect(sessionId.length).toBeGreaterThan(0);
-
         const secondParts = await Effect.gen(function* () {
           const agent = yield* Agent;
+          const sessionId = yield* agent.createSession(process.cwd());
+
+          yield* agent
+            .stream(
+              new AgentStreamOptions({
+                cwd: process.cwd(),
+                sessionId: Option.some(sessionId),
+                prompt: "respond with just the word ping",
+                systemPrompt: Option.none(),
+              }),
+            )
+            .pipe(Stream.runCollect);
+
           return yield* agent
             .stream(
               new AgentStreamOptions({
@@ -93,7 +91,7 @@ describe("Agent", () => {
                 sessionId: Option.some(sessionId),
                 prompt: "what was the last word I asked you to say?",
                 systemPrompt: Option.none(),
-              })
+              }),
             )
             .pipe(Stream.runCollect);
         }).pipe(Effect.provide(layer), Effect.runPromise);
@@ -112,6 +110,36 @@ describe("Agent", () => {
             .join("")
             .toLowerCase()
         ).toContain("ping");
+      }, 60_000);
+
+      it("discovers browser MCP tools", async () => {
+        const parts = await Effect.gen(function* () {
+          const agent = yield* Agent;
+          return yield* agent
+            .stream(makeOptions("what MCP tools do you have? list all tool names"))
+            .pipe(Stream.runCollect);
+        }).pipe(Effect.provide(layer), Effect.runPromise);
+
+        const textParts = parts.filter(
+          (part): part is Extract<LanguageModelV3StreamPart, { type: "text-delta" }> =>
+            part.type === "text-delta",
+        );
+        const fullText = textParts
+          .map((part) => part.delta)
+          .join("")
+          .toLowerCase();
+
+        const expectedTools = [
+          "open",
+          "playwright",
+          "screenshot",
+          "console_logs",
+          "network_requests",
+          "close",
+        ];
+        for (const tool of expectedTools) {
+          expect(fullText).toContain(tool);
+        }
       }, 60_000);
     });
   });

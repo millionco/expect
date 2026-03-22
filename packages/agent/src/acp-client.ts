@@ -1,4 +1,5 @@
 import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 import * as acp from "@agentclientprotocol/sdk";
 import {
   Effect,
@@ -151,16 +152,16 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()(
         },
       };
 
-      const process = yield* ChildProcess.make(adapter.bin, adapter.args, {
+      const childProcess = yield* ChildProcess.make(adapter.bin, adapter.args, {
         env: adapter.env,
       }).pipe(spawner.spawn);
       /** @note(rasmus): we run all the writable queue entries into the process stdin */
       yield* Stream.fromQueue(writableQueue).pipe(
-        Stream.run(process.stdin),
+        Stream.run(childProcess.stdin),
         Effect.forkScoped
       );
 
-      const readable = Stream.toReadableStream(process.stdout);
+      const readable = Stream.toReadableStream(childProcess.stdout);
       const writable = new WritableStream<Uint8Array>({
         write: (chunk) => void Queue.offerUnsafe(writableQueue, chunk),
       });
@@ -171,17 +172,18 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()(
         ndJsonStream
       );
 
-      /* const browserMcpBinPath = `todo`;
+      const browserMcpBinPath = fileURLToPath(
+        import.meta.resolve("@browser-tester/browser/cli"),
+      );
 
       const MCP_SERVERS: acp.McpServer[] = [
         {
-          command: "node",
+          command: process.execPath,
           args: [browserMcpBinPath],
-          env: [] as { name: string; value: string }[],
+          env: [],
           name: "browser",
         },
-      ]; */
-      const MCP_SERVERS: acp.McpServer[] = [];
+      ];
 
       const initResponse = yield* Effect.tryPromise({
         try: () =>
@@ -199,7 +201,10 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()(
         console.log("Creating a as esssion", cwd);
         return yield* Effect.tryPromise({
           try: () => connection.newSession({ cwd, mcpServers: MCP_SERVERS }),
-          catch: (cause) => new AcpSessionCreateError({ cause }),
+          catch: (cause) => {
+            console.error("SESSION CREATE ERROR", cause);
+            return new AcpSessionCreateError({ cause });
+          },
         }).pipe(
           Effect.map(({ sessionId }) => SessionId.makeUnsafe(sessionId)),
           Effect.tap((sessionId) =>
@@ -238,9 +243,8 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()(
           : yield* createSession(cwd);
         console.log("STREAMING SESSION ID", sessionId);
 
-        const updatesQueue = yield* getQueueBySessionId(sessionId);
-        console.log("UPDATES QUEUE ");
-        console.log(updatesQueue);
+        const updatesQueue = yield* Queue.unbounded<unknown>();
+        sessionUpdatesMap.set(sessionId, updatesQueue);
 
         yield* Effect.tryPromise({
           try: () =>
