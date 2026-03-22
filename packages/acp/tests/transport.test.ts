@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { JSON_RPC_VERSION } from "../src/constants.js";
 
 describe("JSON-RPC message format", () => {

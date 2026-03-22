@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { KNOWN_ACP_AGENTS, AcpAgentConfig } from "../src/acp-client.js";
 
 describe("ACP Agent Config", () => {
