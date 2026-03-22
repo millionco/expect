@@ -16,15 +16,6 @@ export class JsonRpcParseError extends Schema.ErrorClass<JsonRpcParseError>("Acp
   message = `JSON-RPC parse error: ${this.cause}`;
 }
 
-export class SessionNotFoundError extends Schema.ErrorClass<SessionNotFoundError>(
-  "AcpSessionNotFoundError",
-)({
-  _tag: Schema.tag("AcpSessionNotFoundError"),
-  sessionId: Schema.String,
-}) {
-  message = `Session not found: ${this.sessionId}`;
-}
-
 export class TransportClosedError extends Schema.ErrorClass<TransportClosedError>(
   "AcpTransportClosedError",
 )({

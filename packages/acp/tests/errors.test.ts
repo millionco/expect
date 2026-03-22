@@ -1,20 +1,20 @@
 import { describe, expect, it } from "vite-plus/test";
-import { JsonRpcParseError, SessionNotFoundError, TransportClosedError } from "../src/errors.js";
+import { AcpClientError, JsonRpcParseError, TransportClosedError } from "../src/errors.js";
 
 describe("ACP Errors", () => {
+  describe("AcpClientError", () => {
+    it("formats message from cause", () => {
+      const error = new AcpClientError({ cause: "connection refused" });
+      expect(error.message).toContain("connection refused");
+      expect(error._tag).toBe("AcpClientError");
+    });
+  });
+
   describe("JsonRpcParseError", () => {
     it("formats message from cause", () => {
       const error = new JsonRpcParseError({ cause: "unexpected EOF" });
       expect(error.message).toContain("unexpected EOF");
       expect(error._tag).toBe("AcpJsonRpcParseError");
-    });
-  });
-
-  describe("SessionNotFoundError", () => {
-    it("includes session id in message", () => {
-      const error = new SessionNotFoundError({ sessionId: "sess_missing" });
-      expect(error.message).toContain("sess_missing");
-      expect(error._tag).toBe("AcpSessionNotFoundError");
     });
   });
 

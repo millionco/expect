@@ -95,7 +95,7 @@ export class AcpProvider extends ServiceMap.Service<
 
                 yield* Effect.forkChild(
                   connection.prompt(sessionResult.sessionId, promptContent).pipe(
-                    Effect.tap(() => Effect.sync(() => connection.process.stdin?.end())),
+                    Effect.tap(() => connection.endInput),
                     Effect.catchTag("AcpClientError", (clientError) =>
                       Effect.logWarning("ACP prompt request failed", {
                         error: clientError.message,

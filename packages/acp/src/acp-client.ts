@@ -1,7 +1,7 @@
-import { spawn, type ChildProcess } from "node:child_process";
+import { spawn } from "node:child_process";
 import { Deferred, Effect, Option, Queue, Ref, Schema, Stream } from "effect";
 import { AcpClientError } from "./errors.js";
-import { PROTOCOL_VERSION, JSON_RPC_VERSION } from "./constants.js";
+import { PROTOCOL_VERSION, JSON_RPC_VERSION, REQUEST_TIMEOUT_MS } from "./constants.js";
 import {
   InitializeResponse,
   AuthenticateResponse,
@@ -20,37 +20,11 @@ const IncomingJsonRpc = Schema.Struct({
   error: Schema.optional(Schema.Struct({ code: Schema.Number, message: Schema.String })),
 });
 
-export interface AcpClientConnection {
-  readonly process: ChildProcess;
-  readonly sendRequest: (method: string, params: unknown) => Effect.Effect<unknown, AcpClientError>;
-  readonly sendNotification: (
-    method: string,
-    params: unknown,
-  ) => Effect.Effect<void, AcpClientError>;
-  readonly initialize: (options?: {
-    protocolVersion?: number;
-    clientInfo?: { name: string; version?: string };
-    clientCapabilities?: unknown;
-  }) => Effect.Effect<typeof InitializeResponse.Type, AcpClientError>;
-  readonly authenticate: (
-    methodId?: string,
-  ) => Effect.Effect<typeof AuthenticateResponse.Type, AcpClientError>;
-  readonly createSession: (options?: {
-    cwd?: string;
-    mcpServers?: McpServer[];
-  }) => Effect.Effect<typeof NewSessionResponse.Type, AcpClientError>;
-  readonly prompt: (
-    sessionId: string,
-    content: string | ContentBlock[],
-  ) => Effect.Effect<typeof PromptResponse.Type, AcpClientError>;
-  readonly setMode: (
-    sessionId: string,
-    modeId: string,
-  ) => Effect.Effect<typeof SetSessionModeResponse.Type, AcpClientError>;
-  readonly cancel: (sessionId: string) => Effect.Effect<void, AcpClientError>;
-  readonly updates: Stream.Stream<SessionUpdateEvent, AcpClientError>;
-  readonly close: Effect.Effect<void>;
-}
+const PermissionParams = Schema.Struct({
+  options: Schema.optional(
+    Schema.Array(Schema.Struct({ optionId: Schema.String, kind: Schema.String })),
+  ),
+});
 
 const SessionUpdatePayload = Schema.Struct({
   sessionId: Schema.String,
@@ -78,6 +52,60 @@ export interface SessionUpdateEvent {
   readonly status?: string;
   readonly rawInput?: unknown;
   readonly rawOutput?: unknown;
+}
+
+export interface PermissionRequest {
+  readonly id: string | number;
+  readonly options?: ReadonlyArray<{ readonly optionId: string; readonly kind: string }>;
+}
+
+export type PermissionHandler = (
+  request: PermissionRequest,
+) => Effect.Effect<{ readonly outcome: string; readonly optionId: string }>;
+
+const autoApprovePermissions: PermissionHandler = (request) =>
+  Effect.succeed({
+    outcome: "selected",
+    optionId:
+      request.options?.find(
+        (option) => option.kind === "allow_once" || option.kind === "allow_always",
+      )?.optionId ?? "allow",
+  });
+
+export interface ConnectOptions {
+  readonly permissionHandler?: PermissionHandler;
+}
+
+export interface AcpClientConnection {
+  readonly sendRequest: (method: string, params: unknown) => Effect.Effect<unknown, AcpClientError>;
+  readonly sendNotification: (
+    method: string,
+    params: unknown,
+  ) => Effect.Effect<void, AcpClientError>;
+  readonly initialize: (options?: {
+    protocolVersion?: number;
+    clientInfo?: { name: string; version?: string };
+    clientCapabilities?: unknown;
+  }) => Effect.Effect<typeof InitializeResponse.Type, AcpClientError>;
+  readonly authenticate: (
+    methodId?: string,
+  ) => Effect.Effect<typeof AuthenticateResponse.Type, AcpClientError>;
+  readonly createSession: (options?: {
+    cwd?: string;
+    mcpServers?: McpServer[];
+  }) => Effect.Effect<typeof NewSessionResponse.Type, AcpClientError>;
+  readonly prompt: (
+    sessionId: string,
+    content: string | ContentBlock[],
+  ) => Effect.Effect<typeof PromptResponse.Type, AcpClientError>;
+  readonly setMode: (
+    sessionId: string,
+    modeId: string,
+  ) => Effect.Effect<typeof SetSessionModeResponse.Type, AcpClientError>;
+  readonly cancel: (sessionId: string) => Effect.Effect<void, AcpClientError>;
+  readonly endInput: Effect.Effect<void>;
+  readonly updates: Stream.Stream<SessionUpdateEvent, AcpClientError>;
+  readonly close: Effect.Effect<void>;
 }
 
 export class AcpAgentConfig extends Schema.Class<AcpAgentConfig>("AcpAgentConfig")({
@@ -125,16 +153,17 @@ export const KNOWN_ACP_AGENTS: Record<string, AcpAgentConfig> = {
   }),
 };
 
-const parseIncomingLine = (line: string): typeof IncomingJsonRpc.Type | undefined => {
+const parseIncomingLine = (line: string): Option.Option<typeof IncomingJsonRpc.Type> => {
   const trimmed = line.trim();
-  if (trimmed.length === 0) return undefined;
-  return Option.getOrElse(
-    Schema.decodeUnknownOption(Schema.fromJsonString(IncomingJsonRpc))(trimmed),
-    () => undefined,
-  );
+  if (trimmed.length === 0) return Option.none();
+  return Schema.decodeUnknownOption(Schema.fromJsonString(IncomingJsonRpc))(trimmed);
 };
 
-export const connectAcpAgent = Effect.fn("connectAcpAgent")(function* (config: AcpAgentConfig) {
+export const connectAcpAgent = Effect.fn("connectAcpAgent")(function* (
+  config: AcpAgentConfig,
+  options?: ConnectOptions,
+) {
+  const handlePermission = options?.permissionHandler ?? autoApprovePermissions;
   const updateQueue = yield* Queue.unbounded<SessionUpdateEvent>();
   const pendingRequests = new Map<number, Deferred.Deferred<unknown, AcpClientError>>();
   const nextId = yield* Ref.make(1);
@@ -156,57 +185,59 @@ export const connectAcpAgent = Effect.fn("connectAcpAgent")(function* (config: A
       }),
   });
 
-  let buffer = "";
+  const writeRaw = (payload: unknown) => {
+    child.stdin?.write(JSON.stringify(payload) + "\n");
+  };
 
   const processLine = (line: string) => {
     const parseResult = parseIncomingLine(line);
-    if (!parseResult) return;
+    if (Option.isNone(parseResult)) return;
+    const message = parseResult.value;
 
-    if (parseResult.id !== undefined && parseResult.method === undefined) {
-      const responseId = parseResult.id;
+    if (message.id !== undefined && message.method === undefined) {
+      const responseId = message.id;
       if (typeof responseId === "number") {
         const deferred = pendingRequests.get(responseId);
         if (deferred) {
           pendingRequests.delete(responseId);
-          if (parseResult.error) {
+          if (message.error) {
             Effect.runFork(
-              Deferred.fail(deferred, new AcpClientError({ cause: parseResult.error.message })),
+              Deferred.fail(deferred, new AcpClientError({ cause: message.error.message })),
             );
           } else {
-            Effect.runFork(Deferred.succeed(deferred, parseResult.result));
+            Effect.runFork(Deferred.succeed(deferred, message.result));
           }
         }
       }
       return;
     }
 
-    if (parseResult.method === "session/request_permission" && parseResult.id !== undefined) {
-      const PermissionParams = Schema.Struct({
-        options: Schema.optional(
-          Schema.Array(Schema.Struct({ optionId: Schema.String, kind: Schema.String })),
-        ),
-      });
-      const decoded = Schema.decodeUnknownOption(PermissionParams)(parseResult.params);
-      const options = Option.isSome(decoded) ? decoded.value.options : undefined;
-      const allowOption = options?.find(
-        (option) => option.kind === "allow_once" || option.kind === "allow_always",
-      );
-      const responsePayload = {
-        jsonrpc: JSON_RPC_VERSION,
-        id: parseResult.id,
-        result: {
-          outcome: {
-            outcome: "selected",
-            optionId: allowOption?.optionId ?? "allow",
-          },
-        },
+    if (message.method === "session/request_permission" && message.id !== undefined) {
+      const decoded = Schema.decodeUnknownOption(PermissionParams)(message.params);
+      const permissionOptions = Option.isSome(decoded) ? decoded.value.options : undefined;
+      const permissionRequest: PermissionRequest = {
+        id: message.id,
+        options: permissionOptions,
       };
-      child.stdin?.write(JSON.stringify(responsePayload) + "\n");
+      Effect.runFork(
+        handlePermission(permissionRequest).pipe(
+          Effect.tap((outcome) =>
+            Effect.sync(() =>
+              writeRaw({
+                jsonrpc: JSON_RPC_VERSION,
+                id: message.id,
+                result: { outcome },
+              }),
+            ),
+          ),
+          Effect.catchAll(() => Effect.void),
+        ),
+      );
       return;
     }
 
-    if (parseResult.method === "session/update" && parseResult.params) {
-      const decoded = Schema.decodeUnknownOption(SessionUpdatePayload)(parseResult.params);
+    if (message.method === "session/update" && message.params) {
+      const decoded = Schema.decodeUnknownOption(SessionUpdatePayload)(message.params);
       if (Option.isSome(decoded)) {
         const event: SessionUpdateEvent = {
           sessionId: decoded.value.sessionId,
@@ -223,6 +254,8 @@ export const connectAcpAgent = Effect.fn("connectAcpAgent")(function* (config: A
       }
     }
   };
+
+  let buffer = "";
 
   child.stdout?.on("data", (chunk: Buffer) => {
     buffer += chunk.toString("utf-8");
@@ -244,7 +277,7 @@ export const connectAcpAgent = Effect.fn("connectAcpAgent")(function* (config: A
     readonly params?: unknown;
   }) {
     yield* Effect.try({
-      try: () => child.stdin?.write(JSON.stringify(payload) + "\n"),
+      try: () => writeRaw(payload),
       catch: (cause) =>
         new AcpClientError({
           cause: `Write failed: ${cause instanceof Error ? cause.message : String(cause)}`,
@@ -260,7 +293,14 @@ export const connectAcpAgent = Effect.fn("connectAcpAgent")(function* (config: A
     const deferred = yield* Deferred.make<unknown, AcpClientError>();
     pendingRequests.set(id, deferred);
     yield* writeMessage({ jsonrpc: JSON_RPC_VERSION, id, method, params });
-    return yield* Deferred.await(deferred);
+    return yield* Deferred.await(deferred).pipe(
+      Effect.timeout(REQUEST_TIMEOUT_MS),
+      Effect.catchTag("TimeoutError", () =>
+        new AcpClientError({
+          cause: `Request "${method}" timed out after ${REQUEST_TIMEOUT_MS}ms`,
+        }).asEffect(),
+      ),
+    );
   });
 
   const sendNotification = Effect.fn("AcpClient.sendNotification")(function* (
@@ -272,6 +312,10 @@ export const connectAcpAgent = Effect.fn("connectAcpAgent")(function* (config: A
 
   const cancel = Effect.fn("AcpClient.cancel")(function* (sessionId: string) {
     yield* sendNotification("session/cancel", { sessionId });
+  });
+
+  const endInput = Effect.sync(() => {
+    child.stdin?.end();
   });
 
   const close = Effect.sync(() => {
@@ -288,15 +332,17 @@ export const connectAcpAgent = Effect.fn("connectAcpAgent")(function* (config: A
       );
     });
 
-  const initialize = Effect.fn("AcpClient.initialize")(function* (options?: {
+  const initialize = Effect.fn("AcpClient.initialize")(function* (initOptions?: {
     protocolVersion?: number;
     clientInfo?: { name: string; version?: string };
     clientCapabilities?: unknown;
   }) {
     const raw = yield* sendRequest("initialize", {
-      protocolVersion: options?.protocolVersion ?? PROTOCOL_VERSION,
-      ...(options?.clientInfo ? { clientInfo: options.clientInfo } : {}),
-      ...(options?.clientCapabilities ? { clientCapabilities: options.clientCapabilities } : {}),
+      protocolVersion: initOptions?.protocolVersion ?? PROTOCOL_VERSION,
+      ...(initOptions?.clientInfo ? { clientInfo: initOptions.clientInfo } : {}),
+      ...(initOptions?.clientCapabilities
+        ? { clientCapabilities: initOptions.clientCapabilities }
+        : {}),
     });
     return yield* decodeResponse(InitializeResponse)(raw);
   });
@@ -306,11 +352,11 @@ export const connectAcpAgent = Effect.fn("connectAcpAgent")(function* (config: A
     return yield* decodeResponse(AuthenticateResponse)(raw);
   });
 
-  const createSession = Effect.fn("AcpClient.createSession")(function* (options?: {
+  const createSession = Effect.fn("AcpClient.createSession")(function* (sessionOptions?: {
     cwd?: string;
     mcpServers?: McpServer[];
   }) {
-    const raw = yield* sendRequest("session/new", options ?? {});
+    const raw = yield* sendRequest("session/new", sessionOptions ?? {});
     return yield* decodeResponse(NewSessionResponse)(raw);
   });
 
@@ -330,7 +376,6 @@ export const connectAcpAgent = Effect.fn("connectAcpAgent")(function* (config: A
   });
 
   const connection: AcpClientConnection = {
-    process: child,
     sendRequest,
     sendNotification,
     initialize,
@@ -339,6 +384,7 @@ export const connectAcpAgent = Effect.fn("connectAcpAgent")(function* (config: A
     prompt,
     setMode,
     cancel,
+    endInput,
     updates: Stream.fromQueue(updateQueue),
     close,
   };

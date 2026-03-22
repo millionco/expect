@@ -88,7 +88,10 @@ const program = Effect.gen(function* () {
   yield* Effect.forkChild(transport.startReading);
 
   yield* transport.sendResponse(1, { protocolVersion: 1 });
-  yield* transport.sendNotification("session/update", { sessionId: "sess_abc", update: { ... } });
+  yield* transport.sendNotification("session/update", {
+    sessionId: "sess_abc",
+    update: { sessionUpdate: "agent_message_chunk", content: { type: "text", text: "Hello" } },
+  });
 
   yield* transport.incomingMessages.pipe(
     Stream.tap((line) => Effect.logDebug("Received", { line })),
@@ -195,7 +198,6 @@ Effect schemas for all ACP messages, grouped by protocol phase:
 | ---------------------- | ------------------------------- |
 | `AcpClientError`       | ACP client communication failed |
 | `JsonRpcParseError`    | Invalid JSON-RPC message        |
-| `SessionNotFoundError` | Session ID not recognized       |
 | `TransportClosedError` | Transport connection closed     |
 
 ## Constants
