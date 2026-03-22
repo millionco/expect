@@ -1,4 +1,4 @@
-export const DEFAULT_AGENT_PROVIDER = "codex";
+export const DEFAULT_AGENT_PROVIDER = "claude";
 export const BROWSER_TEST_MODEL = "claude-sonnet-4-6";
 export const SHARE_DIRECTORY_PREFIX = "browser-tester-share-";
 export const COMMENT_DIRECTORY_PREFIX = "browser-tester-comment-";
