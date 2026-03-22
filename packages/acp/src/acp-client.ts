@@ -230,7 +230,7 @@ export const connectAcpAgent = Effect.fn("connectAcpAgent")(function* (
               }),
             ),
           ),
-          Effect.catchAll(() => Effect.void),
+          Effect.catch(() => Effect.void),
         ),
       );
       return;
@@ -323,14 +323,12 @@ export const connectAcpAgent = Effect.fn("connectAcpAgent")(function* (
     child.kill();
   });
 
-  const decodeResponse = <T>(schema: Schema.Schema<T>) =>
-    Effect.fn("AcpClient.decodeResponse")(function* (raw: unknown) {
-      return yield* Schema.decodeUnknownEffect(schema)(raw).pipe(
-        Effect.catchTag("SchemaError", (schemaError) =>
-          new AcpClientError({ cause: `Invalid response: ${schemaError}` }).asEffect(),
-        ),
-      );
-    });
+  const decodeOrFail = (raw: unknown, schema: Schema.Schema<unknown>) =>
+    Schema.decodeUnknownEffect(schema)(raw).pipe(
+      Effect.catchTag("SchemaError", (schemaError) =>
+        new AcpClientError({ cause: `Invalid response: ${schemaError}` }).asEffect(),
+      ),
+    );
 
   const initialize = Effect.fn("AcpClient.initialize")(function* (initOptions?: {
     protocolVersion?: number;
@@ -344,12 +342,18 @@ export const connectAcpAgent = Effect.fn("connectAcpAgent")(function* (
         ? { clientCapabilities: initOptions.clientCapabilities }
         : {}),
     });
-    return yield* decodeResponse(InitializeResponse)(raw);
+    return yield* decodeOrFail(raw, InitializeResponse) as Effect.Effect<
+      typeof InitializeResponse.Type,
+      AcpClientError
+    >;
   });
 
   const authenticate = Effect.fn("AcpClient.authenticate")(function* (methodId?: string) {
     const raw = yield* sendRequest("authenticate", { methodId: methodId ?? "none" });
-    return yield* decodeResponse(AuthenticateResponse)(raw);
+    return yield* decodeOrFail(raw, AuthenticateResponse) as Effect.Effect<
+      typeof AuthenticateResponse.Type,
+      AcpClientError
+    >;
   });
 
   const createSession = Effect.fn("AcpClient.createSession")(function* (sessionOptions?: {
@@ -357,7 +361,10 @@ export const connectAcpAgent = Effect.fn("connectAcpAgent")(function* (
     mcpServers?: McpServer[];
   }) {
     const raw = yield* sendRequest("session/new", sessionOptions ?? {});
-    return yield* decodeResponse(NewSessionResponse)(raw);
+    return yield* decodeOrFail(raw, NewSessionResponse) as Effect.Effect<
+      typeof NewSessionResponse.Type,
+      AcpClientError
+    >;
   });
 
   const prompt = Effect.fn("AcpClient.prompt")(function* (
@@ -367,12 +374,18 @@ export const connectAcpAgent = Effect.fn("connectAcpAgent")(function* (
     const promptBlocks: ContentBlock[] =
       typeof content === "string" ? [{ type: "text", text: content }] : content;
     const raw = yield* sendRequest("session/prompt", { sessionId, prompt: promptBlocks });
-    return yield* decodeResponse(PromptResponse)(raw);
+    return yield* decodeOrFail(raw, PromptResponse) as Effect.Effect<
+      typeof PromptResponse.Type,
+      AcpClientError
+    >;
   });
 
   const setMode = Effect.fn("AcpClient.setMode")(function* (sessionId: string, modeId: string) {
     const raw = yield* sendRequest("session/set_mode", { sessionId, modeId });
-    return yield* decodeResponse(SetSessionModeResponse)(raw);
+    return yield* decodeOrFail(raw, SetSessionModeResponse) as Effect.Effect<
+      typeof SetSessionModeResponse.Type,
+      AcpClientError
+    >;
   });
 
   const connection: AcpClientConnection = {
