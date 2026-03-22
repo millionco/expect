@@ -20,7 +20,7 @@ interface PreferencesStore {
 export const usePreferencesStore = create<PreferencesStore>()(
   persist(
     (set) => ({
-      agentBackend: "codex" as AgentBackend,
+      agentBackend: "claude",
       autoRunAfterPlanning: false,
       skipPlanning: true,
       autoSaveFlows: true,
