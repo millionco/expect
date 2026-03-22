@@ -1,12 +1,12 @@
 import { Effect, FileSystem, Layer, Schema, Stream } from "effect";
 import { Agent, AgentStreamError } from "@browser-tester/shared/agent";
 import { ExecutionEvent } from "@browser-tester/shared/models";
+import { AcpAgentConfig, KNOWN_ACP_AGENTS } from "@browser-tester/acp";
+import { NodeServices } from "@effect/platform-node";
 import { ClaudeProvider } from "./providers/claude.js";
 import { CodexProvider } from "./providers/codex.js";
 import { AcpProvider } from "./providers/acp.js";
 import { CurrentModel } from "./current-model.js";
-import { AcpAgentConfig, KNOWN_ACP_AGENTS } from "./acp-client.js";
-import { NodeServices } from "@effect/platform-node";
 
 export type AgentBackend = string | AcpAgentConfig;
 

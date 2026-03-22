@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { promptHistoryStorage } from "@browser-tester/supervisor";
-import type { AgentBackend } from "@browser-tester/acp";
+import type { AgentBackend } from "../acp/index.js";
 import { FLOW_INPUT_HISTORY_LIMIT } from "../constants.js";
 
 interface PreferencesStore {

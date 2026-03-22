@@ -1,6 +1,11 @@
-import { Effect, Layer, Option, Schema, ServiceMap, Stream } from "effect";
-import { AcpClientError } from "../errors.js";
-import { type AcpAgentConfig, type SessionUpdateEvent, connectAcpAgent } from "../acp-client.js";
+import { Effect, Layer, Option, ServiceMap, Stream } from "effect";
+import {
+  AcpClientError,
+  PROTOCOL_VERSION,
+  type AcpAgentConfig,
+  type SessionUpdateEvent,
+  connectAcpAgent,
+} from "@browser-tester/acp";
 import { AgentStreamOptions } from "@browser-tester/shared/agent";
 import {
   AgentText,
@@ -9,12 +14,6 @@ import {
   ToolResult,
   type ExecutionEvent,
 } from "@browser-tester/shared/models";
-
-const PROTOCOL_VERSION = 1;
-
-const NewSessionResult = Schema.Struct({
-  sessionId: Schema.String,
-});
 
 const mapUpdateToEvents = (event: SessionUpdateEvent): readonly ExecutionEvent[] => {
   if (event.sessionUpdate === "agent_message_chunk" && event.text !== undefined) {
@@ -74,7 +73,7 @@ export class AcpProvider extends ServiceMap.Service<
               Effect.gen(function* () {
                 const connection = yield* connectAcpAgent(config);
 
-                yield* connection.sendRequest("initialize", {
+                yield* connection.initialize({
                   protocolVersion: PROTOCOL_VERSION,
                   clientCapabilities: {
                     fs: { readTextFile: false, writeTextFile: false },
@@ -83,14 +82,9 @@ export class AcpProvider extends ServiceMap.Service<
                   clientInfo: { name: "testie", version: "0.0.1" },
                 });
 
-                const rawResult = yield* connection.sendRequest("session/new", {
+                const sessionResult = yield* connection.createSession({
                   cwd: options.cwd,
-                  mcpServers: [],
                 });
-
-                const sessionResult = yield* Schema.decodeUnknownEffect(NewSessionResult)(
-                  rawResult,
-                ).pipe(Effect.catchTag("SchemaError", Effect.die));
 
                 const promptContent = [
                   { type: "text" as const, text: options.prompt },
@@ -100,19 +94,14 @@ export class AcpProvider extends ServiceMap.Service<
                 ];
 
                 yield* Effect.forkChild(
-                  connection
-                    .sendRequest("session/prompt", {
-                      sessionId: sessionResult.sessionId,
-                      prompt: promptContent,
-                    })
-                    .pipe(
-                      Effect.tap(() => Effect.sync(() => connection.process.stdin?.end())),
-                      Effect.catchTag("AcpClientError", (clientError) =>
-                        Effect.logWarning("ACP prompt request failed", {
-                          error: clientError.message,
-                        }),
-                      ),
+                  connection.prompt(sessionResult.sessionId, promptContent).pipe(
+                    Effect.tap(() => Effect.sync(() => connection.process.stdin?.end())),
+                    Effect.catchTag("AcpClientError", (clientError) =>
+                      Effect.logWarning("ACP prompt request failed", {
+                        error: clientError.message,
+                      }),
                     ),
+                  ),
                 );
 
                 return connection.updates.pipe(

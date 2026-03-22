@@ -1,7 +1,18 @@
 import * as crypto from "node:crypto";
 import { Effect, Fiber, Layer, Option, Ref, Schema, ServiceMap, Stream } from "effect";
 import { Executor, Git, Planner, Reporter } from "@browser-tester/supervisor";
-import { type AgentBackend, layerFor as agentLayerFor } from "./agent.js";
+import {
+  PROTOCOL_VERSION,
+  ERROR_CODE_INVALID_PARAMS,
+  ERROR_CODE_METHOD_NOT_FOUND,
+  StdioTransport,
+  type ContentBlock,
+  PromptRequest,
+  SessionId,
+  PlanEntry,
+  type PlanEntryStatus,
+  type SessionUpdate,
+} from "@browser-tester/acp";
 import {
   ChangesFor,
   DraftId,
@@ -10,24 +21,8 @@ import {
   type TestPlan,
   type TestPlanStep,
 } from "@browser-tester/shared/models";
-import {
-  AGENT_NAME,
-  AGENT_TITLE,
-  AGENT_VERSION,
-  ERROR_CODE_INVALID_PARAMS,
-  ERROR_CODE_METHOD_NOT_FOUND,
-  PROTOCOL_VERSION,
-  TOOL_CALL_ID_SHORT_LENGTH,
-} from "./constants.js";
-import {
-  type ContentBlock,
-  PromptRequest,
-  SessionId,
-  PlanEntry,
-  type PlanEntryStatus,
-  type SessionUpdate,
-} from "./schemas.js";
-import { StdioTransport } from "./transport.js";
+import { type AgentBackend, layerFor as agentLayerFor } from "./agent.js";
+import { AGENT_NAME, AGENT_TITLE, AGENT_VERSION, TOOL_CALL_ID_SHORT_LENGTH } from "./constants.js";
 
 const IncomingMessage = Schema.Struct({
   jsonrpc: Schema.optional(Schema.String),

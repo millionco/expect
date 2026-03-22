@@ -1,24 +1,30 @@
-export { AcpServer } from "./server.js";
 export { StdioTransport } from "./transport.js";
-export { Agent, AgentStreamError, AgentStreamOptions } from "@browser-tester/shared/agent";
 export {
-  type AgentBackend,
-  layerFor,
-  layerClaude,
-  layerCodex,
-  layerAcp,
-  layerTest,
-} from "./agent.js";
-export { CurrentModel } from "./current-model.js";
-export { AcpAgentConfig, KNOWN_ACP_AGENTS } from "./acp-client.js";
+  AcpAgentConfig,
+  KNOWN_ACP_AGENTS,
+  connectAcpAgent,
+  type AcpClientConnection,
+  type SessionUpdateEvent,
+} from "./acp-client.js";
 
 export {
   AcpClientError,
-  ClaudeQueryError,
-  CodexRunError,
   JsonRpcParseError,
+  SessionNotFoundError,
   TransportClosedError,
 } from "./errors.js";
+
+export {
+  PROTOCOL_VERSION,
+  JSON_RPC_VERSION,
+  ERROR_CODE_PARSE,
+  ERROR_CODE_INVALID_REQUEST,
+  ERROR_CODE_METHOD_NOT_FOUND,
+  ERROR_CODE_INVALID_PARAMS,
+  ERROR_CODE_INTERNAL,
+  ERROR_CODE_AUTH_REQUIRED,
+  ERROR_CODE_NOT_FOUND,
+} from "./constants.js";
 
 export {
   SessionId,
@@ -58,11 +64,3 @@ export {
   RequestPermissionOutcome,
   RequestPermissionResponse,
 } from "./schemas.js";
-
-export {
-  PROTOCOL_VERSION,
-  AGENT_NAME,
-  AGENT_TITLE,
-  AGENT_VERSION,
-  JSON_RPC_VERSION,
-} from "./constants.js";

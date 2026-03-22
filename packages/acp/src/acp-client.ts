@@ -1,8 +1,16 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { Deferred, Effect, Option, Queue, Ref, Schema, Stream } from "effect";
 import { AcpClientError } from "./errors.js";
-
-const JSON_RPC_VERSION = "2.0" as const;
+import { PROTOCOL_VERSION, JSON_RPC_VERSION } from "./constants.js";
+import {
+  InitializeResponse,
+  AuthenticateResponse,
+  NewSessionResponse,
+  PromptResponse,
+  SetSessionModeResponse,
+  type ContentBlock,
+  type McpServer,
+} from "./schemas.js";
 
 const IncomingJsonRpc = Schema.Struct({
   id: Schema.optional(Schema.Union([Schema.String, Schema.Number])),
@@ -12,13 +20,33 @@ const IncomingJsonRpc = Schema.Struct({
   error: Schema.optional(Schema.Struct({ code: Schema.Number, message: Schema.String })),
 });
 
-interface AcpClientConnection {
+export interface AcpClientConnection {
   readonly process: ChildProcess;
   readonly sendRequest: (method: string, params: unknown) => Effect.Effect<unknown, AcpClientError>;
   readonly sendNotification: (
     method: string,
     params: unknown,
   ) => Effect.Effect<void, AcpClientError>;
+  readonly initialize: (options?: {
+    protocolVersion?: number;
+    clientInfo?: { name: string; version?: string };
+    clientCapabilities?: unknown;
+  }) => Effect.Effect<typeof InitializeResponse.Type, AcpClientError>;
+  readonly authenticate: (
+    methodId?: string,
+  ) => Effect.Effect<typeof AuthenticateResponse.Type, AcpClientError>;
+  readonly createSession: (options?: {
+    cwd?: string;
+    mcpServers?: McpServer[];
+  }) => Effect.Effect<typeof NewSessionResponse.Type, AcpClientError>;
+  readonly prompt: (
+    sessionId: string,
+    content: string | ContentBlock[],
+  ) => Effect.Effect<typeof PromptResponse.Type, AcpClientError>;
+  readonly setMode: (
+    sessionId: string,
+    modeId: string,
+  ) => Effect.Effect<typeof SetSessionModeResponse.Type, AcpClientError>;
   readonly cancel: (sessionId: string) => Effect.Effect<void, AcpClientError>;
   readonly updates: Stream.Stream<SessionUpdateEvent, AcpClientError>;
   readonly close: Effect.Effect<void>;
@@ -251,10 +279,65 @@ export const connectAcpAgent = Effect.fn("connectAcpAgent")(function* (config: A
     child.kill();
   });
 
+  const decodeResponse = <T>(schema: Schema.Schema<T>) =>
+    Effect.fn("AcpClient.decodeResponse")(function* (raw: unknown) {
+      return yield* Schema.decodeUnknownEffect(schema)(raw).pipe(
+        Effect.catchTag("SchemaError", (schemaError) =>
+          new AcpClientError({ cause: `Invalid response: ${schemaError}` }).asEffect(),
+        ),
+      );
+    });
+
+  const initialize = Effect.fn("AcpClient.initialize")(function* (options?: {
+    protocolVersion?: number;
+    clientInfo?: { name: string; version?: string };
+    clientCapabilities?: unknown;
+  }) {
+    const raw = yield* sendRequest("initialize", {
+      protocolVersion: options?.protocolVersion ?? PROTOCOL_VERSION,
+      ...(options?.clientInfo ? { clientInfo: options.clientInfo } : {}),
+      ...(options?.clientCapabilities ? { clientCapabilities: options.clientCapabilities } : {}),
+    });
+    return yield* decodeResponse(InitializeResponse)(raw);
+  });
+
+  const authenticate = Effect.fn("AcpClient.authenticate")(function* (methodId?: string) {
+    const raw = yield* sendRequest("authenticate", { methodId: methodId ?? "none" });
+    return yield* decodeResponse(AuthenticateResponse)(raw);
+  });
+
+  const createSession = Effect.fn("AcpClient.createSession")(function* (options?: {
+    cwd?: string;
+    mcpServers?: McpServer[];
+  }) {
+    const raw = yield* sendRequest("session/new", options ?? {});
+    return yield* decodeResponse(NewSessionResponse)(raw);
+  });
+
+  const prompt = Effect.fn("AcpClient.prompt")(function* (
+    sessionId: string,
+    content: string | ContentBlock[],
+  ) {
+    const promptBlocks: ContentBlock[] =
+      typeof content === "string" ? [{ type: "text", text: content }] : content;
+    const raw = yield* sendRequest("session/prompt", { sessionId, prompt: promptBlocks });
+    return yield* decodeResponse(PromptResponse)(raw);
+  });
+
+  const setMode = Effect.fn("AcpClient.setMode")(function* (sessionId: string, modeId: string) {
+    const raw = yield* sendRequest("session/set_mode", { sessionId, modeId });
+    return yield* decodeResponse(SetSessionModeResponse)(raw);
+  });
+
   const connection: AcpClientConnection = {
     process: child,
     sendRequest,
     sendNotification,
+    initialize,
+    authenticate,
+    createSession,
+    prompt,
+    setMode,
     cancel,
     updates: Stream.fromQueue(updateQueue),
     close,

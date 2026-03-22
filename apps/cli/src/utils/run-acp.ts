@@ -1,7 +1,6 @@
 import { Effect, Layer, Logger, References } from "effect";
 import { NodeServices } from "@effect/platform-node";
-import { AcpServer } from "@browser-tester/acp";
-import type { AgentBackend } from "@browser-tester/acp";
+import { AcpServer, type AgentBackend } from "../acp/index.js";
 
 export const runAcp = async (agentBackend: AgentBackend): Promise<void> => {
   const mainLayer = Layer.mergeAll(AcpServer.layerFor(agentBackend), NodeServices.layer).pipe(

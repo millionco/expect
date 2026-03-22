@@ -10,7 +10,7 @@ import {
   Reporter,
   TestPlanDraft,
 } from "@browser-tester/supervisor";
-import { type AgentBackend, layerFor } from "@browser-tester/acp";
+import { type AgentBackend, layerFor } from "../acp/index.js";
 import figures from "figures";
 import { VERSION } from "../constants.js";
 import { CliRuntime } from "../runtime.js";

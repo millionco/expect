@@ -33,9 +33,15 @@ importers:
 
   apps/cli:
     dependencies:
+      '@anthropic-ai/claude-agent-sdk':
+        specifier: ^0.2.77
+        version: 0.2.77(zod@4.3.6)
       '@browser-tester/acp':
         specifier: workspace:*
         version: link:../../packages/acp
+      '@browser-tester/browser':
+        specifier: workspace:*
+        version: link:../../packages/browser
       '@browser-tester/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -45,6 +51,15 @@ importers:
       '@effect/atom-react':
         specifier: 4.0.0-beta.35
         version: 4.0.0-beta.35(effect@4.0.0-beta.28)(react@19.2.4)(scheduler@0.27.0)
+      '@effect/platform-node':
+        specifier: 4.0.0-beta.28
+        version: 4.0.0-beta.28(effect@4.0.0-beta.28)(ioredis@5.10.0)
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
+      '@openai/codex-sdk':
+        specifier: ^0.114.0
+        version: 0.114.0
       '@tanstack/react-query':
         specifier: ^5.80.7
         version: 5.90.21(react@19.2.4)
@@ -60,6 +75,9 @@ importers:
       detect-terminal:
         specifier: ^2.0.0
         version: 2.0.0
+      effect:
+        specifier: 4.0.0-beta.28
+        version: 4.0.0-beta.28
       figures:
         specifier: ^6.1.0
         version: 6.1.0
@@ -176,33 +194,9 @@ importers:
 
   packages/acp:
     dependencies:
-      '@anthropic-ai/claude-agent-sdk':
-        specifier: ^0.2.77
-        version: 0.2.77(zod@4.3.6)
-      '@browser-tester/browser':
-        specifier: workspace:*
-        version: link:../browser
-      '@browser-tester/shared':
-        specifier: workspace:*
-        version: link:../shared
-      '@browser-tester/supervisor':
-        specifier: workspace:*
-        version: link:../supervisor
-      '@effect/platform-node':
-        specifier: 4.0.0-beta.28
-        version: 4.0.0-beta.28(effect@4.0.0-beta.28)(ioredis@5.10.0)
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.27.1
-        version: 1.27.1(zod@4.3.6)
-      '@openai/codex-sdk':
-        specifier: ^0.114.0
-        version: 0.114.0
       effect:
         specifier: 4.0.0-beta.28
         version: 4.0.0-beta.28
-      zod:
-        specifier: ^4.3.6
-        version: 4.3.6
     devDependencies:
       '@types/node':
         specifier: ^22.15.0

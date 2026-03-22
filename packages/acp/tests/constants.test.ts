@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import {
   PROTOCOL_VERSION,
-  AGENT_NAME,
-  AGENT_TITLE,
-  AGENT_VERSION,
   JSON_RPC_VERSION,
   ERROR_CODE_PARSE,
   ERROR_CODE_INVALID_REQUEST,
@@ -18,12 +15,6 @@ describe("ACP Constants", () => {
   it("protocol version is a positive integer", () => {
     expect(PROTOCOL_VERSION).toBeGreaterThanOrEqual(1);
     expect(Number.isInteger(PROTOCOL_VERSION)).toBe(true);
-  });
-
-  it("agent identity is set", () => {
-    expect(AGENT_NAME).toBe("testie");
-    expect(AGENT_TITLE).toBe("Testie");
-    expect(AGENT_VERSION.length).toBeGreaterThan(0);
   });
 
   it("JSON-RPC version is 2.0", () => {

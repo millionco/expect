@@ -1,8 +1,7 @@
 import { Effect, Option } from "effect";
 import * as Atom from "effect/unstable/reactivity/Atom";
-import { layerFor } from "@browser-tester/acp";
 import { Git, Planner, TestPlanDraft, DraftId } from "@browser-tester/supervisor";
-import type { AgentBackend } from "@browser-tester/acp";
+import { layerFor, type AgentBackend } from "../acp/index.js";
 import type { ChangesFor } from "@browser-tester/shared/models";
 import { cliAtomRuntime } from "./runtime.js";
 

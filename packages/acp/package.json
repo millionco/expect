@@ -1,29 +1,32 @@
 {
   "name": "@browser-tester/acp",
   "version": "0.0.1",
-  "private": true,
+  "description": "Agent Communication Protocol (ACP) server and client",
+  "files": [
+    "dist"
+  ],
   "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
   },
   "scripts": {
+    "build": "vp pack",
+    "dev": "vp pack --watch",
     "lint": "vp lint && tsc --noEmit",
     "format": "vp fmt",
     "format:check": "vp fmt --check",
     "check": "vp check",
     "test": "vp test run",
+    "test:watch": "vp test",
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.2.77",
-    "@browser-tester/browser": "workspace:*",
-    "@browser-tester/shared": "workspace:*",
-    "@browser-tester/supervisor": "workspace:*",
-    "@effect/platform-node": "4.0.0-beta.28",
-    "@modelcontextprotocol/sdk": "^1.27.1",
-    "@openai/codex-sdk": "^0.114.0",
-    "effect": "4.0.0-beta.28",
-    "zod": "^4.3.6"
+    "effect": "4.0.0-beta.28"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",

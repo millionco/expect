@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
 import { KNOWN_ACP_AGENTS, AcpAgentConfig } from "../src/acp-client.js";
-import { layerFor } from "../src/agent.js";
 
 describe("ACP Agent Config", () => {
   describe("KNOWN_ACP_AGENTS", () => {
@@ -53,30 +52,16 @@ describe("ACP Agent Config", () => {
     });
   });
 
-  describe("layerFor", () => {
-    it("returns a layer for 'claude'", () => {
-      expect(layerFor("claude")).toBeDefined();
-    });
-
-    it("returns a layer for 'codex'", () => {
-      expect(layerFor("codex")).toBeDefined();
-    });
-
-    it("returns a layer for known ACP agent name", () => {
-      expect(layerFor("gemini-cli")).toBeDefined();
-    });
-
-    it("returns a layer for unknown agent name", () => {
-      expect(layerFor("my-custom-agent")).toBeDefined();
-    });
-
-    it("returns a layer for AcpAgentConfig instance", () => {
+  describe("AcpAgentConfig", () => {
+    it("creates a config with required fields", () => {
       const config = new AcpAgentConfig({
         command: "test-agent",
         args: ["--flag"],
         displayName: "Test Agent",
       });
-      expect(layerFor(config)).toBeDefined();
+      expect(config.command).toBe("test-agent");
+      expect(config.args).toEqual(["--flag"]);
+      expect(config.displayName).toBe("Test Agent");
     });
   });
 });
