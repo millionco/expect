@@ -5,8 +5,8 @@ import { Agent } from "../src/agent.js";
 import { AgentStreamOptions } from "../src/types.js";
 
 const TEST_LAYERS: [string, Layer.Layer<Agent>][] = [
-  // ["claude", Agent.layerClaude],
-  ["codex", Agent.layerCodex],
+  // ["codex-acp", Agent.layerAcpCodex],
+  ["claude-acp", Agent.layerAcpClaude],
 ];
 
 const makeOptions = (prompt: string): AgentStreamOptions =>
