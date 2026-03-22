@@ -1,5 +1,14 @@
 export { AgentStreamOptions, McpServerConfig, type McpSdkServer } from "./types.js";
 export { ClaudeQueryError, CodexRunError } from "./errors.js";
+export {
+  AcpClient,
+  AcpAdapter,
+  AcpStreamError,
+  AcpSessionCreateError,
+  AcpConnectionInitError,
+  AcpAdapterNotFoundError,
+  SessionId,
+} from "./acp-client.js";
 export { Agent, type AgentBackend } from "./agent.js";
 export { CurrentModel } from "./current-model.js";
 export { ClaudeProvider } from "./claude-provider.js";
