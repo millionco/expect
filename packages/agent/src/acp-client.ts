@@ -9,7 +9,6 @@ import {
   Queue,
   Schema,
   ServiceMap,
-  Sink,
   Stream,
 } from "effect";
 import { AcpSessionUpdate } from "./schemas/acp-stream.js";
@@ -120,13 +119,14 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()(
       const streamFiberMap = yield* FiberMap.make<SessionId>();
 
       const writableQueue = yield* Queue.unbounded<Uint8Array>();
-      const sessionUpdatesMap = new Map<SessionId, Queue.Queue<unknown>>();
+      const sessionUpdatesMap = new Map<
+        SessionId,
+        Queue.Queue<AcpSessionUpdate>
+      >();
 
       const client: acp.Client = {
-        requestPermission: (params) => {
-          console.log("REQUEST RPERSM ");
-          console.log(params);
-          return Promise.resolve({
+        requestPermission: (params) =>
+          Promise.resolve({
             outcome: {
               outcome: "selected" as const,
               optionId:
@@ -136,25 +136,25 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()(
                     option.kind === "allow_once"
                 )?.optionId ?? params.options[0].optionId,
             },
-          });
-        },
+          }),
         sessionUpdate: async ({ sessionId, update }) => {
           const updatesQueue = sessionUpdatesMap.get(
             SessionId.makeUnsafe(sessionId)
           );
-          console.log("RECV UPDATE", sessionId);
-          console.log(update);
           if (updatesQueue === undefined)
             throw new Error(
-              `Oops, session not initialized, did you forget to call createSession?`
+              `Session ${sessionId} not initialized, did you forget to call createSession?`
             );
-          Queue.offerUnsafe(updatesQueue, update);
+          const decoded = Schema.decodeUnknownSync(AcpSessionUpdate)(update);
+          Queue.offerUnsafe(updatesQueue, decoded);
         },
       };
 
       const childProcess = yield* ChildProcess.make(adapter.bin, adapter.args, {
         env: adapter.env,
       }).pipe(spawner.spawn);
+      yield* Effect.annotateLogsScoped({ pid: childProcess.pid });
+      yield* Effect.logDebug("ACP adapter subprocess spawned");
       /** @note(rasmus): we run all the writable queue entries into the process stdin */
       yield* Stream.fromQueue(writableQueue).pipe(
         Stream.run(childProcess.stdin),
@@ -173,7 +173,7 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()(
       );
 
       const browserMcpBinPath = fileURLToPath(
-        import.meta.resolve("@browser-tester/browser/cli"),
+        import.meta.resolve("@browser-tester/browser/cli")
       );
 
       const MCP_SERVERS: acp.McpServer[] = [
@@ -192,26 +192,25 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()(
           }),
         catch: (cause) => new AcpConnectionInitError({ cause }),
       });
-      console.log("INIT RESPONSE ");
-      console.log(initResponse);
+      yield* Effect.logInfo("ACP connection initialized", {
+        capabilities: initResponse.agentCapabilities,
+        mcpServers: MCP_SERVERS.map((server) => server.name),
+      });
 
       const createSession = Effect.fn("AcpClient.createSession")(function* (
         cwd: string
       ) {
-        console.log("Creating a as esssion", cwd);
+        yield* Effect.annotateCurrentSpan({ cwd });
         return yield* Effect.tryPromise({
           try: () => connection.newSession({ cwd, mcpServers: MCP_SERVERS }),
-          catch: (cause) => {
-            console.error("SESSION CREATE ERROR", cause);
-            return new AcpSessionCreateError({ cause });
-          },
+          catch: (cause) => new AcpSessionCreateError({ cause }),
         }).pipe(
           Effect.map(({ sessionId }) => SessionId.makeUnsafe(sessionId)),
           Effect.tap((sessionId) =>
             Effect.gen(function* () {
-              console.log("SESSION CREATED");
-              const updatesQueue = yield* Queue.unbounded<unknown>();
+              const updatesQueue = yield* Queue.unbounded<AcpSessionUpdate>();
               sessionUpdatesMap.set(sessionId, updatesQueue);
+              yield* Effect.logInfo("ACP session created", { sessionId });
             })
           )
         );
@@ -219,13 +218,14 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()(
 
       const getQueueBySessionId = Effect.fn("AcpClient.getQueueBySessionId")(
         function* (sessionId: SessionId) {
-          const queue = sessionUpdatesMap.get(sessionId);
-          if (queue === undefined) {
+          if (!sessionUpdatesMap.has(sessionId)) {
             return yield* Effect.die(
-              `Updates queue not found for session ${sessionId}`
+              `Session ${sessionId} not initialized, did you forget to call createSession?`
             );
           }
-          return queue;
+          const fresh = yield* Queue.unbounded<AcpSessionUpdate>();
+          sessionUpdatesMap.set(sessionId, fresh);
+          return fresh;
         }
       );
 
@@ -241,10 +241,10 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()(
         const sessionId = Option.isSome(sessionIdOption)
           ? sessionIdOption.value
           : yield* createSession(cwd);
-        console.log("STREAMING SESSION ID", sessionId);
 
-        const updatesQueue = yield* Queue.unbounded<unknown>();
-        sessionUpdatesMap.set(sessionId, updatesQueue);
+        yield* Effect.logDebug("ACP stream starting", { sessionId });
+
+        const updatesQueue = yield* getQueueBySessionId(sessionId);
 
         yield* Effect.tryPromise({
           try: () =>
@@ -254,23 +254,12 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()(
             }),
           catch: (cause) => new AcpStreamError({ cause }),
         }).pipe(
-          Effect.tap(() => Effect.sync(() => Queue.endUnsafe(updatesQueue))),
+          Effect.tap(() => Effect.logDebug("ACP prompt completed")),
+          Effect.tap(() => Effect.sync(() => Queue.shutdown(updatesQueue))),
           FiberMap.run(streamFiberMap, sessionId, { startImmediately: true })
         );
 
-        return Stream.fromQueue(updatesQueue).pipe(
-          Stream.mapEffect((raw) =>
-            Schema.decodeUnknownEffect(AcpSessionUpdate)(raw).pipe(
-              Effect.tapErrorTag("SchemaError", (error) =>
-                Effect.logWarning("SchemaError decoding ACP session update", {
-                  error: error.message,
-                  rawEvent: JSON.stringify(raw),
-                })
-              ),
-              Effect.catchTag("SchemaError", Effect.die)
-            )
-          )
-        );
+        return Stream.fromQueue(updatesQueue);
       },
       Stream.unwrap);
 

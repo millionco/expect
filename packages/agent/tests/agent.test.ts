@@ -3,10 +3,15 @@ import type { LanguageModelV3StreamPart } from "@ai-sdk/provider";
 import { Effect, Layer, Option, Stream } from "effect";
 import { Agent } from "../src/agent.js";
 import { AgentStreamOptions } from "../src/types.js";
+import { PlatformError } from "effect/PlatformError";
+import { AcpAdapterNotFoundError, AcpConnectionInitError } from "../src/acp-client.js";
 
-const TEST_LAYERS: [string, Layer.Layer<Agent>][] = [
-  // ["codex-acp", Agent.layerAcpCodex],
-  ["claude-acp", Agent.layerAcpClaude],
+const TEST_LAYERS: [
+  string,
+  Layer.Layer<Agent, PlatformError | AcpConnectionInitError | AcpAdapterNotFoundError>,
+][] = [
+  ["codex-acp", Agent.layerCodex],
+  ["claude-acp", Agent.layerClaude],
 ];
 
 const makeOptions = (prompt: string): AgentStreamOptions =>
@@ -29,12 +34,8 @@ describe("Agent", () => {
         }).pipe(Effect.provide(layer), Effect.runPromise);
 
         const textParts = parts.filter(
-          (
-            part
-          ): part is Extract<
-            LanguageModelV3StreamPart,
-            { type: "text-delta" }
-          > => part.type === "text-delta"
+          (part): part is Extract<LanguageModelV3StreamPart, { type: "text-delta" }> =>
+            part.type === "text-delta",
         );
         const fullText = textParts.map((part) => part.delta).join("");
         expect(fullText.toLowerCase()).toContain("hello");
@@ -50,22 +51,16 @@ describe("Agent", () => {
                 sessionId: Option.none(),
                 prompt: "run pwd and tell me the result",
                 systemPrompt: Option.none(),
-              })
+              }),
             )
             .pipe(Stream.runCollect);
         }).pipe(Effect.provide(layer), Effect.runPromise);
 
         const toolResults = parts.filter(
-          (
-            part
-          ): part is Extract<
-            LanguageModelV3StreamPart,
-            { type: "tool-result" }
-          > => part.type === "tool-result"
+          (part): part is Extract<LanguageModelV3StreamPart, { type: "tool-result" }> =>
+            part.type === "tool-result",
         );
-        expect(toolResults.some((part) => part.result.includes("/tmp"))).toBe(
-          true
-        );
+        expect(toolResults.some((part) => part.result.includes("/tmp"))).toBe(true);
       }, 60_000);
 
       it("resumes session with sessionId", async () => {
@@ -97,18 +92,14 @@ describe("Agent", () => {
         }).pipe(Effect.provide(layer), Effect.runPromise);
 
         const textParts = secondParts.filter(
-          (
-            part
-          ): part is Extract<
-            LanguageModelV3StreamPart,
-            { type: "text-delta" }
-          > => part.type === "text-delta"
+          (part): part is Extract<LanguageModelV3StreamPart, { type: "text-delta" }> =>
+            part.type === "text-delta",
         );
         expect(
           textParts
             .map((part) => part.delta)
             .join("")
-            .toLowerCase()
+            .toLowerCase(),
         ).toContain("ping");
       }, 60_000);
 

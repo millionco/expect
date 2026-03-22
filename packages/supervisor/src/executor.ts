@@ -1,4 +1,9 @@
-import { Agent, AgentStreamOptions, ClaudeQueryError, CodexRunError } from "@browser-tester/agent";
+import {
+  AcpSessionCreateError,
+  AcpStreamError,
+  Agent,
+  AgentStreamOptions,
+} from "@browser-tester/agent";
 import { Effect, Layer, Option, Schema, ServiceMap, Stream } from "effect";
 import { ExecutedTestPlan, RunStarted, type TestPlan } from "@browser-tester/shared/models";
 import { NodeServices } from "@effect/platform-node";
@@ -7,7 +12,7 @@ import { Updates } from "./updates";
 export class ExecutionError extends Schema.ErrorClass<ExecutionError>("@supervisor/ExecutionError")(
   {
     _tag: Schema.tag("@supervisor/ExecutionError"),
-    reason: Schema.Union([ClaudeQueryError, CodexRunError]),
+    reason: Schema.Union([AcpStreamError, AcpSessionCreateError]),
   },
 ) {
   message = `Execution failed: ${this.reason.message}`;

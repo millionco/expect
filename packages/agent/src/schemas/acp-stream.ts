@@ -48,8 +48,8 @@ const AcpToolCallContent = Schema.Union([
   Schema.Struct({
     type: Schema.Literal("diff"),
     path: Schema.String,
-    oldText: Schema.optional(Schema.String),
-    newText: Schema.optional(Schema.String),
+    oldText: Schema.optional(Schema.NullOr(Schema.String)),
+    newText: Schema.optional(Schema.NullOr(Schema.String)),
   }),
   Schema.Struct({
     type: Schema.Literal("terminal"),
@@ -59,7 +59,7 @@ const AcpToolCallContent = Schema.Union([
 
 const AcpToolCallLocation = Schema.Struct({
   path: Schema.String,
-  lineNumber: Schema.optional(Schema.Number),
+  lineNumber: Schema.optional(Schema.NullOr(Schema.Number)),
 });
 
 let blockIdCounter = 0;
@@ -69,7 +69,7 @@ export class AcpAgentMessageChunk extends Schema.Class<AcpAgentMessageChunk>(
 )({
   sessionUpdate: Schema.Literal("agent_message_chunk"),
   content: AcpContentBlock,
-  messageId: Schema.optional(Schema.String),
+  messageId: Schema.optional(Schema.NullOr(Schema.String)),
 }) {
   get streamParts(): Option.Option<LanguageModelV3StreamPart[]> {
     if (this.content.type === "text") {
@@ -89,7 +89,7 @@ export class AcpAgentThoughtChunk extends Schema.Class<AcpAgentThoughtChunk>(
 )({
   sessionUpdate: Schema.Literal("agent_thought_chunk"),
   content: AcpContentBlock,
-  messageId: Schema.optional(Schema.String),
+  messageId: Schema.optional(Schema.NullOr(Schema.String)),
 }) {
   get streamParts(): Option.Option<LanguageModelV3StreamPart[]> {
     if (this.content.type === "text") {
@@ -107,7 +107,7 @@ export class AcpAgentThoughtChunk extends Schema.Class<AcpAgentThoughtChunk>(
 export class AcpUserMessageChunk extends Schema.Class<AcpUserMessageChunk>("AcpUserMessageChunk")({
   sessionUpdate: Schema.Literal("user_message_chunk"),
   content: AcpContentBlock,
-  messageId: Schema.optional(Schema.String),
+  messageId: Schema.optional(Schema.NullOr(Schema.String)),
 }) {
   get streamParts(): Option.Option<LanguageModelV3StreamPart[]> {
     return Option.none();
