@@ -200,7 +200,9 @@ program
 
     const setupResult = await runSetup(agentOpts.install ?? false);
     if (!setupResult.ready) {
-      console.log(JSON.stringify({ status: "setup-failed", checks: setupResult.checks }, undefined, 2));
+      console.log(
+        JSON.stringify({ status: "setup-failed", checks: setupResult.checks }, undefined, 2),
+      );
       process.exitCode = 1;
       return;
     }

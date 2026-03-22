@@ -100,7 +100,9 @@ const detectDevServer = async (): Promise<SetupCheck & { suggestedUrl: string | 
     };
   }
 
-  const results = await Promise.all(COMMON_DEV_PORTS.map(async (port) => ({ port, open: await probePort(port) })));
+  const results = await Promise.all(
+    COMMON_DEV_PORTS.map(async (port) => ({ port, open: await probePort(port) })),
+  );
   const openPort = results.find((result) => result.open);
 
   if (openPort) {
@@ -151,7 +153,9 @@ export const runSetup = async (install: boolean): Promise<SetupResult> => {
 };
 
 export const printSetupReport = (result: SetupResult) => {
-  console.error(result.ready ? "\nAll checks passed — ready to test.\n" : "\nSome checks failed:\n");
+  console.error(
+    result.ready ? "\nAll checks passed — ready to test.\n" : "\nSome checks failed:\n",
+  );
   for (const check of result.checks) {
     const icon = check.ok ? "✓" : "✗";
     console.error(`  ${icon} ${check.name}: ${check.detail}`);
