@@ -557,27 +557,46 @@ export const TestPlanJson = Schema.Struct({
 
 export class RunStarted extends Schema.TaggedClass<RunStarted>()("RunStarted", {
   plan: TestPlan,
-}) {}
+}) {
+  get id(): string {
+    return `run-started-${this.plan.id}`;
+  }
+}
 
 export class StepStarted extends Schema.TaggedClass<StepStarted>()("StepStarted", {
   stepId: StepId,
   title: Schema.String,
-}) {}
+}) {
+  get id(): string {
+    return `step-started-${this.stepId}`;
+  }
+}
 
 export class StepCompleted extends Schema.TaggedClass<StepCompleted>()("StepCompleted", {
   stepId: StepId,
   summary: Schema.String,
-}) {}
+}) {
+  get id(): string {
+    return `step-completed-${this.stepId}`;
+  }
+}
 
 export class StepFailed extends Schema.TaggedClass<StepFailed>()("StepFailed", {
   stepId: StepId,
   message: Schema.String,
-}) {}
+}) {
+  get id(): string {
+    return `step-failed-${this.stepId}`;
+  }
+}
 
 export class ToolCall extends Schema.TaggedClass<ToolCall>()("ToolCall", {
   toolName: Schema.String,
   input: Schema.Unknown,
 }) {
+  get id(): string {
+    return `tool-call-${this.toolName}-${JSON.stringify(this.input)}`;
+  }
   get displayText(): string {
     if (Predicate.isObject(this.input) && "command" in this.input) {
       return String(this.input.command).slice(0, TOOL_CALL_DISPLAY_TEXT_CHAR_LIMIT);
@@ -590,20 +609,36 @@ export class ToolResult extends Schema.TaggedClass<ToolResult>()("ToolResult", {
   toolName: Schema.String,
   result: Schema.String,
   isError: Schema.Boolean,
-}) {}
+}) {
+  get id(): string {
+    return `tool-result-${this.toolName}-${this.result}`;
+  }
+}
 
 export class AgentThinking extends Schema.TaggedClass<AgentThinking>()("AgentThinking", {
   text: Schema.String,
-}) {}
+}) {
+  get id(): string {
+    return `agent-thinking-${this.text}`;
+  }
+}
 
 export class AgentText extends Schema.TaggedClass<AgentText>()("AgentText", {
   text: Schema.String,
-}) {}
+}) {
+  get id(): string {
+    return `agent-text-${this.text}`;
+  }
+}
 
 export class RunFinished extends Schema.TaggedClass<RunFinished>()("RunFinished", {
   status: Schema.Literals(["passed", "failed"] as const),
   summary: Schema.String,
-}) {}
+}) {
+  get id(): string {
+    return `run-finished-${this.status}`;
+  }
+}
 
 const serializeToolResult = (value: unknown): string => {
   if (
@@ -959,12 +994,34 @@ export class TestReport extends ExecutedTestPlan.extend<TestReport>("@supervisor
 
   get toPlainText(): string {
     const statuses = this.stepStatuses;
-    const lines = [`Status: ${this.status}`, `Summary: ${this.summary}`];
+    const passedCount = this.steps.filter(
+      (step) => statuses.get(step.id)?.status === "passed",
+    ).length;
+    const failedCount = this.steps.filter(
+      (step) => statuses.get(step.id)?.status === "failed",
+    ).length;
+
+    const icon = this.status === "passed" ? "\u2705" : "\u274C";
+    const lines = [
+      `${icon} ${this.title} \u2014 ${this.status.toUpperCase()}`,
+      "",
+      this.summary,
+      "",
+      `${passedCount} passed, ${failedCount} failed out of ${this.steps.length} steps`,
+      "",
+    ];
+
     for (const step of this.steps) {
       const entry = statuses.get(step.id);
       const stepStatus = entry?.status ?? "not-run";
-      lines.push(`${stepStatus.toUpperCase()} ${step.title}: ${entry?.summary ?? ""}`);
+      const stepIcon =
+        stepStatus === "passed" ? "\u2713" : stepStatus === "failed" ? "\u2717" : "\u2013";
+      lines.push(`  ${stepIcon} ${step.title}`);
+      if (entry?.summary) {
+        lines.push(`    ${entry.summary}`);
+      }
     }
+
     return lines.join("\n");
   }
 }

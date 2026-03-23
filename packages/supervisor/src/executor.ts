@@ -38,7 +38,14 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
         Stream.mapAccum(
           () => initial,
           (executed, part) => {
+            /* console.log("PART:  ");
+              console.dir(part, { depth: null }); */
             const next = executed.addEvent(part);
+            /* console.log("NEXT:  ");
+              console.dir(next.events, { depth: null });
+              console.log(
+                " --- --- --- --- --- --- --- --- ---  --- --- --- --- --- --- --- --- ---  --- --- --- --- --- --- --- --- --- "
+                ); */
             return [next, [next]] as const;
           },
         ),

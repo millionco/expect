@@ -1,36 +1,13 @@
-import { Cause, Effect, Layer, Logger, Option, References } from "effect";
+import { Effect, Layer, Option } from "effect";
 import * as Atom from "effect/unstable/reactivity/Atom";
-import { DevTools } from "effect/unstable/devtools";
-import { Executor, Git, Planner, Reporter, Updates } from "@browser-tester/supervisor";
 import { Agent, AgentBackend } from "@browser-tester/agent";
-
-const stderrLogger = Logger.make(({ logLevel, message, date, cause }) => {
-  console.error(
-    `[effect ${logLevel}] ${date.toISOString()} ${JSON.stringify(
-      message,
-      null,
-      2,
-    )} ${cause ? `\n${Cause.pretty(cause)}` : ""}`,
-  );
-});
+import { layerCli } from "../layers.js";
 
 export const agentProviderAtom = Atom.make<Option.Option<AgentBackend>>(Option.none());
 
 export const cliAtomRuntime = Atom.runtime(
   Effect.fnUntraced(function* (get) {
     const agentProvider = yield* get.some(agentProviderAtom);
-
-    return Layer.mergeAll(
-      Planner.layer,
-      Executor.layer,
-      Reporter.layer,
-      Updates.layer,
-      DevTools.layer(),
-      Git.withRepoRoot(process.cwd()),
-    ).pipe(
-      Layer.provide(Agent.layerFor(agentProvider)),
-      Layer.provide(Logger.layer([stderrLogger])),
-      Layer.provideMerge(Layer.succeed(References.MinimumLogLevel, "All")),
-    );
+    return layerCli({ verbose: true, agent: agentProvider });
   }, Layer.unwrap),
 ).pipe(Atom.keepAlive);

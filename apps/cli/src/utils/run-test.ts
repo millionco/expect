@@ -1,6 +1,9 @@
 import * as crypto from "node:crypto";
-import { Cause, Effect, Option, Stream } from "effect";
-import { changesForDisplayName, type ChangesFor } from "@browser-tester/shared/models";
+import { Cause, Effect, Layer, Option, Stream } from "effect";
+import {
+  changesForDisplayName,
+  type ChangesFor,
+} from "@browser-tester/shared/models";
 import {
   DraftId,
   Executor,
@@ -13,103 +16,92 @@ import {
 import { Agent, type AgentBackend } from "@browser-tester/agent";
 import figures from "figures";
 import { VERSION } from "../constants.js";
-import { CliRuntime } from "../runtime.js";
+import { layerCli } from "../layers.js";
 
 interface HeadlessRunOptions {
   changesFor: ChangesFor;
   instruction: string;
-  agent?: AgentBackend;
+  agent: AgentBackend;
+  verbose: boolean;
 }
 
-export const runHeadless = async (options: HeadlessRunOptions): Promise<void> => {
-  const cwd = process.cwd();
+export const runHeadless = (options: HeadlessRunOptions) =>
+  Effect.gen(function* () {
+    const planner = yield* Planner;
+    const git = yield* Git;
+    const executor = yield* Executor;
+    const reporter = yield* Reporter;
 
-  console.error(`testie v${VERSION}`);
-  console.error(`Testing ${changesForDisplayName(options.changesFor)}\n`);
+    console.log(`testie v${VERSION}`);
+    console.log(`Testing ${changesForDisplayName(options.changesFor)}`);
+    console.log("Planning browser flow...");
 
-  try {
-    console.error("Planning browser flow...");
+    const currentBranch = yield* git.getCurrentBranch;
+    const fileStats = yield* git.getFileStats(options.changesFor);
+    const diffPreview = yield* git.getDiffPreview(options.changesFor);
 
-    const draft = await Effect.runPromise(
-      Effect.gen(function* () {
-        const git = yield* Git;
-        const currentBranch = yield* git.getCurrentBranch;
-        const fileStats = yield* git.getFileStats(options.changesFor);
-        const diffPreview = yield* git.getDiffPreview(options.changesFor);
+    const draft = new TestPlanDraft({
+      id: DraftId.makeUnsafe(crypto.randomUUID()),
+      changesFor: options.changesFor,
+      currentBranch,
+      diffPreview,
+      fileStats: [...fileStats],
+      instruction: options.instruction,
+      baseUrl: Option.none(),
+      isHeadless: false,
+      requiresCookies: false,
+    });
 
-        return new TestPlanDraft({
-          id: DraftId.makeUnsafe(crypto.randomUUID()),
-          changesFor: options.changesFor,
-          currentBranch,
-          diffPreview,
-          fileStats: [...fileStats],
-          instruction: options.instruction,
-          baseUrl: Option.none(),
-          isHeadless: false,
-          requiresCookies: false,
-        });
-      }).pipe(Effect.provide(Git.withRepoRoot(cwd))),
+    const testPlan = yield* planner.plan(draft);
+    yield* Effect.logInfo(
+      `Plan: ${testPlan.title} (${testPlan.steps.length} steps)`
     );
 
-    const testPlan = await CliRuntime.runPromise(
-      Planner.use((planner) => planner.plan(draft)).pipe(
-        Effect.provide(Planner.layer),
-        Effect.provide(Agent.layerFor(options.agent ?? "claude")),
-      ),
-    );
-    console.error(`Plan: ${testPlan.title} (${testPlan.steps.length} steps)\n`);
-
-    await CliRuntime.runPromise(
-      Effect.gen(function* () {
-        const executor = yield* Executor;
-        const finalExecuted = yield* executor.executePlan(testPlan).pipe(
-          Stream.tap((executed) =>
-            Effect.sync(() => {
-              const lastEvent = executed.events.at(-1);
-              if (!lastEvent) return;
-              switch (lastEvent._tag) {
-                case "RunStarted":
-                  console.error(`Starting ${lastEvent.plan.title}`);
-                  break;
-                case "StepStarted":
-                  console.error(`${figures.arrowRight} ${lastEvent.stepId} ${lastEvent.title}`);
-                  break;
-                case "StepCompleted":
-                  console.error(`  ${figures.tick} ${lastEvent.stepId} ${lastEvent.summary}`);
-                  break;
-                case "StepFailed":
-                  console.error(`  ${figures.cross} ${lastEvent.stepId} ${lastEvent.message}`);
-                  break;
-              }
-            }),
-          ),
-          Stream.runLast,
-          Effect.map((option) =>
-            option._tag === "Some"
-              ? option.value
-              : new ExecutedTestPlan({ ...testPlan, events: [] }),
-          ),
-        );
-
-        const report = yield* Reporter.use((reporter) => reporter.report(finalExecuted)).pipe(
-          Effect.provide(Reporter.layer),
-        );
-        console.error(`\nResult: ${report.status.toUpperCase()}`);
-        console.error(report.summary);
-      }).pipe(
-        Effect.provide(Executor.layer),
-        Effect.provide(Agent.layerFor(options.agent ?? "claude")),
-        Effect.catchCause((cause) =>
-          Effect.sync(() => {
-            if (!cause.reasons.every(Cause.isInterruptReason)) {
-              console.error(`Error: ${Cause.pretty(cause)}`);
+    const seenEvents = new Set<string>();
+    const finalExecuted = yield* executor.executePlan(testPlan).pipe(
+      Stream.tap((executed) =>
+        Effect.sync(() => {
+          for (const event of executed.events) {
+            if (seenEvents.has(event.id)) continue;
+            seenEvents.add(event.id);
+            switch (event._tag) {
+              case "RunStarted":
+                console.log(`Starting ${event.plan.title}`);
+                break;
+              case "StepStarted":
+                console.log(
+                  `${figures.arrowRight} ${event.stepId} ${event.title}`
+                );
+                break;
+              case "StepCompleted":
+                console.log(
+                  `  ${figures.tick} ${event.stepId} ${event.summary}`
+                );
+                break;
+              case "StepFailed":
+                console.log(
+                  `  ${figures.cross} ${event.stepId} ${event.message}`
+                );
+                break;
             }
-          }),
-        ),
+          }
+        })
       ),
+      Stream.runLast,
+      Effect.map((option) =>
+        option._tag === "Some"
+          ? option.value
+          : new ExecutedTestPlan({ ...testPlan, events: [] })
+      )
     );
-  } catch (error) {
-    console.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
-    process.exit(1);
-  }
-};
+
+    const report = yield* reporter.report(finalExecuted);
+
+    console.error(`\n${report.toPlainText}`);
+    process.exit(report.status === "passed" ? 0 : 1);
+  }).pipe(
+    Effect.provide(
+      layerCli({ verbose: options.verbose, agent: options.agent })
+    ),
+    Effect.runPromise
+  );

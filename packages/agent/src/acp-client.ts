@@ -1,7 +1,18 @@
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import * as acp from "@agentclientprotocol/sdk";
-import { Cause, Effect, FiberMap, Layer, Option, Queue, Schema, ServiceMap, Stream } from "effect";
+import {
+  Cause,
+  Effect,
+  FiberMap,
+  Layer,
+  Option,
+  Queue,
+  References,
+  Schema,
+  ServiceMap,
+  Stream,
+} from "effect";
 import { AcpSessionUpdate } from "@browser-tester/shared/models";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import { NodeServices } from "@effect/platform-node";
@@ -94,6 +105,8 @@ export class AcpAdapter extends ServiceMap.Service<
 
 export class AcpClient extends ServiceMap.Service<AcpClient>()("@browser-tester/AcpClient", {
   make: Effect.gen(function* () {
+    const x = yield* References.CurrentLogLevel;
+    console.log("CURRENT LOGL EVEL", x);
     const adapter = yield* AcpAdapter;
     yield* Effect.annotateLogsScoped({ adapter: adapter.args[0] });
     yield* Effect.logInfo(`Initializing AcpClient`);
