@@ -6,7 +6,12 @@ import { App } from "./components/app.js";
 import { ALT_SCREEN_OFF, ALT_SCREEN_ON, VERSION } from "./constants.js";
 import { ThemeProvider } from "./components/theme-context.js";
 import { loadThemeName } from "./utils/load-theme.js";
-import { ChangesFor, Git, TestPlanDraft, DraftId } from "@browser-tester/supervisor";
+import {
+  ChangesFor,
+  Git,
+  TestPlanDraft,
+  DraftId,
+} from "@browser-tester/supervisor";
 import { runHeadless } from "./utils/run-test.js";
 import type { AgentBackend } from "@browser-tester/agent";
 import { useNavigationStore, Screen } from "./stores/use-navigation.js";
@@ -14,6 +19,8 @@ import { usePreferencesStore } from "./stores/use-preferences.js";
 import { usePlanStore, Plan } from "./stores/use-plan-store.js";
 import { queryClient } from "./query-client.js";
 import { setInkInstance } from "./utils/clear-ink-display.js";
+import { RegistryProvider } from "@effect/atom-react";
+import { agentProviderAtom } from "./data/runtime.js";
 
 const DEFAULT_SKIP_PLANNING = true;
 
@@ -31,7 +38,10 @@ const program = new Command()
   .name("testie")
   .description("AI-powered browser testing for your changes")
   .version(VERSION, "-v, --version")
-  .option("-m, --message <instruction>", "natural language instruction for what to test")
+  .option(
+    "-m, --message <instruction>",
+    "natural language instruction for what to test"
+  )
   .option("-f, --flow <slug>", "reuse a saved flow by its slug")
   .option("-y, --yes", "skip plan review and run immediately")
   .option("-a, --agent <provider>", "agent provider to use (claude or codex)")
@@ -41,21 +51,23 @@ const program = new Command()
 Examples:
   $ testie                                    open interactive TUI
   $ testie -m "test the login flow" -y        plan and run immediately
-  $ testie branch -m "verify signup" -y       test all branch changes`,
+  $ testie branch -m "verify signup" -y       test all branch changes`
   );
 
 const isHeadless = () => !process.stdin.isTTY;
 
-const renderApp = async () => {
+const renderApp = async (agent: AgentBackend) => {
   const initialTheme = loadThemeName() ?? undefined;
   process.stdout.write(ALT_SCREEN_ON);
   process.on("exit", () => process.stdout.write(ALT_SCREEN_OFF));
   const instance = render(
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider initialTheme={initialTheme}>
-        <App />
-      </ThemeProvider>
-    </QueryClientProvider>,
+    <RegistryProvider initialValues={[[agentProviderAtom, Option.some(agent)]]}>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider initialTheme={initialTheme}>
+          <App agent={agent} />
+        </ThemeProvider>
+      </QueryClientProvider>
+    </RegistryProvider>
   );
   setInkInstance(instance);
   await instance.waitUntilExit();
@@ -64,7 +76,7 @@ const renderApp = async () => {
 
 const resolveChangesFor = async (
   action: "unstaged" | "branch" | "changes" | "commit",
-  commitHash?: string,
+  commitHash?: string
 ) => {
   const cwd = process.cwd();
   return Effect.runPromise(
@@ -75,7 +87,10 @@ const resolveChangesFor = async (
 
       if (action === "commit" && commitHash) {
         return {
-          changesFor: ChangesFor.makeUnsafe({ _tag: "Commit", hash: commitHash }),
+          changesFor: ChangesFor.makeUnsafe({
+            _tag: "Commit",
+            hash: commitHash,
+          }),
           currentBranch,
         };
       }
@@ -95,11 +110,15 @@ const resolveChangesFor = async (
         changesFor: ChangesFor.makeUnsafe({ _tag: "WorkingTree" }),
         currentBranch,
       };
-    }).pipe(Effect.provide(Git.withRepoRoot(cwd))),
+    }).pipe(Effect.provide(Git.withRepoRoot(cwd)))
   );
 };
 
-const seedStores = (opts: CommanderOpts, changesFor: ChangesFor, currentBranch: string) => {
+const seedStores = (
+  opts: CommanderOpts,
+  changesFor: ChangesFor,
+  currentBranch: string
+) => {
   usePreferencesStore.setState({
     ...(opts.agent ? { agentBackend: opts.agent } : {}),
     autoRunAfterPlanning: opts.yes ?? false,
@@ -118,7 +137,7 @@ const seedStores = (opts: CommanderOpts, changesFor: ChangesFor, currentBranch: 
       isHeadless: false,
       requiresCookies: false,
     });
-    usePlanStore.setState({ plan: Plan.draft(draft), readyTestPlan: undefined });
+    usePlanStore.setState({ plan: Plan.draft(draft) });
     useNavigationStore.setState({
       screen: Screen.Testing({ changesFor, instruction: opts.message }),
     });
@@ -130,7 +149,7 @@ const seedStores = (opts: CommanderOpts, changesFor: ChangesFor, currentBranch: 
 const runHeadlessForAction = async (
   action: "unstaged" | "branch" | "changes" | "commit",
   opts: CommanderOpts,
-  commitHash?: string,
+  commitHash?: string
 ) => {
   const { changesFor } = await resolveChangesFor(action, commitHash);
   return runHeadless({
@@ -143,11 +162,14 @@ const runHeadlessForAction = async (
 const runInteractiveForAction = async (
   action: "unstaged" | "branch" | "changes" | "commit",
   opts: CommanderOpts,
-  commitHash?: string,
+  commitHash?: string
 ) => {
-  const { changesFor, currentBranch } = await resolveChangesFor(action, commitHash);
+  const { changesFor, currentBranch } = await resolveChangesFor(
+    action,
+    commitHash
+  );
   seedStores(opts, changesFor, currentBranch);
-  renderApp();
+  renderApp(opts.agent ?? "claude");
 };
 
 program
@@ -177,7 +199,7 @@ program.action(async () => {
   if (hasOptions) {
     await runInteractiveForAction("changes", opts);
   } else {
-    renderApp();
+    renderApp(opts.agent ?? "claude");
   }
 });
 

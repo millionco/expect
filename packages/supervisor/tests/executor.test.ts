@@ -32,6 +32,8 @@ const makeTestPlan = (): TestPlan =>
         routeHint: Option.none(),
         status: "pending",
         summary: Option.none(),
+        startedAt: Option.none(),
+        endedAt: Option.none(),
       }),
     ],
     changesFor: ChangesFor.makeUnsafe({ _tag: "WorkingTree" }),

@@ -10,14 +10,10 @@ export const Plan = Data.taggedEnum<Plan>();
 
 interface PlanStore {
   plan: Plan | undefined;
-  readyTestPlan: TestPlan | undefined;
   setPlan: (plan: Plan | undefined) => void;
-  setReadyTestPlan: (plan: TestPlan | undefined) => void;
 }
 
 export const usePlanStore = create<PlanStore>((set) => ({
   plan: undefined,
-  readyTestPlan: undefined,
   setPlan: (plan) => set({ plan }),
-  setReadyTestPlan: (readyTestPlan) => set({ readyTestPlan }),
 }));

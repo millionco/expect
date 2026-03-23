@@ -66,7 +66,7 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
           color: COLORS.PRIMARY,
           cta: true,
           onClick: () => {
-            usePlanStore.getState().setReadyTestPlan(screen.plan);
+            usePlanStore.getState().setPlan(Plan.plan(screen.plan));
             if (screen.plan.requiresCookies) {
               setScreen(Screen.CookieSyncConfirm({ plan: screen.plan }));
             } else {
@@ -96,7 +96,7 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
           onClick: () => {
             const updated = screen.plan.update({ requiresCookies: true });
             setPlan(Plan.plan(updated));
-            usePlanStore.getState().setReadyTestPlan(updated);
+            usePlanStore.getState().setPlan(Plan.plan(updated));
             setScreen(
               Screen.Testing({
                 changesFor: updated.changesFor,
@@ -111,7 +111,7 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
           color: COLORS.PRIMARY,
           cta: true,
           onClick: () => {
-            usePlanStore.getState().setReadyTestPlan(screen.plan);
+            usePlanStore.getState().setPlan(Plan.plan(screen.plan));
             setScreen(
               Screen.Testing({
                 changesFor: screen.plan.changesFor,

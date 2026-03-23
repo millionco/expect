@@ -129,7 +129,6 @@ export const MainMenu = ({ gitState }: MainMenuProps) => {
       console.error("[main-menu] draft created, navigating");
       usePreferencesStore.getState().rememberInstruction(trimmed);
       usePlanStore.getState().setPlan(Plan.draft(draft));
-      usePlanStore.getState().setReadyTestPlan(undefined);
       setScreen(Screen.Testing({ changesFor, instruction: trimmed }));
     },
     [value, activeContext, gitState, setScreen],

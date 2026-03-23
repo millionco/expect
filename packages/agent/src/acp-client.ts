@@ -2,6 +2,7 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import * as acp from "@agentclientprotocol/sdk";
 import {
+  Cause,
   Effect,
   FiberMap,
   Layer,
@@ -121,7 +122,7 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()(
       const writableQueue = yield* Queue.unbounded<Uint8Array>();
       const sessionUpdatesMap = new Map<
         SessionId,
-        Queue.Queue<AcpSessionUpdate>
+        Queue.Queue<AcpSessionUpdate, Cause.Done>
       >();
 
       const client: acp.Client = {
@@ -208,7 +209,10 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()(
           Effect.map(({ sessionId }) => SessionId.makeUnsafe(sessionId)),
           Effect.tap((sessionId) =>
             Effect.gen(function* () {
-              const updatesQueue = yield* Queue.unbounded<AcpSessionUpdate>();
+              const updatesQueue = yield* Queue.unbounded<
+                AcpSessionUpdate,
+                Cause.Done
+              >();
               sessionUpdatesMap.set(sessionId, updatesQueue);
               yield* Effect.logInfo("ACP session created", { sessionId });
             })
@@ -223,7 +227,7 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()(
               `Session ${sessionId} not initialized, did you forget to call createSession?`
             );
           }
-          const fresh = yield* Queue.unbounded<AcpSessionUpdate>();
+          const fresh = yield* Queue.unbounded<AcpSessionUpdate, Cause.Done>();
           sessionUpdatesMap.set(sessionId, fresh);
           return fresh;
         }
@@ -254,11 +258,25 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()(
             }),
           catch: (cause) => new AcpStreamError({ cause }),
         }).pipe(
-          Effect.tap(() => Effect.logDebug("ACP prompt completed")),
-          Effect.tap(() => Effect.sync(() => Queue.shutdown(updatesQueue))),
+          Effect.tap(() => {
+            console.error("[acp-client] prompt resolved, shutting down queue");
+            return Effect.logDebug("ACP prompt completed");
+          }),
+          Effect.tap(() => {
+            console.error("[acp-client] calling Queue.end");
+
+            return Queue.end(updatesQueue).pipe(
+              Effect.tap(() =>
+                Effect.sync(() =>
+                  console.error("[acp-client] queue end complete")
+                )
+              )
+            );
+          }),
           FiberMap.run(streamFiberMap, sessionId, { startImmediately: true })
         );
 
+        console.error("[acp-client] returning stream from queue");
         return Stream.fromQueue(updatesQueue);
       },
       Stream.unwrap);

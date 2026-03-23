@@ -43,7 +43,7 @@ export const CookieSyncConfirmScreen = ({ plan }: CookieSyncConfirmScreenProps) 
     if (option.id === "enable-sync") {
       setPlan(Plan.plan(finalPlan));
     }
-    usePlanStore.getState().setReadyTestPlan(finalPlan);
+    usePlanStore.getState().setPlan(Plan.plan(finalPlan));
     setScreen(
       Screen.Testing({ changesFor: finalPlan.changesFor, instruction: finalPlan.instruction }),
     );

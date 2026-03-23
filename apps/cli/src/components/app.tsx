@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Box, useInput } from "ink";
 import { MouseProvider } from "../hooks/mouse-context.js";
 import { PrPickerScreen } from "./screens/pr-picker-screen.js";
@@ -16,12 +16,22 @@ import { usePlanExecutionStore } from "../stores/use-plan-execution-store.js";
 import { useGitState } from "../hooks/use-git-state.js";
 import { clearInkDisplay } from "../utils/clear-ink-display.js";
 import { useStdoutDimensions } from "../hooks/use-stdout-dimensions.js";
+import { AgentBackend } from "@browser-tester/agent";
+import { useAtomSet } from "@effect/atom-react";
+import { agentProviderAtom } from "../data/runtime.js";
+import { Option } from "effect";
 
-export const App = () => {
+export const App = ({ agent }: { agent: AgentBackend }) => {
   const screen = useNavigationStore((state) => state.screen);
   const setScreen = useNavigationStore((state) => state.setScreen);
   const navigateTo = useNavigationStore((state) => state.navigateTo);
   const { data: gitState, isLoading: gitStateLoading } = useGitState();
+
+  /** @note(rasmus): this constructs the Layer with the agent provider lazily */
+  const setAgentProvider = useAtomSet(agentProviderAtom);
+  useEffect(() => {
+    setAgentProvider(Option.some(agent));
+  }, [agent]);
 
   const goBack = () => {
     if (screen._tag === "ReviewPlan") {
@@ -34,7 +44,6 @@ export const App = () => {
     }
     if (screen._tag === "Results") {
       usePlanStore.getState().setPlan(undefined);
-      usePlanStore.getState().setReadyTestPlan(undefined);
       usePlanExecutionStore.getState().setExecutedPlan(undefined);
       setScreen(Screen.Main());
       return;
@@ -56,7 +65,12 @@ export const App = () => {
     if (key.escape && screen._tag !== "Main" && screen._tag !== "ReviewPlan") {
       goBack();
     }
-    if (key.ctrl && input === "p" && screen._tag === "Main" && gitState?.isGitRepo) {
+    if (
+      key.ctrl &&
+      input === "p" &&
+      screen._tag === "Main" &&
+      gitState?.isGitRepo
+    ) {
       navigateTo(Screen.SelectPr());
     }
     if (key.ctrl && input === "t") {
@@ -75,7 +89,12 @@ export const App = () => {
   const renderScreen = () => {
     switch (screen._tag) {
       case "Testing":
-        return <TestingScreen changesFor={screen.changesFor} instruction={screen.instruction} />;
+        return (
+          <TestingScreen
+            changesFor={screen.changesFor}
+            instruction={screen.instruction}
+          />
+        );
       case "Results":
         return <ResultsScreen report={screen.report} />;
       case "Theme":

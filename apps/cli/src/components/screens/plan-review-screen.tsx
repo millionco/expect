@@ -128,7 +128,6 @@ export const PlanReviewScreen = ({ plan }: PlanReviewScreenProps) => {
         const changesFor = ChangesFor.makeUnsafe({ _tag: "Changes", mainBranch });
         usePreferencesStore.getState().rememberInstruction(trimmedInput);
         setPlan(Plan.draft(draft));
-        usePlanStore.getState().setReadyTestPlan(undefined);
         setScreen(Screen.Testing({ changesFor, instruction: trimmedInput }));
       }
       if (input.toLowerCase() === "n" || key.escape) {
@@ -197,7 +196,7 @@ export const PlanReviewScreen = ({ plan }: PlanReviewScreenProps) => {
       }
 
       if (input === "a" || key.return) {
-        usePlanStore.getState().setReadyTestPlan(plan);
+        usePlanStore.getState().setPlan(Plan.plan(plan));
         if (plan.requiresCookies) {
           setScreen(Screen.CookieSyncConfirm({ plan }));
         } else {

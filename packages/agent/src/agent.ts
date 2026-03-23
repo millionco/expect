@@ -16,9 +16,14 @@ export class Agent extends ServiceMap.Service<
   Agent,
   {
     readonly stream: (
-      options: AgentStreamOptions,
-    ) => Stream.Stream<LanguageModelV3StreamPart, AcpStreamError | AcpSessionCreateError>;
-    readonly createSession: (cwd: string) => Effect.Effect<SessionId, AcpSessionCreateError>;
+      options: AgentStreamOptions
+    ) => Stream.Stream<
+      LanguageModelV3StreamPart,
+      AcpStreamError | AcpSessionCreateError
+    >;
+    readonly createSession: (
+      cwd: string
+    ) => Effect.Effect<SessionId, AcpSessionCreateError>;
   }
 >()("@browser-tester/Agent") {
   static layerAcp = Layer.effect(Agent)(
@@ -38,13 +43,24 @@ export class Agent extends ServiceMap.Service<
               Stream.map((update) => update.streamParts),
               Stream.filter(Option.isSome),
               Stream.flatMap((option) => Stream.fromIterable(option.value)),
+              Stream.tap((x) => {
+                if (x.type === "text-delta") {
+                  console.error(x.delta);
+                }
+                if (x.type === "tool-call") {
+                  console.error(x);
+                }
+                return Effect.void;
+              })
             ),
       });
-    }),
+    })
   ).pipe(Layer.provide(AcpClient.layer));
 
   static layerCodex = Agent.layerAcp.pipe(Layer.provide(AcpAdapter.layerCodex));
-  static layerClaude = Agent.layerAcp.pipe(Layer.provide(AcpAdapter.layerClaude));
+  static layerClaude = Agent.layerAcp.pipe(
+    Layer.provide(AcpAdapter.layerClaude)
+  );
 
   static layerFor = (backend: AgentBackend) =>
     backend === "claude" ? Agent.layerClaude : Agent.layerCodex;
@@ -60,11 +76,14 @@ export class Agent extends ServiceMap.Service<
             fs.stream(fixturePath).pipe(
               Stream.decodeText(),
               Stream.splitLines,
-              Stream.map((line) => JSON.parse(line) as LanguageModelV3StreamPart),
-              Stream.orDie,
+              Stream.map(
+                (line) => JSON.parse(line) as LanguageModelV3StreamPart
+              ),
+              Stream.orDie
             ),
-          createSession: () => Effect.die("createSession not supported for test layer"),
+          createSession: () =>
+            Effect.die("createSession not supported for test layer"),
         });
-      }),
+      })
     ).pipe(Layer.provide(NodeServices.layer));
 }

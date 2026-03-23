@@ -1,7 +1,12 @@
 import { Config, Effect, Option, Stream } from "effect";
 import * as Atom from "effect/unstable/reactivity/Atom";
 import { Agent } from "@browser-tester/agent";
-import { ExecutedTestPlan, Executor, Git, Reporter } from "@browser-tester/supervisor";
+import {
+  ExecutedTestPlan,
+  Executor,
+  Git,
+  Reporter,
+} from "@browser-tester/supervisor";
 import type { AgentBackend } from "@browser-tester/agent";
 import type { TestPlan, TestReport } from "@browser-tester/shared/models";
 const LIVE_VIEW_URL_ENV_NAME = "BROWSER_TESTER_LIVE_VIEW_URL";
@@ -64,61 +69,32 @@ const pushStepStateToLiveView = (liveViewUrl: string, state: LiveViewStepState) 
 export const screenshotPathsAtom = Atom.make<readonly string[]>([]);
 
 export const executePlanFn = cliAtomRuntime.fn(
-  Effect.fnUntraced(
-    function* (input: ExecutePlanInput, _ctx: Atom.FnContext) {
-      const reporter = yield* Reporter;
-      console.error("[execution-atom] starting execution for:", input.testPlan.title);
-      Atom.set(screenshotPathsAtom, []);
+  Effect.fnUntraced(function* (input: ExecutePlanInput, _ctx: Atom.FnContext) {
+    const reporter = yield* Reporter;
+    const executor = yield* Executor;
 
-      const liveViewUrl = yield* Config.option(Config.string(LIVE_VIEW_URL_ENV_NAME));
+    const finalExecuted = yield* executor.executePlan(input.testPlan).pipe(
+      Stream.tap((executed) =>
+        Effect.sync(() => {
+          input.onUpdate(executed);
+        })
+      ),
+      Stream.runLast,
+      Effect.map((option) =>
+        option._tag === "Some"
+          ? option.value
+          : new ExecutedTestPlan({ ...input.testPlan, events: [] })
+      ),
+      Effect.provide(Agent.layerFor(input.agentBackend))
+    );
 
-      const executor = yield* Executor;
-      console.error("[execution-atom] got executor, calling executePlan...");
+    const report = yield* reporter.report(finalExecuted);
 
-      const finalExecuted = yield* executor.executePlan(input.testPlan).pipe(
-        Stream.tap((executed) =>
-          Effect.gen(function* () {
-            input.onUpdate(executed);
-            if (Option.isSome(liveViewUrl)) {
-              yield* pushStepStateToLiveView(liveViewUrl.value, toLiveViewStepState(executed));
-            }
-            const lastEvent = executed.events.at(-1);
-            if (lastEvent?._tag === "ToolResult" && lastEvent.toolName.endsWith("__screenshot")) {
-              Atom.update(screenshotPathsAtom, (previous) => [...previous, lastEvent.result]);
-            }
-          }),
-        ),
-        Stream.runLast,
-        Effect.map((option) =>
-          option._tag === "Some"
-            ? option.value
-            : new ExecutedTestPlan({ ...input.testPlan, events: [] }),
-        ),
-        Effect.provide(Agent.layerFor(input.agentBackend)),
-      );
+    if (report.status === "passed") {
+      const git = yield* Git;
+      yield* git.saveTestedFingerprint();
+    }
 
-      console.error("[execution-atom] stream complete, total events:", finalExecuted.events.length);
-
-      const report = yield* reporter.report(finalExecuted);
-      console.error("[execution-atom] report done, status:", report.status);
-
-      if (Option.isSome(liveViewUrl)) {
-        yield* pushStepStateToLiveView(
-          liveViewUrl.value,
-          toLiveViewStepState(finalExecuted, {
-            status: report.status,
-            summary: report.summary,
-          }),
-        );
-      }
-
-      if (report.status === "passed") {
-        const git = yield* Git;
-        yield* git.saveTestedFingerprint();
-      }
-
-      return { executedPlan: finalExecuted, report } satisfies ExecutionResult;
-    },
-    Effect.annotateLogs({ fn: "executePlanFn" }),
-  ),
+    return { executedPlan: finalExecuted, report } satisfies ExecutionResult;
+  }, Effect.annotateLogs({ fn: "executePlanFn" }))
 );
