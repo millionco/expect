@@ -143,8 +143,8 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()(
             SessionId.makeUnsafe(sessionId)
           );
           if (updatesQueue === undefined)
-            throw new Error(
-              `Session ${sessionId} not initialized, did you forget to call createSession?`
+            return console.warn(
+              `updates queue not found for session ${sessionId}`
             );
           const decoded = Schema.decodeUnknownSync(AcpSessionUpdate)(update);
           Queue.offerUnsafe(updatesQueue, decoded);
@@ -258,25 +258,11 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()(
             }),
           catch: (cause) => new AcpStreamError({ cause }),
         }).pipe(
-          Effect.tap(() => {
-            console.error("[acp-client] prompt resolved, shutting down queue");
-            return Effect.logDebug("ACP prompt completed");
-          }),
-          Effect.tap(() => {
-            console.error("[acp-client] calling Queue.end");
-
-            return Queue.end(updatesQueue).pipe(
-              Effect.tap(() =>
-                Effect.sync(() =>
-                  console.error("[acp-client] queue end complete")
-                )
-              )
-            );
-          }),
+          Effect.tap(() => Effect.logDebug("ACP prompt completed")),
+          Effect.tap(() => Queue.end(updatesQueue)),
           FiberMap.run(streamFiberMap, sessionId, { startImmediately: true })
         );
 
-        console.error("[acp-client] returning stream from queue");
         return Stream.fromQueue(updatesQueue);
       },
       Stream.unwrap);
@@ -293,6 +279,5 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()(
   );
 
   static layerCodex = this.layer.pipe(Layer.provide(AcpAdapter.layerCodex));
-
   static layerClaude = this.layer.pipe(Layer.provide(AcpAdapter.layerClaude));
 }

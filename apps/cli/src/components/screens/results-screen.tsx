@@ -16,10 +16,12 @@ interface ResultsScreenProps {
 
 export const ResultsScreen = ({ report }: ResultsScreenProps) => {
   const COLORS = useColors();
-  const [clipboardStatusMessage, setClipboardStatusMessage] = useState<string | undefined>(
-    undefined,
+  const [clipboardStatusMessage, setClipboardStatusMessage] = useState<
+    string | undefined
+  >(undefined);
+  const [clipboardError, setClipboardError] = useState<string | undefined>(
+    undefined
   );
-  const [clipboardError, setClipboardError] = useState<string | undefined>(undefined);
   const commentMutation = usePostPrComment();
 
   const handlePostPullRequestComment = () => {
@@ -63,14 +65,21 @@ export const ResultsScreen = ({ report }: ResultsScreenProps) => {
         />
       </Box>
 
-      <RuledBox color={report.status === "passed" ? COLORS.GREEN : COLORS.RED} marginTop={1}>
-        <Text color={report.status === "passed" ? COLORS.GREEN : COLORS.RED} bold>
+      <RuledBox
+        color={report.status === "passed" ? COLORS.GREEN : COLORS.RED}
+        marginTop={1}
+      >
+        <Text
+          color={report.status === "passed" ? COLORS.GREEN : COLORS.RED}
+          bold
+        >
           {report.status === "passed" ? "Plan completed" : "Issues found"}
         </Text>
         <Text color={COLORS.TEXT}>{report.summary}</Text>
         {Option.isSome(report.pullRequest) ? (
           <Text color={COLORS.DIM}>
-            PR: {report.pullRequest.value.title} (#{report.pullRequest.value.number})
+            PR: {report.pullRequest.value.title} (#
+            {report.pullRequest.value.number})
           </Text>
         ) : null}
       </RuledBox>
@@ -86,14 +95,14 @@ export const ResultsScreen = ({ report }: ResultsScreenProps) => {
               step.status === "passed"
                 ? COLORS.GREEN
                 : step.status === "failed"
-                  ? COLORS.RED
-                  : COLORS.YELLOW
+                ? COLORS.RED
+                : COLORS.YELLOW
             }
           >
             {"• "}
             {step.title}
             {": "}
-            <Text color={COLORS.TEXT}>{step.summary}</Text>
+            <Text color={COLORS.TEXT}>{Option.getOrElse(step.summary, () => "no summary found")}</Text>
           </Text>
         ))}
       </Box>
@@ -101,21 +110,29 @@ export const ResultsScreen = ({ report }: ResultsScreenProps) => {
       <Box flexDirection="column" paddingX={1} marginTop={1}>
         <Clickable onClick={handleCopyToClipboard}>
           <Text color={COLORS.DIM}>
-            Press <Text color={COLORS.PRIMARY}>y</Text> to copy share details to the clipboard.
+            Press <Text color={COLORS.PRIMARY}>y</Text> to copy share details to
+            the clipboard.
           </Text>
         </Clickable>
-        {clipboardStatusMessage ? <Text color={COLORS.GREEN}>{clipboardStatusMessage}</Text> : null}
-        {clipboardError ? <Text color={COLORS.RED}>{clipboardError}</Text> : null}
+        {clipboardStatusMessage ? (
+          <Text color={COLORS.GREEN}>{clipboardStatusMessage}</Text>
+        ) : null}
+        {clipboardError ? (
+          <Text color={COLORS.RED}>{clipboardError}</Text>
+        ) : null}
       </Box>
 
       {Option.isSome(report.pullRequest) ? (
         <Box flexDirection="column" paddingX={1}>
           <Clickable onClick={handlePostPullRequestComment}>
             <Text color={COLORS.DIM}>
-              Press <Text color={COLORS.PRIMARY}>p</Text> to post this summary to the PR.
+              Press <Text color={COLORS.PRIMARY}>p</Text> to post this summary
+              to the PR.
             </Text>
           </Clickable>
-          {commentMutation.isPending ? <Text color={COLORS.DIM}>Posting PR comment...</Text> : null}
+          {commentMutation.isPending ? (
+            <Text color={COLORS.DIM}>Posting PR comment...</Text>
+          ) : null}
           {commentMutation.isSuccess ? (
             <Text color={COLORS.GREEN}>Comment posted to PR.</Text>
           ) : null}

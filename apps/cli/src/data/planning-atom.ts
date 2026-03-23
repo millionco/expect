@@ -7,14 +7,12 @@ import {
   TestPlanDraft,
   DraftId,
 } from "@browser-tester/supervisor";
-import type { AgentBackend } from "@browser-tester/agent";
 import type { ChangesFor } from "@browser-tester/shared/models";
 import { cliAtomRuntime } from "./runtime.js";
 
 interface CreatePlanInput {
   readonly changesFor: ChangesFor;
   readonly flowInstruction: string;
-  readonly agentBackend: AgentBackend;
 }
 
 export const createPlanFn = cliAtomRuntime.fn(
@@ -25,13 +23,6 @@ export const createPlanFn = cliAtomRuntime.fn(
     const currentBranch = yield* git.getCurrentBranch;
     const fileStats = yield* git.getFileStats(input.changesFor);
     const diffPreview = yield* git.getDiffPreview(input.changesFor);
-
-    console.error(
-      "[planning-atom] fileStats:",
-      fileStats.length,
-      "diff:",
-      diffPreview.length
-    );
 
     const draft = new TestPlanDraft({
       id: DraftId.makeUnsafe(crypto.randomUUID()),
@@ -45,25 +36,6 @@ export const createPlanFn = cliAtomRuntime.fn(
       requiresCookies: false,
     });
 
-    console.error("[planning-atom] prompt length:", draft.prompt.length);
-
-    const testPlan = yield* planner
-      .plan(draft)
-      .pipe(Effect.provide(Agent.layerFor(input.agentBackend)));
-
-    console.error(
-      "[planning-atom] result:",
-      JSON.stringify({
-        id: testPlan.id,
-        title: testPlan.title,
-        stepCount: testPlan.steps.length,
-        steps: testPlan.steps.map((step) => ({
-          id: step.id,
-          title: step.title,
-        })),
-      })
-    );
-
-    return testPlan;
+    return yield* planner.plan(draft);
   }, Effect.annotateLogs({ fn: "createPlanFn" }))
 );

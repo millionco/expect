@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Static, Text, useInput } from "ink";
 import figures from "figures";
-import { Cause, DateTime, Option } from "effect";
+import { DateTime, Option } from "effect";
 import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
 import { useAtom, useAtomValue } from "@effect/atom-react";
 import {
@@ -70,21 +70,12 @@ export const TestingScreen = ({
   const testPlan = AsyncResult.isSuccess(planResult)
     ? planResult.value
     : undefined;
-  const planning = AsyncResult.isWaiting(planResult);
-  const planningError = AsyncResult.isFailure(planResult)
-    ? planResult.cause instanceof Error
-      ? planResult.cause.message
-      : String(planResult.cause)
-    : undefined;
+  const isPlanning = AsyncResult.isWaiting(planResult);
 
-  const running = testPlan ? AsyncResult.isWaiting(executionResult) : false;
-  const done = AsyncResult.isSuccess(executionResult);
-  const executionError = AsyncResult.isFailure(executionResult)
-    ? executionResult.cause instanceof Error
-      ? executionResult.cause.message
-      : String(executionResult.cause)
-    : undefined;
-  const report = done ? executionResult.value.report : undefined;
+  const isExecutingPlan =
+    Boolean(testPlan) && AsyncResult.isWaiting(executionResult);
+  const isExecutionComplete = AsyncResult.isSuccess(executionResult);
+  const report = isExecutionComplete ? executionResult.value.report : undefined;
 
   const [executedPlan, setExecutedPlan] = useState<
     ExecutedTestPlan | undefined
@@ -95,8 +86,6 @@ export const TestingScreen = ({
   const [elapsedTimeMs, setElapsedTimeMs] = useState(0);
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
 
-  const executionTriggeredRef = useRef(false);
-  const navigatedToResultsRef = useRef(false);
   const elapsedTimeLabel = useMemo(
     () => formatElapsedTime(elapsedTimeMs),
     [elapsedTimeMs]
@@ -106,7 +95,6 @@ export const TestingScreen = ({
     triggerCreatePlan({
       changesFor,
       flowInstruction: instruction,
-      agentBackend,
     });
   }, []);
 
@@ -116,33 +104,29 @@ export const TestingScreen = ({
     setScreen(Screen.Main());
   };
 
-  // HACK: setInterval for elapsed time — no atom equivalent yet
   useEffect(() => {
     if (runStartedAt === undefined) return;
-    if (!running && !planning) return;
+    if (!isExecutingPlan && !isPlanning) return;
     const interval = setInterval(() => {
       setElapsedTimeMs(Date.now() - runStartedAt);
     }, TESTING_TIMER_UPDATE_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [runStartedAt, running, planning]);
+  }, [runStartedAt, isExecutingPlan, isPlanning]);
 
-  // Auto-navigate to results on completion
-  /* useEffect(() => {
-    if (done && executedPlan && report) {
-      usePlanExecutionStore.getState().setExecutedPlan(executedPlan);
-      setScreen(Screen.Results({ report }));
-    }
-  }, [done, executedPlan, report, setScreen]); */
-
-  const executionTriggered = !AsyncResult.isInitial(executionResult);
-  const awaitingApproval = Boolean(testPlan) && !executionTriggered;
+  const hasExecutionTriggered = !AsyncResult.isInitial(executionResult);
+  const awaitingApproval = Boolean(testPlan) && !hasExecutionTriggered;
 
   async function executePlan(plan: TestPlan) {
-    await triggerExecute({
+    const exit = await triggerExecute({
       testPlan: plan,
       agentBackend,
       onUpdate: setExecutedPlan,
     });
+    if (exit._tag === "Success") {
+      const { executedPlan, report } = exit.value;
+      usePlanExecutionStore.getState().setExecutedPlan(executedPlan);
+      setScreen(Screen.Results({ report }));
+    }
   }
 
   useInput((input, key) => {
@@ -160,7 +144,7 @@ export const TestingScreen = ({
       return;
     }
 
-    if (awaitingApproval && !executionTriggeredRef.current) {
+    if (awaitingApproval) {
       if (key.return || normalizedInput === "y") {
         return executePlan(testPlan!);
       }
@@ -172,17 +156,20 @@ export const TestingScreen = ({
     }
 
     if (key.escape) {
-      if (planningError) {
+      if (
+        AsyncResult.isFailure(planResult) ||
+        AsyncResult.isFailure(executionResult)
+      ) {
         goToMain();
         return;
       }
-      if (planning || running) {
+      if (isPlanning || isExecutingPlan) {
         setShowCancelConfirmation(true);
         return;
       }
       if (executedPlan && report) {
         usePlanExecutionStore.getState().setExecutedPlan(executedPlan);
-        setScreen(Screen.Results({ report }));
+        // setScreen(Screen.Results({ report }));
         return;
       }
       goToMain();
@@ -200,7 +187,7 @@ export const TestingScreen = ({
   const currentActiveStep = planToRender?.steps?.find(
     (step) => step.status === "active"
   );
-  const runStatusLabel = planning
+  const runStatusLabel = isPlanning
     ? "Planning"
     : currentActiveStep
     ? `Running ${currentActiveStep.title}`
@@ -238,7 +225,7 @@ export const TestingScreen = ({
           </Text>
           <Text color={COLORS.DIM}>
             {`  ${completedCount}/${totalCount}`}
-            {running || planning
+            {isExecutingPlan || isPlanning
               ? ` ${figures.pointerSmall} ${elapsedTimeLabel}`
               : ""}
           </Text>
@@ -323,7 +310,7 @@ export const TestingScreen = ({
           </RuledBox>
         ) : null}
 
-        {(running || planning) && !showCancelConfirmation ? (
+        {(isExecutingPlan || isPlanning) && !showCancelConfirmation ? (
           <Box marginTop={1} paddingX={1}>
             <TextShimmer
               text={`${runStatusLabel}${figures.ellipsis} ${elapsedTimeLabel}`}
@@ -333,21 +320,30 @@ export const TestingScreen = ({
           </Box>
         ) : null}
 
-        {!running &&
-        !planning &&
-        !executionError &&
-        !planningError &&
-        !awaitingApproval ? (
-          <Box marginTop={1} flexDirection="column" paddingX={1}>
-            <Text color={COLORS.GREEN} bold>
-              Done
-            </Text>
-          </Box>
-        ) : null}
+        {AsyncResult.builder(executionResult)
+          .onSuccess(() => (
+            <Box marginTop={1} flexDirection="column" paddingX={1}>
+              <Text color={COLORS.GREEN} bold>
+                Done
+              </Text>
+            </Box>
+          ))
+          .orNull()}
 
-        <Box paddingX={1}>
-          <ErrorMessage message={planningError ?? executionError} />
-        </Box>
+        {AsyncResult.builder(planResult)
+          .onError((error) => (
+            <Box paddingX={1}>
+              <ErrorMessage message={error instanceof Error ? error.message : String(error)} />
+            </Box>
+          ))
+          .orNull()}
+        {AsyncResult.builder(executionResult)
+          .onError((error) => (
+            <Box paddingX={1}>
+              <ErrorMessage message={error instanceof Error ? error.message : String(error)} />
+            </Box>
+          ))
+          .orNull()}
       </Box>
     </>
   );
