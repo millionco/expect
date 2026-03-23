@@ -26,11 +26,7 @@ export const agentProviderAtom = Atom.make<Option.Option<AgentBackend>>(
 
 export const cliAtomRuntime = Atom.runtime(
   Effect.fnUntraced(function* (get) {
-    console.error("GETTING AGENT PROVIDER ATOM");
-    const x = get(agentProviderAtom);
-    console.error("X", x);
     const agentProvider = yield* get.some(agentProviderAtom);
-    console.error("AGENT PROVIDER", agentProvider);
 
     return Layer.mergeAll(
       Planner.layer,
@@ -46,19 +42,3 @@ export const cliAtomRuntime = Atom.runtime(
     );
   }, Layer.unwrap)
 ).pipe(Atom.keepAlive);
-
-/*
-export const cliAtomRuntime = Atom.runtime(
-  Layer.mergeAll(
-    Planner.layer,
-    Executor.layer,
-    Reporter.layer,
-    Updates.layer,
-    DevTools.layer(),
-    Git.withRepoRoot(process.cwd())
-  ).pipe(
-    Layer.provideMerge(Logger.layer([stderrLogger])),
-    Layer.provideMerge(Layer.succeed(References.MinimumLogLevel, "All"))
-  )
-);
- */

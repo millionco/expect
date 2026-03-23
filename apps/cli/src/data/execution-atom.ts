@@ -80,8 +80,7 @@ export const executePlanFn = cliAtomRuntime.fn(
         option._tag === "Some"
           ? option.value
           : new ExecutedTestPlan({ ...input.testPlan, events: [] })
-      ),
-      Effect.provide(Agent.layerFor(input.agentBackend))
+      )
     );
 
     const report = yield* reporter.report(finalExecuted);
