@@ -5,12 +5,12 @@ import { Effect } from "effect";
 import { NodeFileSystem } from "@effect/platform-node";
 import { describe, expect, it, afterEach } from "vite-plus/test";
 import type { eventWithTime } from "@rrweb/types";
-import { loadSession } from "../src/recorder";
+import { loadSession } from "../src/session";
 
 const run = <A, E>(effect: Effect.Effect<A, E>) =>
   Effect.runPromise(effect.pipe(Effect.provide(NodeFileSystem.layer)));
 
-const TEMP_DIR_PREFIX = "recorder-test-";
+const TEMP_DIR_PREFIX = "session-test-";
 
 const fakeEvent = (type: number, timestamp: number): eventWithTime =>
   ({ type, timestamp, data: {} }) as eventWithTime;

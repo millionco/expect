@@ -1,10 +1,7 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-import type { Page } from "playwright";
 import type { eventWithTime } from "@rrweb/types";
-import { Effect, Fiber, Predicate, PubSub, Schedule, Stream } from "effect";
-import { EVENT_COLLECT_INTERVAL_MS } from "../constants";
-import { evaluateRuntime } from "../utils/evaluate-runtime";
-import { buildReplayViewerHtml } from "../replay-viewer";
+import { Effect, Fiber, Predicate, PubSub, Stream } from "effect";
+import { buildReplayViewerHtml } from "./replay-viewer";
 import type { ViewerRunState } from "./viewer-events";
 
 const isViewerRunState = (value: unknown): value is ViewerRunState =>
@@ -15,6 +12,7 @@ const isViewerRunState = (value: unknown): value is ViewerRunState =>
 
 export interface LiveViewHandle {
   readonly url: string;
+  readonly pushReplayEvents: (events: eventWithTime[]) => void;
   readonly pushRunState: (state: ViewerRunState) => void;
   readonly getLatestRunState: () => ViewerRunState | undefined;
   readonly close: Effect.Effect<void>;
@@ -22,8 +20,6 @@ export interface LiveViewHandle {
 
 export interface StartLiveViewServerOptions {
   readonly liveViewUrl: string;
-  readonly getPage: () => Page | undefined;
-  readonly onEventsCollected: (events: eventWithTime[]) => void;
 }
 
 type SseClient = ServerResponse<IncomingMessage>;
@@ -79,7 +75,6 @@ export const startLiveViewServer = Effect.fn("LiveViewServer.start")(function* (
   const broadcastReplayEvents = (events: eventWithTime[]): void => {
     if (events.length === 0) return;
     accumulatedReplayEvents.push(...events);
-    options.onEventsCollected(events);
     broadcastSse("replay", JSON.stringify(events));
   };
 
@@ -169,27 +164,6 @@ export const startLiveViewServer = Effect.fn("LiveViewServer.start")(function* (
 
   yield* listenServer(server, parsedUrl.hostname, Number(parsedUrl.port));
 
-  const pollPage = Effect.sync(() => options.getPage()).pipe(
-    Effect.flatMap((page) => {
-      if (!page || page.isClosed()) return Effect.void;
-      return evaluateRuntime(page, "getEvents").pipe(
-        Effect.tap((events) =>
-          Effect.sync(() => {
-            if (Array.isArray(events) && events.length > 0) {
-              broadcastReplayEvents(events);
-            }
-          }),
-        ),
-        Effect.catchCause((cause) => Effect.logDebug("Replay event collection failed", { cause })),
-      );
-    }),
-  );
-
-  const replayPollFiber = yield* pollPage.pipe(
-    Effect.repeat(Schedule.spaced(EVENT_COLLECT_INTERVAL_MS)),
-    Effect.forkDetach,
-  );
-
   const stepsBroadcastFiber = yield* Stream.fromPubSub(stepsPubSub).pipe(
     Stream.tap((state) => Effect.sync(() => broadcastRunState(state))),
     Stream.runDrain,
@@ -198,12 +172,12 @@ export const startLiveViewServer = Effect.fn("LiveViewServer.start")(function* (
 
   return {
     url: parsedUrl.toString(),
+    pushReplayEvents: (events: eventWithTime[]) => broadcastReplayEvents(events),
     pushRunState: (state: ViewerRunState) => {
       PubSub.publishUnsafe(stepsPubSub, state);
     },
     getLatestRunState: () => latestRunState,
     close: Effect.gen(function* () {
-      yield* Fiber.interrupt(replayPollFiber);
       yield* Fiber.interrupt(stepsBroadcastFiber);
       for (const client of sseClients) client.end();
       sseClients.clear();

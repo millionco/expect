@@ -1,7 +1,6 @@
 export { Browser, runBrowser } from "./browser";
-export { buildReplayViewerHtml } from "./replay-viewer";
 export { diffSnapshots } from "./diff";
-export { collectEvents, collectAllEvents, loadSession } from "./recorder";
+export { collectEvents, collectAllEvents } from "./recorder";
 export type {
   Browser as BrowserProfile,
   BrowserKey,
@@ -18,7 +17,6 @@ export {
   RefBlockedError,
   RefNotFoundError,
   RefNotVisibleError,
-  SessionLoadError,
   SnapshotTimeoutError,
 } from "./errors";
 export type { ActionError } from "./errors";

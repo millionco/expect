@@ -1,0 +1,37 @@
+{
+  "name": "@browser-tester/videogen",
+  "version": "0.0.1",
+  "private": true,
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "build": "vp pack",
+    "dev": "vp pack --watch",
+    "lint": "vp lint && tsc --noEmit",
+    "format": "vp fmt",
+    "format:check": "vp fmt --check",
+    "check": "vp check",
+    "test": "vp test run",
+    "test:watch": "vp test",
+    "typecheck": "tsgo --noEmit"
+  },
+  "dependencies": {
+    "@effect/platform-node": "4.0.0-beta.28",
+    "effect": "4.0.0-beta.28"
+  },
+  "devDependencies": {
+    "@rrweb/types": "^2.0.0-alpha.18",
+    "@types/node": "^22.15.0",
+    "typescript": "^5.7.0"
+  }
+}

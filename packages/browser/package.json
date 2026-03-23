@@ -39,6 +39,7 @@
   },
   "dependencies": {
     "@browser-tester/cookies": "workspace:*",
+    "@browser-tester/videogen": "workspace:*",
     "@effect/platform-node": "4.0.0-beta.28",
     "@medv/finder": "^4.0.2",
     "@modelcontextprotocol/sdk": "^1.27.1",

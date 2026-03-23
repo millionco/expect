@@ -3,20 +3,23 @@ import type { Browser as PlaywrightBrowser, BrowserContext, Page } from "playwri
 import type { eventWithTime } from "@rrweb/types";
 import { Config, Effect, Fiber, Layer, Option, Ref, Schedule, ServiceMap } from "effect";
 import { FileSystem } from "effect/FileSystem";
+import {
+  buildReplayViewerHtml,
+  EVENT_COLLECT_INTERVAL_MS,
+  startLiveViewServer,
+  type LiveViewHandle,
+  type ViewerRunState,
+} from "@browser-tester/videogen";
 import { Browser } from "../browser";
 import { NavigationError } from "../errors";
 import { collectAllEvents } from "../recorder";
 import { evaluateRuntime } from "../utils/evaluate-runtime";
-import { EVENT_COLLECT_INTERVAL_MS } from "../constants";
-import { buildReplayViewerHtml } from "../replay-viewer";
 import type { AnnotatedScreenshotOptions, SnapshotOptions, SnapshotResult } from "../types";
 import {
   BROWSER_TESTER_LIVE_VIEW_URL_ENV_NAME,
   BROWSER_TESTER_REPLAY_OUTPUT_ENV_NAME,
 } from "./constants";
 import { McpSessionNotOpenError } from "./errors";
-import { startLiveViewServer, type LiveViewHandle } from "./live-view-server";
-import type { ViewerRunState } from "./viewer-events";
 
 interface ConsoleEntry {
   readonly type: string;
@@ -136,6 +139,28 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       }
     });
 
+    const pollPageEvents = Effect.sync(() => Ref.getUnsafe(sessionRef)).pipe(
+      Effect.flatMap((session) => {
+        if (!session) return Effect.void;
+        const { page } = session;
+        if (page.isClosed()) return Effect.void;
+        return evaluateRuntime(page, "getEvents").pipe(
+          Effect.tap((events) =>
+            Effect.sync(() => {
+              if (Array.isArray(events) && events.length > 0) {
+                session.accumulatedReplayEvents.push(...events);
+                const liveView = Ref.getUnsafe(liveViewRef);
+                if (liveView) liveView.pushReplayEvents(events);
+              }
+            }),
+          ),
+          Effect.catchCause((cause) =>
+            Effect.logDebug("Replay event collection failed", { cause }),
+          ),
+        );
+      }),
+    );
+
     const open = Effect.fn("McpSession.open")(function* (url: string, options: OpenOptions = {}) {
       yield* Effect.annotateCurrentSpan({ url });
 
@@ -167,10 +192,6 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       if (Option.isSome(liveViewUrl) && !existingLiveView) {
         const handle = yield* startLiveViewServer({
           liveViewUrl: liveViewUrl.value,
-          getPage: () => Ref.getUnsafe(sessionRef)?.page,
-          onEventsCollected: (events) => {
-            Ref.getUnsafe(sessionRef)?.accumulatedReplayEvents.push(...events);
-          },
         }).pipe(
           Effect.catchCause((cause) =>
             Effect.logDebug("Live view server failed to start", { cause }).pipe(
@@ -183,32 +204,11 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         }
       }
 
-      const hasLiveView = Boolean(yield* Ref.get(liveViewRef));
-      if (!hasLiveView) {
-        const pollPage = Effect.sync(() => Ref.getUnsafe(sessionRef)?.page).pipe(
-          Effect.flatMap((page) => {
-            if (!page || page.isClosed()) return Effect.void;
-            return evaluateRuntime(page, "getEvents").pipe(
-              Effect.tap((events) =>
-                Effect.sync(() => {
-                  if (Array.isArray(events) && events.length > 0) {
-                    Ref.getUnsafe(sessionRef)?.accumulatedReplayEvents.push(...events);
-                  }
-                }),
-              ),
-              Effect.catchCause((cause) =>
-                Effect.logDebug("Replay event collection failed", { cause }),
-              ),
-            );
-          }),
-        );
-
-        const fiber = yield* pollPage.pipe(
-          Effect.repeat(Schedule.spaced(EVENT_COLLECT_INTERVAL_MS)),
-          Effect.forkDetach,
-        );
-        yield* Ref.set(pollingFiberRef, fiber);
-      }
+      const fiber = yield* pollPageEvents.pipe(
+        Effect.repeat(Schedule.spaced(EVENT_COLLECT_INTERVAL_MS)),
+        Effect.forkDetach,
+      );
+      yield* Ref.set(pollingFiberRef, fiber);
 
       const injectedCookieCount = yield* Effect.tryPromise(() => pageResult.context.cookies()).pipe(
         Effect.map((cookies) => cookies.length),

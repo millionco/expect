@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import { Effect } from "effect";
-import { startLiveViewServer, type LiveViewHandle } from "../src/mcp/live-view-server";
+import { startLiveViewServer, type LiveViewHandle } from "../src/live-view-server";
 
 const findAvailablePort = async (): Promise<number> => {
   const { createServer } = await import("node:http");
@@ -14,13 +14,10 @@ const findAvailablePort = async (): Promise<number> => {
   });
 };
 
-const startServer = (port: number, options?: Partial<Parameters<typeof startLiveViewServer>[0]>) =>
+const startServer = (port: number) =>
   Effect.runPromise(
     startLiveViewServer({
       liveViewUrl: `http://127.0.0.1:${port}`,
-      getPage: () => undefined,
-      onEventsCollected: () => {},
-      ...options,
     }),
   );
 

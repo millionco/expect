@@ -210,6 +210,9 @@ importers:
       '@browser-tester/cookies':
         specifier: workspace:*
         version: link:../cookies
+      '@browser-tester/videogen':
+        specifier: workspace:*
+        version: link:../videogen
       '@effect/platform-node':
         specifier: 4.0.0-beta.28
         version: 4.0.0-beta.28(effect@4.0.0-beta.28)(ioredis@5.10.0)
@@ -329,6 +332,25 @@ importers:
   packages/testie: {}
 
   packages/testie-skill: {}
+
+  packages/videogen:
+    dependencies:
+      '@effect/platform-node':
+        specifier: 4.0.0-beta.28
+        version: 4.0.0-beta.28(effect@4.0.0-beta.28)(ioredis@5.10.0)
+      effect:
+        specifier: 4.0.0-beta.28
+        version: 4.0.0-beta.28
+    devDependencies:
+      '@rrweb/types':
+        specifier: ^2.0.0-alpha.18
+        version: 2.0.0-alpha.20
+      '@types/node':
+        specifier: ^22.15.0
+        version: 22.19.15
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
 
   playground/minecraft-ui:
     dependencies:
