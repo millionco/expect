@@ -1,0 +1,101 @@
+packages/browser/src/mcp/server.ts
+  fd4f14b13b21c076 34-35,130,186,217,254
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.17",
+  "base_commit_sha": "cb1d0a7a0cf5ce9c4b045c2ddeb082ec0f2577ec",
+  "prompts": {
+    "03948ff1e1025884": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8850fb50-7f16-492c-9d0e-2b48ba5bd9d1",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 65,
+      "total_deletions": 20,
+      "accepted_lines": 65,
+      "overriden_lines": 0
+    },
+    "234647063f0bca6b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ecae0925-9b7d-4a47-84be-4624a62ad6c2",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 1,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    },
+    "40cb3fcd0326d39e": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4995d352-0da4-49aa-aca4-28a0d659be40",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 13,
+      "total_deletions": 6,
+      "accepted_lines": 13,
+      "overriden_lines": 0
+    },
+    "b459d2cb234c6d35": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "3a053fd2-bd6c-4d15-baa4-0a491d6d14dc",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 34,
+      "total_deletions": 0,
+      "accepted_lines": 3,
+      "overriden_lines": 0
+    },
+    "bf927d7fe417cc6c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "719a8fc8-bf23-4599-b656-442d7aee752b",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 56,
+      "total_deletions": 0,
+      "accepted_lines": 29,
+      "overriden_lines": 12
+    },
+    "de119e82384e45ea": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5eb705a2-dee1-4cff-9446-97e6f744c179",
+        "model": "composer-2"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 55,
+      "total_deletions": 20,
+      "accepted_lines": 53,
+      "overriden_lines": 0
+    },
+    "fd4f14b13b21c076": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a6624556-f3c3-43b6-b489-8fda1a24a38c",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 6,
+      "total_deletions": 0,
+      "accepted_lines": 6,
+      "overriden_lines": 0
+    }
+  }
+}
