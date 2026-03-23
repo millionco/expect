@@ -1,14 +1,10 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { eventWithTime } from "@rrweb/types";
-import { Effect, Fiber, Predicate, PubSub, Stream } from "effect";
+import { Effect, Fiber, PubSub, Schema, Stream } from "effect";
 import { buildReplayViewerHtml } from "./replay-viewer";
-import type { ViewerRunState } from "./viewer-events";
+import { ViewerRunState } from "./viewer-events";
 
-const isViewerRunState = (value: unknown): value is ViewerRunState =>
-  Predicate.isObject(value) &&
-  "status" in value &&
-  "steps" in value &&
-  Array.isArray((value as Record<string, unknown>).steps);
+const decodeRunState = Schema.decodeUnknownSync(ViewerRunState);
 
 export interface LiveViewHandle {
   readonly url: string;
@@ -100,18 +96,13 @@ export const startLiveViewServer = Effect.fn("LiveViewServer.start")(function* (
     request.on("end", () => {
       try {
         const body = Buffer.concat(chunks).toString("utf-8");
-        const parsed: unknown = JSON.parse(body);
-        if (!isViewerRunState(parsed)) {
-          response.writeHead(400, { "Content-Type": "text/plain", ...NO_CACHE_HEADERS });
-          response.end("Invalid step state: missing status or steps");
-          return;
-        }
-        broadcastRunState(parsed);
+        const state = decodeRunState(JSON.parse(body));
+        broadcastRunState(state);
         response.writeHead(204, NO_CACHE_HEADERS);
         response.end();
       } catch {
         response.writeHead(400, { "Content-Type": "text/plain", ...NO_CACHE_HEADERS });
-        response.end("Invalid JSON");
+        response.end("Invalid request body");
       }
     });
   };
@@ -146,7 +137,10 @@ export const startLiveViewServer = Effect.fn("LiveViewServer.start")(function* (
         handleStepsPost(request, response);
         return;
       }
-      const body = JSON.stringify(latestRunState ?? { title: "", status: "running", steps: [] });
+      const body = JSON.stringify(
+        latestRunState ??
+          new ViewerRunState({ title: "", status: "running", summary: undefined, steps: [] }),
+      );
       response.writeHead(200, {
         "Content-Type": "application/json",
         "Content-Length": Buffer.byteLength(body),

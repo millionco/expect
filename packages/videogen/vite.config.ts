@@ -7,6 +7,7 @@ export default defineConfig({
     dts: true,
     sourcemap: true,
     platform: "node",
+    deps: { neverBundle: ["vite"] },
   },
   test: {
     globals: true,

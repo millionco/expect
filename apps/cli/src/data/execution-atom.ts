@@ -2,10 +2,13 @@ import { Config, Effect, Option, Stream } from "effect";
 import * as Atom from "effect/unstable/reactivity/Atom";
 import { Agent } from "@browser-tester/agent";
 import { ExecutedTestPlan, Executor, Git, Reporter } from "@browser-tester/supervisor";
+import { createViewerClient, type ViewerRunState } from "@browser-tester/videogen";
 import type { AgentBackend } from "@browser-tester/agent";
 import type { TestPlan, TestReport } from "@browser-tester/shared/models";
-const LIVE_VIEW_URL_ENV_NAME = "BROWSER_TESTER_LIVE_VIEW_URL";
 import { cliAtomRuntime } from "./runtime.js";
+
+const VIEWER_URL_ENV = "BROWSER_TESTER_VIEWER_URL";
+const RUN_ID_ENV = "BROWSER_TESTER_RUN_ID";
 
 interface ExecutePlanInput {
   readonly testPlan: TestPlan;
@@ -18,25 +21,10 @@ export interface ExecutionResult {
   readonly report: TestReport;
 }
 
-interface LiveViewStepState {
-  readonly title: string;
-  readonly status: "running" | "passed" | "failed";
-  readonly summary: string | undefined;
-  readonly steps: ReadonlyArray<{
-    readonly stepId: string;
-    readonly title: string;
-    readonly status: "pending" | "active" | "passed" | "failed";
-    readonly summary: string | undefined;
-  }>;
-}
-
-const toLiveViewStepState = (
-  executed: ExecutedTestPlan,
-  overrides?: Partial<LiveViewStepState>,
-): LiveViewStepState => ({
+const toRunState = (executed: ExecutedTestPlan, overrides?: Partial<ViewerRunState>) => ({
   title: executed.title,
-  status: "running",
-  summary: undefined,
+  status: "running" as const,
+  summary: undefined as string | undefined,
   ...overrides,
   steps: executed.steps.map((step) => ({
     stepId: step.id,
@@ -45,21 +33,6 @@ const toLiveViewStepState = (
     summary: Option.getOrUndefined(step.summary),
   })),
 });
-
-const pushStepStateToLiveView = (liveViewUrl: string, state: LiveViewStepState) =>
-  Effect.tryPromise({
-    try: () =>
-      fetch(`${liveViewUrl}/steps`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(state),
-      }),
-    catch: () => undefined,
-  }).pipe(
-    Effect.catchCause((cause) =>
-      Effect.logDebug("Failed to push step state to live view", { cause }),
-    ),
-  );
 
 export const screenshotPathsAtom = Atom.make<readonly string[]>([]);
 
@@ -70,7 +43,14 @@ export const executePlanFn = cliAtomRuntime.fn(
       console.error("[execution-atom] starting execution for:", input.testPlan.title);
       Atom.set(screenshotPathsAtom, []);
 
-      const liveViewUrl = yield* Config.option(Config.string(LIVE_VIEW_URL_ENV_NAME));
+      const viewerUrl = yield* Config.option(Config.string(VIEWER_URL_ENV));
+      const runId = yield* Config.option(Config.string(RUN_ID_ENV));
+      const viewer = Option.isSome(viewerUrl)
+        ? createViewerClient(
+            viewerUrl.value,
+            Option.isSome(runId) ? runId.value : crypto.randomUUID(),
+          )
+        : undefined;
 
       const executor = yield* Executor;
       console.error("[execution-atom] got executor, calling executePlan...");
@@ -79,8 +59,8 @@ export const executePlanFn = cliAtomRuntime.fn(
         Stream.tap((executed) =>
           Effect.gen(function* () {
             input.onUpdate(executed);
-            if (Option.isSome(liveViewUrl)) {
-              yield* pushStepStateToLiveView(liveViewUrl.value, toLiveViewStepState(executed));
+            if (viewer) {
+              yield* viewer.pushRunState(toRunState(executed));
             }
             const lastEvent = executed.events.at(-1);
             if (lastEvent?._tag === "ToolResult" && lastEvent.toolName.endsWith("__screenshot")) {
@@ -102,10 +82,9 @@ export const executePlanFn = cliAtomRuntime.fn(
       const report = yield* reporter.report(finalExecuted);
       console.error("[execution-atom] report done, status:", report.status);
 
-      if (Option.isSome(liveViewUrl)) {
-        yield* pushStepStateToLiveView(
-          liveViewUrl.value,
-          toLiveViewStepState(finalExecuted, {
+      if (viewer) {
+        yield* viewer.pushRunState(
+          toRunState(finalExecuted, {
             status: report.status,
             summary: report.summary,
           }),

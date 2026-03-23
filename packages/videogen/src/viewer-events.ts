@@ -1,13 +1,15 @@
-export interface ViewerStepEvent {
-  readonly stepId: string;
-  readonly title: string;
-  readonly status: "pending" | "active" | "passed" | "failed";
-  readonly summary: string | undefined;
-}
+import { Schema } from "effect";
 
-export interface ViewerRunState {
-  readonly title: string;
-  readonly status: "running" | "passed" | "failed";
-  readonly summary: string | undefined;
-  readonly steps: readonly ViewerStepEvent[];
-}
+export class ViewerStepEvent extends Schema.Class<ViewerStepEvent>("@videogen/ViewerStepEvent")({
+  stepId: Schema.String,
+  title: Schema.String,
+  status: Schema.Literal("pending", "active", "passed", "failed"),
+  summary: Schema.UndefinedOr(Schema.String),
+}) {}
+
+export class ViewerRunState extends Schema.Class<ViewerRunState>("@videogen/ViewerRunState")({
+  title: Schema.String,
+  status: Schema.Literal("running", "passed", "failed"),
+  summary: Schema.UndefinedOr(Schema.String),
+  steps: Schema.Array(ViewerStepEvent),
+}) {}

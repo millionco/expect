@@ -4,10 +4,8 @@ import type { eventWithTime } from "@rrweb/types";
 import { Config, Effect, Fiber, Layer, Option, Ref, Schedule, ServiceMap } from "effect";
 import { FileSystem } from "effect/FileSystem";
 import {
-  buildReplayViewerHtml,
+  buildViewerHtml,
   EVENT_COLLECT_INTERVAL_MS,
-  startLiveViewServer,
-  type LiveViewHandle,
   type ViewerRunState,
 } from "@browser-tester/videogen";
 import { Browser } from "../browser";
@@ -15,10 +13,7 @@ import { NavigationError } from "../errors";
 import { collectAllEvents } from "../recorder";
 import { evaluateRuntime } from "../utils/evaluate-runtime";
 import type { AnnotatedScreenshotOptions, SnapshotOptions, SnapshotResult } from "../types";
-import {
-  BROWSER_TESTER_LIVE_VIEW_URL_ENV_NAME,
-  BROWSER_TESTER_REPLAY_OUTPUT_ENV_NAME,
-} from "./constants";
+import { BROWSER_TESTER_REPLAY_OUTPUT_ENV_NAME } from "./constants";
 import { McpSessionNotOpenError } from "./errors";
 
 interface ConsoleEntry {
@@ -99,10 +94,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
     const replayOutputPath = yield* Config.option(
       Config.string(BROWSER_TESTER_REPLAY_OUTPUT_ENV_NAME),
     );
-    const liveViewUrl = yield* Config.option(Config.string(BROWSER_TESTER_LIVE_VIEW_URL_ENV_NAME));
-
     const sessionRef = yield* Ref.make<BrowserSessionData | undefined>(undefined);
-    const liveViewRef = yield* Ref.make<LiveViewHandle | undefined>(undefined);
     const pollingFiberRef = yield* Ref.make<Fiber.Fiber<unknown> | undefined>(undefined);
     const latestRunStateRef = yield* Ref.make<ViewerRunState | undefined>(undefined);
 
@@ -133,10 +125,6 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
 
     const pushStepEvent = Effect.fn("McpSession.pushStepEvent")(function* (state: ViewerRunState) {
       yield* Ref.set(latestRunStateRef, state);
-      const liveView = yield* Ref.get(liveViewRef);
-      if (liveView) {
-        liveView.pushRunState(state);
-      }
     });
 
     const pollPageEvents = Effect.sync(() => Ref.getUnsafe(sessionRef)).pipe(
@@ -149,8 +137,6 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
             Effect.sync(() => {
               if (Array.isArray(events) && events.length > 0) {
                 session.accumulatedReplayEvents.push(...events);
-                const liveView = Ref.getUnsafe(liveViewRef);
-                if (liveView) liveView.pushReplayEvents(events);
               }
             }),
           ),
@@ -187,22 +173,6 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       yield* evaluateRuntime(pageResult.page, "startRecording").pipe(
         Effect.catchCause((cause) => Effect.logDebug("rrweb recording failed to start", { cause })),
       );
-
-      const existingLiveView = yield* Ref.get(liveViewRef);
-      if (Option.isSome(liveViewUrl) && !existingLiveView) {
-        const handle = yield* startLiveViewServer({
-          liveViewUrl: liveViewUrl.value,
-        }).pipe(
-          Effect.catchCause((cause) =>
-            Effect.logDebug("Live view server failed to start", { cause }).pipe(
-              Effect.as(undefined),
-            ),
-          ),
-        );
-        if (handle) {
-          yield* Ref.set(liveViewRef, handle);
-        }
-      }
 
       const fiber = yield* pollPageEvents.pipe(
         Effect.repeat(Schedule.spaced(EVENT_COLLECT_INTERVAL_MS)),
@@ -253,14 +223,6 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         yield* Ref.set(pollingFiberRef, undefined);
       }
 
-      const liveView = yield* Ref.get(liveViewRef);
-      if (liveView) {
-        yield* liveView.close.pipe(
-          Effect.catchCause((cause) => Effect.logDebug("Failed to close live view", { cause })),
-        );
-        yield* Ref.set(liveViewRef, undefined);
-      }
-
       let replaySessionPath: string | undefined;
       let reportPath: string | undefined;
 
@@ -301,26 +263,33 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
           replaySessionPath = resolvedReplayOutputPath;
 
           const runState = yield* Ref.get(latestRunStateRef);
-          const replayFileName = basename(resolvedReplayOutputPath);
           const replayBaseName = basename(
             resolvedReplayOutputPath,
             extname(resolvedReplayOutputPath),
           );
           const htmlReportPath = join(dirname(resolvedReplayOutputPath), `${replayBaseName}.html`);
-          const reportHtml = buildReplayViewerHtml({
-            title: runState ? `Test Report: ${runState.title}` : "Browser Tester Report",
-            eventsSource: { ndjsonPath: replayFileName },
-            steps: runState,
-          });
 
-          yield* fileSystem
-            .writeFileString(htmlReportPath, reportHtml)
-            .pipe(
-              Effect.catchCause((cause) =>
-                Effect.logDebug("Failed to write HTML report", { cause }),
+          const reportHtml = yield* buildViewerHtml({
+            events: activeSession.accumulatedReplayEvents,
+            stepState: runState ?? undefined,
+          }).pipe(
+            Effect.catchCause((cause) =>
+              Effect.logDebug("Viewer build unavailable, skipping HTML report", { cause }).pipe(
+                Effect.as(undefined),
               ),
-            );
-          reportPath = htmlReportPath;
+            ),
+          );
+
+          if (reportHtml) {
+            yield* fileSystem
+              .writeFileString(htmlReportPath, reportHtml)
+              .pipe(
+                Effect.catchCause((cause) =>
+                  Effect.logDebug("Failed to write HTML report", { cause }),
+                ),
+              );
+            reportPath = htmlReportPath;
+          }
         }
       }).pipe(
         Effect.catchCause((cause) => Effect.logDebug("Failed during close cleanup", { cause })),
