@@ -1,12 +1,7 @@
 import { Config, Effect, Option, Stream } from "effect";
 import * as Atom from "effect/unstable/reactivity/Atom";
 import { Agent } from "@browser-tester/agent";
-import {
-  ExecutedTestPlan,
-  Executor,
-  Git,
-  Reporter,
-} from "@browser-tester/supervisor";
+import { ExecutedTestPlan, Executor, Git, Reporter } from "@browser-tester/supervisor";
 import type { AgentBackend } from "@browser-tester/agent";
 import type { TestPlan, TestReport } from "@browser-tester/shared/models";
 const LIVE_VIEW_URL_ENV_NAME = "BROWSER_TESTER_LIVE_VIEW_URL";
@@ -69,27 +64,30 @@ const pushStepStateToLiveView = (liveViewUrl: string, state: LiveViewStepState) 
 export const screenshotPathsAtom = Atom.make<readonly string[]>([]);
 
 export const executePlanFn = cliAtomRuntime.fn(
-  Effect.fnUntraced(function* (input: ExecutePlanInput, _ctx: Atom.FnContext) {
-    const reporter = yield* Reporter;
-    const executor = yield* Executor;
+  Effect.fnUntraced(
+    function* (input: ExecutePlanInput, _ctx: Atom.FnContext) {
+      const reporter = yield* Reporter;
+      const executor = yield* Executor;
 
-    const finalExecuted = yield* executor.executePlan(input.testPlan).pipe(
-      Stream.tap((executed) => Effect.sync(() => input.onUpdate(executed))),
-      Stream.runLast,
-      Effect.map((option) =>
-        option._tag === "Some"
-          ? option.value
-          : new ExecutedTestPlan({ ...input.testPlan, events: [] })
-      )
-    );
+      const finalExecuted = yield* executor.executePlan(input.testPlan).pipe(
+        Stream.tap((executed) => Effect.sync(() => input.onUpdate(executed))),
+        Stream.runLast,
+        Effect.map((option) =>
+          option._tag === "Some"
+            ? option.value
+            : new ExecutedTestPlan({ ...input.testPlan, events: [] }),
+        ),
+      );
 
-    const report = yield* reporter.report(finalExecuted);
+      const report = yield* reporter.report(finalExecuted);
 
-    if (report.status === "passed") {
-      const git = yield* Git;
-      yield* git.saveTestedFingerprint();
-    }
+      if (report.status === "passed") {
+        const git = yield* Git;
+        yield* git.saveTestedFingerprint();
+      }
 
-    return { executedPlan: finalExecuted, report } satisfies ExecutionResult;
-  }, Effect.annotateLogs({ fn: "executePlanFn" }))
+      return { executedPlan: finalExecuted, report } satisfies ExecutionResult;
+    },
+    Effect.annotateLogs({ fn: "executePlanFn" }),
+  ),
 );

@@ -1,13 +1,7 @@
 import { Cause, Effect, Layer, Logger, Option, References } from "effect";
 import * as Atom from "effect/unstable/reactivity/Atom";
 import { DevTools } from "effect/unstable/devtools";
-import {
-  Executor,
-  Git,
-  Planner,
-  Reporter,
-  Updates,
-} from "@browser-tester/supervisor";
+import { Executor, Git, Planner, Reporter, Updates } from "@browser-tester/supervisor";
 import { Agent, AgentBackend } from "@browser-tester/agent";
 
 const stderrLogger = Logger.make(({ logLevel, message, date, cause }) => {
@@ -15,14 +9,12 @@ const stderrLogger = Logger.make(({ logLevel, message, date, cause }) => {
     `[effect ${logLevel}] ${date.toISOString()} ${JSON.stringify(
       message,
       null,
-      2
-    )} ${cause ? `\n${Cause.pretty(cause)}` : ""}`
+      2,
+    )} ${cause ? `\n${Cause.pretty(cause)}` : ""}`,
   );
 });
 
-export const agentProviderAtom = Atom.make<Option.Option<AgentBackend>>(
-  Option.none()
-);
+export const agentProviderAtom = Atom.make<Option.Option<AgentBackend>>(Option.none());
 
 export const cliAtomRuntime = Atom.runtime(
   Effect.fnUntraced(function* (get) {
@@ -34,11 +26,11 @@ export const cliAtomRuntime = Atom.runtime(
       Reporter.layer,
       Updates.layer,
       DevTools.layer(),
-      Git.withRepoRoot(process.cwd())
+      Git.withRepoRoot(process.cwd()),
     ).pipe(
       Layer.provide(Agent.layerFor(agentProvider)),
       Layer.provide(Logger.layer([stderrLogger])),
-      Layer.provideMerge(Layer.succeed(References.MinimumLogLevel, "All"))
+      Layer.provideMerge(Layer.succeed(References.MinimumLogLevel, "All")),
     );
-  }, Layer.unwrap)
+  }, Layer.unwrap),
 ).pipe(Atom.keepAlive);

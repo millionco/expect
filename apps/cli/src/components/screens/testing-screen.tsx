@@ -151,7 +151,7 @@ export const TestingScreen = ({ changesFor, instruction }: TestingScreenProps) =
       }
       if (executedPlan && report) {
         usePlanExecutionStore.getState().setExecutedPlan(executedPlan);
-        // setScreen(Screen.Results({ report }));
+        setScreen(Screen.Results({ report }));
         return;
       }
       goToMain();
