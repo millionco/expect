@@ -76,6 +76,7 @@ export const TestingScreen = ({ changesFor, instruction }: TestingScreenProps) =
   const elapsedTimeLabel = useMemo(() => formatElapsedTime(elapsedTimeMs), [elapsedTimeMs]);
 
   useEffect(() => {
+    setRunStartedAt(Date.now());
     triggerCreatePlan({
       changesFor,
       flowInstruction: instruction,
