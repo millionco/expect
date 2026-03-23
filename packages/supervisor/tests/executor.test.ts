@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { Array, Effect, FileSystem, Option, String } from "effect";
+import { Effect, FileSystem, Option, Schema } from "effect";
 import { NodeServices } from "@effect/platform-node";
 import {
   ExecutedTestPlan,
@@ -8,14 +8,14 @@ import {
   StepId,
   PlanId,
   ChangesFor,
+  AcpSessionUpdate,
 } from "@browser-tester/shared/models";
-import type { LanguageModelV3StreamPart } from "@ai-sdk/provider";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const FIXTURE_PATH = resolve(
   dirname(fileURLToPath(import.meta.url)),
-  "../../../fixtures/execute-1.jsonl",
+  "../../../fixtures/execute-1.acp.jsonl",
 );
 
 const makeTestPlan = (): TestPlan =>
@@ -46,41 +46,25 @@ const makeTestPlan = (): TestPlan =>
     requiresCookies: false,
   } as any);
 
-const loadFixtureParts = Effect.gen(function* () {
+const decode = Schema.decodeSync(AcpSessionUpdate);
+
+const loadFixtureUpdates = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
-  return yield* fs
-    .readFileString(FIXTURE_PATH)
-    .pipe(
-      Effect.map(String.split("\n")),
-      Effect.map(Array.filter((line) => line.trim().length > 0)),
-      Effect.map(Array.map((line) => JSON.parse(line) as LanguageModelV3StreamPart)),
-    );
+  const content = yield* fs.readFileString(FIXTURE_PATH);
+  return content
+    .split("\n")
+    .filter((line) => line.trim().length > 0)
+    .map((line) => decode(JSON.parse(line)));
 }).pipe(Effect.provide(NodeServices.layer));
 
 describe("reducer", () => {
-  it.only("reduces LanguageModelV3StreamParts into ExecutedTestPlan", async () => {
-    const parts = await Effect.runPromise(loadFixtureParts);
-    console.log("creating initial ExecutedTestPlan...");
+  it.only("reduces AcpSessionUpdates into ExecutedTestPlan", async () => {
+    const updates = await Effect.runPromise(loadFixtureUpdates);
     let executed = new ExecutedTestPlan({ ...makeTestPlan(), events: [] });
-    console.log("initial created OK, events:", executed.events.length);
 
-    for (let index = 0; index < parts.length; index++) {
-      const part = parts[index];
-      /* console.log(
-        `[${index}] type=${part.type} events_before=${executed.events.length}`
-        ); */
-      executed = executed.addEvent(part);
-      // console.log(`[${index}] events_after=${executed.events.length}`);
+    for (const update of updates) {
+      executed = executed.addEvent(update);
     }
-
-    console.log("Total events:", executed.events.length);
-    console.log(
-      "Event tags:",
-      executed.events.map((event) => event._tag),
-    );
-
-    console.log("FINISHED EXECUTED:");
-    console.log(executed);
 
     expect(executed.events.length).toBeGreaterThan(0);
 
@@ -93,13 +77,13 @@ describe("reducer", () => {
     expect(hasThinking).toBe(true);
   });
 
-  it("each addEvent returns a new instance for non-trivial parts", async () => {
-    const parts = await Effect.runPromise(loadFixtureParts);
+  it("each addEvent returns a new instance for non-trivial updates", async () => {
+    const updates = await Effect.runPromise(loadFixtureUpdates);
     const initial = new ExecutedTestPlan({ ...makeTestPlan(), events: [] });
 
     let previous = initial;
-    for (const part of parts.slice(0, 10)) {
-      const next = previous.addEvent(part);
+    for (const update of updates.slice(0, 10)) {
+      const next = previous.addEvent(update);
       if (next !== previous) {
         expect(next).not.toBe(previous);
       }

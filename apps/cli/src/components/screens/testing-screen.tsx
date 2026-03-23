@@ -31,10 +31,7 @@ import { formatElapsedTime } from "../../utils/format-elapsed-time.js";
 import { Image } from "../ui/image.js";
 import { ErrorMessage } from "../ui/error-message.js";
 import { createPlanFn } from "../../data/planning-atom.js";
-import {
-  executePlanFn,
-  screenshotPathsAtom,
-} from "../../data/execution-atom.js";
+import { executePlanFn, screenshotPathsAtom } from "../../data/execution-atom.js";
 
 interface TestingScreenProps {
   changesFor: ChangesFor;
@@ -49,10 +46,7 @@ const getStepElapsedMs = (step: TestPlanStep): number | undefined => {
   return endMs - DateTime.toEpochMillis(step.startedAt.value);
 };
 
-export const TestingScreen = ({
-  changesFor,
-  instruction,
-}: TestingScreenProps) => {
+export const TestingScreen = ({ changesFor, instruction }: TestingScreenProps) => {
   const setScreen = useNavigationStore((state) => state.setScreen);
   const COLORS = useColors();
 
@@ -67,29 +61,19 @@ export const TestingScreen = ({
   });
   const screenshotPaths = useAtomValue(screenshotPathsAtom);
 
-  const testPlan = AsyncResult.isSuccess(planResult)
-    ? planResult.value
-    : undefined;
+  const testPlan = AsyncResult.isSuccess(planResult) ? planResult.value : undefined;
   const isPlanning = AsyncResult.isWaiting(planResult);
 
-  const isExecutingPlan =
-    Boolean(testPlan) && AsyncResult.isWaiting(executionResult);
+  const isExecutingPlan = Boolean(testPlan) && AsyncResult.isWaiting(executionResult);
   const isExecutionComplete = AsyncResult.isSuccess(executionResult);
   const report = isExecutionComplete ? executionResult.value.report : undefined;
 
-  const [executedPlan, setExecutedPlan] = useState<
-    ExecutedTestPlan | undefined
-  >(undefined);
-  const [runStartedAt, setRunStartedAt] = useState<number | undefined>(
-    undefined
-  );
+  const [executedPlan, setExecutedPlan] = useState<ExecutedTestPlan | undefined>(undefined);
+  const [runStartedAt, setRunStartedAt] = useState<number | undefined>(undefined);
   const [elapsedTimeMs, setElapsedTimeMs] = useState(0);
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
 
-  const elapsedTimeLabel = useMemo(
-    () => formatElapsedTime(elapsedTimeMs),
-    [elapsedTimeMs]
-  );
+  const elapsedTimeLabel = useMemo(() => formatElapsedTime(elapsedTimeMs), [elapsedTimeMs]);
 
   useEffect(() => {
     triggerCreatePlan({
@@ -156,10 +140,7 @@ export const TestingScreen = ({
     }
 
     if (key.escape) {
-      if (
-        AsyncResult.isFailure(planResult) ||
-        AsyncResult.isFailure(executionResult)
-      ) {
+      if (AsyncResult.isFailure(planResult) || AsyncResult.isFailure(executionResult)) {
         goToMain();
         return;
       }
@@ -179,26 +160,21 @@ export const TestingScreen = ({
   const planToRender = executedPlan ?? testPlan;
 
   const completedCount = planToRender?.steps
-    ? planToRender.steps.filter(
-        (step) => step.status === "passed" || step.status === "failed"
-      ).length
+    ? planToRender.steps.filter((step) => step.status === "passed" || step.status === "failed")
+        .length
     : 0;
   const totalCount = planToRender?.steps ? planToRender.steps.length : 0;
-  const currentActiveStep = planToRender?.steps?.find(
-    (step) => step.status === "active"
-  );
+  const currentActiveStep = planToRender?.steps?.find((step) => step.status === "active");
   const runStatusLabel = isPlanning
     ? "Planning"
     : currentActiveStep
-    ? `Running ${currentActiveStep.title}`
-    : completedCount === totalCount && totalCount > 0
-    ? "Finishing up"
-    : "Starting";
+      ? `Running ${currentActiveStep.title}`
+      : completedCount === totalCount && totalCount > 0
+        ? "Finishing up"
+        : "Starting";
 
   const filledWidth =
-    totalCount > 0
-      ? Math.round((completedCount / totalCount) * PROGRESS_BAR_WIDTH)
-      : 0;
+    totalCount > 0 ? Math.round((completedCount / totalCount) * PROGRESS_BAR_WIDTH) : 0;
   const emptyWidth = PROGRESS_BAR_WIDTH - filledWidth;
 
   return (
@@ -225,37 +201,31 @@ export const TestingScreen = ({
           </Text>
           <Text color={COLORS.DIM}>
             {`  ${completedCount}/${totalCount}`}
-            {isExecutingPlan || isPlanning
-              ? ` ${figures.pointerSmall} ${elapsedTimeLabel}`
-              : ""}
+            {isExecutingPlan || isPlanning ? ` ${figures.pointerSmall} ${elapsedTimeLabel}` : ""}
           </Text>
         </Box>
 
         <Box flexDirection="column" marginTop={1} paddingX={1}>
           {(planToRender?.steps ?? []).map((step, stepIndex) => {
             const stepPrefix = `Step ${stepIndex + 1}`;
-            const label = Option.isSome(step.summary)
-              ? step.summary.value
-              : step.title;
+            const label = Option.isSome(step.summary) ? step.summary.value : step.title;
             const stepElapsedMs = getStepElapsedMs(step);
             const stepElapsedLabel =
-              stepElapsedMs !== undefined
-                ? formatElapsedTime(stepElapsedMs)
-                : undefined;
+              stepElapsedMs !== undefined ? formatElapsedTime(stepElapsedMs) : undefined;
             return (
               <Box key={step.id} flexDirection="column">
                 {step.status === "passed" ? (
                   <Text color={COLORS.GREEN}>
                     {`  ${figures.tick} ${stepPrefix} ${cliTruncate(
                       label,
-                      TESTING_TOOL_TEXT_CHAR_LIMIT
+                      TESTING_TOOL_TEXT_CHAR_LIMIT,
                     )}${stepElapsedLabel ? ` ${stepElapsedLabel}` : ""}`}
                   </Text>
                 ) : step.status === "failed" ? (
                   <Text color={COLORS.RED}>
                     {`  ${figures.cross} ${stepPrefix} ${cliTruncate(
                       label,
-                      TESTING_TOOL_TEXT_CHAR_LIMIT
+                      TESTING_TOOL_TEXT_CHAR_LIMIT,
                     )}${stepElapsedLabel ? ` ${stepElapsedLabel}` : ""}`}
                   </Text>
                 ) : step.status === "active" ? (
@@ -265,16 +235,14 @@ export const TestingScreen = ({
                     <Text> </Text>
                     <TextShimmer
                       text={`${stepPrefix} ${step.title} ${formatElapsedTime(
-                        Math.round(elapsedTimeMs)
+                        Math.round(elapsedTimeMs),
                       )}`}
                       baseColor={COLORS.SELECTION}
                       highlightColor={COLORS.PRIMARY}
                     />
                   </Box>
                 ) : (
-                  <Text
-                    color={COLORS.DIM}
-                  >{`  ○ ${stepPrefix} ${step.title}`}</Text>
+                  <Text color={COLORS.DIM}>{`  ○ ${stepPrefix} ${step.title}`}</Text>
                 )}
               </Box>
             );
@@ -298,14 +266,12 @@ export const TestingScreen = ({
             <Text color={COLORS.YELLOW} bold>
               Stop this browser run?
             </Text>
-            <Text color={COLORS.DIM}>
-              This will terminate the agent and close the browser.
-            </Text>
+            <Text color={COLORS.DIM}>This will terminate the agent and close the browser.</Text>
             <Text color={COLORS.DIM}>
               Press <Text color={COLORS.PRIMARY}>Enter</Text> or{" "}
               <Text color={COLORS.PRIMARY}>y</Text> to stop, or{" "}
-              <Text color={COLORS.PRIMARY}>Esc</Text> or{" "}
-              <Text color={COLORS.PRIMARY}>n</Text> to keep it running.
+              <Text color={COLORS.PRIMARY}>Esc</Text> or <Text color={COLORS.PRIMARY}>n</Text> to
+              keep it running.
             </Text>
           </RuledBox>
         ) : null}

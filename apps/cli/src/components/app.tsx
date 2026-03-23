@@ -65,12 +65,7 @@ export const App = ({ agent }: { agent: AgentBackend }) => {
     if (key.escape && screen._tag !== "Main" && screen._tag !== "ReviewPlan") {
       goBack();
     }
-    if (
-      key.ctrl &&
-      input === "p" &&
-      screen._tag === "Main" &&
-      gitState?.isGitRepo
-    ) {
+    if (key.ctrl && input === "p" && screen._tag === "Main" && gitState?.isGitRepo) {
       navigateTo(Screen.SelectPr());
     }
     if (key.ctrl && input === "t") {
@@ -89,12 +84,7 @@ export const App = ({ agent }: { agent: AgentBackend }) => {
   const renderScreen = () => {
     switch (screen._tag) {
       case "Testing":
-        return (
-          <TestingScreen
-            changesFor={screen.changesFor}
-            instruction={screen.instruction}
-          />
-        );
+        return <TestingScreen changesFor={screen.changesFor} instruction={screen.instruction} />;
       case "Results":
         return <ResultsScreen report={screen.report} />;
       case "Theme":

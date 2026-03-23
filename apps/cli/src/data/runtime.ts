@@ -42,7 +42,7 @@ export const cliAtomRuntime = Atom.runtime(
     ).pipe(
       Layer.provide(Agent.layerFor(agentProvider)),
       Layer.provide(Logger.layer([stderrLogger])),
-      Layer.provide(Layer.succeed(References.MinimumLogLevel, "All"))
+      Layer.provideMerge(Layer.succeed(References.MinimumLogLevel, "All"))
     );
   }, Layer.unwrap)
 ).pipe(Atom.keepAlive);

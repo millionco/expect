@@ -74,11 +74,7 @@ export const executePlanFn = cliAtomRuntime.fn(
     const executor = yield* Executor;
 
     const finalExecuted = yield* executor.executePlan(input.testPlan).pipe(
-      Stream.tap((executed) =>
-        Effect.sync(() => {
-          input.onUpdate(executed);
-        })
-      ),
+      Stream.tap((executed) => Effect.sync(() => input.onUpdate(executed))),
       Stream.runLast,
       Effect.map((option) =>
         option._tag === "Some"

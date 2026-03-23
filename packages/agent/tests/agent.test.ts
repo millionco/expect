@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vite-plus/test";
-import type { LanguageModelV3StreamPart } from "@ai-sdk/provider";
 import { Effect, Layer, Option, Stream } from "effect";
 import { Agent } from "../src/agent.js";
 import { AgentStreamOptions } from "../src/types.js";
@@ -34,10 +33,16 @@ describe("Agent", () => {
         }).pipe(Effect.provide(layer), Effect.runPromise);
 
         const textParts = parts.filter(
-          (part): part is Extract<LanguageModelV3StreamPart, { type: "text-delta" }> =>
-            part.type === "text-delta",
+          (update) =>
+            update.sessionUpdate === "agent_message_chunk" && update.content.type === "text",
         );
-        const fullText = textParts.map((part) => part.delta).join("");
+        const fullText = textParts
+          .map((update) =>
+            update.sessionUpdate === "agent_message_chunk" && update.content.type === "text"
+              ? update.content.text
+              : "",
+          )
+          .join("");
         expect(fullText.toLowerCase()).toContain("hello");
       }, 30_000);
 
@@ -57,10 +62,17 @@ describe("Agent", () => {
         }).pipe(Effect.provide(layer), Effect.runPromise);
 
         const toolResults = parts.filter(
-          (part): part is Extract<LanguageModelV3StreamPart, { type: "tool-result" }> =>
-            part.type === "tool-result",
+          (update) =>
+            update.sessionUpdate === "tool_call_update" &&
+            (update.status === "completed" || update.status === "failed"),
         );
-        expect(toolResults.some((part) => part.result.includes("/tmp"))).toBe(true);
+        expect(
+          toolResults.some(
+            (update) =>
+              update.sessionUpdate === "tool_call_update" &&
+              JSON.stringify(update.rawOutput ?? "").includes("/tmp"),
+          ),
+        ).toBe(true);
       }, 60_000);
 
       it("resumes session with sessionId", async () => {
@@ -91,16 +103,19 @@ describe("Agent", () => {
             .pipe(Stream.runCollect);
         }).pipe(Effect.provide(layer), Effect.runPromise);
 
-        const textParts = secondParts.filter(
-          (part): part is Extract<LanguageModelV3StreamPart, { type: "text-delta" }> =>
-            part.type === "text-delta",
-        );
-        expect(
-          textParts
-            .map((part) => part.delta)
-            .join("")
-            .toLowerCase(),
-        ).toContain("ping");
+        const fullText = secondParts
+          .filter(
+            (update) =>
+              update.sessionUpdate === "agent_message_chunk" && update.content.type === "text",
+          )
+          .map((update) =>
+            update.sessionUpdate === "agent_message_chunk" && update.content.type === "text"
+              ? update.content.text
+              : "",
+          )
+          .join("")
+          .toLowerCase();
+        expect(fullText).toContain("ping");
       }, 60_000);
 
       it("discovers browser MCP tools", async () => {
@@ -111,12 +126,16 @@ describe("Agent", () => {
             .pipe(Stream.runCollect);
         }).pipe(Effect.provide(layer), Effect.runPromise);
 
-        const textParts = parts.filter(
-          (part): part is Extract<LanguageModelV3StreamPart, { type: "text-delta" }> =>
-            part.type === "text-delta",
-        );
-        const fullText = textParts
-          .map((part) => part.delta)
+        const fullText = parts
+          .filter(
+            (update) =>
+              update.sessionUpdate === "agent_message_chunk" && update.content.type === "text",
+          )
+          .map((update) =>
+            update.sessionUpdate === "agent_message_chunk" && update.content.type === "text"
+              ? update.content.text
+              : "",
+          )
           .join("")
           .toLowerCase();
 

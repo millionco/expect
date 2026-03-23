@@ -30,7 +30,6 @@
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/provider": "^3.0.8",
     "effect": "4.0.0-beta.28"
   },
   "devDependencies": {

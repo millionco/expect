@@ -12,7 +12,7 @@ import {
   ServiceMap,
   Stream,
 } from "effect";
-import { AcpSessionUpdate } from "./schemas/acp-stream.js";
+import { AcpSessionUpdate } from "@browser-tester/shared/models";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import { NodeServices } from "@effect/platform-node";
 
@@ -277,7 +277,6 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()(
   static layer = Layer.effect(this)(this.make).pipe(
     Layer.provide(NodeServices.layer)
   );
-
   static layerCodex = this.layer.pipe(Layer.provide(AcpAdapter.layerCodex));
   static layerClaude = this.layer.pipe(Layer.provide(AcpAdapter.layerClaude));
 }
