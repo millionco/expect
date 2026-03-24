@@ -1,5 +1,5 @@
 import * as crypto from "node:crypto";
-import { Effect, Option, Stream } from "effect";
+import { Channel, Effect, Option, Stream } from "effect";
 import { changesForDisplayName, type ChangesFor } from "@expect/shared/models";
 import {
   DraftId,
@@ -49,7 +49,7 @@ export const runHeadless = (options: HeadlessRunOptions) =>
       requiresCookies: false,
     });
 
-    const testPlan = yield* planner.plan(draft);
+    const testPlan = yield* Channel.runDrain(planner.plan(draft));
     yield* Effect.logInfo(`Plan: ${testPlan.title} (${testPlan.steps.length} steps)`);
 
     const seenEvents = new Set<string>();

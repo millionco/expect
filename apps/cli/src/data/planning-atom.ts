@@ -1,13 +1,13 @@
-import { Effect, Option } from "effect";
+import { Channel, Effect, Option } from "effect";
 import * as Atom from "effect/unstable/reactivity/Atom";
-import { Agent } from "@expect/agent";
 import { Git, Planner, TestPlanDraft, DraftId } from "@expect/supervisor";
-import type { ChangesFor } from "@expect/shared/models";
+import { AcpSessionUpdate, ChangesFor } from "@expect/shared/models";
 import { cliAtomRuntime } from "./runtime.js";
 
 interface CreatePlanInput {
   readonly changesFor: ChangesFor;
   readonly flowInstruction: string;
+  onUpdate: (updates: readonly AcpSessionUpdate[]) => void;
 }
 
 export const createPlanFn = cliAtomRuntime.fn(
@@ -32,7 +32,10 @@ export const createPlanFn = cliAtomRuntime.fn(
         requiresCookies: false,
       });
 
-      return yield* planner.plan(draft);
+      return yield* planner.plan(draft).pipe(
+        Channel.runForEach((updates) => Effect.sync(() => input.onUpdate(updates))),
+        Effect.retry({ times: 3 }),
+      );
     },
     Effect.annotateLogs({ fn: "createPlanFn" }),
   ),

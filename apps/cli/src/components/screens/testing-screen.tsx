@@ -3,7 +3,9 @@ import { Box, Static, Text, useInput } from "ink";
 import figures from "figures";
 import { DateTime, Option } from "effect";
 import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
+import * as Atom from "effect/unstable/reactivity/Atom";
 import { useAtom, useAtomValue } from "@effect/atom-react";
+
 import {
   ChangesFor,
   changesForDisplayName,
@@ -68,6 +70,7 @@ export const TestingScreen = ({ changesFor, instruction }: TestingScreenProps) =
   const isExecutionComplete = AsyncResult.isSuccess(executionResult);
   const report = isExecutionComplete ? executionResult.value.report : undefined;
 
+  const [planningStatus, setPlanningStatus] = useState("");
   const [executedPlan, setExecutedPlan] = useState<ExecutedTestPlan | undefined>(undefined);
   const [runStartedAt, setRunStartedAt] = useState<number | undefined>(undefined);
   const [elapsedTimeMs, setElapsedTimeMs] = useState(0);
@@ -80,7 +83,26 @@ export const TestingScreen = ({ changesFor, instruction }: TestingScreenProps) =
     triggerCreatePlan({
       changesFor,
       flowInstruction: instruction,
+      onUpdate: (updates) => {
+        for (const update of updates) {
+          if (update.sessionUpdate === "tool_call") {
+            setPlanningStatus(`Tool: ${update.title}`);
+          } else if (
+            update.sessionUpdate === "agent_thought_chunk" ||
+            update.sessionUpdate === "agent_message_chunk"
+          ) {
+            const { content } = update;
+            if (content.type === "text" && content.text) {
+              setPlanningStatus((prev) => prev + content.text);
+            }
+          }
+        }
+      },
     });
+    return () => {
+      triggerCreatePlan(Atom.Interrupt);
+      setPlanningStatus("");
+    };
   }, []);
 
   const goToMain = () => {
@@ -277,12 +299,20 @@ export const TestingScreen = ({ changesFor, instruction }: TestingScreenProps) =
         ) : null}
 
         {(isExecutingPlan || isPlanning) && !showCancelConfirmation ? (
-          <Box marginTop={1} paddingX={1}>
+          <Box marginTop={1} paddingX={1} flexDirection="column">
             <TextShimmer
               text={`${runStatusLabel}${figures.ellipsis} ${elapsedTimeLabel}`}
               baseColor={COLORS.DIM}
               highlightColor={COLORS.PRIMARY}
             />
+            {isPlanning && planningStatus && (
+              <Text color={COLORS.DIM} wrap="truncate">
+                {cliTruncate(
+                  planningStatus.replaceAll("\n", " ").trim(),
+                  TESTING_TOOL_TEXT_CHAR_LIMIT,
+                )}
+              </Text>
+            )}
           </Box>
         ) : null}
 

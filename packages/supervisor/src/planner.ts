@@ -1,17 +1,10 @@
-import * as fs from "node:fs";
 import * as path from "node:path";
 import * as crypto from "node:crypto";
 import { AcpSessionCreateError, AcpStreamError, Agent, AgentStreamOptions } from "@expect/agent";
-import { Effect, Layer, Option, Schema, ServiceMap, Stream } from "effect";
-import {
-  PlanId,
-  StepId,
-  TestPlan,
-  TestPlanJson,
-  TestPlanStep,
-  type TestPlanDraft,
-} from "@expect/shared/models";
-import { STEP_ID_PAD_LENGTH, PLANNER_MAX_STEP_COUNT, EXPECT_STATE_DIR } from "./constants.js";
+import { NodeServices } from "@effect/platform-node";
+import { Channel, Effect, FileSystem, Layer, Option, Schema, ServiceMap, Stream } from "effect";
+import { TestPlan, TestPlanJson, type TestPlanDraft } from "@expect/shared/models";
+import { EXPECT_STATE_DIR } from "./constants.js";
 
 export class PlanParseError extends Schema.ErrorClass<PlanParseError>("@supervisor/PlanParseError")(
   {
@@ -29,84 +22,71 @@ export class PlanningError extends Schema.ErrorClass<PlanningError>("@supervisor
   message = `Planning failed: ${this.reason.message}`;
 }
 
-const PLANNER_MAX_ATTEMPTS = 3;
-
-const parsePlanFile = (
-  sentinelPath: string,
-  draft: TestPlanDraft,
-): Effect.Effect<TestPlan, PlanParseError> =>
-  Effect.gen(function* () {
-    const raw = yield* Effect.try({
-      try: () => fs.readFileSync(sentinelPath, "utf-8"),
-      catch: (cause) => new PlanParseError({ cause: `Could not read plan file: ${cause}` }),
-    });
-
-    const parsed = yield* Schema.decodeEffect(Schema.fromJsonString(TestPlanJson))(raw).pipe(
-      Effect.mapError((cause) => new PlanParseError({ cause: `Invalid plan JSON: ${cause}` })),
-    );
-
-    const steps = parsed.steps.slice(0, PLANNER_MAX_STEP_COUNT).map(
-      (step, index) =>
-        new TestPlanStep({
-          id: Schema.decodeSync(StepId)(
-            step.id ?? `step-${String(index + 1).padStart(STEP_ID_PAD_LENGTH, "0")}`,
-          ),
-          title: step.title,
-          instruction: step.instruction,
-          expectedOutcome: step.expectedOutcome,
-          routeHint: step.routeHint ? Option.some(step.routeHint) : Option.none(),
-          status: "pending",
-          summary: Option.none(),
-          startedAt: Option.none(),
-          endedAt: Option.none(),
-        }),
-    );
-
-    return new TestPlan({
-      ...draft,
-      id: Schema.decodeSync(PlanId)(parsed.id ?? `plan-${crypto.randomUUID().slice(0, 8)}`),
-      title: parsed.title,
-      rationale: parsed.rationale,
-      steps,
-    });
-  });
-
 export class Planner extends ServiceMap.Service<Planner>()("@supervisor/Planner", {
   make: Effect.gen(function* () {
     const agent = yield* Agent;
+    const fs = yield* FileSystem.FileSystem;
 
+    const parsePlanFile = Effect.fnUntraced(function* (draft: TestPlanDraft, sentinelPath: string) {
+      return yield* fs.readFileString(sentinelPath).pipe(
+        Effect.flatMap(Schema.decodeEffect(Schema.fromJsonString(TestPlanJson))),
+        Effect.mapError((cause) => new PlanParseError({ cause })),
+        Effect.map(
+          (fields) =>
+            new TestPlan({
+              ...draft,
+              ...fields,
+            }),
+        ),
+      );
+    });
+
+    /**
+     * @note(rasmus): uses `Channel` for emitting intermediate values (`AcpSessionUpdate`), until the plan is ready
+     * and finishes with the `TestPlan`.
+     *
+     * @example
+     * ```ts
+     * // just collect the plan
+     * const plan = yield* planner.plan().pipe(
+     *   Channel.runDrain,
+     * )
+     *
+     * // run code on intermediate stream chunks and collect the plan
+     * const plan = yield* planner.plan(draft).pipe(
+     *   Channel.runDrain,
+     * )
+     * const plan = yield* planner.plan(draft).pipe(
+     *   Channel.runForEach(Console.log),
+     * )
+     * ```
+     */
     const plan = Effect.fn("Planner.plan")(function* (draft: TestPlanDraft) {
       const stateDir = path.join(process.cwd(), EXPECT_STATE_DIR);
-      fs.mkdirSync(stateDir, { recursive: true });
+      yield* fs.makeDirectory(stateDir, { recursive: true });
       const sentinelPath = path.join(stateDir, draft.planFileName);
 
-      const runAgent = Effect.gen(function* () {
-        yield* agent
-          .stream(
-            new AgentStreamOptions({
-              cwd: process.cwd(),
-              sessionId: Option.none(),
-              prompt: draft.prompt + `\n\nWrite your plan as JSON to: ${sentinelPath}`,
-              systemPrompt: Option.none(),
-            }),
-          )
-          .pipe(
-            Stream.runDrain,
+      return Stream.toChannel(
+        agent.stream(
+          new AgentStreamOptions({
+            cwd: process.cwd(),
+            sessionId: Option.none(),
+            prompt: draft.prompt + `\n\nWrite your plan as JSON to: ${sentinelPath}`,
+            systemPrompt: Option.none(),
+          }),
+        ),
+      ).pipe(
+        Channel.mapError((reason) => new PlanningError({ reason })),
+        Channel.mapDoneEffect(() =>
+          parsePlanFile(draft, sentinelPath).pipe(
             Effect.mapError((reason) => new PlanningError({ reason })),
-          );
-
-        return yield* parsePlanFile(sentinelPath, draft).pipe(
-          Effect.mapError((reason) => new PlanningError({ reason })),
-        );
-      });
-
-      return yield* Effect.retry(runAgent, {
-        times: PLANNER_MAX_ATTEMPTS - 1,
-      });
-    });
+          ),
+        ),
+      );
+    }, Channel.unwrap);
 
     return { plan } as const;
   }),
 }) {
-  static layer = Layer.effect(this)(this.make);
+  static layer = Layer.effect(this)(this.make).pipe(Layer.provide(NodeServices.layer));
 }
