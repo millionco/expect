@@ -97,8 +97,10 @@ const flushBroadcastToFile = (broadcast: ReplayBroadcast, outputPath: string) =>
     if (allEvents.length === 0) return;
 
     const ndjson = allEvents.map((event) => JSON.stringify(event)).join("\n") + "\n";
-    mkdirSync(dirname(outputPath), { recursive: true });
-    writeFileSync(outputPath, ndjson);
+    yield* Effect.try(() => {
+      mkdirSync(dirname(outputPath), { recursive: true });
+      writeFileSync(outputPath, ndjson);
+    });
 
     const runState = yield* broadcast.snapshotRunState;
     const replayFileName = basename(outputPath);
@@ -109,11 +111,11 @@ const flushBroadcastToFile = (broadcast: ReplayBroadcast, outputPath: string) =>
       eventsSource: { ndjsonPath: replayFileName },
       steps: runState,
     });
-    writeFileSync(htmlReportPath, reportHtml);
+    yield* Effect.try(() => writeFileSync(htmlReportPath, reportHtml));
 
-    const runStateFilePath = join(dirname(outputPath), "run-state.json");
     if (runState) {
-      writeFileSync(runStateFilePath, JSON.stringify(runState));
+      const runStateFilePath = join(dirname(outputPath), "run-state.json");
+      yield* Effect.try(() => writeFileSync(runStateFilePath, JSON.stringify(runState)));
     }
   });
 

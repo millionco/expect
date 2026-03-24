@@ -16,28 +16,37 @@ const drainToSse = (broadcast: ReplayBroadcast, response: ServerResponse) =>
     Effect.gen(function* () {
       const snapshot = yield* broadcast.snapshotEvents;
       if (snapshot.length > 0) {
-        response.write(`event: replay\ndata: ${JSON.stringify(snapshot)}\n\n`);
+        yield* Effect.try(() =>
+          response.write(`event: replay\ndata: ${JSON.stringify(snapshot)}\n\n`),
+        );
       }
 
       const runState = yield* broadcast.snapshotRunState;
       if (runState) {
-        response.write(`event: steps\ndata: ${JSON.stringify(runState)}\n\n`);
+        yield* Effect.try(() =>
+          response.write(`event: steps\ndata: ${JSON.stringify(runState)}\n\n`),
+        );
       }
 
       const eventsQueue = yield* PubSub.subscribe(broadcast.eventsPubSub);
       const stepsQueue = yield* PubSub.subscribe(broadcast.runStatePubSub);
 
+      const writeSse = (event: string, data: string) =>
+        Effect.try(() => {
+          response.write(`event: ${event}\ndata: ${data}\n\n`);
+        });
+
       const forwardEvents = Effect.forever(
         Effect.gen(function* () {
           const batch = yield* Queue.take(eventsQueue);
-          response.write(`event: replay\ndata: ${JSON.stringify(batch)}\n\n`);
+          yield* writeSse("replay", JSON.stringify(batch));
         }),
       );
 
       const forwardSteps = Effect.forever(
         Effect.gen(function* () {
           const state = yield* Queue.take(stepsQueue);
-          response.write(`event: steps\ndata: ${JSON.stringify(state)}\n\n`);
+          yield* writeSse("steps", JSON.stringify(state));
         }),
       );
 
@@ -99,8 +108,13 @@ export const startLiveViewServer = Effect.fn("LiveViewServer.start")(function* (
 
                 if (request.url === "/run-state.json") {
                   Effect.runPromise(broadcast.snapshotRunState).then((runState) => {
-                    response.writeHead(200, { "Content-Type": "application/json" });
-                    response.end(JSON.stringify(runState ?? undefined));
+                    if (runState) {
+                      response.writeHead(200, { "Content-Type": "application/json" });
+                      response.end(JSON.stringify(runState));
+                    } else {
+                      response.writeHead(204);
+                      response.end();
+                    }
                   });
                   return;
                 }

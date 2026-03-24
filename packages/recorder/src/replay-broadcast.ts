@@ -19,7 +19,10 @@ export const makeReplayBroadcast = Effect.gen(function* () {
 
   const publishEvents = (events: readonly eventWithTime[]) =>
     Effect.gen(function* () {
-      yield* Ref.update(eventsRef, (previous) => [...previous, ...events]);
+      yield* Ref.update(eventsRef, (previous) => {
+        for (const event of events) previous.push(event);
+        return previous;
+      });
       yield* PubSub.publish(eventsPubSub, events);
     });
 

@@ -83,7 +83,7 @@ export const App = () => {
 
       try {
         const stateResponse = await fetch("/run-state.json");
-        if (stateResponse.ok) {
+        if (stateResponse.ok && stateResponse.status !== 204) {
           const state: ViewerRunState = await stateResponse.json();
           if (state?.steps) setRunState(state);
         }
