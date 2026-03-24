@@ -31,12 +31,3 @@ export type {
   SnapshotResult,
   SnapshotStats,
 } from "./types";
-export {
-  buildReplayViewerHtml,
-  collectEvents,
-  collectAllEvents,
-  loadSession,
-  RecorderInjectionError,
-  SessionLoadError,
-} from "@browser-tester/recorder";
-export type { CollectResult } from "@browser-tester/recorder";

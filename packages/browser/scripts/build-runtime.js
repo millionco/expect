@@ -45,9 +45,10 @@ const emitPlugin = {
       const exportNames = extractExportedFunctionNames(source);
       fs.writeFileSync("src/generated/runtime-types.ts", generateRuntimeTypes(exportNames));
 
-      execSync("npx vp fmt src/generated/runtime-script.ts src/generated/runtime-types.ts", {
-        stdio: "ignore",
-      });
+      execSync(
+        "pnpm run format -- src/generated/runtime-script.ts src/generated/runtime-types.ts",
+        { stdio: "ignore" },
+      );
     });
   },
 };
