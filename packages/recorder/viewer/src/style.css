@@ -1,0 +1,153 @@
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+h1,
+h2 {
+  color: #f8fafc;
+}
+
+a {
+  color: #93c5fd;
+}
+
+#app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px;
+}
+
+#replay-container {
+  margin: 16px 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.status {
+  text-align: center;
+  padding: 16px;
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+#steps-panel {
+  display: none;
+  margin-bottom: 24px;
+  background: #1e293b;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #334155;
+}
+
+#steps-panel h2 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.run-status {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.status-running {
+  background: #1e3a5f;
+  color: #60a5fa;
+}
+
+.status-passed {
+  background: #14532d;
+  color: #4ade80;
+}
+
+.status-failed {
+  background: #7f1d1d;
+  color: #f87171;
+}
+
+#run-summary {
+  font-size: 13px;
+  color: #94a3b8;
+  margin-bottom: 16px;
+}
+
+#steps-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.step-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 14px;
+  border-top: 1px solid #1e293b;
+}
+
+.step-item:first-child {
+  border-top: none;
+}
+
+.step-badge {
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.step-pending .step-badge {
+  color: #64748b;
+}
+
+.step-active .step-badge {
+  color: #60a5fa;
+  animation: pulse 1.5s infinite;
+}
+
+.step-passed .step-badge {
+  color: #4ade80;
+}
+
+.step-failed .step-badge {
+  color: #f87171;
+}
+
+.step-title {
+  color: #e2e8f0;
+}
+
+.step-summary {
+  color: #94a3b8;
+  font-size: 12px;
+  margin-left: auto;
+  max-width: 50%;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}

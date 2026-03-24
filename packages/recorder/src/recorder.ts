@@ -3,24 +3,18 @@ import type { eventWithTime } from "@rrweb/types";
 import { Effect, Predicate } from "effect";
 import { FileSystem } from "effect/FileSystem";
 import { evaluateRecorderRuntime } from "./utils/evaluate-runtime";
-import { RecorderInjectionError, SessionLoadError } from "./errors";
+import { SessionLoadError } from "./errors";
 import type { CollectResult } from "./types";
 
 export const collectEvents = Effect.fn("Recorder.collectEvents")(function* (page: Page) {
-  const events = yield* evaluateRecorderRuntime(page, "getEvents").pipe(
-    Effect.catchCause((cause) => new RecorderInjectionError({ cause: String(cause) }).asEffect()),
-  );
-  const total = yield* evaluateRecorderRuntime(page, "getEventCount").pipe(
-    Effect.catchCause((cause) => new RecorderInjectionError({ cause: String(cause) }).asEffect()),
-  );
+  const events = yield* evaluateRecorderRuntime(page, "getEvents");
+  const total = yield* evaluateRecorderRuntime(page, "getEventCount");
 
   return { events, total: total + events.length } satisfies CollectResult;
 });
 
 export const collectAllEvents = Effect.fn("Recorder.collectAllEvents")(function* (page: Page) {
-  return yield* evaluateRecorderRuntime(page, "getAllEvents").pipe(
-    Effect.catchCause((cause) => new RecorderInjectionError({ cause: String(cause) }).asEffect()),
-  );
+  return yield* evaluateRecorderRuntime(page, "getAllEvents");
 });
 
 const isRrwebEvent = (value: unknown): value is eventWithTime =>

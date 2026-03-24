@@ -1,6 +1,7 @@
 import type { Page } from "playwright";
 import { Effect } from "effect";
 import type { RecorderRuntime } from "../generated/runtime-types";
+import { RecorderInjectionError } from "../errors";
 
 // HACK: page.evaluate erases types across the serialization boundary; casts are confined here
 export const evaluateRecorderRuntime = <K extends keyof RecorderRuntime>(
@@ -8,8 +9,8 @@ export const evaluateRecorderRuntime = <K extends keyof RecorderRuntime>(
   method: K,
   ...args: Parameters<RecorderRuntime[K]>
 ) =>
-  Effect.promise(
-    () =>
+  Effect.tryPromise({
+    try: () =>
       page.evaluate(
         ({ method, args }: { method: string; args: unknown[] }) => {
           const runtime = Reflect.get(globalThis, "__browserTesterRuntime");
@@ -26,4 +27,5 @@ export const evaluateRecorderRuntime = <K extends keyof RecorderRuntime>(
         },
         { method, args: args as unknown[] },
       ) as Promise<ReturnType<RecorderRuntime[K]>>,
-  );
+    catch: (cause) => new RecorderInjectionError({ cause: String(cause) }),
+  });

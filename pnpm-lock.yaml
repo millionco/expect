@@ -290,6 +290,12 @@ importers:
       rrweb:
         specifier: ^2.0.0-alpha.18
         version: 2.0.0-alpha.20
+      rrweb-player:
+        specifier: ^2.0.0-alpha.18
+        version: 2.0.0-alpha.20
+      vite:
+        specifier: npm:@voidzero-dev/vite-plus-core@^0.1.12
+        version: '@voidzero-dev/vite-plus-core@0.1.12(@types/node@22.19.15)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)'
     devDependencies:
       '@types/node':
         specifier: ^22.15.0
@@ -2522,6 +2528,12 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@rrweb/packer@2.0.0-alpha.20':
+    resolution: {integrity: sha512-GsByg2olGZ2n3To6keFG604QAboipuXZvjYxO2wITSwARBf/sZdy6cbUEjF0RS+QnuTM5GaVXeQapNMLmpKbrA==}
+
+  '@rrweb/replay@2.0.0-alpha.20':
+    resolution: {integrity: sha512-VodsLb+C2bYNNVbb0U14tKLa9ctzUxYIlt9VnxPATWvfyXHLTku8BhRWptuW/iIjVjmG49LBoR1ilxw/HMiJ1w==}
+
   '@rrweb/types@2.0.0-alpha.20':
     resolution: {integrity: sha512-RbnDgKxA/odwB1R4gF7eUUj+rdSrq6ROQJsnMw7MIsGzlbSYvJeZN8YY4XqU0G6sKJvXI6bSzk7w/G94jNwzhw==}
 
@@ -2643,6 +2655,9 @@ packages:
 
   '@ts-morph/common@0.27.0':
     resolution: {integrity: sha512-Wf29UqxWDpc+i61k3oIOzcUfQt79PIT9y/MWfAGlrkjg6lBC1hwDECLXPVJAhWjiGbfBCxZd65F/LIZF3+jeJQ==}
+
+  '@tsconfig/svelte@1.0.13':
+    resolution: {integrity: sha512-5lYJP45Xllo4yE/RUBccBT32eBlRDbqN8r1/MIvQbKxW3aFqaYPCNgm8D5V20X4ShHcwvYWNlKg3liDh1MlBoA==}
 
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
@@ -3395,6 +3410,9 @@ packages:
   fetch-blob@3.2.0:
     resolution: {integrity: sha512-7yAQpD2UMJzLi1Dqv7qFYnPbaPx7ZfFK6PiIxQ4PfkGPyNyl2Ugx+a/umUonmKqjhM4DnfbMvdX6otXq83soQQ==}
     engines: {node: ^12.20 || >= 14.13}
+
+  fflate@0.4.8:
+    resolution: {integrity: sha512-FJqqoDBR00Mdj9ppamLa/Y7vxm+PRmNWA67N846RvsoYVMKB4q3y/de5PA7gUmRMYK/8CMz2GDZQmCRN1wBcWA==}
 
   figures@6.1.0:
     resolution: {integrity: sha512-d+l3qxjSesT4V7v2fh+QnmFnUWv9lSpjarhShNTgBOfA0ttejbQUAlHLitbjkoRiDulW0OPoQPYIGhIC8ohejg==}
@@ -4439,6 +4457,9 @@ packages:
 
   rrdom@2.0.0-alpha.20:
     resolution: {integrity: sha512-hoqjS4662LtBp82qEz9GrqU36UpEmCvTA2Hns3qdF7cklLFFy3G+0Th8hLytJENleHHWxsB5nWJ3eXz5mSRxdQ==}
+
+  rrweb-player@2.0.0-alpha.20:
+    resolution: {integrity: sha512-3ZCv1ksUxuIOn3Vn/eWrwWs9Xy+4KVjISD+q26ZLfisZ3hZ0CPgYG3iC22pmmycIeMS2svOfvf7gPh7jExwpUA==}
 
   rrweb-snapshot@2.0.0-alpha.20:
     resolution: {integrity: sha512-YTNf9YVeaGRo/jxY3FKBge2c/Ojd/KTHmuWloUSB+oyPXuY73ZeeG873qMMmhIpqEn7hn7aBF1eWEQmP7wjf8A==}
@@ -6940,6 +6961,16 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.59.0':
     optional: true
 
+  '@rrweb/packer@2.0.0-alpha.20':
+    dependencies:
+      '@rrweb/types': 2.0.0-alpha.20
+      fflate: 0.4.8
+
+  '@rrweb/replay@2.0.0-alpha.20':
+    dependencies:
+      '@rrweb/types': 2.0.0-alpha.20
+      rrweb: 2.0.0-alpha.20
+
   '@rrweb/types@2.0.0-alpha.20': {}
 
   '@rrweb/utils@2.0.0-alpha.20': {}
@@ -7035,6 +7066,8 @@ snapshots:
       fast-glob: 3.3.3
       minimatch: 10.2.4
       path-browserify: 1.0.1
+
+  '@tsconfig/svelte@1.0.13': {}
 
   '@types/chai@5.2.3':
     dependencies:
@@ -7718,6 +7751,8 @@ snapshots:
     dependencies:
       node-domexception: 1.0.0
       web-streams-polyfill: 3.3.3
+
+  fflate@0.4.8: {}
 
   figures@6.1.0:
     dependencies:
@@ -8770,6 +8805,12 @@ snapshots:
   rrdom@2.0.0-alpha.20:
     dependencies:
       rrweb-snapshot: 2.0.0-alpha.20
+
+  rrweb-player@2.0.0-alpha.20:
+    dependencies:
+      '@rrweb/packer': 2.0.0-alpha.20
+      '@rrweb/replay': 2.0.0-alpha.20
+      '@tsconfig/svelte': 1.0.13
 
   rrweb-snapshot@2.0.0-alpha.20:
     dependencies:
