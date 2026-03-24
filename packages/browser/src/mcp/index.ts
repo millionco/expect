@@ -2,4 +2,4 @@ export { EXPECT_LIVE_VIEW_URL_ENV_NAME, EXPECT_REPLAY_OUTPUT_ENV_NAME } from "./
 export { McpSession } from "./mcp-session";
 export { McpRuntime } from "./runtime";
 export { createBrowserMcpServer, startBrowserMcpServer } from "./server";
-export type { ViewerRunState, ViewerStepEvent } from "./viewer-events";
+export type { ViewerRunState, ViewerStepEvent } from "@browser-tester/recorder";

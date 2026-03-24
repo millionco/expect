@@ -2,15 +2,15 @@ import type { Page } from "playwright";
 import type { eventWithTime } from "@rrweb/types";
 import { Effect, Predicate } from "effect";
 import { FileSystem } from "effect/FileSystem";
-import { evaluateRuntime } from "./utils/evaluate-runtime";
+import { evaluateRecorderRuntime } from "./utils/evaluate-runtime";
 import { RecorderInjectionError, SessionLoadError } from "./errors";
 import type { CollectResult } from "./types";
 
 export const collectEvents = Effect.fn("Recorder.collectEvents")(function* (page: Page) {
-  const events = yield* evaluateRuntime(page, "getEvents").pipe(
+  const events = yield* evaluateRecorderRuntime(page, "getEvents").pipe(
     Effect.catchCause((cause) => new RecorderInjectionError({ cause: String(cause) }).asEffect()),
   );
-  const total = yield* evaluateRuntime(page, "getEventCount").pipe(
+  const total = yield* evaluateRecorderRuntime(page, "getEventCount").pipe(
     Effect.catchCause((cause) => new RecorderInjectionError({ cause: String(cause) }).asEffect()),
   );
 
@@ -18,7 +18,7 @@ export const collectEvents = Effect.fn("Recorder.collectEvents")(function* (page
 });
 
 export const collectAllEvents = Effect.fn("Recorder.collectAllEvents")(function* (page: Page) {
-  return yield* evaluateRuntime(page, "getAllEvents").pipe(
+  return yield* evaluateRecorderRuntime(page, "getAllEvents").pipe(
     Effect.catchCause((cause) => new RecorderInjectionError({ cause: String(cause) }).asEffect()),
   );
 });

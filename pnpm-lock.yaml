@@ -33,15 +33,15 @@ importers:
 
   apps/cli:
     dependencies:
+      '@browser-tester/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      '@browser-tester/supervisor':
+        specifier: workspace:*
+        version: link:../../packages/supervisor
       '@effect/atom-react':
         specifier: 4.0.0-beta.35
         version: 4.0.0-beta.35(effect@4.0.0-beta.28)(react@19.2.4)(scheduler@0.27.0)
-      '@expect/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
-      '@expect/supervisor':
-        specifier: workspace:*
-        version: link:../../packages/supervisor
       '@tanstack/react-query':
         specifier: ^5.80.7
         version: 5.90.21(react@19.2.4)
@@ -179,10 +179,10 @@ importers:
       '@ai-sdk/provider':
         specifier: ^3.0.8
         version: 3.0.8
-      '@expect/browser':
+      '@browser-tester/browser':
         specifier: workspace:*
         version: link:../browser
-      '@expect/shared':
+      '@browser-tester/shared':
         specifier: workspace:*
         version: link:../shared
       '@zed-industries/claude-agent-acp':
@@ -207,12 +207,15 @@ importers:
 
   packages/browser:
     dependencies:
+      '@browser-tester/cookies':
+        specifier: workspace:*
+        version: link:../cookies
+      '@browser-tester/recorder':
+        specifier: workspace:*
+        version: link:../recorder
       '@effect/platform-node':
         specifier: 4.0.0-beta.28
         version: 4.0.0-beta.28(effect@4.0.0-beta.28)(ioredis@5.10.0)
-      '@expect/cookies':
-        specifier: workspace:*
-        version: link:../cookies
       '@medv/finder':
         specifier: ^4.0.2
         version: 4.0.2
@@ -225,9 +228,6 @@ importers:
       playwright:
         specifier: ^1.52.0
         version: 1.58.2
-      rrweb:
-        specifier: ^2.0.0-alpha.18
-        version: 2.0.0-alpha.20
       zod:
         specifier: ^4.3.6
         version: 4.3.6
@@ -273,9 +273,30 @@ importers:
         specifier: ^5.7.0
         version: 5.9.3
 
-  packages/expect: {}
-
-  packages/expect-skill: {}
+  packages/recorder:
+    dependencies:
+      '@effect/platform-node':
+        specifier: 4.0.0-beta.28
+        version: 4.0.0-beta.28(effect@4.0.0-beta.28)(ioredis@5.10.0)
+      '@rrweb/types':
+        specifier: ^2.0.0-alpha.18
+        version: 2.0.0-alpha.20
+      effect:
+        specifier: 4.0.0-beta.28
+        version: 4.0.0-beta.28
+      playwright:
+        specifier: ^1.52.0
+        version: 1.58.2
+      rrweb:
+        specifier: ^2.0.0-alpha.18
+        version: 2.0.0-alpha.20
+    devDependencies:
+      '@types/node':
+        specifier: ^22.15.0
+        version: 22.19.15
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
 
   packages/shared:
     dependencies:
@@ -295,18 +316,18 @@ importers:
       '@ai-sdk/provider':
         specifier: ^3.0.8
         version: 3.0.8
+      '@browser-tester/agent':
+        specifier: workspace:*
+        version: link:../agent
+      '@browser-tester/browser':
+        specifier: workspace:*
+        version: link:../browser
+      '@browser-tester/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@effect/platform-node':
         specifier: 4.0.0-beta.28
         version: 4.0.0-beta.28(effect@4.0.0-beta.28)(ioredis@5.10.0)
-      '@expect/agent':
-        specifier: workspace:*
-        version: link:../agent
-      '@expect/browser':
-        specifier: workspace:*
-        version: link:../browser
-      '@expect/shared':
-        specifier: workspace:*
-        version: link:../shared
       effect:
         specifier: 4.0.0-beta.28
         version: 4.0.0-beta.28
@@ -326,6 +347,10 @@ importers:
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
+
+  packages/testie: {}
+
+  packages/testie-skill: {}
 
   playground/minecraft-ui:
     dependencies:

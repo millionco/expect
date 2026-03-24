@@ -1,19 +1,22 @@
 import { basename, dirname, extname, join } from "node:path";
 import type { Browser as PlaywrightBrowser, BrowserContext, Page } from "playwright";
-import type { eventWithTime } from "@rrweb/types";
 import { Config, Effect, Fiber, Layer, Option, Ref, Schedule, ServiceMap } from "effect";
 import { FileSystem } from "effect/FileSystem";
+import {
+  collectAllEvents,
+  evaluateRecorderRuntime,
+  buildReplayViewerHtml,
+  startLiveViewServer,
+  EVENT_COLLECT_INTERVAL_MS,
+  type eventWithTime,
+  type LiveViewHandle,
+  type ViewerRunState,
+} from "@browser-tester/recorder";
 import { Browser } from "../browser";
 import { NavigationError } from "../errors";
-import { collectAllEvents } from "../recorder";
-import { evaluateRuntime } from "../utils/evaluate-runtime";
-import { EVENT_COLLECT_INTERVAL_MS } from "../constants";
-import { buildReplayViewerHtml } from "../replay-viewer";
 import type { AnnotatedScreenshotOptions, SnapshotOptions, SnapshotResult } from "../types";
 import { EXPECT_LIVE_VIEW_URL_ENV_NAME, EXPECT_REPLAY_OUTPUT_ENV_NAME } from "./constants";
 import { McpSessionNotOpenError } from "./errors";
-import { startLiveViewServer, type LiveViewHandle } from "./live-view-server";
-import type { ViewerRunState } from "./viewer-events";
 
 interface ConsoleEntry {
   readonly type: string;
@@ -154,7 +157,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       setupPageTracking(pageResult.page, sessionData);
       yield* Ref.set(sessionRef, sessionData);
 
-      yield* evaluateRuntime(pageResult.page, "startRecording").pipe(
+      yield* evaluateRecorderRuntime(pageResult.page, "startRecording").pipe(
         Effect.catchCause((cause) => Effect.logDebug("rrweb recording failed to start", { cause })),
       );
 
@@ -183,7 +186,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         const pollPage = Effect.sync(() => Ref.getUnsafe(sessionRef)?.page).pipe(
           Effect.flatMap((page) => {
             if (!page || page.isClosed()) return Effect.void;
-            return evaluateRuntime(page, "getEvents").pipe(
+            return evaluateRecorderRuntime(page, "getEvents").pipe(
               Effect.tap((events) =>
                 Effect.sync(() => {
                   if (Array.isArray(events) && events.length > 0) {

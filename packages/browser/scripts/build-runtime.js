@@ -1,4 +1,5 @@
 import { context } from "esbuild";
+import { execSync } from "node:child_process";
 import * as fs from "node:fs";
 
 const watchMode = process.argv.includes("--watch");
@@ -37,12 +38,16 @@ const emitPlugin = {
       fs.mkdirSync("src/generated", { recursive: true });
       fs.writeFileSync(
         "src/generated/runtime-script.ts",
-        `export const RUNTIME_SCRIPT = ${JSON.stringify(runtimeCode)};\n`,
+        `export const RUNTIME_SCRIPT =\n  ${JSON.stringify(runtimeCode)};\n`,
       );
 
       const source = fs.readFileSync(RUNTIME_ENTRY, "utf-8");
       const exportNames = extractExportedFunctionNames(source);
       fs.writeFileSync("src/generated/runtime-types.ts", generateRuntimeTypes(exportNames));
+
+      execSync("npx vp fmt src/generated/runtime-script.ts src/generated/runtime-types.ts", {
+        stdio: "ignore",
+      });
     });
   },
 };

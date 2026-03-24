@@ -1,5 +1,5 @@
 import { REPLAY_PLAYER_HEIGHT_PX, REPLAY_PLAYER_WIDTH_PX } from "./constants";
-import type { ViewerRunState } from "./mcp/viewer-events";
+import type { ViewerRunState } from "./viewer-events";
 
 const escapeHtml = (text: string): string =>
   text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");

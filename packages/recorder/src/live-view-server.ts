@@ -2,9 +2,9 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import type { Page } from "playwright";
 import type { eventWithTime } from "@rrweb/types";
 import { Effect, Fiber, Predicate, PubSub, Schedule, Stream } from "effect";
-import { EVENT_COLLECT_INTERVAL_MS } from "../constants";
-import { evaluateRuntime } from "../utils/evaluate-runtime";
-import { buildReplayViewerHtml } from "../replay-viewer";
+import { EVENT_COLLECT_INTERVAL_MS } from "./constants";
+import { evaluateRecorderRuntime } from "./utils/evaluate-runtime";
+import { buildReplayViewerHtml } from "./replay-viewer";
 import type { ViewerRunState } from "./viewer-events";
 
 const isViewerRunState = (value: unknown): value is ViewerRunState =>
@@ -172,7 +172,7 @@ export const startLiveViewServer = Effect.fn("LiveViewServer.start")(function* (
   const pollPage = Effect.sync(() => options.getPage()).pipe(
     Effect.flatMap((page) => {
       if (!page || page.isClosed()) return Effect.void;
-      return evaluateRuntime(page, "getEvents").pipe(
+      return evaluateRecorderRuntime(page, "getEvents").pipe(
         Effect.tap((events) =>
           Effect.sync(() => {
             if (Array.isArray(events) && events.length > 0) {

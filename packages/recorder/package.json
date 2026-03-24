@@ -1,5 +1,5 @@
 {
-  "name": "@expect/browser",
+  "name": "@browser-tester/recorder",
   "version": "0.0.1",
   "private": true,
   "files": [
@@ -13,43 +13,31 @@
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
     },
-    "./mcp": {
-      "types": "./dist/mcp/index.d.mts",
-      "import": "./dist/mcp/index.mjs"
-    },
-    "./cli": {
-      "import": "./dist/mcp/start.mjs"
-    },
     "./runtime": {
-      "types": "./dist/runtime/index.d.mts",
-      "import": "./dist/runtime/index.mjs"
+      "types": "./src/runtime/index.ts",
+      "import": "./src/runtime/index.ts"
     }
   },
   "scripts": {
-    "build:runtime": "node scripts/build-runtime.js",
-    "build": "pnpm build:runtime && vp pack",
+    "build": "vp pack",
     "dev": "vp pack --watch",
     "lint": "vp lint && tsc --noEmit",
     "format": "vp fmt",
     "format:check": "vp fmt --check",
-    "check": "pnpm build:runtime && vp check",
+    "check": "vp check",
     "test": "vp test run",
     "test:watch": "vp test",
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
-    "@browser-tester/recorder": "workspace:*",
     "@effect/platform-node": "4.0.0-beta.28",
-    "@expect/cookies": "workspace:*",
-    "@medv/finder": "^4.0.2",
-    "@modelcontextprotocol/sdk": "^1.27.1",
+    "@rrweb/types": "^2.0.0-alpha.18",
     "effect": "4.0.0-beta.28",
     "playwright": "^1.52.0",
-    "zod": "^4.3.6"
+    "rrweb": "^2.0.0-alpha.18"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
-    "esbuild": "^0.25.0",
     "typescript": "^5.7.0"
   }
 }

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import { Effect } from "effect";
-import { startLiveViewServer, type LiveViewHandle } from "../src/mcp/live-view-server";
+import { startLiveViewServer, type LiveViewHandle } from "../src/live-view-server";
 
 const findAvailablePort = async (): Promise<number> => {
   const { createServer } = await import("node:http");
