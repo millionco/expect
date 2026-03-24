@@ -1,4 +1,7 @@
-import { Effect, Layer, ServiceMap } from "effect";
+import { Effect, Layer, Schema, ServiceMap } from "effect";
+import { ChildProcess } from "effect/unstable/process";
+import { ChildProcessSpawner } from "effect/unstable/process/ChildProcessSpawner";
+import { NodeServices } from "@effect/platform-node";
 import { machineId } from "node-machine-id";
 import { hash } from "ohash";
 import { PostHog } from "posthog-node";
@@ -10,6 +13,21 @@ const POSTHOG_DEFAULT_HOST = "https://us.i.posthog.com";
 
 const posthogClient = new PostHog(POSTHOG_API_KEY, { host: POSTHOG_DEFAULT_HOST });
 
+const ClaudeAuthStatusResponse = Schema.Struct({
+  email: Schema.String,
+});
+
+const getClaudeCodeEmail = Effect.fn("getClaudeCodeEmail")(function* () {
+  const spawner = yield* ChildProcessSpawner;
+  const stdout = yield* spawner
+    .string(ChildProcess.make("claude", ["auth", "status"]))
+    .pipe(Effect.timeout("5 seconds"));
+  const status = yield* Schema.decodeEffect(Schema.fromJsonString(ClaudeAuthStatusResponse))(
+    stdout,
+  );
+  return status.email;
+});
+
 // ---------------------------------------------------------------------------
 // AnalyticsProvider — abstract provider that Analytics delegates to
 // ---------------------------------------------------------------------------
@@ -19,6 +37,10 @@ export interface AnalyticsProviderShape {
     readonly eventName: string;
     readonly properties: Record<string, unknown>;
     readonly distinctId: string;
+  }) => Effect.Effect<void>;
+  readonly identify: (params: {
+    readonly distinctId: string;
+    readonly email: string;
   }) => Effect.Effect<void>;
   readonly flush: Effect.Effect<void>;
 }
@@ -36,6 +58,13 @@ export class AnalyticsProvider extends ServiceMap.Service<
           distinctId: event.distinctId,
         });
       }),
+    identify: (params) =>
+      Effect.sync(() => {
+        posthogClient.identify({
+          distinctId: params.distinctId,
+          properties: { email: params.email },
+        });
+      }),
     flush: Effect.tryPromise({
       try: () => posthogClient.flush(),
       catch: (cause) => cause,
@@ -48,6 +77,11 @@ export class AnalyticsProvider extends ServiceMap.Service<
         eventName: event.eventName,
         distinctId: event.distinctId,
         ...event.properties,
+      }).pipe(Effect.annotateLogs({ module: "Analytics" })),
+    identify: (params) =>
+      Effect.logInfo("Identified user", {
+        distinctId: params.distinctId,
+        email: params.email,
       }).pipe(Effect.annotateLogs({ module: "Analytics" })),
     flush: Effect.void,
   });
@@ -66,6 +100,14 @@ export class Analytics extends ServiceMap.Service<Analytics>()("@expect/Analytic
       catch: () => "unknown",
     });
     const projectId = hash(process.cwd());
+
+    yield* getClaudeCodeEmail().pipe(
+      Effect.tap((email) => provider.identify({ distinctId, email })),
+      Effect.catchTag("PlatformError", () => Effect.void),
+      Effect.catchTag("TimeoutError", () => Effect.void),
+      Effect.catchTag("SchemaError", () => Effect.void),
+      Effect.forkDetach,
+    );
 
     const capture = <K extends keyof EventMap>(
       eventName: K,
@@ -119,8 +161,10 @@ export class Analytics extends ServiceMap.Service<Analytics>()("@expect/Analytic
 }) {
   static layerPostHog = Layer.effect(this)(this.make).pipe(
     Layer.provide(AnalyticsProvider.layerPostHog),
+    Layer.provide(NodeServices.layer),
   );
   static layerDev = Layer.effect(this)(this.make).pipe(
     Layer.provide(AnalyticsProvider.layerDev),
+    Layer.provide(NodeServices.layer),
   );
 }
