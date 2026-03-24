@@ -1,0 +1,35 @@
+{
+  "id": "plan-01",
+  "title": "Visit nisarg.io and observe page content",
+  "rationale": "The user wants to navigate to nisarg.io and get a description of what is visible on the page. Steps cover navigation, waiting for content to load, and capturing key visual elements.",
+  "steps": [
+    {
+      "id": "step-01",
+      "title": "Navigate to nisarg.io",
+      "instruction": "Navigate the browser to https://nisarg.io and wait for the page to fully load.",
+      "expectedOutcome": "The page at nisarg.io loads successfully and the document title or main heading is visible.",
+      "routeHint": "/"
+    },
+    {
+      "id": "step-02",
+      "title": "Observe the page header and hero section",
+      "instruction": "Look at the top of the page and identify the site name, navigation links, and any hero/banner section including headings, taglines, or introductory text.",
+      "expectedOutcome": "The page header, site branding, and primary heading or hero content are visible and can be described.",
+      "routeHint": "/"
+    },
+    {
+      "id": "step-03",
+      "title": "Observe the main content area",
+      "instruction": "Scroll down if needed and examine the main content area of the page. Identify any blog posts, project listings, about text, or other primary content sections.",
+      "expectedOutcome": "The main content sections are visible, including any article titles, project names, or descriptive text.",
+      "routeHint": "/"
+    },
+    {
+      "id": "step-04",
+      "title": "Observe the footer and overall layout",
+      "instruction": "Scroll to the bottom of the page and note the footer content, including any social links, copyright info, or additional navigation. Take a screenshot to capture the overall visual style and color scheme.",
+      "expectedOutcome": "The footer is visible and the overall page layout, color scheme, and visual style can be described.",
+      "routeHint": "/"
+    }
+  ]
+}

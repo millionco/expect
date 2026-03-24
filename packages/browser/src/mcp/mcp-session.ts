@@ -1,19 +1,19 @@
 import { basename, dirname, extname, join } from "node:path";
+import { mkdirSync, writeFileSync } from "node:fs";
 import type { Browser as PlaywrightBrowser, BrowserContext, Page } from "playwright";
 import { Config, Effect, Fiber, Layer, Option, Ref, Schedule, ServiceMap } from "effect";
-import { FileSystem } from "effect/FileSystem";
 import {
   collectAllEvents,
-  createReplayLog,
   evaluateRecorderRuntime,
   buildReplayViewerHtml,
+  makeReplayBroadcast,
   startLiveViewServer,
   EVENT_COLLECT_INTERVAL_MS,
   type eventWithTime,
   type LiveViewHandle,
-  type ReplayLog,
+  type ReplayBroadcast,
   type ViewerRunState,
-} from "@browser-tester/recorder";
+} from "@expect/recorder";
 import { Browser } from "../browser";
 import { NavigationError } from "../errors";
 import type { AnnotatedScreenshotOptions, SnapshotOptions, SnapshotResult } from "../types";
@@ -41,8 +41,7 @@ export interface BrowserSessionData {
   readonly consoleMessages: ConsoleEntry[];
   readonly networkRequests: NetworkEntry[];
   readonly replayOutputPath: string | undefined;
-  readonly replayLog: ReplayLog | undefined;
-  readonly accumulatedReplayEvents: eventWithTime[];
+  readonly broadcast: ReplayBroadcast;
   readonly trackedPages: Set<Page>;
   lastSnapshot: SnapshotResult | undefined;
 }
@@ -92,17 +91,54 @@ const setupPageTracking = (page: Page, sessionData: BrowserSessionData) => {
   });
 };
 
+const flushBroadcastToFile = (broadcast: ReplayBroadcast, outputPath: string) =>
+  Effect.gen(function* () {
+    const allEvents = yield* broadcast.snapshotEvents;
+    if (allEvents.length === 0) return;
+
+    const ndjson = allEvents.map((event) => JSON.stringify(event)).join("\n") + "\n";
+    mkdirSync(dirname(outputPath), { recursive: true });
+    writeFileSync(outputPath, ndjson);
+
+    const runState = yield* broadcast.snapshotRunState;
+    const replayFileName = basename(outputPath);
+    const replayBaseName = basename(outputPath, extname(outputPath));
+    const htmlReportPath = join(dirname(outputPath), `${replayBaseName}.html`);
+    const reportHtml = buildReplayViewerHtml({
+      title: runState ? `Test Report: ${runState.title}` : "Expect Report",
+      eventsSource: { ndjsonPath: replayFileName },
+      steps: runState,
+    });
+    writeFileSync(htmlReportPath, reportHtml);
+
+    const runStateFilePath = join(dirname(outputPath), "run-state.json");
+    if (runState) {
+      writeFileSync(runStateFilePath, JSON.stringify(runState));
+    }
+  });
+
 export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSession", {
   make: Effect.gen(function* () {
     const browserService = yield* Browser;
-    const fileSystem = yield* FileSystem;
     const replayOutputPath = yield* Config.option(Config.string(EXPECT_REPLAY_OUTPUT_ENV_NAME));
     const liveViewUrl = yield* Config.option(Config.string(EXPECT_LIVE_VIEW_URL_ENV_NAME));
 
     const sessionRef = yield* Ref.make<BrowserSessionData | undefined>(undefined);
     const liveViewRef = yield* Ref.make<LiveViewHandle | undefined>(undefined);
     const pollingFiberRef = yield* Ref.make<Fiber.Fiber<unknown> | undefined>(undefined);
-    const latestRunStateRef = yield* Ref.make<ViewerRunState | undefined>(undefined);
+    const broadcastRef = yield* Ref.make<ReplayBroadcast | undefined>(undefined);
+    const outputPathRef = yield* Ref.make<string | undefined>(undefined);
+
+    yield* Effect.addFinalizer(() =>
+      Effect.gen(function* () {
+        const broadcast = yield* Ref.get(broadcastRef);
+        const outputPath = yield* Ref.get(outputPathRef);
+        if (!broadcast || !outputPath) return;
+        yield* flushBroadcastToFile(broadcast, outputPath).pipe(
+          Effect.catchCause((cause) => Effect.logDebug("Finalizer flush failed", { cause })),
+        );
+      }),
+    );
 
     const requireSession = Effect.fn("McpSession.requireSession")(function* () {
       const session = yield* Ref.get(sessionRef);
@@ -130,9 +166,10 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
     });
 
     const pushStepEvent = Effect.fn("McpSession.pushStepEvent")(function* (state: ViewerRunState) {
-      yield* Ref.set(latestRunStateRef, state);
-      const session = yield* Ref.get(sessionRef);
-      session?.replayLog?.writeRunState(state);
+      const broadcast = yield* Ref.get(broadcastRef);
+      if (broadcast) {
+        yield* broadcast.publishRunState(state);
+      }
     });
 
     const open = Effect.fn("McpSession.open")(function* (url: string, options: OpenOptions = {}) {
@@ -144,7 +181,11 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         waitUntil: options.waitUntil,
       });
 
+      const broadcast = yield* makeReplayBroadcast;
+      yield* Ref.set(broadcastRef, broadcast);
+
       const outputPath = Option.getOrUndefined(replayOutputPath);
+      yield* Ref.set(outputPathRef, outputPath);
       const sessionData: BrowserSessionData = {
         browser: pageResult.browser,
         context: pageResult.context,
@@ -152,8 +193,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         consoleMessages: [],
         networkRequests: [],
         replayOutputPath: outputPath,
-        replayLog: outputPath ? createReplayLog(outputPath) : undefined,
-        accumulatedReplayEvents: [],
+        broadcast,
         trackedPages: new Set(),
         lastSnapshot: undefined,
       };
@@ -168,15 +208,12 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         Effect.flatMap((page) => {
           if (!page || page.isClosed()) return Effect.void;
           return evaluateRecorderRuntime(page, "getEvents").pipe(
-            Effect.tap((events) =>
-              Effect.sync(() => {
-                if (Array.isArray(events) && events.length > 0) {
-                  const session = Ref.getUnsafe(sessionRef);
-                  session?.accumulatedReplayEvents.push(...events);
-                  session?.replayLog?.appendEvents(events);
-                }
-              }),
-            ),
+            Effect.tap((events) => {
+              if (Array.isArray(events) && events.length > 0) {
+                return broadcast.publishEvents(events);
+              }
+              return Effect.void;
+            }),
             Effect.catchCause((cause) =>
               Effect.logDebug("Replay event collection failed", { cause }),
             ),
@@ -192,7 +229,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
 
       const existingLiveView = yield* Ref.get(liveViewRef);
       if (Option.isSome(liveViewUrl) && !existingLiveView) {
-        const handle = yield* startLiveViewServer(liveViewUrl.value).pipe(
+        const handle = yield* startLiveViewServer(liveViewUrl.value, broadcast).pipe(
           Effect.catchCause((cause) =>
             Effect.logDebug("Live view server failed to start", { cause }).pipe(
               Effect.as(undefined),
@@ -247,6 +284,19 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         yield* Ref.set(pollingFiberRef, undefined);
       }
 
+      if (!activeSession.page.isClosed()) {
+        const finalEvents = yield* collectAllEvents(activeSession.page).pipe(
+          Effect.catchCause((cause) =>
+            Effect.logDebug("Failed to collect final replay events", { cause }).pipe(
+              Effect.as([] as ReadonlyArray<eventWithTime>),
+            ),
+          ),
+        );
+        if (finalEvents.length > 0) {
+          yield* activeSession.broadcast.publishEvents(finalEvents);
+        }
+      }
+
       const liveView = yield* Ref.get(liveViewRef);
       if (liveView) {
         yield* liveView.close.pipe(
@@ -255,78 +305,20 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         yield* Ref.set(liveViewRef, undefined);
       }
 
-      let replaySessionPath: string | undefined;
-      let reportPath: string | undefined;
-
-      yield* Effect.gen(function* () {
-        if (!activeSession.page.isClosed()) {
-          const finalEvents = yield* collectAllEvents(activeSession.page).pipe(
-            Effect.catchCause((cause) =>
-              Effect.logDebug("Failed to collect final replay events", { cause }).pipe(
-                Effect.as([] as ReadonlyArray<eventWithTime>),
-              ),
-            ),
-          );
-          if (finalEvents.length > 0) {
-            activeSession.accumulatedReplayEvents.push(...finalEvents);
-            activeSession.replayLog?.appendEvents(finalEvents);
-          }
-        }
-
-        const resolvedReplayOutputPath = activeSession.replayOutputPath;
-        if (resolvedReplayOutputPath && activeSession.accumulatedReplayEvents.length > 0) {
-          if (!activeSession.replayLog) {
-            const ndjson =
-              activeSession.accumulatedReplayEvents
-                .map((event) => JSON.stringify(event))
-                .join("\n") + "\n";
-
-            yield* fileSystem
-              .makeDirectory(dirname(resolvedReplayOutputPath), { recursive: true })
-              .pipe(
-                Effect.catchCause((cause) =>
-                  Effect.logDebug("Failed to create replay output directory", { cause }),
-                ),
-              );
-            yield* fileSystem
-              .writeFileString(resolvedReplayOutputPath, ndjson)
-              .pipe(
-                Effect.catchCause((cause) =>
-                  Effect.logDebug("Failed to write replay file", { cause }),
-                ),
-              );
-          }
-          replaySessionPath = resolvedReplayOutputPath;
-
-          const runState = yield* Ref.get(latestRunStateRef);
-          const replayFileName = basename(resolvedReplayOutputPath);
-          const replayBaseName = basename(
-            resolvedReplayOutputPath,
-            extname(resolvedReplayOutputPath),
-          );
-          const htmlReportPath = join(dirname(resolvedReplayOutputPath), `${replayBaseName}.html`);
-          const reportHtml = buildReplayViewerHtml({
-            title: runState ? `Test Report: ${runState.title}` : "Expect Report",
-            eventsSource: { ndjsonPath: replayFileName },
-            steps: runState,
-          });
-
-          yield* fileSystem
-            .writeFileString(htmlReportPath, reportHtml)
-            .pipe(
-              Effect.catchCause((cause) =>
-                Effect.logDebug("Failed to write HTML report", { cause }),
-              ),
-            );
-          reportPath = htmlReportPath;
-        }
-      }).pipe(
-        Effect.catchCause((cause) => Effect.logDebug("Failed during close cleanup", { cause })),
-      );
-
       yield* Effect.tryPromise(() => activeSession.browser.close()).pipe(
         Effect.catchCause((cause) => Effect.logDebug("Failed to close browser", { cause })),
       );
+
+      const resolvedOutputPath = activeSession.replayOutputPath;
+      let replaySessionPath: string | undefined;
+      let reportPath: string | undefined;
+      if (resolvedOutputPath) {
+        replaySessionPath = resolvedOutputPath;
+        reportPath = join(
+          dirname(resolvedOutputPath),
+          `${basename(resolvedOutputPath, extname(resolvedOutputPath))}.html`,
+        );
+      }
 
       return { replaySessionPath, reportPath } satisfies CloseResult;
     });

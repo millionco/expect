@@ -13,7 +13,15 @@ export default defineConfig({
     banner: "#!/usr/bin/env node",
     deps: {
       alwaysBundle: [/^@expect\//],
-      neverBundle: ["playwright", "playwright-core", "chromium-bidi", "libsql", "ws", "undici"],
+      neverBundle: [
+        "playwright",
+        "playwright-core",
+        "chromium-bidi",
+        "libsql",
+        "ws",
+        "undici",
+        "vite",
+      ],
     },
     plugins: [reactCompilerPlugin()],
   },

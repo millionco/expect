@@ -2,20 +2,10 @@ import { useCallback, useRef, useState } from "react";
 import rrwebPlayer from "rrweb-player";
 import "rrweb-player/dist/style.css";
 import type { eventWithTime } from "@rrweb/types";
-import {
-  EVENT_COLLECT_INTERVAL_MS,
-  REPLAY_FILE_NAME,
-  REPLAY_PLAYER_HEIGHT_PX,
-  REPLAY_PLAYER_WIDTH_PX,
-  RUN_STATE_FILE_NAME,
-  EXPECT_STATE_DIR,
-} from "../../src/constants";
+import { REPLAY_PLAYER_HEIGHT_PX, REPLAY_PLAYER_WIDTH_PX } from "../../src/constants";
 import type { ViewerRunState } from "../../src/viewer-events";
 import { useMountEffect } from "./hooks/use-mount-effect";
 import { StepsPanel } from "./steps-panel";
-
-const REPLAY_URL = `/${EXPECT_STATE_DIR}/${REPLAY_FILE_NAME}`;
-const RUN_STATE_URL = `/${EXPECT_STATE_DIR}/${RUN_STATE_FILE_NAME}`;
 
 export const App = () => {
   const [runState, setRunState] = useState<ViewerRunState | undefined>();
@@ -23,71 +13,86 @@ export const App = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<rrwebPlayer | undefined>();
   const eventsRef = useRef<eventWithTime[]>([]);
-  const eventCountRef = useRef(0);
 
-  const initPlayer = useCallback((events: eventWithTime[]) => {
-    if (playerRef.current) {
-      playerRef.current.getReplayer().addEvent(events.at(-1)!);
-      return;
+  const addEvents = useCallback((events: readonly eventWithTime[]) => {
+    for (const event of events) {
+      eventsRef.current.push(event);
+      if (playerRef.current) {
+        playerRef.current.getReplayer().addEvent(event);
+      }
     }
-    if (events.length < 2 || !containerRef.current) return;
-
-    setStatus("");
-    playerRef.current = new rrwebPlayer({
-      target: containerRef.current,
-      props: {
-        events,
-        width: REPLAY_PLAYER_WIDTH_PX,
-        height: REPLAY_PLAYER_HEIGHT_PX,
-        autoPlay: true,
-        showController: true,
-      },
-    });
+    if (!playerRef.current && eventsRef.current.length >= 2 && containerRef.current) {
+      setStatus("");
+      playerRef.current = new rrwebPlayer({
+        target: containerRef.current,
+        props: {
+          events: eventsRef.current,
+          width: REPLAY_PLAYER_WIDTH_PX,
+          height: REPLAY_PLAYER_HEIGHT_PX,
+          autoPlay: true,
+          showController: true,
+          liveMode: true,
+        },
+      });
+      playerRef.current.getReplayer().startLive();
+    }
+    if (events.length > 0) setStatus("");
   }, []);
 
   useMountEffect(() => {
-    const poll = async () => {
+    const eventSource = new EventSource("/events");
+    let sseConnected = false;
+
+    eventSource.addEventListener("replay", (message) => {
+      sseConnected = true;
       try {
-        const replayResponse = await fetch(REPLAY_URL);
+        const events: eventWithTime[] = JSON.parse(message.data);
+        addEvents(events);
+      } catch {
+        /* malformed event */
+      }
+    });
+
+    eventSource.addEventListener("steps", (message) => {
+      try {
+        const state: ViewerRunState = JSON.parse(message.data);
+        if (state?.steps) setRunState(state);
+      } catch {
+        /* malformed state */
+      }
+    });
+
+    eventSource.onerror = () => {
+      if (sseConnected) {
+        setStatus("Session ended. Loading snapshot\u2026");
+        eventSource.close();
+        fallbackToSnapshot();
+      }
+    };
+
+    const fallbackToSnapshot = async () => {
+      try {
+        const replayResponse = await fetch("/latest.json");
         if (replayResponse.ok) {
-          const text = await replayResponse.text();
-          if (text.trim()) {
-            const lines = text.trim().split("\n");
-            if (lines.length > eventCountRef.current) {
-              const newLines = lines.slice(eventCountRef.current);
-              for (const line of newLines) {
-                const event: eventWithTime = JSON.parse(line);
-                eventsRef.current.push(event);
-                if (playerRef.current) {
-                  playerRef.current.getReplayer().addEvent(event);
-                }
-              }
-              eventCountRef.current = lines.length;
-              if (!playerRef.current && eventsRef.current.length >= 2) {
-                initPlayer(eventsRef.current);
-              }
-              setStatus("");
-            }
-          }
+          const events: eventWithTime[] = await replayResponse.json();
+          if (events.length > 0) addEvents(events);
         }
       } catch {
-        /* file not available yet */
+        /* snapshot not available */
       }
 
       try {
-        const stateResponse = await fetch(RUN_STATE_URL);
+        const stateResponse = await fetch("/run-state.json");
         if (stateResponse.ok) {
           const state: ViewerRunState = await stateResponse.json();
           if (state?.steps) setRunState(state);
         }
       } catch {
-        /* run state not available yet */
+        /* state not available */
       }
     };
 
-    poll();
-    const interval = setInterval(poll, EVENT_COLLECT_INTERVAL_MS);
-    return () => clearInterval(interval);
+    return () => eventSource.close();
   });
 
   return (

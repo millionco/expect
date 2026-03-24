@@ -3,6 +3,8 @@ import { Box, Text, useInput } from "ink";
 import { Option } from "effect";
 import type { TestReport } from "@expect/supervisor";
 import { copyToClipboard } from "../../utils/copy-to-clipboard.js";
+import { openUrl } from "../../utils/open-url.js";
+import { LIVE_VIEW_URL } from "../../live-view-url.js";
 import { useColors } from "../theme-context.js";
 import { RuledBox } from "../ui/ruled-box.js";
 import { ScreenHeading } from "../ui/screen-heading.js";
@@ -51,6 +53,9 @@ export const ResultsScreen = ({ report }: ResultsScreenProps) => {
     }
     if (normalizedInput === "p") {
       handlePostPullRequestComment();
+    }
+    if (normalizedInput === "o") {
+      openUrl(LIVE_VIEW_URL);
     }
   });
 
@@ -109,6 +114,14 @@ export const ResultsScreen = ({ report }: ResultsScreenProps) => {
         </Clickable>
         {clipboardStatusMessage ? <Text color={COLORS.GREEN}>{clipboardStatusMessage}</Text> : null}
         {clipboardError ? <Text color={COLORS.RED}>{clipboardError}</Text> : null}
+      </Box>
+
+      <Box paddingX={1}>
+        <Clickable onClick={() => openUrl(LIVE_VIEW_URL)}>
+          <Text color={COLORS.DIM}>
+            Press <Text color={COLORS.PRIMARY}>o</Text> to open live view in browser.
+          </Text>
+        </Clickable>
       </Box>
 
       {Option.isSome(report.pullRequest) ? (

@@ -1,5 +1,5 @@
 {
-  "name": "@browser-tester/recorder",
+  "name": "@expect/recorder",
   "version": "0.0.1",
   "private": true,
   "files": [

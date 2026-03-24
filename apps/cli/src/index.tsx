@@ -24,6 +24,10 @@ import { queryClient } from "./query-client.js";
 import { setInkInstance } from "./utils/clear-ink-display.js";
 import { RegistryProvider } from "@effect/atom-react";
 import { agentProviderAtom } from "./data/runtime.js";
+import { LIVE_VIEW_URL } from "./live-view-url.js";
+import { EXPECT_LIVE_VIEW_URL_ENV_NAME } from "@expect/browser/mcp";
+
+process.env[EXPECT_LIVE_VIEW_URL_ENV_NAME] = LIVE_VIEW_URL;
 
 process.env.BROWSER_TESTER_REPLAY_OUTPUT_PATH = join(
   process.cwd(),

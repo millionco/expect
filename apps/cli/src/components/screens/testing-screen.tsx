@@ -24,6 +24,8 @@ import { usePlanStore } from "../../stores/use-plan-store.js";
 import { usePlanExecutionStore } from "../../stores/use-plan-execution-store.js";
 import { usePreferencesStore } from "../../stores/use-preferences.js";
 import { useNavigationStore, Screen } from "../../stores/use-navigation.js";
+import { LIVE_VIEW_URL } from "../../live-view-url.js";
+import { openUrl } from "../../utils/open-url.js";
 import { ScreenHeading } from "../ui/screen-heading.js";
 import cliTruncate from "cli-truncate";
 import { formatElapsedTime } from "../../utils/format-elapsed-time.js";
@@ -135,6 +137,11 @@ export const TestingScreen = ({ changesFor, instruction }: TestingScreenProps) =
         goToMain();
         return;
       }
+      return;
+    }
+
+    if (normalizedInput === "o" && (isPlanning || isExecutingPlan)) {
+      openUrl(LIVE_VIEW_URL);
       return;
     }
 
@@ -276,12 +283,15 @@ export const TestingScreen = ({ changesFor, instruction }: TestingScreenProps) =
         ) : null}
 
         {(isExecutingPlan || isPlanning) && !showCancelConfirmation ? (
-          <Box marginTop={1} paddingX={1}>
+          <Box marginTop={1} paddingX={1} flexDirection="column">
             <TextShimmer
               text={`${runStatusLabel}${figures.ellipsis} ${elapsedTimeLabel}`}
               baseColor={COLORS.DIM}
               highlightColor={COLORS.PRIMARY}
             />
+            <Text color={COLORS.DIM}>
+              Press <Text color={COLORS.PRIMARY}>o</Text> to open live view in browser.
+            </Text>
           </Box>
         ) : null}
 

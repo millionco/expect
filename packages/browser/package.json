@@ -38,9 +38,9 @@
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
-    "@browser-tester/recorder": "workspace:*",
     "@effect/platform-node": "4.0.0-beta.28",
     "@expect/cookies": "workspace:*",
+    "@expect/recorder": "workspace:*",
     "@medv/finder": "^4.0.2",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "effect": "4.0.0-beta.28",

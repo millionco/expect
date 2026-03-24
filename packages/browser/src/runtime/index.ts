@@ -5,7 +5,7 @@ export {
   getEvents,
   getAllEvents,
   getEventCount,
-} from "@browser-tester/recorder/runtime";
+} from "@expect/recorder/runtime";
 
 interface OverlayItem {
   label: number;
