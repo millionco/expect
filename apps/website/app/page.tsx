@@ -764,7 +764,9 @@ export default function Home() {
             <div
               className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl [box-shadow:color(display-p3_1_1_1)_0px_0px_9px_inset] dark:[box-shadow:color(display-p3_0.08_0.08_0.08)_0px_0px_9px_inset]"
               style={{
-                backgroundImage: isDark ? "linear-gradient(in oklab 180deg, oklab(14% 0 0 / 70%) 0%, oklab(12% 0 0) 82.16%, oklab(10% 0 0) 100%)" : "linear-gradient(in oklab 180deg, oklab(100% 0 0 / 65%) 0%, oklab(99% 0 0) 82.16%, oklab(100% 0 0) 100%)",
+                backgroundImage: isDark
+                  ? "linear-gradient(in oklab 180deg, oklab(22% 0 0 / 88%) 0%, oklab(17% 0 0) 38%, oklab(12% 0 0) 82.16%, oklab(10% 0 0) 100%)"
+                  : "linear-gradient(in oklab 180deg, oklab(100% 0 0 / 65%) 0%, oklab(99% 0 0) 82.16%, oklab(100% 0 0) 100%)",
                 WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 68%, transparent 100%)",
                 maskImage: "linear-gradient(to bottom, black 0%, black 68%, transparent 100%)",
               }}
