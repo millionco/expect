@@ -1,0 +1,36 @@
+apps/cli/src/hooks/use-git-state.ts
+  738a730af95c5edc 3,7-20,29-32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "7f8f952143b8467947d78fd63dc727ebc914464a",
+  "prompts": {
+    "738a730af95c5edc": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d062c925-d7da-43a1-bfc4-e0bf4ba8e549",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 21,
+      "total_deletions": 4,
+      "accepted_lines": 19,
+      "overriden_lines": 0
+    },
+    "efbd4047c4cb281d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "bb5e237f-e62b-4332-8bf2-33a09edd31c0",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 79,
+      "total_deletions": 34,
+      "accepted_lines": 46,
+      "overriden_lines": 2
+    }
+  }
+}
