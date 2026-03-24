@@ -1,9 +1,6 @@
 import * as crypto from "node:crypto";
-import { Cause, Effect, Layer, Option, Stream } from "effect";
-import {
-  changesForDisplayName,
-  type ChangesFor,
-} from "@browser-tester/shared/models";
+import { Effect, Option, Stream } from "effect";
+import { changesForDisplayName, type ChangesFor } from "@browser-tester/shared/models";
 import {
   DraftId,
   Executor,
@@ -13,7 +10,7 @@ import {
   Reporter,
   TestPlanDraft,
 } from "@browser-tester/supervisor";
-import { Agent, type AgentBackend } from "@browser-tester/agent";
+import type { AgentBackend } from "@browser-tester/agent";
 import figures from "figures";
 import { VERSION } from "../constants.js";
 import { layerCli } from "../layers.js";
@@ -53,9 +50,7 @@ export const runHeadless = (options: HeadlessRunOptions) =>
     });
 
     const testPlan = yield* planner.plan(draft);
-    yield* Effect.logInfo(
-      `Plan: ${testPlan.title} (${testPlan.steps.length} steps)`
-    );
+    yield* Effect.logInfo(`Plan: ${testPlan.title} (${testPlan.steps.length} steps)`);
 
     const seenEvents = new Set<string>();
     const finalExecuted = yield* executor.executePlan(testPlan).pipe(
@@ -69,30 +64,22 @@ export const runHeadless = (options: HeadlessRunOptions) =>
                 console.log(`Starting ${event.plan.title}`);
                 break;
               case "StepStarted":
-                console.log(
-                  `${figures.arrowRight} ${event.stepId} ${event.title}`
-                );
+                console.log(`${figures.arrowRight} ${event.stepId} ${event.title}`);
                 break;
               case "StepCompleted":
-                console.log(
-                  `  ${figures.tick} ${event.stepId} ${event.summary}`
-                );
+                console.log(`  ${figures.tick} ${event.stepId} ${event.summary}`);
                 break;
               case "StepFailed":
-                console.log(
-                  `  ${figures.cross} ${event.stepId} ${event.message}`
-                );
+                console.log(`  ${figures.cross} ${event.stepId} ${event.message}`);
                 break;
             }
           }
-        })
+        }),
       ),
       Stream.runLast,
       Effect.map((option) =>
-        option._tag === "Some"
-          ? option.value
-          : new ExecutedTestPlan({ ...testPlan, events: [] })
-      )
+        option._tag === "Some" ? option.value : new ExecutedTestPlan({ ...testPlan, events: [] }),
+      ),
     );
 
     const report = yield* reporter.report(finalExecuted);
@@ -100,8 +87,6 @@ export const runHeadless = (options: HeadlessRunOptions) =>
     console.error(`\n${report.toPlainText}`);
     process.exit(report.status === "passed" ? 0 : 1);
   }).pipe(
-    Effect.provide(
-      layerCli({ verbose: options.verbose, agent: options.agent })
-    ),
-    Effect.runPromise
+    Effect.provide(layerCli({ verbose: options.verbose, agent: options.agent })),
+    Effect.runPromise,
   );
