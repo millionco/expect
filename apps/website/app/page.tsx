@@ -1246,10 +1246,9 @@ export default function Home() {
               </div>
               <div className="absolute top-11 left-3.5 flex flex-col items-start">
                 <div
-                  className={`${berkeleyMonoRegular.className} mb-3 flex flex-col gap-0.5 [letter-spacing:0em] font-bold text-[13px]/4.5 text-[#696969] dark:text-[#999999]`}
+                  className={`${berkeleyMonoRegular.className} mb-3 [letter-spacing:0em] font-bold text-[13px]/4.5 text-[#696969] dark:text-[#999999]`}
                 >
-                  <div>Last login: Mar 24</div>
-                  <div>Expect@Mac $</div>
+                  npx expect-cli@latest
                 </div>
                 <div className="flex items-center gap-[4px]">
                   <TerminalStepCheck phase={formTerminalStepPhase} isDark={isDark} />
