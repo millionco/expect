@@ -1,4 +1,6 @@
 export { Updates } from "./updates.js";
+export { LiveViewer } from "./live-viewer.js";
+export { LiveViewerRpcsLive } from "./rpc/live-viewer.rpc.layer.js";
 export { Planner, PlanningError } from "./planner.js";
 export { Executor, ExecutionError } from "./executor.js";
 export { Reporter } from "./reporter.js";

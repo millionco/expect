@@ -14,8 +14,12 @@
       "import": "./dist/index.mjs"
     },
     "./models": {
-      "types": "./dist/models.d.mts",
+      "types": "./src/models.ts",
       "import": "./dist/models.mjs"
+    },
+    "./rpcs": {
+      "types": "./src/rpcs.ts",
+      "import": "./dist/rpcs.mjs"
     }
   },
   "scripts": {

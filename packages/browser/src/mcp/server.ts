@@ -258,8 +258,8 @@ export const createBrowserMcpServer = <E>(
       runMcp(
         Effect.gen(function* () {
           const session = yield* McpSession;
-          const result = yield* session.close();
-          if (!result) return textResult("No browser open.");
+          if (!session.hasSession()) return textResult("No browser open.");
+          yield* session.close();
           return textResult("Browser closed.");
         }),
       ),

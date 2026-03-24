@@ -4,7 +4,7 @@ import { Option } from "effect";
 import type { TestReport } from "@expect/supervisor";
 import { copyToClipboard } from "../../utils/copy-to-clipboard.js";
 import { openUrl } from "../../utils/open-url.js";
-import { LIVE_VIEW_URL } from "../../live-view-url.js";
+import { LIVE_VIEWER_STATIC_URL as LIVE_VIEW_URL } from "@expect/shared";
 import { useColors } from "../theme-context.js";
 import { RuledBox } from "../ui/ruled-box.js";
 import { ScreenHeading } from "../ui/screen-heading.js";

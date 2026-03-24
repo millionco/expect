@@ -1,4 +1,3 @@
-import { join } from "node:path";
 import { Effect, Option } from "effect";
 import { Command } from "commander";
 import { render } from "ink";
@@ -7,14 +6,7 @@ import { App } from "./components/app.js";
 import { ALT_SCREEN_OFF, ALT_SCREEN_ON, VERSION } from "./constants.js";
 import { ThemeProvider } from "./components/theme-context.js";
 import { loadThemeName } from "./utils/load-theme.js";
-import {
-  ChangesFor,
-  Git,
-  TestPlanDraft,
-  DraftId,
-  EXPECT_STATE_DIR,
-  REPLAY_FILE_NAME,
-} from "@expect/supervisor";
+import { ChangesFor, Git, TestPlanDraft, DraftId } from "@expect/supervisor";
 import { runHeadless } from "./utils/run-test.js";
 import type { AgentBackend } from "@expect/agent";
 import { useNavigationStore, Screen } from "./stores/use-navigation.js";
@@ -24,16 +16,6 @@ import { queryClient } from "./query-client.js";
 import { setInkInstance } from "./utils/clear-ink-display.js";
 import { RegistryProvider } from "@effect/atom-react";
 import { agentProviderAtom } from "./data/runtime.js";
-import { LIVE_VIEW_URL } from "./live-view-url.js";
-import { EXPECT_LIVE_VIEW_URL_ENV_NAME } from "@expect/browser/mcp";
-
-process.env[EXPECT_LIVE_VIEW_URL_ENV_NAME] = LIVE_VIEW_URL;
-
-process.env.BROWSER_TESTER_REPLAY_OUTPUT_PATH = join(
-  process.cwd(),
-  EXPECT_STATE_DIR,
-  REPLAY_FILE_NAME,
-);
 
 const DEFAULT_SKIP_PLANNING = true;
 
