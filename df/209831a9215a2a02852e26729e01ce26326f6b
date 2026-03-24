@@ -1,0 +1,41 @@
+apps/cli/src/layers.ts
+  40a6278d0a75b511 1,5,17
+packages/shared/src/observability/exports.ts
+  40a6278d0a75b511 1
+packages/shared/src/observability/agent-logger.ts
+  e94ce22c24283e7b 15
+  40a6278d0a75b511 1-2,8-11,16-23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "df209831a9215a2a02852e26729e01ce26326f6b",
+  "prompts": {
+    "40a6278d0a75b511": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "6642a008-e3a5-4ac9-99b0-b447b60cf842",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 19,
+      "total_deletions": 7,
+      "accepted_lines": 18,
+      "overriden_lines": 1
+    },
+    "e94ce22c24283e7b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "725d6835-fae1-421b-ba67-3652185defd8",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 2,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
