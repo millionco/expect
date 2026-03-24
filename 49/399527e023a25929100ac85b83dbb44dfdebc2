@@ -1,0 +1,52 @@
+apps/cli/src/index.tsx
+  b06555285ad76862 55-57,72
+packages/shared/src/analytics/analytics-events.ts
+  b06555285ad76862 3,19-20,45-49
+apps/cli/src/utils/session-analytics.ts
+  b06555285ad76862 2-3,5-6,13-14
+  d80cdd9a85e3a34e 1,4,7-12,15-23
+apps/cli/src/data/planning-atom.ts
+  b06555285ad76862 4,19,37,41-47
+packages/shared/src/analytics/analytics.ts
+  d80cdd9a85e3a34e 1,8-12,29-54,120-125
+  b06555285ad76862 2-3,64-68,77
+apps/cli/src/utils/run-test.ts
+  b06555285ad76862 13,32,34-35,58-61,64,97-116
+apps/cli/src/layers.ts
+  b06555285ad76862 5,15
+apps/cli/src/data/execution-atom.ts
+  b06555285ad76862 4,27,29,43-57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "49399527e023a25929100ac85b83dbb44dfdebc2",
+  "prompts": {
+    "b06555285ad76862": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ef64e1b8-52d2-48b9-9e50-a9451d98a0f0",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 112,
+      "total_deletions": 23,
+      "accepted_lines": 89,
+      "overriden_lines": 1
+    },
+    "d80cdd9a85e3a34e": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "34c66d98-1fe7-417d-a7ba-202a43ce1bba",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 55,
+      "total_deletions": 57,
+      "accepted_lines": 55,
+      "overriden_lines": 0
+    }
+  }
+}
