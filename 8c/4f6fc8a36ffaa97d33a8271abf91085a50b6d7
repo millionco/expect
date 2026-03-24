@@ -1,0 +1,29 @@
+apps/cli/src/index.tsx
+  b06555285ad76862 54,56
+packages/shared/src/analytics/analytics-events.ts
+  b06555285ad76862 44-47
+apps/cli/src/utils/run-test.ts
+  b06555285ad76862 35-38
+apps/cli/src/utils/session-analytics.ts
+  b06555285ad76862 6,10-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "8c4f6fc8a36ffaa97d33a8271abf91085a50b6d7",
+  "prompts": {
+    "b06555285ad76862": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ef64e1b8-52d2-48b9-9e50-a9451d98a0f0",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 15,
+      "total_deletions": 6,
+      "accepted_lines": 15,
+      "overriden_lines": 0
+    }
+  }
+}
