@@ -1,5 +1,8 @@
 import { createServer } from "node:net";
-import { LIVE_VIEW_DEFAULT_PORT, LIVE_VIEW_HOST, LIVE_VIEW_PORT_SEARCH_LIMIT } from "../constants";
+
+const LIVE_VIEW_HOST = "127.0.0.1";
+const LIVE_VIEW_DEFAULT_PORT = 6274;
+const LIVE_VIEW_PORT_SEARCH_LIMIT = 100;
 
 const isPortAvailable = async (port: number): Promise<boolean> => {
   const server = createServer();
