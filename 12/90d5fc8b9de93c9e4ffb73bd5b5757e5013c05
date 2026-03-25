@@ -1,0 +1,38 @@
+apps/cli/src/components/screens/testing-screen.tsx
+  ee2161c62b478fc2 88-100,102,133,160,228-230,233-235,277
+apps/website/next-env.d.ts
+  9afe92688d92976f 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "1290d5fc8b9de93c9e4ffb73bd5b5757e5013c05",
+  "prompts": {
+    "9afe92688d92976f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d228a-7a32-7081-bfc4-5f943c95d0e1",
+        "model": "gpt-5.3-codex-spark"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "ee2161c62b478fc2": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "19adfa7b-86ec-4df0-93f9-7068e4d20789",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 24,
+      "total_deletions": 21,
+      "accepted_lines": 23,
+      "overriden_lines": 0
+    }
+  }
+}
