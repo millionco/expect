@@ -1,0 +1,40 @@
+packages/browser/src/mcp/live-view-server.ts
+  26bf9f986620d771 6,64-68,148-157
+apps/cli/vite.config.ts
+  c669c42f8f1f5996 99
+packages/cookies/src/sqlite-client.ts
+  c669c42f8f1f5996 60-63,65-66
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "31fe200ee65c7e80d15728e7b73ebf2d58ed21f2",
+  "prompts": {
+    "26bf9f986620d771": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "250d64d8-ed81-47f1-9c72-f732e0eea7ec",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 16,
+      "total_deletions": 0,
+      "accepted_lines": 16,
+      "overriden_lines": 0
+    },
+    "c669c42f8f1f5996": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a60f03df-575c-49a7-9528-d73a6755ed2e",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 7,
+      "total_deletions": 6,
+      "accepted_lines": 7,
+      "overriden_lines": 0
+    }
+  }
+}
