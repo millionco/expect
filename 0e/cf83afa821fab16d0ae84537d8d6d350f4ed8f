@@ -1,0 +1,37 @@
+apps/website/components/replay/replay-viewer.tsx
+  2b24a68c7f2a12a4 287,291,294,296-297,299-334,336-337,339-343,345,348-359,361-365,407
+  6654492e34054df1 15,401,458,523-537,553-557,559-566,568
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "0ecf83afa821fab16d0ae84537d8d6d350f4ed8f",
+  "prompts": {
+    "2b24a68c7f2a12a4": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4e7355ad-394e-4afd-8763-757ca300c55d",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 70,
+      "total_deletions": 39,
+      "accepted_lines": 70,
+      "overriden_lines": 0
+    },
+    "6654492e34054df1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ab3d8469-6494-4893-b4c4-905b6d7c3777",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 32,
+      "total_deletions": 41,
+      "accepted_lines": 32,
+      "overriden_lines": 0
+    }
+  }
+}
