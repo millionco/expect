@@ -1,0 +1,23 @@
+apps/cli/src/utils/healthcheck.ts
+  8a5c619be3c2b447 58-59,75,123
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "9cbeef6101f72b9a806517ff20310b09e1d98a06",
+  "prompts": {
+    "8a5c619be3c2b447": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1a7d2370-626a-4d1d-ab53-e31cfe13ee88",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 6,
+      "total_deletions": 6,
+      "accepted_lines": 6,
+      "overriden_lines": 0
+    }
+  }
+}
