@@ -127,11 +127,7 @@ const LiveMode = () => {
 
   const events = eventsQuery.data ?? [];
   const steps = stepsQuery.data;
-  const allStepsDone =
-    steps !== undefined &&
-    steps.steps.length > 0 &&
-    steps.steps.every((step) => step.status === "passed" || step.status === "failed");
-  const isRunning = !steps || (steps.status === "running" && !allStepsDone);
+  const isRunning = !steps || steps.status === "running";
 
   useEffect(() => {
     if (events.length <= prevEventCountRef.current) return;

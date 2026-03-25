@@ -9,6 +9,7 @@ import { useProjectPreferencesStore } from "../../stores/use-project-preferences
 import { useListeningPorts } from "../../hooks/use-listening-ports";
 import { useScrollableList } from "../../hooks/use-scrollable-list";
 import { SearchBar } from "../ui/search-bar";
+import { Input } from "../ui/input";
 import { Clickable } from "../ui/clickable";
 import { Logo } from "../ui/logo";
 
@@ -69,12 +70,15 @@ export const PortPickerScreen = ({
 
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isEnteringCustomUrl, setIsEnteringCustomUrl] = useState(false);
+  const [customUrlValue, setCustomUrlValue] = useState("");
   const [selectedPorts, setSelectedPorts] = useState<Set<number>>(() => {
     if (!lastBaseUrl) return new Set();
     const urlMatch = lastBaseUrl.match(/:(\d+)/);
     if (urlMatch) return new Set([Number(urlMatch[1])]);
     return new Set();
   });
+  const [customUrls, setCustomUrls] = useState<Set<string>>(new Set());
 
   const entries: PortEntry[] = listeningPorts.map((listening) => ({
     port: listening.port,
@@ -86,7 +90,9 @@ export const PortPickerScreen = ({
     ? entries.filter((entry) => matchesSearch(entry, searchQuery))
     : entries;
 
-  const itemCount = filteredEntries.length + 1;
+  const customUrlIndex = filteredEntries.length;
+  const skipIndex = filteredEntries.length + 1;
+  const itemCount = filteredEntries.length + 2;
 
   const { highlightedIndex, setHighlightedIndex, scrollOffset, handleNavigation } =
     useScrollableList({
@@ -95,7 +101,11 @@ export const PortPickerScreen = ({
     });
 
   const navigateToTesting = (baseUrls: readonly string[]) => {
-    const lastUrl = baseUrls.length > 0 ? baseUrls[0] : undefined;
+    const allUrls = [
+      ...baseUrls,
+      ...customUrls,
+    ];
+    const lastUrl = allUrls.length > 0 ? allUrls[0] : undefined;
     setLastBaseUrl(lastUrl);
     setScreen(
       Screen.Testing({
@@ -103,7 +113,7 @@ export const PortPickerScreen = ({
         instruction,
         savedFlow,
         requiresCookies,
-        baseUrls: baseUrls.length > 0 ? baseUrls : undefined,
+        baseUrls: allUrls.length > 0 ? allUrls : undefined,
       }),
     );
   };
@@ -121,12 +131,17 @@ export const PortPickerScreen = ({
   };
 
   const confirmSelection = () => {
-    if (highlightedIndex === filteredEntries.length) {
+    if (highlightedIndex === skipIndex) {
       navigateToTesting([]);
       return;
     }
 
-    if (selectedPorts.size > 0) {
+    if (highlightedIndex === customUrlIndex) {
+      setIsEnteringCustomUrl(true);
+      return;
+    }
+
+    if (selectedPorts.size > 0 || customUrls.size > 0) {
       const urls = [...selectedPorts].sort((left, right) => left - right).map(portToUrl);
       navigateToTesting(urls);
       return;
@@ -136,6 +151,38 @@ export const PortPickerScreen = ({
     if (entry) {
       navigateToTesting([portToUrl(entry.port)]);
     }
+  };
+
+  const normalizeCustomUrl = (value: string): string => {
+    const trimmed = value.trim();
+    const portNumber = Number(trimmed);
+    if (Number.isInteger(portNumber) && portNumber >= 1 && portNumber <= 65535) {
+      return portToUrl(portNumber);
+    }
+    if (!/^https?:\/\//i.test(trimmed)) {
+      return `http://${trimmed}`;
+    }
+    return trimmed;
+  };
+
+  const handleCustomUrlSubmit = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      setIsEnteringCustomUrl(false);
+      return;
+    }
+    const url = normalizeCustomUrl(trimmed);
+    setCustomUrls((previous) => new Set([...previous, url]));
+    setCustomUrlValue("");
+    setIsEnteringCustomUrl(false);
+  };
+
+  const removeCustomUrl = (url: string) => {
+    setCustomUrls((previous) => {
+      const next = new Set(previous);
+      next.delete(url);
+      return next;
+    });
   };
 
   const handleSearchChange = (value: string) => {
@@ -155,6 +202,15 @@ export const PortPickerScreen = ({
   };
 
   useInput((input, key) => {
+    if (isEnteringCustomUrl) {
+      if (key.escape) {
+        setIsEnteringCustomUrl(false);
+        setCustomUrlValue("");
+        return;
+      }
+      return;
+    }
+
     if (isSearching) {
       if (key.escape) {
         setIsSearching(false);
@@ -183,12 +239,19 @@ export const PortPickerScreen = ({
     }
   });
 
-  const portListVisibleCount = PORT_PICKER_VISIBLE_COUNT - 1; // reserve 1 row for "Skip" option
+  const portListVisibleCount = PORT_PICKER_VISIBLE_COUNT - 2;
   const visibleItems = filteredEntries.slice(scrollOffset, scrollOffset + portListVisibleCount);
-  const skipVisible = scrollOffset + portListVisibleCount >= filteredEntries.length;
+  const customUrlVisible = scrollOffset + portListVisibleCount >= filteredEntries.length;
+  const skipVisible = customUrlVisible;
 
   const highlightedEntry = filteredEntries[highlightedIndex];
-  const isSkipHighlighted = highlightedIndex === filteredEntries.length;
+  const isCustomUrlHighlighted = highlightedIndex === customUrlIndex;
+  const isSkipHighlighted = highlightedIndex === skipIndex;
+
+  const allSelectedUrls = [
+    ...[...selectedPorts].sort((left, right) => left - right).map(portToUrl),
+    ...customUrls,
+  ];
 
   return (
     <Box flexDirection="column" width="100%" paddingY={1} paddingX={1}>
@@ -202,21 +265,23 @@ export const PortPickerScreen = ({
       </Box>
 
       <Box marginTop={1}>
-        {selectedPorts.size > 0 && (
+        <Text color={COLORS.DIM}>
+          Pick the dev server the agent should open in the browser.
+        </Text>
+      </Box>
+
+      <Box marginTop={1}>
+        {allSelectedUrls.length > 0 && (
           <Text color={COLORS.GREEN}>
-            {figures.tick}{" "}
-            {[...selectedPorts]
-              .sort((left, right) => left - right)
-              .map(portToUrl)
-              .join(", ")}
+            {figures.tick} {allSelectedUrls.join(", ")}
           </Text>
         )}
-        {selectedPorts.size === 0 && !isSkipHighlighted && highlightedEntry && (
+        {allSelectedUrls.length === 0 && !isSkipHighlighted && !isCustomUrlHighlighted && highlightedEntry && (
           <Text color={COLORS.DIM}>
             {figures.arrowRight} {portToUrl(highlightedEntry.port)}
           </Text>
         )}
-        {selectedPorts.size === 0 && isSkipHighlighted && (
+        {allSelectedUrls.length === 0 && isSkipHighlighted && (
           <Text color={COLORS.YELLOW}>
             {figures.warning} No base URL. The agent won{"'"}t know where your dev server is.
           </Text>
@@ -253,10 +318,54 @@ export const PortPickerScreen = ({
             </Clickable>
           );
         })}
+        {customUrlVisible && (
+          <Clickable
+            onClick={() => {
+              setHighlightedIndex(customUrlIndex);
+              setIsEnteringCustomUrl(true);
+            }}
+          >
+            <Box>
+              <Text color={isCustomUrlHighlighted ? COLORS.PRIMARY : COLORS.DIM}>
+                {isCustomUrlHighlighted ? `${figures.pointer} ` : "  "}
+              </Text>
+              {isEnteringCustomUrl && (
+                <Box>
+                  <Text color={COLORS.PRIMARY}>URL: </Text>
+                  <Input
+                    focus
+                    value={customUrlValue}
+                    placeholder="http://localhost:4000 or staging.example.com"
+                    onChange={setCustomUrlValue}
+                    onSubmit={handleCustomUrlSubmit}
+                  />
+                </Box>
+              )}
+              {!isEnteringCustomUrl && (
+                <Text
+                  color={isCustomUrlHighlighted ? COLORS.PRIMARY : COLORS.TEXT}
+                  bold={isCustomUrlHighlighted}
+                >
+                  Enter a custom URL{figures.ellipsis}
+                </Text>
+              )}
+            </Box>
+          </Clickable>
+        )}
+        {customUrlVisible && [...customUrls].map((url) => (
+          <Clickable key={url} onClick={() => removeCustomUrl(url)}>
+            <Box>
+              <Text>  </Text>
+              <Text color={COLORS.PRIMARY}>{figures.checkboxOn} </Text>
+              <Text color={COLORS.TEXT}>{url}</Text>
+              <Text color={COLORS.DIM}> (click to remove)</Text>
+            </Box>
+          </Clickable>
+        ))}
         {skipVisible && (
           <Clickable
             onClick={() => {
-              setHighlightedIndex(filteredEntries.length);
+              setHighlightedIndex(skipIndex);
               navigateToTesting([]);
             }}
           >

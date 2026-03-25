@@ -15,6 +15,8 @@ import type { ViewerRunState, ViewerStepEvent } from "@/lib/replay-types";
 const SPEEDS = [1, 2, 4, 8] as const;
 const TIMER_INTERVAL_MS = 100;
 const LIVE_EDGE_THRESHOLD_MS = 2000;
+const LIVE_RESUME_BUFFER_MS = 3000;
+const LIVE_STALL_TICK_THRESHOLD = 5;
 const IDLE_THRESHOLD_MS = 4000;
 const IDLE_SPEED_TIERS = [
   { afterMs: 0, speed: 2 },
@@ -148,9 +150,12 @@ export const ReplayViewer = ({
     replayerRef.current = undefined;
   };
 
+  const liveStallRef = useRef({ lastTime: -1, count: 0 });
+
   const startTimer = () => {
     clearInterval(timerRef.current);
     idleTicksRef.current = 0;
+    liveStallRef.current = { lastTime: -1, count: 0 };
     timerRef.current = setInterval(() => {
       const replayer = replayerRef.current;
       if (!replayer) return;
@@ -158,7 +163,20 @@ export const ReplayViewer = ({
       const time = replayer.getCurrentTime();
       setCurrentTime(time);
 
-      if (liveRef.current) return;
+      if (liveRef.current) {
+        const stall = liveStallRef.current;
+        if (time === stall.lastTime) {
+          stall.count++;
+          if (stall.count >= LIVE_STALL_TICK_THRESHOLD) {
+            replayer.play(time);
+            stall.count = 0;
+          }
+        } else {
+          stall.count = 0;
+        }
+        stall.lastTime = time;
+        return;
+      }
 
       const meta = replayer.getMetaData();
       const duration = meta.endTime - meta.startTime;
@@ -355,7 +373,9 @@ export const ReplayViewer = ({
     });
     replayerRef.current = replayer;
 
-    const startTime = liveRef.current ? replayDuration : Math.min(currentTime, replayDuration);
+    const startTime = liveRef.current
+      ? Math.max(0, replayDuration - LIVE_RESUME_BUFFER_MS)
+      : Math.min(currentTime, replayDuration);
     setCurrentTime(startTime);
     replayer.play(startTime);
     setPlaying(true);
