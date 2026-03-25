@@ -1,0 +1,27 @@
+apps/cli/src/components/ui/modeline.tsx
+  95ddd6ed8be28d7b 69-79
+apps/cli/src/components/screens/testing-screen.tsx
+  95ddd6ed8be28d7b 206-214,216
+apps/cli/src/components/screens/plan-review-screen.tsx
+  95ddd6ed8be28d7b 200-210
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "ee3dfb1784a4b64c6e8020bc1e001266d113477c",
+  "prompts": {
+    "95ddd6ed8be28d7b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b03c3ebd-f25c-4518-88fa-05c96ca6dd40",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 33,
+      "total_deletions": 3,
+      "accepted_lines": 32,
+      "overriden_lines": 0
+    }
+  }
+}
