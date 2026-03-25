@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Box, Text, useInput } from "ink";
 import { Option } from "effect";
+import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
+import { useAtom } from "@effect/atom-react";
 import type { TestReport } from "@expect/supervisor";
 import { copyToClipboard } from "../../utils/copy-to-clipboard.js";
 import { useColors } from "../theme-context.js";
@@ -9,6 +11,10 @@ import { ScreenHeading } from "../ui/screen-heading.js";
 import { Image } from "../ui/image.js";
 import { Clickable } from "../ui/clickable.js";
 import { usePostPrComment } from "../../data/github-mutations.js";
+import { useNavigationStore, Screen } from "../../stores/use-navigation.js";
+import { usePlanStore } from "../../stores/use-plan-store.js";
+import { usePlanExecutionStore } from "../../stores/use-plan-execution-store.js";
+import { saveFlowFn } from "../../data/flow-storage-atom.js";
 
 interface ResultsScreenProps {
   report: TestReport;
@@ -16,11 +22,17 @@ interface ResultsScreenProps {
 
 export const ResultsScreen = ({ report }: ResultsScreenProps) => {
   const COLORS = useColors();
+  const setScreen = useNavigationStore((state) => state.setScreen);
   const [clipboardStatusMessage, setClipboardStatusMessage] = useState<string | undefined>(
     undefined,
   );
   const [clipboardError, setClipboardError] = useState<string | undefined>(undefined);
   const commentMutation = usePostPrComment();
+  const [saveResult, triggerSave] = useAtom(saveFlowFn, { mode: "promiseExit" });
+
+  const savePending = saveResult.waiting;
+  const saveSucceeded = AsyncResult.isSuccess(saveResult);
+  const saveFailed = AsyncResult.isFailure(saveResult);
 
   const handlePostPullRequestComment = () => {
     if (!Option.isSome(report.pullRequest)) return;
@@ -43,6 +55,23 @@ export const ResultsScreen = ({ report }: ResultsScreenProps) => {
     setClipboardError("Failed to copy share details to the clipboard.");
   };
 
+  const handleSaveFlow = async () => {
+    if (savePending || saveSucceeded) return;
+    await triggerSave({ plan: report });
+  };
+
+  const handleRestartFlow = () => {
+    usePlanStore.getState().setPlan(undefined);
+    usePlanExecutionStore.getState().setExecutedPlan(undefined);
+    setScreen(
+      Screen.Testing({
+        changesFor: report.changesFor,
+        instruction: report.instruction,
+        existingPlan: report.resetForRerun,
+      }),
+    );
+  };
+
   useInput((input) => {
     const normalizedInput = input.toLowerCase();
 
@@ -51,6 +80,12 @@ export const ResultsScreen = ({ report }: ResultsScreenProps) => {
     }
     if (normalizedInput === "p") {
       handlePostPullRequestComment();
+    }
+    if (normalizedInput === "s") {
+      handleSaveFlow();
+    }
+    if (normalizedInput === "r") {
+      handleRestartFlow();
     }
   });
 
@@ -127,6 +162,25 @@ export const ResultsScreen = ({ report }: ResultsScreenProps) => {
           ) : null}
         </Box>
       ) : null}
+
+      <Box flexDirection="column" paddingX={1} marginTop={1}>
+        <Clickable onClick={handleSaveFlow}>
+          <Text color={COLORS.DIM}>
+            Press <Text color={COLORS.PRIMARY}>s</Text> to save this flow for re-use.
+          </Text>
+        </Clickable>
+        {savePending && <Text color={COLORS.DIM}>Saving flow...</Text>}
+        {saveSucceeded && <Text color={COLORS.GREEN}>Flow saved.</Text>}
+        {saveFailed && <Text color={COLORS.RED}>Failed to save flow.</Text>}
+      </Box>
+
+      <Box flexDirection="column" paddingX={1} marginTop={1}>
+        <Clickable onClick={handleRestartFlow}>
+          <Text color={COLORS.DIM}>
+            Press <Text color={COLORS.PRIMARY}>r</Text> to restart this flow.
+          </Text>
+        </Clickable>
+      </Box>
 
       {report.screenshotPaths.map((screenshotPath) => (
         <Box key={screenshotPath} paddingX={1}>

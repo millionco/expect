@@ -30,9 +30,10 @@ const getClaudeCodeEmail = Effect.fn("getClaudeCodeEmail")(function* () {
 
 const getGitEmail = Effect.fn("getGitEmail")(function* () {
   const spawner = yield* ChildProcessSpawner;
-  const email = yield* spawner
-    .string(ChildProcess.make("git", ["config", "user.email"]))
-    .pipe(Effect.timeout("5 seconds"), Effect.map((output) => output.trim()));
+  const email = yield* spawner.string(ChildProcess.make("git", ["config", "user.email"])).pipe(
+    Effect.timeout("5 seconds"),
+    Effect.map((output) => output.trim()),
+  );
   if (email.length === 0) {
     return yield* Effect.fail("empty");
   }
@@ -41,9 +42,10 @@ const getGitEmail = Effect.fn("getGitEmail")(function* () {
 
 const getGitName = Effect.fn("getGitName")(function* () {
   const spawner = yield* ChildProcessSpawner;
-  const name = yield* spawner
-    .string(ChildProcess.make("git", ["config", "user.name"]))
-    .pipe(Effect.timeout("5 seconds"), Effect.map((output) => output.trim()));
+  const name = yield* spawner.string(ChildProcess.make("git", ["config", "user.name"])).pipe(
+    Effect.timeout("5 seconds"),
+    Effect.map((output) => output.trim()),
+  );
   if (name.length === 0) {
     return yield* Effect.fail("empty");
   }

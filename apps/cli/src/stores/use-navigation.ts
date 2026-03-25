@@ -7,7 +7,7 @@ export type Screen = Data.TaggedEnum<{
   SelectPr: {};
   ReviewPlan: { plan: TestPlan };
   CookieSyncConfirm: { plan: TestPlan };
-  Testing: { changesFor: ChangesFor; instruction: string };
+  Testing: { changesFor: ChangesFor; instruction: string; existingPlan?: TestPlan };
   Results: { report: TestReport };
   Theme: {};
   SavedFlowPicker: {};

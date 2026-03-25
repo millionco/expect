@@ -84,7 +84,13 @@ export const App = ({ agent }: { agent: AgentBackend }) => {
   const renderScreen = () => {
     switch (screen._tag) {
       case "Testing":
-        return <TestingScreen changesFor={screen.changesFor} instruction={screen.instruction} />;
+        return (
+          <TestingScreen
+            changesFor={screen.changesFor}
+            instruction={screen.instruction}
+            existingPlan={screen.existingPlan}
+          />
+        );
       case "Results":
         return <ResultsScreen report={screen.report} />;
       case "Theme":

@@ -58,7 +58,6 @@ ${diffsText}
 Environment:
 - Base URL: ${Option.isSome(options.baseUrl) ? options.baseUrl.value : "not provided"}
 - Headless: ${options.isHeadless ? "yes" : "no"}
-- Requires cookies: ${options.requiresCookies ? "yes" : "no"}
 
 Requirements:
 - Blend the user instruction with the code changes to plan realistic browser test steps.
@@ -66,6 +65,7 @@ Requirements:
 - Use expectedOutcome as a concrete browser assertion target, not a vague goal.
 - Maximum ${PLANNER_MAX_STEP_COUNT} steps.
 - Pad step IDs to ${STEP_ID_PAD_LENGTH} digits (e.g. step-01, step-02).
+- Set requiresCookies to true if the test requires an authenticated session or logged-in state.
 
 Once you have planned the steps, WRITE the plan as a JSON file.
 The JSON file path will be provided at the end of this prompt.

@@ -132,7 +132,7 @@ const seedStores = (opts: CommanderOpts, changesFor: ChangesFor, currentBranch: 
       fileStats: [],
       instruction: opts.message,
       baseUrl: Option.none(),
-      isHeadless: false,
+      isHeadless: true,
       requiresCookies: false,
     });
     usePlanStore.setState({ plan: Plan.draft(draft) });

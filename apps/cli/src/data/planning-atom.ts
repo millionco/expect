@@ -30,7 +30,7 @@ export const createPlanFn = cliAtomRuntime.fn(
         fileStats: [...fileStats],
         instruction: input.flowInstruction,
         baseUrl: Option.none(),
-        isHeadless: false,
+        isHeadless: true,
         requiresCookies: false,
       });
 

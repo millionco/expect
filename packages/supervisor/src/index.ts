@@ -23,6 +23,8 @@ export {
   TestReport,
   type UpdateContent,
 } from "./git/index.js";
+export { FlowStorage } from "./flow-storage.js";
+export type { SavedFlowFileData, SavedFlow, SavedFlowStep } from "./types.js";
 export { checkoutBranch, getLocalBranches } from "./git.js";
 export { Github, GitHubCommandError } from "./github.js";
 export { promptHistoryStorage } from "./prompt-history.js";

@@ -34,18 +34,18 @@ interface CookieSyncConfirmScreenProps {
 
 export const CookieSyncConfirmScreen = ({ plan }: CookieSyncConfirmScreenProps) => {
   const COLORS = useColors();
-  const setPlan = usePlanStore((state) => state.setPlan);
   const setScreen = useNavigationStore((state) => state.setScreen);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const activateOption = (option: ConfirmOption) => {
     const finalPlan = option.id === "enable-sync" ? plan.update({ requiresCookies: true }) : plan;
-    if (option.id === "enable-sync") {
-      setPlan(Plan.plan(finalPlan));
-    }
     usePlanStore.getState().setPlan(Plan.plan(finalPlan));
     setScreen(
-      Screen.Testing({ changesFor: finalPlan.changesFor, instruction: finalPlan.instruction }),
+      Screen.Testing({
+        changesFor: finalPlan.changesFor,
+        instruction: finalPlan.instruction,
+        existingPlan: finalPlan,
+      }),
     );
   };
 

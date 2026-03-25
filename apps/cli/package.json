@@ -22,7 +22,9 @@
     "session-recording"
   ],
   "bin": {
-    "expect": "./dist/index.js"
+    "expect": "./dist/index.js",
+    "expect-agent": "./dist/index.js",
+    "testie": "./dist/index.js"
   },
   "files": [
     "dist",

@@ -426,10 +426,26 @@ export class TestPlan extends TestPlanDraft.extend<TestPlan>("@supervisor/TestPl
       steps: this.steps.map((step, index) => (index === stepIndex ? updater(step) : step)),
     });
   }
+
+  get resetForRerun(): TestPlan {
+    return new TestPlan({
+      ...this,
+      steps: this.steps.map(
+        (step) =>
+          new TestPlanStep({
+            ...step,
+            status: "pending",
+            summary: Option.none(),
+            startedAt: Option.none(),
+            endedAt: Option.none(),
+          }),
+      ),
+    });
+  }
 }
 
 export const TestPlanJson = Schema.toCodecJson(
-  TestPlan.mapFields(Struct.pick(["id", "title", "rationale", "steps"])),
+  TestPlan.mapFields(Struct.pick(["id", "title", "rationale", "steps", "requiresCookies"])),
 );
 
 export class RunStarted extends Schema.TaggedClass<RunStarted>()("RunStarted", {

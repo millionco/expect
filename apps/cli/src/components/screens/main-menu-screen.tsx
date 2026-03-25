@@ -122,7 +122,7 @@ export const MainMenu = ({ gitState }: MainMenuProps) => {
         fileStats: [],
         instruction: trimmed,
         baseUrl: Option.none(),
-        isHeadless: false,
+        isHeadless: true,
         requiresCookies: false,
       });
 

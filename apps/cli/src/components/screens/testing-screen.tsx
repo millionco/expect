@@ -9,9 +9,11 @@ import { useAtom, useAtomValue } from "@effect/atom-react";
 import {
   ChangesFor,
   changesForDisplayName,
+  PlanId,
+  StepId,
   TestPlan,
+  TestPlanStep,
   type ExecutedTestPlan,
-  type TestPlanStep,
 } from "@expect/shared/models";
 import {
   PROGRESS_BAR_WIDTH,
@@ -22,7 +24,7 @@ import { useColors } from "../theme-context.js";
 import { RuledBox } from "../ui/ruled-box.js";
 import { Spinner } from "../ui/spinner.js";
 import { TextShimmer } from "../ui/text-shimmer.js";
-import { usePlanStore } from "../../stores/use-plan-store.js";
+import { usePlanStore, Plan } from "../../stores/use-plan-store.js";
 import { usePlanExecutionStore } from "../../stores/use-plan-execution-store.js";
 import { usePreferencesStore } from "../../stores/use-preferences.js";
 import { useNavigationStore, Screen } from "../../stores/use-navigation.js";
@@ -37,6 +39,7 @@ import { executePlanFn, screenshotPathsAtom } from "../../data/execution-atom.js
 interface TestingScreenProps {
   changesFor: ChangesFor;
   instruction: string;
+  existingPlan?: TestPlan;
 }
 
 const getStepElapsedMs = (step: TestPlanStep): number | undefined => {
@@ -47,13 +50,14 @@ const getStepElapsedMs = (step: TestPlanStep): number | undefined => {
   return endMs - DateTime.toEpochMillis(step.startedAt.value);
 };
 
-export const TestingScreen = ({ changesFor, instruction }: TestingScreenProps) => {
+export const TestingScreen = ({ changesFor, instruction, existingPlan }: TestingScreenProps) => {
   const setScreen = useNavigationStore((state) => state.setScreen);
   const COLORS = useColors();
 
   const displayName = changesForDisplayName(changesFor);
 
   const agentBackend = usePreferencesStore((state) => state.agentBackend);
+  const skipPlanning = usePreferencesStore((state) => state.skipPlanning);
   const [planResult, triggerCreatePlan] = useAtom(createPlanFn, {
     mode: "promiseExit",
   });
@@ -62,8 +66,9 @@ export const TestingScreen = ({ changesFor, instruction }: TestingScreenProps) =
   });
   const screenshotPaths = useAtomValue(screenshotPathsAtom);
 
-  const testPlan = AsyncResult.isSuccess(planResult) ? planResult.value : undefined;
-  const isPlanning = AsyncResult.isWaiting(planResult);
+  const plannedTestPlan = AsyncResult.isSuccess(planResult) ? planResult.value : undefined;
+  const testPlan = existingPlan ?? plannedTestPlan;
+  const isPlanning = !existingPlan && AsyncResult.isWaiting(planResult);
 
   const isExecutingPlan = Boolean(testPlan) && AsyncResult.isWaiting(executionResult);
   const isExecutionComplete = AsyncResult.isSuccess(executionResult);
@@ -79,6 +84,43 @@ export const TestingScreen = ({ changesFor, instruction }: TestingScreenProps) =
 
   useEffect(() => {
     setRunStartedAt(Date.now());
+
+    if (existingPlan) {
+      executePlan(existingPlan);
+      return;
+    }
+
+    if (skipPlanning) {
+      const syntheticPlan = new TestPlan({
+        id: PlanId.makeUnsafe(crypto.randomUUID()),
+        changesFor,
+        currentBranch: "",
+        diffPreview: "",
+        fileStats: [],
+        instruction,
+        baseUrl: Option.none(),
+        isHeadless: true,
+        requiresCookies: false,
+        title: instruction,
+        rationale: "Direct execution (planning skipped)",
+        steps: [
+          new TestPlanStep({
+            id: StepId.makeUnsafe("step-01"),
+            title: instruction,
+            instruction,
+            expectedOutcome: "Verify the changes work correctly",
+            routeHint: Option.none(),
+            status: "pending",
+            summary: Option.none(),
+            startedAt: Option.none(),
+            endedAt: Option.none(),
+          }),
+        ],
+      });
+      executePlan(syntheticPlan);
+      return;
+    }
+
     triggerCreatePlan({
       changesFor,
       flowInstruction: instruction,
@@ -119,7 +161,7 @@ export const TestingScreen = ({ changesFor, instruction }: TestingScreenProps) =
     return () => clearInterval(interval);
   }, [runStartedAt, isExecutingPlan, isPlanning]);
 
-  const awaitingApproval = Boolean(testPlan) && !executionResult.waiting;
+  const awaitingApproval = !existingPlan && Boolean(testPlan) && !executionResult.waiting;
 
   async function executePlan(plan: TestPlan) {
     const exit = await triggerExecute({
@@ -151,7 +193,9 @@ export const TestingScreen = ({ changesFor, instruction }: TestingScreenProps) =
 
     if (awaitingApproval) {
       if (key.return || normalizedInput === "y") {
-        return executePlan(testPlan!);
+        usePlanStore.getState().setPlan(Plan.plan(testPlan!));
+        setScreen(Screen.CookieSyncConfirm({ plan: testPlan! }));
+        return;
       }
       if (key.escape || normalizedInput === "n") {
         goToMain();

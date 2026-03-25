@@ -15,7 +15,6 @@ import { TextShimmer } from "./text-shimmer.js";
 const useHintSegments = (screen: Screen): HintSegment[] => {
   const COLORS = useColors();
   const setScreen = useNavigationStore((state) => state.setScreen);
-  const setPlan = usePlanStore((state) => state.setPlan);
   const skipPlanning = usePreferencesStore((state) => state.skipPlanning);
 
   switch (screen._tag) {
@@ -67,16 +66,7 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
           cta: true,
           onClick: () => {
             usePlanStore.getState().setPlan(Plan.plan(screen.plan));
-            if (screen.plan.requiresCookies) {
-              setScreen(Screen.CookieSyncConfirm({ plan: screen.plan }));
-            } else {
-              setScreen(
-                Screen.Testing({
-                  changesFor: screen.plan.changesFor,
-                  instruction: screen.plan.instruction,
-                }),
-              );
-            }
+            setScreen(Screen.CookieSyncConfirm({ plan: screen.plan }));
           },
         },
       ];
@@ -95,12 +85,12 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
           cta: true,
           onClick: () => {
             const updated = screen.plan.update({ requiresCookies: true });
-            setPlan(Plan.plan(updated));
             usePlanStore.getState().setPlan(Plan.plan(updated));
             setScreen(
               Screen.Testing({
                 changesFor: updated.changesFor,
                 instruction: updated.instruction,
+                existingPlan: updated,
               }),
             );
           },
@@ -116,6 +106,7 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
               Screen.Testing({
                 changesFor: screen.plan.changesFor,
                 instruction: screen.plan.instruction,
+                existingPlan: screen.plan,
               }),
             );
           },
@@ -129,6 +120,24 @@ const useHintSegments = (screen: Screen): HintSegment[] => {
       if (Option.isSome(screen.report.pullRequest)) {
         hints.push({ key: "p", label: "post to PR", cta: true });
       }
+      hints.push({ key: "s", label: "save flow", cta: true });
+      hints.push({
+        key: "r",
+        label: "restart",
+        color: COLORS.PRIMARY,
+        cta: true,
+        onClick: () => {
+          usePlanStore.getState().setPlan(undefined);
+          usePlanExecutionStore.getState().setExecutedPlan(undefined);
+          setScreen(
+            Screen.Testing({
+              changesFor: screen.report.changesFor,
+              instruction: screen.report.instruction,
+              existingPlan: screen.report.resetForRerun,
+            }),
+          );
+        },
+      });
       hints.push({
         key: "esc",
         label: "main menu",

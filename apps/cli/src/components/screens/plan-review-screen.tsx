@@ -122,7 +122,7 @@ export const PlanReviewScreen = ({ plan }: PlanReviewScreenProps) => {
           fileStats: [],
           instruction: trimmedInput,
           baseUrl: Option.none(),
-          isHeadless: false,
+          isHeadless: true,
           requiresCookies: false,
         });
         const changesFor = ChangesFor.makeUnsafe({ _tag: "Changes", mainBranch });
@@ -197,11 +197,7 @@ export const PlanReviewScreen = ({ plan }: PlanReviewScreenProps) => {
 
       if (input === "a" || key.return) {
         usePlanStore.getState().setPlan(Plan.plan(plan));
-        if (plan.requiresCookies) {
-          setScreen(Screen.CookieSyncConfirm({ plan }));
-        } else {
-          setScreen(Screen.Testing({ changesFor: plan.changesFor, instruction: plan.instruction }));
-        }
+        setScreen(Screen.CookieSyncConfirm({ plan }));
       }
     },
     {
