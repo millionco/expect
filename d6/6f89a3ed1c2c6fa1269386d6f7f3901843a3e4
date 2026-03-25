@@ -1,0 +1,116 @@
+packages/supervisor/src/flow-storage.ts
+  8f606ef08c7ed566 33-41
+apps/cli/src/utils/session-analytics.ts
+  5bb7bbb1bc4965ad 6,12
+apps/cli/src/index.tsx
+  5bb7bbb1bc4965ad 1,7,21,45,54,61,107,132-133
+apps/cli/src/stores/use-navigation.ts
+  5bb7bbb1bc4965ad 3,8-9
+packages/supervisor/src/executor.ts
+  5bb7bbb1bc4965ad 3-13,15-16,27-36,40-97,100-101,123
+packages/shared/package.json
+  5bb7bbb1bc4965ad 22-26
+packages/shared/src/models.ts
+  8f606ef08c7ed566 818,833
+  5bb7bbb1bc4965ad 1-14,777-791,794-807
+apps/cli/src/utils/run-test.ts
+  5bb7bbb1bc4965ad 27,32,37-42,62,71-83,98,101-102
+packages/shared/src/prompts.ts
+  5bb7bbb1bc4965ad 1,3-4,6,8-10,12-14,16,19-21,24-40,42-74,76-81,86-211
+apps/cli/src/components/app.tsx
+  5bb7bbb1bc4965ad 35,63,83,91-97
+packages/supervisor/src/types.ts
+  5bb7bbb1bc4965ad 1,16-25
+apps/cli/src/components/ui/modeline.tsx
+  5bb7bbb1bc4965ad 21,54,63-65,80
+apps/cli/src/components/screens/main-menu-screen.tsx
+  5bb7bbb1bc4965ad 29
+apps/cli/src/components/screens/results-screen.tsx
+  5bb7bbb1bc4965ad 100
+apps/cli/src/components/screens/pr-picker-screen.tsx
+  5bb7bbb1bc4965ad 103-104,238
+packages/supervisor/src/git/index.ts
+  5bb7bbb1bc4965ad 26-27
+packages/shared/tests/dynamic-steps.test.ts
+  5bb7bbb1bc4965ad 1-154
+apps/cli/src/data/execution-atom.ts
+  5bb7bbb1bc4965ad 3,9-10,28,32,41-45,47-52,67,70-71
+packages/supervisor/src/index.ts
+  5bb7bbb1bc4965ad 2,19-20,28
+apps/cli/src/components/screens/cookie-sync-confirm-screen.tsx
+  5bb7bbb1bc4965ad 4,31-33,37-39,45,50,80,85
+packages/shared/vite.config.ts
+  5bb7bbb1bc4965ad 5
+apps/cli/src/layers.ts
+  5bb7bbb1bc4965ad 3,7-11,16,23
+apps/cli/src/components/screens/saved-flow-picker-screen.tsx
+  5bb7bbb1bc4965ad 4,29-31,33
+  4bdfab8e15c40e83 18-20,23,32,107
+packages/supervisor/tests/saved-flow-file.test.ts
+  4bdfab8e15c40e83 58-75
+apps/cli/src/components/screens/testing-screen.tsx
+  5bb7bbb1bc4965ad 11-12,16,29,35,46,52,57,71-72,77,79-80,82,84,86-93,102,107,129,142-143,147-148,151-155,157,160,186,194-195,204,212,219-220,227-228,242-246,252,267
+packages/shared/tests/prompts.test.ts
+  5bb7bbb1bc4965ad 1-4,6-14,16-108,110-169
+packages/supervisor/src/saved-flow-file.ts
+  4bdfab8e15c40e83 1,34-74,100-101
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "d66f89a3ed1c2c6fa1269386d6f7f3901843a3e4",
+  "prompts": {
+    "4bdfab8e15c40e83": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "233b8281-20c3-4d9a-a2cd-1c791c7ba89c",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 68,
+      "total_deletions": 4,
+      "accepted_lines": 68,
+      "overriden_lines": 0
+    },
+    "5bb7bbb1bc4965ad": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b220722e-720d-4d81-9a05-b32a4c040bc3",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 886,
+      "total_deletions": 662,
+      "accepted_lines": 823,
+      "overriden_lines": 6
+    },
+    "8f606ef08c7ed566": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e265b166-9226-43e5-81a3-4339e4e01e18",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 12,
+      "total_deletions": 6,
+      "accepted_lines": 11,
+      "overriden_lines": 0
+    },
+    "de1c24e4339ba1a7": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8c466855-a108-4ef5-9161-5d72a6626ab7",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 189,
+      "total_deletions": 99,
+      "accepted_lines": 0,
+      "overriden_lines": 11
+    }
+  }
+}
