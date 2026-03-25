@@ -1,0 +1,21 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "e5203a9d13cb1224219ac07562364c0ffd4eda16",
+  "prompts": {
+    "409361a197e5fed5": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ef29d55d-3420-449e-8fd8-4d89b24f9629",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 98,
+      "total_deletions": 99,
+      "accepted_lines": 98,
+      "overriden_lines": 0
+    }
+  }
+}
