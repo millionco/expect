@@ -1,0 +1,96 @@
+apps/cli/src/stores/use-preferences.ts
+  82b280e60d87d7cf 10,25
+apps/cli/src/stores/use-navigation.ts
+  9f928677c018df79 15
+apps/cli/src/index.tsx
+  82b280e60d87d7cf 38,52,123
+packages/browser/src/mcp/live-view-server.ts
+  82b280e60d87d7cf 95,111-115,120,123-127,134-136,140,152,168,175-179
+  9f928677c018df79 30-34
+apps/website/lib/replay-types.ts
+  9f928677c018df79 1-13
+.cursor/plans/cli_replay_proxy_840e4609.plan.md
+  a881919df2b7aec1 1-166
+packages/supervisor/src/executor.ts
+  82b280e60d87d7cf 17,42,120-124,130
+apps/cli/src/utils/replay-proxy-server.ts
+  e8c03e2f888096e1 95,117
+  82b280e60d87d7cf 1-4,6-7,9-12,14-94,96-116,118-132,134-150,152-177
+  9f928677c018df79 5,8,13,133,151
+apps/cli/src/data/execution-atom.ts
+  82b280e60d87d7cf 10-11,13-17,22,29,43-74,120
+apps/cli/src/utils/push-step-state.ts
+  9f928677c018df79 5,24-26,30-32,44
+  82b280e60d87d7cf 1-4,6-23,27-29,33-43
+apps/cli/src/components/app.tsx
+  9f928677c018df79 88
+apps/cli/src/components/screens/results-screen.tsx
+  82b280e60d87d7cf 183-193
+  9f928677c018df79 20,23
+apps/cli/src/components/screens/testing-screen.tsx
+  82b280e60d87d7cf 59,88,105-106,110,112,154
+apps/website/components/replay/replay-viewer.tsx
+  9f928677c018df79 3,10
+  82b280e60d87d7cf 91-162,165-167,172-174,176-181,226-241,331,335-344,396,400-401,406-417,419,421-425,427-429,431,433-440,442-449,451-501
+apps/website/app/replay/page.tsx
+  82b280e60d87d7cf 3-4,9,11,54-135,137-155
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "4be3394e8d65eac959aeee99789951030dcd2765",
+  "prompts": {
+    "82b280e60d87d7cf": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4460184a-49dc-4b79-9a34-6169fdc68320",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 884,
+      "total_deletions": 639,
+      "accepted_lines": 620,
+      "overriden_lines": 0
+    },
+    "9f928677c018df79": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "47fb7b29-9c6b-4530-8355-a75d3f1f80ba",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 594,
+      "total_deletions": 179,
+      "accepted_lines": 52,
+      "overriden_lines": 0
+    },
+    "a881919df2b7aec1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8d075fed-c6f9-4d09-b6a1-738af81f94c2",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 170,
+      "total_deletions": 4,
+      "accepted_lines": 166,
+      "overriden_lines": 0
+    },
+    "e8c03e2f888096e1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e2a495eb-fba9-467f-9b71-48f7110c0fba",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 17,
+      "total_deletions": 116,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}
