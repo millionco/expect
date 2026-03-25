@@ -1,6 +1,6 @@
 import { Schema } from "effect";
 import { Rpc, RpcGroup } from "effect/unstable/rpc";
-import { ExecutionEvent } from "../models";
+import { ExecutedTestPlan, ExecutionEvent } from "../models";
 
 export const RrwebEvent = Schema.Unknown;
 
@@ -8,8 +8,11 @@ export const LiveUpdatePayload = Schema.Union([
   Schema.TaggedStruct("RrwebBatch", {
     events: Schema.Array(RrwebEvent),
   }),
-  Schema.TaggedStruct("Execution", {
+  /* Schema.TaggedStruct("Execution", {
     event: ExecutionEvent,
+  }), */
+  Schema.TaggedStruct("PlanUpdate", {
+    plan: ExecutedTestPlan,
   }),
 ]);
 export type LiveUpdatePayload = typeof LiveUpdatePayload.Type;
@@ -25,7 +28,7 @@ const LiveViewerRpcsBase = RpcGroup.make(
   Rpc.make("StreamEvents", {
     success: LiveUpdatePayload,
     stream: true,
-  }),
+  })
 );
 
 export const LiveViewerRpcs = LiveViewerRpcsBase.prefix("liveViewer.");

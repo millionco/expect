@@ -8,8 +8,11 @@ export const LiveViewerRpcsLive = LiveViewerRpcs.toLayer(
 
     return LiveViewerRpcs.of({
       "liveViewer.PushRrwebEvents": (request) =>
-        liveViewer.push({ _tag: "RrwebBatch", events: request.events }),
+        Effect.tap(
+          liveViewer.push({ _tag: "RrwebBatch", events: request.events }),
+          () => Effect.logFatal(`PushRrwebEvents received ${request.events.length} events`),
+        ),
       "liveViewer.StreamEvents": () => liveViewer.stream,
     });
-  }),
-);
+  })
+).pipe(Layer.provide(LiveViewer.layer));

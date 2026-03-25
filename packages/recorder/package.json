@@ -33,10 +33,10 @@
   },
   "dependencies": {
     "@effect/atom-react": "4.0.0-beta.35",
-    "@effect/platform-node": "4.0.0-beta.28",
+    "@effect/platform-node": "4.0.0-beta.35",
     "@expect/shared": "workspace:*",
     "@rrweb/types": "^2.0.0-alpha.18",
-    "effect": "4.0.0-beta.28",
+    "effect": "4.0.0-beta.35",
     "playwright": "^1.52.0",
     "rrweb": "^2.0.0-alpha.18",
     "rrweb-player": "^2.0.0-alpha.18"

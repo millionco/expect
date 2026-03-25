@@ -3,40 +3,41 @@ import { useEffect, useMemo, useRef } from "react";
 import rrwebPlayer from "rrweb-player";
 import "rrweb-player/dist/style.css";
 import type { eventWithTime } from "@rrweb/types";
-import { useAtomValue } from "@effect/atom-react";
+import { useAtom, useAtomValue } from "@effect/atom-react";
+import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
 import type { LiveUpdatePayload } from "@expect/shared/rpcs";
 import { ExecutedTestPlan, type ExecutionEvent } from "@expect/shared/models";
-import { REPLAY_PLAYER_HEIGHT_PX, REPLAY_PLAYER_WIDTH_PX } from "../../src/constants";
+import {
+  REPLAY_PLAYER_HEIGHT_PX,
+  REPLAY_PLAYER_WIDTH_PX,
+} from "../../src/constants";
 import { liveUpdatesAtom } from "./atoms/live-updates";
 import { StepsPanel } from "./steps-panel";
 
 const deriveState = (payloads: readonly LiveUpdatePayload[]) => {
   const rrwebEvents: eventWithTime[] = [];
-  const executionEvents: ExecutionEvent[] = [];
+  let executedPlan: ExecutedTestPlan | undefined;
 
   for (const payload of payloads) {
     if (payload._tag === "RrwebBatch") {
       for (const event of payload.events) {
         rrwebEvents.push(event as eventWithTime);
       }
-    } else if (payload._tag === "Execution") {
-      executionEvents.push(payload.event);
+    } else if (payload._tag === "PlanUpdate") {
+      executedPlan = payload.plan;
     }
   }
-
-  const runStarted = executionEvents.find((event) => event._tag === "RunStarted");
-  const plan = runStarted?._tag === "RunStarted" ? runStarted.plan : undefined;
-
-  const executedPlan = plan
-    ? new ExecutedTestPlan({ ...plan, events: executionEvents })
-    : undefined;
 
   return { rrwebEvents, executedPlan };
 };
 
-const RrwebPlayer = ({ events }: { readonly events: readonly eventWithTime[] }) => {
+const RrwebPlayer = ({
+  events,
+}: {
+  readonly events: readonly eventWithTime[];
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<rrwebPlayer | undefined>();
+  const playerRef = useRef<rrwebPlayer | undefined>(undefined);
   const processedCountRef = useRef(0);
 
   useEffect(() => {
@@ -80,8 +81,22 @@ const RrwebPlayer = ({ events }: { readonly events: readonly eventWithTime[] }) 
 };
 
 export const App = () => {
-  const payloads = useAtomValue(liveUpdatesAtom);
-  const { rrwebEvents, executedPlan } = useMemo(() => deriveState(payloads ?? []), [payloads]);
+  const [output, pull] = useAtom(liveUpdatesAtom);
+
+  /** @note(rasmus): keep up to date */
+  useEffect(() => {
+    if (output._tag !== "Success") return;
+    const { done, items } = output.value;
+
+    /** @note(rasmus): handle updates */
+    for (let i = 0; i < items.length; i++) {}
+
+    if (!done) pull();
+  }, [output, pull]);
+
+  const { rrwebEvents, executedPlan } = deriveState(
+    AsyncResult.isSuccess(output) ? output.value.items : []
+  );
 
   return (
     <div className="mx-auto max-w-[960px] p-8">

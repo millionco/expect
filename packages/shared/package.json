@@ -34,7 +34,7 @@
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
-    "effect": "4.0.0-beta.28"
+    "effect": "4.0.0-beta.35"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

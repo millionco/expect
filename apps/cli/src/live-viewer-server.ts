@@ -11,7 +11,7 @@ import { LiveViewerRpcsLive, LiveViewer } from "@expect/supervisor";
 
 const VIEWER_STATIC_DIR = join(
   dirname(fileURLToPath(import.meta.resolve("@expect/recorder"))),
-  "viewer",
+  "viewer"
 );
 
 const RpcLive = RpcServer.layerHttp({
@@ -21,11 +21,13 @@ const RpcLive = RpcServer.layerHttp({
 
 export const layerLiveViewerRpcServer = RpcLive.pipe(
   Layer.provideMerge(HttpRouter.serve(RpcLive, { disableListenLog: true })),
-  Layer.provide(NodeHttpServer.layer(() => createServer(), { port: LIVE_VIEWER_RPC_PORT })),
+  Layer.provide(
+    NodeHttpServer.layer(() => createServer(), { port: LIVE_VIEWER_RPC_PORT })
+  ),
   Layer.provide(RpcSerialization.layerNdjson),
   Layer.provide(NodeServices.layer),
   Layer.provide(HttpRouter.layer),
-  Layer.provide(LiveViewer.layer),
+  Layer.provide(LiveViewer.layer)
 );
 
 const StaticFilesLive = HttpStaticServer.layer({
@@ -34,8 +36,14 @@ const StaticFilesLive = HttpStaticServer.layer({
 });
 
 export const layerLiveViewerStaticServer = StaticFilesLive.pipe(
-  Layer.provideMerge(HttpRouter.serve(StaticFilesLive, { disableListenLog: true })),
-  Layer.provide(NodeHttpServer.layer(() => createServer(), { port: LIVE_VIEWER_STATIC_PORT })),
+  Layer.provideMerge(
+    HttpRouter.serve(StaticFilesLive, { disableListenLog: true })
+  ),
+  Layer.provide(
+    NodeHttpServer.layer(() => createServer(), {
+      port: LIVE_VIEWER_STATIC_PORT,
+    })
+  ),
   Layer.provide(NodeServices.layer),
-  Layer.provide(HttpRouter.layer),
+  Layer.provide(HttpRouter.layer)
 );

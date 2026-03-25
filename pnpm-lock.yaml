@@ -35,7 +35,7 @@ importers:
     dependencies:
       '@effect/atom-react':
         specifier: 4.0.0-beta.35
-        version: 4.0.0-beta.35(effect@4.0.0-beta.28)(react@19.2.4)(scheduler@0.27.0)
+        version: 4.0.0-beta.35(effect@4.0.0-beta.35)(react@19.2.4)(scheduler@0.27.0)
       '@expect/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -198,8 +198,8 @@ importers:
         specifier: ^0.10.0
         version: 0.10.0
       effect:
-        specifier: 4.0.0-beta.28
-        version: 4.0.0-beta.28
+        specifier: 4.0.0-beta.35
+        version: 4.0.0-beta.35
       zod:
         specifier: ^4.3.6
         version: 4.3.6
@@ -214,8 +214,8 @@ importers:
   packages/browser:
     dependencies:
       '@effect/platform-node':
-        specifier: 4.0.0-beta.28
-        version: 4.0.0-beta.28(effect@4.0.0-beta.28)(ioredis@5.10.0)
+        specifier: 4.0.0-beta.35
+        version: 4.0.0-beta.35(effect@4.0.0-beta.35)(ioredis@5.10.0)
       '@expect/cookies':
         specifier: workspace:*
         version: link:../cookies
@@ -232,8 +232,8 @@ importers:
         specifier: ^1.27.1
         version: 1.27.1(zod@4.3.6)
       effect:
-        specifier: 4.0.0-beta.28
-        version: 4.0.0-beta.28
+        specifier: 4.0.0-beta.35
+        version: 4.0.0-beta.35
       playwright:
         specifier: ^1.52.0
         version: 1.58.2
@@ -254,14 +254,14 @@ importers:
   packages/cookies:
     dependencies:
       '@effect/platform-node':
-        specifier: 4.0.0-beta.28
-        version: 4.0.0-beta.28(effect@4.0.0-beta.28)(ioredis@5.10.0)
+        specifier: 4.0.0-beta.35
+        version: 4.0.0-beta.35(effect@4.0.0-beta.35)(ioredis@5.10.0)
       default-browser:
         specifier: ^5.5.0
         version: 5.5.0
       effect:
-        specifier: 4.0.0-beta.28
-        version: 4.0.0-beta.28
+        specifier: 4.0.0-beta.35
+        version: 4.0.0-beta.35
       get-port:
         specifier: ^7.1.0
         version: 7.1.0
@@ -290,10 +290,10 @@ importers:
     dependencies:
       '@effect/atom-react':
         specifier: 4.0.0-beta.35
-        version: 4.0.0-beta.35(effect@4.0.0-beta.28)(react@19.2.4)(scheduler@0.27.0)
+        version: 4.0.0-beta.35(effect@4.0.0-beta.35)(react@19.2.4)(scheduler@0.27.0)
       '@effect/platform-node':
-        specifier: 4.0.0-beta.28
-        version: 4.0.0-beta.28(effect@4.0.0-beta.28)(ioredis@5.10.0)
+        specifier: 4.0.0-beta.35
+        version: 4.0.0-beta.35(effect@4.0.0-beta.35)(ioredis@5.10.0)
       '@expect/shared':
         specifier: workspace:*
         version: link:../shared
@@ -301,8 +301,8 @@ importers:
         specifier: ^2.0.0-alpha.18
         version: 2.0.0-alpha.20
       effect:
-        specifier: 4.0.0-beta.28
-        version: 4.0.0-beta.28
+        specifier: 4.0.0-beta.35
+        version: 4.0.0-beta.35
       playwright:
         specifier: ^1.52.0
         version: 1.58.2
@@ -365,8 +365,8 @@ importers:
   packages/shared:
     dependencies:
       effect:
-        specifier: 4.0.0-beta.28
-        version: 4.0.0-beta.28
+        specifier: 4.0.0-beta.35
+        version: 4.0.0-beta.35
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -381,8 +381,8 @@ importers:
         specifier: ^3.0.8
         version: 3.0.8
       '@effect/platform-node':
-        specifier: 4.0.0-beta.28
-        version: 4.0.0-beta.28(effect@4.0.0-beta.28)(ioredis@5.10.0)
+        specifier: 4.0.0-beta.35
+        version: 4.0.0-beta.35(effect@4.0.0-beta.35)(ioredis@5.10.0)
       '@expect/agent':
         specifier: workspace:*
         version: link:../agent
@@ -393,8 +393,8 @@ importers:
         specifier: workspace:*
         version: link:../shared
       effect:
-        specifier: 4.0.0-beta.28
-        version: 4.0.0-beta.28
+        specifier: 4.0.0-beta.35
+        version: 4.0.0-beta.35
       pathe:
         specifier: ^2.0.3
         version: 2.0.3
@@ -702,17 +702,17 @@ packages:
       react: ^19.2.4
       scheduler: '*'
 
-  '@effect/platform-node-shared@4.0.0-beta.33':
-    resolution: {integrity: sha512-jaJnvYz1IiPZyN//fCJsvwnmujJS5KD8noCVVLhb4ZGCWKhQpt0x2iuax6HFzMlPEQSfl04GLU+PVKh0nkzPyA==}
+  '@effect/platform-node-shared@4.0.0-beta.40':
+    resolution: {integrity: sha512-WMRVG7T8ZDALKCOacsx2ZZj3Ccaoq8YGeD9q7ZL4q8RwQv8Nmrl+4+KZl95/zHCqXzgK9oUJOlBfQ7CZr6PQOQ==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
-      effect: ^4.0.0-beta.33
+      effect: ^4.0.0-beta.40
 
-  '@effect/platform-node@4.0.0-beta.28':
-    resolution: {integrity: sha512-AIna99z2G9thtbMzjT3jwonn4cLvk/MSP2b3Emmaa+Rifrn58tC7oohdVYdA0eLH2whddi8i9TvMMoeirZf1qA==}
+  '@effect/platform-node@4.0.0-beta.35':
+    resolution: {integrity: sha512-HPc2xZASl9F9y/xJ01bQgFD6Jf9XP4Fcv/BlVTvG0Yr/uN63lwKZYr/VXor5K5krHfBDeCBD8y7/SICPYZoq3A==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
-      effect: ^4.0.0-beta.28
+      effect: ^4.0.0-beta.35
       ioredis: ^5.7.0
 
   '@emnapi/core@1.9.1':
@@ -3158,8 +3158,8 @@ packages:
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
 
-  effect@4.0.0-beta.28:
-    resolution: {integrity: sha512-9T/LPIF/t54DN/z1gTnJ3Jwv4s6iWlN3w8Jvg7koDLI4whLXDEsnXWhMf05yQZUSNRJ0naVV1Ltwr2+cEj0HZA==}
+  effect@4.0.0-beta.35:
+    resolution: {integrity: sha512-64j8dgJmoEMeq6Y3WLYcZIRqPZ5E/lqnULCf6QW5te3hQ/sa13UodWLGwBEviEqBoq72U8lArhVX+T7ntzhJGQ==}
 
   electron-to-chromium@1.5.313:
     resolution: {integrity: sha512-QBMrTWEf00GXZmJyx2lbYD45jpI3TUFnNIzJ5BBc8piGUDwMPa1GV6HJWTZVvY/eiN3fSopl7NRbgGp9sZ9LTA==}
@@ -6029,25 +6029,25 @@ snapshots:
     dependencies:
       '@noble/ciphers': 1.3.0
 
-  '@effect/atom-react@4.0.0-beta.35(effect@4.0.0-beta.28)(react@19.2.4)(scheduler@0.27.0)':
+  '@effect/atom-react@4.0.0-beta.35(effect@4.0.0-beta.35)(react@19.2.4)(scheduler@0.27.0)':
     dependencies:
-      effect: 4.0.0-beta.28
+      effect: 4.0.0-beta.35
       react: 19.2.4
       scheduler: 0.27.0
 
-  '@effect/platform-node-shared@4.0.0-beta.33(effect@4.0.0-beta.28)':
+  '@effect/platform-node-shared@4.0.0-beta.40(effect@4.0.0-beta.35)':
     dependencies:
       '@types/ws': 8.18.1
-      effect: 4.0.0-beta.28
+      effect: 4.0.0-beta.35
       ws: 8.19.0
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@effect/platform-node@4.0.0-beta.28(effect@4.0.0-beta.28)(ioredis@5.10.0)':
+  '@effect/platform-node@4.0.0-beta.35(effect@4.0.0-beta.35)(ioredis@5.10.0)':
     dependencies:
-      '@effect/platform-node-shared': 4.0.0-beta.33(effect@4.0.0-beta.28)
-      effect: 4.0.0-beta.28
+      '@effect/platform-node-shared': 4.0.0-beta.40(effect@4.0.0-beta.35)
+      effect: 4.0.0-beta.35
       ioredis: 5.10.0
       mime: 4.1.0
       undici: 7.24.4
@@ -7888,7 +7888,7 @@ snapshots:
 
   ee-first@1.1.1: {}
 
-  effect@4.0.0-beta.28:
+  effect@4.0.0-beta.35:
     dependencies:
       '@standard-schema/spec': 1.1.0
       fast-check: 4.6.0

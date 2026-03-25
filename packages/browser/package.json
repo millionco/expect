@@ -38,13 +38,13 @@
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
-    "@effect/platform-node": "4.0.0-beta.28",
+    "@effect/platform-node": "4.0.0-beta.35",
     "@expect/cookies": "workspace:*",
     "@expect/recorder": "workspace:*",
     "@expect/shared": "workspace:*",
     "@medv/finder": "^4.0.2",
     "@modelcontextprotocol/sdk": "^1.27.1",
-    "effect": "4.0.0-beta.28",
+    "effect": "4.0.0-beta.35",
     "playwright": "^1.52.0",
     "zod": "^4.3.6"
   },
