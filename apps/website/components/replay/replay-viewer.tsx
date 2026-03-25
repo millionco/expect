@@ -1,8 +1,10 @@
 "use client";
 
+import { Calligraph } from "calligraph";
 import { useEffect, useRef, useState } from "react";
 import type { eventWithTime } from "@posthog/rrweb";
 import type { Replayer } from "@posthog/rrweb";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatTime } from "@/lib/format-time";
 import { createCursorZoom } from "@/lib/cursor-zoom";
 
@@ -12,7 +14,6 @@ import type { ViewerRunState, ViewerStepEvent } from "@/lib/replay-types";
 
 const SPEEDS = [1, 2, 4, 8] as const;
 const TIMER_INTERVAL_MS = 100;
-const LIVE_EDGE_THRESHOLD_MS = 2000;
 const IDLE_THRESHOLD_MS = 4000;
 const IDLE_SPEED_TIERS = [
   { afterMs: 0, speed: 2 },
@@ -24,13 +25,28 @@ const CONTROL_BUTTON_SHADOW = [
   "color(display-p3 0 0 0 / 12%) 0px 0px 0px 1px",
   "color(display-p3 0.752 0.752 0.752 / 12%) 0px 2px 2px",
 ].join(", ");
-const VIEWER_SHELL_SHADOW = [
-  "color(display-p3 1 1 1 / 88%) 0px 1px 0px inset",
-  "color(display-p3 0 0 0 / 6%) 0px 0px 0px 1px",
-].join(", ");
+const LIVE_PLAYBACK_BAR_SHADOW =
+  "color(display-p3 0.281 0.281 0.281 / 16%) 0px 0px 0px 1px";
+const LIVE_PLAYBACK_BAR_BUTTON_SHADOW =
+  "color(display-p3 0.847 0.847 0.847) 0px 0px 0px 0.5px";
+const LIVE_PLAYBACK_BAR_MARKER_INTERVAL_MS = 10_000;
+const LIVE_PASSED_STEP_MARKER_OUTLINE =
+  "2px solid color(display-p3 0.249 0.701 0.193 / 30%)";
+const LIVE_PASSED_STEP_MARKER_BACKGROUND_IMAGE =
+  "linear-gradient(in oklab 180deg, oklab(66.4% -0.197 0.139) 0%, oklab(72.7% -0.252 0.178) 100%)";
+const LIVE_FAILED_STEP_MARKER_OUTLINE = "2px solid #FC272F4D";
+const LIVE_FAILED_STEP_MARKER_BACKGROUND_IMAGE =
+  "linear-gradient(in oklab 180deg, oklab(63.6% 0.216 0.107) 0%, oklab(67.1% 0.194 0.096) 100%)";
+const LIVE_PLAYBACK_PROGRESS_SHADOW =
+  "color(display-p3 0.615 0.615 0.615 / 20%) 0px 0px 3px";
+const VIEWER_SHELL_SHADOW = "color(display-p3 0.788 0.788 0.788 / 20%) 0px 2px 3px";
 const CONTROL_FONT_FAMILY =
   '"SF Pro Display", "SFProDisplay-Medium", "Inter Variable", system-ui, sans-serif';
 const PAPER_TIME_LENGTH = 5;
+const PLAYBACK_BAR_TRACK_COLOR = "color(display-p3 0.897 0.897 0.897)";
+const LIVE_PLAYBACK_BAR_SURFACE_COLOR = "color(display-p3 0.971 0.971 0.971)";
+const LIVE_PLAYBACK_PROGRESS_BACKGROUND_IMAGE =
+  "linear-gradient(in oklab 180deg, oklab(100% 0 0) 0%, oklab(100% 0 0 / 61%) 100%)";
 
 const getReplayDuration = (replayEvents: eventWithTime[]) => {
   if (replayEvents.length < 2) return 0;
@@ -44,26 +60,6 @@ const getStepRelativeTime = (step: ViewerStepEvent, replayStartMs: number) => {
   const startMs = step.startedAtMs !== undefined ? step.startedAtMs - replayStartMs : undefined;
   const endMs = step.endedAtMs !== undefined ? step.endedAtMs - replayStartMs : undefined;
   return { startMs, endMs };
-};
-
-const STEP_COLORS = {
-  passed: { bg: "bg-emerald-50", text: "text-emerald-600", icon: "text-emerald-500" },
-  failed: { bg: "bg-red-50", text: "text-red-600", icon: "text-red-500" },
-  active: { bg: "bg-blue-50", text: "text-neutral-900", icon: "text-blue-500" },
-  pending: { bg: "", text: "text-neutral-500", icon: "text-neutral-300" },
-} as const;
-
-const STEP_ICONS: Record<string, string> = {
-  passed: "\u2713",
-  failed: "\u2717",
-  active: "\u25CF",
-  pending: "\u25CB",
-};
-
-const STATUS_BADGE_COLORS: Record<string, string> = {
-  running: "bg-blue-100 text-blue-700",
-  passed: "bg-emerald-100 text-emerald-700",
-  failed: "bg-red-100 text-red-700",
 };
 
 interface ControlIconProps {
@@ -101,88 +97,11 @@ const PauseIcon = ({ className }: ControlIconProps) => (
 const FullscreenIcon = ({ className }: ControlIconProps) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" className={className}>
     <path
-      fillRule="evenodd"
-      clipRule="evenodd"
-      d="M2 2H9.5V4H4V9.5H2V2ZM14.5 2H22V9.5H20V4H14.5V2ZM4 14.5V20H9.5V22H2V14.5H4ZM22 14.5V22H14.5V20H20V14.5H22Z"
+      d="M2 19V17C2 16.448 2.448 16 3 16C3.552 16 4 16.448 4 17V19C4 19.552 4.448 20 5 20H7C7.552 20 8 20.448 8 21C8 21.552 7.552 22 7 22H5C3.343 22 2 20.657 2 19ZM20 19V17C20 16.448 20.448 16 21 16C21.552 16 22 16.448 22 17V19C22 20.657 20.657 22 19 22H17C16.448 22 16 21.552 16 21C16 20.448 16.448 20 17 20H19C19.552 20 20 19.552 20 19ZM2 7V5C2 3.343 3.343 2 5 2H7C7.552 2 8 2.448 8 3C8 3.552 7.552 4 7 4H5C4.448 4 4 4.448 4 5V7C4 7.552 3.552 8 3 8C2.448 8 2 7.552 2 7ZM20 7V5C20 4.448 19.552 4 19 4H17C16.448 4 16 3.552 16 3C16 2.448 16.448 2 17 2H19C20.657 2 22 3.343 22 5V7C22 7.552 21.552 8 21 8C20.448 8 20 7.552 20 7Z"
       fill="currentColor"
     />
   </svg>
 );
-
-interface StepPanelProps {
-  steps: ViewerRunState;
-  replayStartMs: number;
-  currentTime: number;
-  onSeek: (timeMs: number) => void;
-}
-
-const StepPanel = ({ steps, replayStartMs, currentTime, onSeek }: StepPanelProps) => {
-  const currentStepIndex = (() => {
-    for (let index = steps.steps.length - 1; index >= 0; index--) {
-      const { startMs } = getStepRelativeTime(steps.steps[index], replayStartMs);
-      if (startMs !== undefined && currentTime >= startMs) return index;
-    }
-    return -1;
-  })();
-
-  return (
-    <div
-      className="flex flex-col gap-3 rounded-[20px] bg-white/90 px-5 py-4 backdrop-blur-xl"
-      style={{ fontFamily: CONTROL_FONT_FAMILY }}
-    >
-      <div className="flex items-center gap-3">
-        <span className="text-sm font-semibold text-neutral-800 leading-tight">
-          {steps.title || "Test Run"}
-        </span>
-        <span
-          className={`rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${STATUS_BADGE_COLORS[steps.status] ?? ""}`}
-        >
-          {steps.status}
-        </span>
-      </div>
-      {steps.summary && <p className="text-xs text-neutral-500 leading-relaxed">{steps.summary}</p>}
-      <div className="flex flex-col gap-0.5">
-        {steps.steps.map((step, index) => {
-          const { startMs } = getStepRelativeTime(step, replayStartMs);
-          const isCurrentStep = index === currentStepIndex;
-          const colors = STEP_COLORS[step.status] ?? STEP_COLORS.pending;
-          const canSeek = startMs !== undefined;
-
-          return (
-            <button
-              key={step.stepId}
-              type="button"
-              disabled={!canSeek}
-              onClick={() => {
-                if (startMs !== undefined) onSeek(startMs);
-              }}
-              className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-left transition-colors ${
-                isCurrentStep ? colors.bg : "hover:bg-neutral-50"
-              } ${canSeek ? "cursor-pointer" : "cursor-default"}`}
-            >
-              <span
-                className={`flex size-5 shrink-0 items-center justify-center text-xs font-medium ${colors.icon} ${step.status === "active" ? "animate-pulse" : ""}`}
-              >
-                {STEP_ICONS[step.status] ?? STEP_ICONS.pending}
-              </span>
-              <span className="text-neutral-400 text-xs font-medium tabular-nums">
-                {index + 1}.
-              </span>
-              <span className={`font-medium ${isCurrentStep ? colors.text : "text-neutral-600"}`}>
-                {step.title}
-              </span>
-              {startMs !== undefined && (
-                <span className="ml-auto shrink-0 text-[11px] tabular-nums text-neutral-300">
-                  {formatPaperTime(startMs)}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
 
 interface ReplayViewerProps {
   events: eventWithTime[];
@@ -250,8 +169,6 @@ export const ReplayViewer = ({
   };
 
   const setupIdleSpeedObserver = (cursorEl: HTMLElement) => {
-    const idleThresholdTicks = Math.ceil(IDLE_THRESHOLD_MS / TIMER_INTERVAL_MS);
-
     let currentIdleSpeed = 0;
 
     const getIdleSpeed = (idleMs: number) => {
@@ -493,9 +410,12 @@ export const ReplayViewer = ({
     events.length > 0 ? events[0].timestamp : (steps?.steps[0]?.startedAtMs ?? 0);
   const hasEvents = events.length > 1;
   const canPlay = hasEvents;
-  const isAtLiveEdge = live && totalTime - currentTime < LIVE_EDGE_THRESHOLD_MS;
   const timeLabel = formatPaperTime(currentTime);
   const totalTimeLabel = formatPaperTime(totalTime);
+  const playbackBarMax = totalTime || 1;
+  const playbackBarValue = Math.min(currentTime, playbackBarMax);
+  const playbackBarProgressPercent = (playbackBarValue / playbackBarMax) * 100;
+  const playbackBarProgress = playbackBarProgressPercent.toFixed(1);
 
   const currentStepForLabel = (() => {
     if (!steps || replayStartMs === 0) return undefined;
@@ -510,45 +430,107 @@ export const ReplayViewer = ({
 
   const stepLabel = currentStepForLabel ? `Step ${currentStepForLabel.index + 1}` : "";
   const stepTitle = currentStepForLabel ? currentStepForLabel.step.title : "";
+  let playbackBarBackground: string | undefined;
+  if (!live && hasEvents) {
+    playbackBarBackground = `linear-gradient(to right, oklch(0.345 0 0) 0%, oklch(0.431 0 0) ${playbackBarProgress}%, ${PLAYBACK_BAR_TRACK_COLOR} ${playbackBarProgress}%, ${PLAYBACK_BAR_TRACK_COLOR} 100%)`;
+  }
+  const livePlaybackBarFillVisible = live && hasEvents && playbackBarValue > 0;
+  const livePlaybackBarFillClassName =
+    playbackBarValue >= playbackBarMax ? "rounded-full" : "rounded-l-full";
+  const livePlaybackBarMarkerCount = live
+    ? Math.max(0, Math.floor((playbackBarMax - 1) / LIVE_PLAYBACK_BAR_MARKER_INTERVAL_MS))
+    : 0;
+  const livePlaybackBarMarkerPositions = Array.from(
+    { length: livePlaybackBarMarkerCount },
+    (_, index) =>
+      `${(((index + 1) / (livePlaybackBarMarkerCount + 1)) * 100).toFixed(2)}%`,
+  );
+  const visibleLivePlaybackBarMarkerPositions = livePlaybackBarMarkerPositions.slice(1);
+  const livePlaybackStepMarkers =
+    live && steps && replayStartMs !== 0
+      ? steps.steps.flatMap((step, index) => {
+          if (step.status !== "passed" && step.status !== "failed") return [];
 
-  const hasSteps = Boolean(steps && steps.steps.length > 0);
+          const { startMs, endMs } = getStepRelativeTime(step, replayStartMs);
+          const markerTimeMs = endMs ?? startMs;
+          if (markerTimeMs === undefined) return [];
+
+          const markerPercent = Math.min(
+            Math.max((markerTimeMs / playbackBarMax) * 100, 0),
+            100,
+          ).toFixed(2);
+
+          return [
+            {
+              stepId: step.stepId,
+              timeMs: markerTimeMs,
+              title: step.title,
+              label: `${index + 2}`,
+              status: step.status,
+              left: `clamp(12px, ${markerPercent}%, calc(100% - 12px))`,
+            },
+          ];
+        })
+      : [];
+  const showFirstStepLabel = live && Boolean(steps && steps.steps.length > 0);
+  const playbackBarClassName = [
+    "w-full cursor-pointer appearance-none rounded-full outline-none disabled:cursor-default",
+    live
+      ? "absolute inset-0 z-10 h-full bg-transparent [&::-moz-range-thumb]:size-0 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:border-0 [&::-moz-range-track]:h-full [&::-moz-range-track]:rounded-full [&::-moz-range-track]:border-0 [&::-moz-range-track]:bg-transparent [&::-webkit-slider-thumb]:size-0 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-runnable-track]:h-full [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-transparent"
+      : "h-1.5 rounded-full bg-[color(display-p3_0.897_0.897_0.897)] [&::-moz-range-thumb]:size-0 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:border-0 [&::-moz-range-track]:h-1.5 [&::-moz-range-track]:rounded-full [&::-webkit-slider-thumb]:size-0 [&::-webkit-slider-thumb]:appearance-none",
+  ].join(" ");
+  const playbackBar = (
+    <input
+      type="range"
+      value={playbackBarValue}
+      min={0}
+      max={playbackBarMax}
+      step={100}
+      disabled={!hasEvents}
+      onChange={handleSeek}
+      className={playbackBarClassName}
+      style={playbackBarBackground ? { background: playbackBarBackground } : undefined}
+    />
+  );
 
   return (
-    <div data-rrweb-block className="flex h-screen gap-6 p-6">
-      {hasSteps && (
-        <div className="flex w-[380px] shrink-0 flex-col overflow-y-auto">
-          <StepPanel
-            steps={steps!}
-            replayStartMs={replayStartMs}
-            currentTime={currentTime}
-            onSeek={seekTo}
-          />
-        </div>
-      )}
-
-      <div className="flex min-w-0 grow flex-col gap-4">
+    <div
+      data-rrweb-block
+      className="flex h-screen flex-col gap-3 bg-[color(display-p3_0.986_0.986_0.986)] p-6"
+    >
+      <div
+        ref={viewerShellRef}
+        className="relative h-0 grow overflow-hidden rounded-[26px] border-[7px] border-solid border-[color(display-p3_1_1_1)] bg-[color(display-p3_0.977_0.977_0.977)]"
+        style={{ boxShadow: VIEWER_SHELL_SHADOW }}
+      >
         <div
-          ref={viewerShellRef}
-          className="relative h-0 grow overflow-hidden rounded-[32px] bg-white/50"
-          style={{ boxShadow: VIEWER_SHELL_SHADOW }}
+          ref={backdropRef}
+          className="absolute inset-0 bg-linear-to-br from-sky-200 to-blue-400 p-6"
         >
-          <div ref={backdropRef} className="absolute inset-0 bg-[#f1f1f1] p-6">
-            <MacWindow>
-              <div ref={replayRef} className="relative h-full w-full overflow-hidden" />
-            </MacWindow>
-          </div>
+          <MacWindow>
+            <div
+              ref={replayRef}
+              className="relative h-full w-full overflow-hidden"
+            />
+          </MacWindow>
         </div>
+      </div>
 
-        <div
-          className="flex flex-col gap-4 rounded-[28px] bg-white/90 px-6 py-5 backdrop-blur-xl"
-          style={{ fontFamily: CONTROL_FONT_FAMILY }}
-        >
-          {(stepLabel || stepTitle) && (
-            <div className="flex items-start gap-1.5 p-0 antialiased [font-synthesis:none]">
+      <div
+        className="flex flex-col gap-3 rounded-[28px] px-6 py-5"
+        style={{ fontFamily: CONTROL_FONT_FAMILY }}
+      >
+        {(stepLabel || stepTitle || live) && (
+          <div className="mt-1.5 flex items-center justify-between gap-4 p-0 antialiased [font-synthesis:none]">
+            <div className="flex min-w-0 items-center gap-1.5">
               {stepLabel && (
-                <div className="h-4.5 shrink-0 font-['SFProDisplay-Medium','SF_Pro_Display',system-ui,sans-serif] text-base/4.5 font-medium tracking-[0em] text-[color(display-p3_0.587_0.587_0.587)]">
+                <Calligraph
+                  as="div"
+                  autoSize={false}
+                  className="h-4.5 shrink-0 font-['SFProDisplay-Medium','SF_Pro_Display',system-ui,sans-serif] text-base/4.5 font-medium tracking-[0em] text-[color(display-p3_0.587_0.587_0.587)]"
+                >
                   {stepLabel}
-                </div>
+                </Calligraph>
               )}
               {stepTitle && (
                 <div className="h-4.5 shrink-0 font-['SFProDisplay-Medium','SF_Pro_Display',system-ui,sans-serif] text-base/4.5 font-medium tracking-[0em] text-[color(display-p3_0.188_0.188_0.188)]">
@@ -556,24 +538,135 @@ export const ReplayViewer = ({
                 </div>
               )}
             </div>
-          )}
+            {live && (
+              <div className="flex shrink-0 items-center gap-3">
+                <span className="inline-flex items-center gap-2.5 text-[15px] leading-4.5 font-medium tracking-[0em] tabular-nums text-[color(display-p3_0.361_0.361_0.361)]">
+                  <Calligraph variant="number" autoSize={false} className="tabular-nums">
+                    {timeLabel}
+                  </Calligraph>
+                  <span className="text-[color(display-p3_0.727_0.727_0.727)]">
+                    /
+                  </span>
+                  <span>{totalTimeLabel}</span>
+                </span>
+                <div className="flex items-center gap-1">
+                  <select
+                    value={`${speed}`}
+                    onChange={handleSpeedChange}
+                    disabled={!hasEvents}
+                    aria-label="Replay speed"
+                    className="cursor-pointer appearance-none rounded-full bg-transparent px-2 py-1 text-[15px] font-medium text-[color(display-p3_0.361_0.361_0.361)] outline-none disabled:cursor-default disabled:opacity-40"
+                    style={{ fontFamily: CONTROL_FONT_FAMILY }}
+                  >
+                    {SPEEDS.map((supportedSpeed) => (
+                      <option key={supportedSpeed} value={`${supportedSpeed}`}>
+                        {supportedSpeed}x
+                      </option>
+                    ))}
+                  </select>
 
-          <input
-            type="range"
-            value={Math.min(currentTime, totalTime || 1)}
-            min={0}
-            max={totalTime || 1}
-            step={100}
-            disabled={!hasEvents}
-            onChange={handleSeek}
-            className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-[color(display-p3_0.897_0.897_0.897)] outline-none disabled:cursor-default [&::-moz-range-thumb]:size-0 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:border-0 [&::-moz-range-track]:h-1.5 [&::-moz-range-track]:rounded-full [&::-webkit-slider-thumb]:size-0 [&::-webkit-slider-thumb]:appearance-none"
-            style={{
-              background: hasEvents
-                ? `linear-gradient(to right, oklch(0.345 0 0) 0%, oklch(0.431 0 0) ${((Math.min(currentTime, totalTime || 1) / (totalTime || 1)) * 100).toFixed(1)}%, color(display-p3 0.897 0.897 0.897) ${((Math.min(currentTime, totalTime || 1) / (totalTime || 1)) * 100).toFixed(1)}%, color(display-p3 0.897 0.897 0.897) 100%)`
-                : undefined,
-            }}
-          />
+                  <button
+                    type="button"
+                    onClick={handleFullscreen}
+                    aria-label="Toggle fullscreen"
+                    className="flex size-9 items-center justify-center rounded-full text-[#919191] transition-transform duration-150 ease-out active:scale-[0.97]"
+                  >
+                    <FullscreenIcon className="h-auto w-5 shrink-0" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
+        {live && (
+          <div className="relative pb-6">
+            <div
+              className="relative h-9.75 overflow-hidden rounded-full"
+              style={{
+                backgroundColor: LIVE_PLAYBACK_BAR_SURFACE_COLOR,
+                boxShadow: LIVE_PLAYBACK_BAR_SHADOW,
+              }}
+            >
+              <div className="absolute inset-0 overflow-hidden rounded-full">
+                {livePlaybackBarFillVisible && (
+                  <div
+                    className={`pointer-events-none absolute inset-y-0 left-0 ${livePlaybackBarFillClassName}`}
+                    style={{
+                      width: `${playbackBarProgress}%`,
+                      boxShadow: LIVE_PLAYBACK_PROGRESS_SHADOW,
+                      backgroundImage: LIVE_PLAYBACK_PROGRESS_BACKGROUND_IMAGE,
+                    }}
+                  />
+                )}
+                {visibleLivePlaybackBarMarkerPositions.map((markerPosition) => (
+                  <div
+                    key={markerPosition}
+                    className="pointer-events-none absolute top-1/2 z-[1] h-2.75 w-px -translate-x-1/2 -translate-y-1/2 rounded-full bg-[color(display-p3_0.882_0.882_0.882)]"
+                    style={{ left: markerPosition }}
+                  />
+                ))}
+                {livePlaybackStepMarkers.map((marker) => (
+                  <Tooltip key={marker.stepId}>
+                    <TooltipTrigger
+                      type="button"
+                      data-step-status-marker={marker.status}
+                      aria-label={marker.title}
+                      onClick={() => {
+                        seekTo(marker.timeMs)
+                      }}
+                      className="pointer-events-auto absolute top-1/2 z-[15] size-4 -translate-x-1/2 -translate-y-1/2 appearance-none rounded-[4.5px] border-[3px] border-solid border-[color(display-p3_1_1_1)] bg-origin-border p-0 outline-none transition-transform duration-150 ease-out will-change-transform hover:scale-[1.08]"
+                      style={{
+                        left: marker.left,
+                        rotate: "315deg",
+                        outline:
+                          marker.status === "passed"
+                            ? LIVE_PASSED_STEP_MARKER_OUTLINE
+                            : LIVE_FAILED_STEP_MARKER_OUTLINE,
+                        backgroundImage:
+                          marker.status === "passed"
+                            ? LIVE_PASSED_STEP_MARKER_BACKGROUND_IMAGE
+                            : LIVE_FAILED_STEP_MARKER_BACKGROUND_IMAGE,
+                      }}
+                    />
+                    <TooltipContent side="top" sideOffset={12}>
+                      {marker.title}
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+                {playbackBar}
+              </div>
+              <button
+                type="button"
+                onClick={handlePlay}
+                disabled={!canPlay}
+                aria-label={playing ? "Pause replay" : "Play replay"}
+                className="absolute inset-y-1.5 left-1.5 z-[30] flex w-12.75 items-center justify-center gap-0 rounded-full bg-white px-2.75 py-0.75 text-[#2F2F2F] transition-transform duration-150 ease-out disabled:opacity-40 active:scale-[0.97]"
+                style={{ boxShadow: LIVE_PLAYBACK_BAR_BUTTON_SHADOW }}
+              >
+                {playing && <PauseIcon className="h-[12px] w-auto" />}
+                {!playing && <PlayIcon className="h-[21px] w-auto" />}
+              </button>
+            </div>
+            {livePlaybackStepMarkers.map((marker) => (
+              <div
+                key={`${marker.stepId}-label`}
+                className="pointer-events-none absolute top-full -mt-[17px] -translate-x-1/2 [letter-spacing:0em] h-4.5 font-['SFProDisplay-Semibold','SF_Pro_Display',system-ui,sans-serif] text-[11.5px]/4.5 font-semibold text-[color(display-p3_0.553_0.553_0.553)]"
+                style={{ left: marker.left }}
+              >
+                {marker.label}
+              </div>
+            ))}
+            {showFirstStepLabel && (
+              <div className="pointer-events-none absolute top-full left-0 -mt-[17px] [letter-spacing:0em] h-4.5 font-['SFProDisplay-Semibold','SF_Pro_Display',system-ui,sans-serif] text-[11.5px]/4.5 font-semibold text-[color(display-p3_0.553_0.553_0.553)]">
+                1
+              </div>
+            )}
+          </div>
+        )}
+        {!live && playbackBar}
+
+        {!live && (
           <div className="flex items-center justify-between gap-6">
             <div className="flex items-center gap-1">
               <button
@@ -590,23 +683,11 @@ export const ReplayViewer = ({
 
               <span className="inline-flex items-center gap-2.5 pl-2 text-[15px] leading-4.5 font-medium tracking-[0em] tabular-nums text-[color(display-p3_0.361_0.361_0.361)]">
                 <span>{timeLabel}</span>
-                <span className="text-[color(display-p3_0.727_0.727_0.727)]">/</span>
+                <span className="text-[color(display-p3_0.727_0.727_0.727)]">
+                  /
+                </span>
                 <span>{totalTimeLabel}</span>
               </span>
-              {live && (
-                <button
-                  type="button"
-                  onClick={() => seekTo(totalTime)}
-                  className="ml-2 inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-red-500/10 px-2.5 py-1 transition-opacity hover:bg-red-500/20 active:scale-[0.97]"
-                >
-                  <span
-                    className={`size-1.5 rounded-full bg-red-500 ${isAtLiveEdge ? "animate-pulse" : ""}`}
-                  />
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-red-500">
-                    Live
-                  </span>
-                </button>
-              )}
             </div>
 
             <div className="flex items-center gap-1">
@@ -629,13 +710,13 @@ export const ReplayViewer = ({
                 type="button"
                 onClick={handleFullscreen}
                 aria-label="Toggle fullscreen"
-                className="flex size-9 items-center justify-center rounded-full text-black transition-transform duration-150 ease-out active:scale-[0.97]"
+                className="flex size-9 items-center justify-center rounded-full text-[#919191] transition-transform duration-150 ease-out active:scale-[0.97]"
               >
-                <FullscreenIcon className="size-[18px]" />
+                <FullscreenIcon className="h-auto w-5 shrink-0" />
               </button>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

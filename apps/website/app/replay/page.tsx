@@ -52,7 +52,7 @@ const RecordingMode = () => {
   }
 
   return (
-    <div className="flex h-screen items-center justify-center">
+    <div className="flex h-screen items-center justify-center bg-[color(display-p3_0.986_0.986_0.986)]">
       <div className="flex flex-col items-center gap-10">
         <div className="relative flex size-24 items-center justify-center">
           <div className="recording-ripple absolute inset-0 rounded-full border border-red-500/20" />
