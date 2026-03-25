@@ -1,0 +1,38 @@
+tsconfig.json
+  2017b052e6ac129b 8
+archive/live-view-experiment/files/packages/supervisor/src/utils/resolve-live-view-url.ts
+  b910b39e0776db42 2-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "498cdb6f665fd3bdaaac35a5c3881563a4b7aa44",
+  "prompts": {
+    "2017b052e6ac129b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e080c92c-fbbd-470f-a592-f13fd674ae66",
+        "model": "composer-2"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 0,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "b910b39e0776db42": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "857f5676-c031-44ff-9e4d-bc9fe11c2db6",
+        "model": "composer-2"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 4,
+      "total_deletions": 30,
+      "accepted_lines": 4,
+      "overriden_lines": 0
+    }
+  }
+}
