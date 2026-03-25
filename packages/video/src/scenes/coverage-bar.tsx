@@ -8,9 +8,8 @@ const BOX_BORDER_COLOR = "rgba(224, 108, 80, 0.3)";
 const MUTED_COLOR = "#999999";
 const BAR_TOTAL_SEGMENTS = 10;
 const TARGET_FILLED_SEGMENTS = 4;
-const SEGMENT_WIDTH_PX = 36;
-const SEGMENT_HEIGHT_PX = 20;
-const SEGMENT_GAP_PX = 5;
+const FILLED_CHAR = "\u2588";
+const EMPTY_CHAR = "\u2591";
 const TARGET_PERCENT = 38;
 
 const APPEAR_START_FRAME = 8;
@@ -102,26 +101,12 @@ export const CoverageBar = () => {
             <span style={{ color: BAR_COLOR }}>⚠</span>
             <span style={{ color: BAR_COLOR, fontWeight: 600 }}>Untested changes</span>
 
-            <div
-              style={{
-                display: "flex",
-                gap: SEGMENT_GAP_PX,
-                marginLeft: 12,
-                alignItems: "center",
-              }}
-            >
-              {Array.from({ length: BAR_TOTAL_SEGMENTS }).map((_, index) => (
-                <div
-                  key={index}
-                  style={{
-                    width: SEGMENT_WIDTH_PX,
-                    height: SEGMENT_HEIGHT_PX,
-                    borderRadius: 4,
-                    backgroundColor: index < filledSegments ? BAR_COLOR : BAR_TRACK_COLOR,
-                  }}
-                />
-              ))}
-            </div>
+            <span style={{ color: BAR_COLOR, marginLeft: 12 }}>
+              {FILLED_CHAR.repeat(filledSegments)}
+            </span>
+            <span style={{ color: BAR_TRACK_COLOR }}>
+              {EMPTY_CHAR.repeat(BAR_TOTAL_SEGMENTS - filledSegments)}
+            </span>
 
             <span
               style={{
