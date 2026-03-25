@@ -6,6 +6,7 @@ import { spinner } from "../utils/spinner";
 import { isRunningInAgent } from "../utils/is-running-in-agent";
 import { isHeadless } from "../utils/is-headless";
 
+const INSTALL_COMMAND = "npm install -g expect-cli@latest";
 const SKILL_COMMAND = "npx skills add https://github.com/millionco/expect --skill expect-cli";
 
 const detectNonInteractive = (yesFlag: boolean): boolean =>
@@ -27,6 +28,20 @@ export const runInit = async (options: { yes?: boolean } = {}) => {
   logger.log(`  ${highlighter.info("expect")} ${highlighter.dim("— AI-powered browser testing")}`);
   logger.break();
 
+  const globalSpinner = spinner("Installing expect-cli globally...").start();
+  const globalSuccess = tryRun(INSTALL_COMMAND);
+
+  if (globalSuccess) {
+    globalSpinner.succeed(
+      `Installed! You can now run ${highlighter.info("expect")} from anywhere.`,
+    );
+  } else {
+    globalSpinner.fail("Failed to install globally.");
+    logger.dim(`  Run manually: ${highlighter.info(INSTALL_COMMAND)}`);
+  }
+
+  logger.break();
+
   let installSkill = nonInteractive;
 
   if (!nonInteractive) {
@@ -40,14 +55,13 @@ export const runInit = async (options: { yes?: boolean } = {}) => {
   }
 
   if (installSkill) {
-    const installSpinner = spinner("Installing skill...").start();
-    const success = tryRun(SKILL_COMMAND);
+    const skillSpinner = spinner("Installing skill...").start();
+    const skillSuccess = tryRun(SKILL_COMMAND);
 
-    if (success) {
-      installSpinner.succeed("Skill installed.");
+    if (skillSuccess) {
+      skillSpinner.succeed("Skill installed.");
     } else {
-      installSpinner.fail("Failed to install skill.");
-      logger.break();
+      skillSpinner.fail("Failed to install skill.");
       logger.dim(`  Run manually: ${highlighter.info(SKILL_COMMAND)}`);
     }
   }

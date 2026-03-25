@@ -54,8 +54,6 @@
   "dependencies": {
     "@effect/atom-react": "4.0.0-beta.35",
     "@effect/platform-node": "4.0.0-beta.35",
-    "@expect/shared": "workspace:*",
-    "@expect/supervisor": "workspace:*",
     "@tanstack/react-query": "^5.80.7",
     "cli-truncate": "^5.2.0",
     "commander": "^13.1.0",
@@ -77,6 +75,8 @@
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",
+    "@expect/shared": "workspace:*",
+    "@expect/supervisor": "workspace:*",
     "@types/node-notifier": "^8.0.5",
     "@types/prompts": "^2.4.9",
     "@types/react": "^19.2.14",
