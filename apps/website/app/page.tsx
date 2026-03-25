@@ -1537,7 +1537,7 @@ export default function Home() {
                     $
                   </span>
                   <span className="tracking-[-0.01em] text-[color(display-p3_0.195_0.195_0.195)] dark:text-[color(display-p3_0.881_0.881_0.881)]">
-                    npx expect-cli@latest
+                    npx -y expect-cli@latest init
                   </span>
                 </div>
                 <div className="flex items-center gap-[4px]">
@@ -1838,7 +1838,7 @@ function ThemeToggle({ theme, setTheme }: { theme: string | undefined; setTheme:
 function InstallCommands() {
   return (
     <div className="flex flex-col gap-1.5 w-full">
-      <CommandRow command="npx expect-cli@latest" />
+      <CommandRow command="npx -y expect-cli@latest init" />
       <div className="[font-synthesis:none] antialiased w-full mt-4">
         <div className="w-fit h-5 tracking-[-0.01em] text-[color(display-p3_0.361_0.361_0.361)] dark:text-[color(display-p3_0.55_0.55_0.55)] font-['ABC_Diatype',system-ui,sans-serif] shrink-0 text-[15px]/5 sm:text-[13px]/4.5">
           Add skill

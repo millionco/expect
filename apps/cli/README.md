@@ -10,7 +10,7 @@ Let agents test your code in a real browser. One command scans your unstaged cha
 ## Install
 
 ```bash
-npx expect-cli@latest
+npx -y expect-cli@latest init
 ```
 
 Or install globally:
