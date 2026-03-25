@@ -35,8 +35,7 @@ const CHROME_OMNIBOX_TEXT_COLOR = "color(display-p3 0.317 0.317 0.317)";
 const CHROME_OMNIBOX_FONT_FAMILY = '"OpenRunde-Medium", "Open_Runde", system-ui, sans-serif';
 const CHROME_WINDOW_OUTER_RADIUS_PX = 10;
 
-const browserViewportOffsetY = (contentY: number) =>
-  CHROME_BROWSER_FRAME_HEIGHT_PX + contentY;
+const browserViewportOffsetY = (contentY: number) => CHROME_BROWSER_FRAME_HEIGHT_PX + contentY;
 
 const legacyPaperIntroWaypointToCellY = (legacyCellY: number) =>
   browserViewportOffsetY((legacyCellY * BROWSER_VIEWPORT_HEIGHT_PX) / CELL_HEIGHT_PX);
@@ -65,8 +64,7 @@ const CHARS_PER_FRAME = 0.7;
 const FAQ_ARTBOARD_HEIGHT_PX = 424;
 const FAQ_ARTBOARD_SCALE = BROWSER_VIEWPORT_HEIGHT_PX / FAQ_ARTBOARD_HEIGHT_PX;
 const FAQ_ARTBOARD_LEFT_PX = 0;
-const FAQ_PAPER_SHADOW =
-  "#00000029 0px 0px 0px 0.5px, #00000008 0px 1px 5px";
+const FAQ_PAPER_SHADOW = "#00000029 0px 0px 0px 0.5px, #00000008 0px 1px 5px";
 const FAQ_TITLE_LEFT_PX = 71;
 const FAQ_TITLE_TOP_PX = 71;
 const FAQ_TITLE_WIDTH_PX = 560;
@@ -101,8 +99,7 @@ const FAQ_TITLE_FONT_FAMILY = '"Open Runde", "OpenRunde", system-ui, sans-serif'
 const FAQ_PAGE_BACKGROUND =
   "linear-gradient(in oklab 180deg, oklab(100% 0 0) 0%, oklab(100% 0 0 / 97%) 100%)";
 const FAQ_CURSOR_PILL_X =
-  FAQ_ARTBOARD_LAYOUT_OFFSET_X_PX +
-  (FAQ_PILL_LEFT_PX + FAQ_PILL_WIDTH_PX / 2) * FAQ_ARTBOARD_SCALE;
+  FAQ_ARTBOARD_LAYOUT_OFFSET_X_PX + (FAQ_PILL_LEFT_PX + FAQ_PILL_WIDTH_PX / 2) * FAQ_ARTBOARD_SCALE;
 const FAQ_PILL_CENTER_Y = FAQ_PILL_TOPS_PX.map(
   (topPx) => (topPx + FAQ_PILL_HEIGHT_PX / 2) * FAQ_ARTBOARD_SCALE,
 );
@@ -123,8 +120,7 @@ const FAQ_COMPOSITE_HEIGHT_PX = 97.9375;
 const FAQ_COMPOSITE_BADGE_LEFT_PX = 43;
 const FAQ_COMPOSITE_BADGE_TOP_PX = 35;
 const FAQ_COMPOSITE_POINTER_RENDER_WIDTH_PX = 101;
-const FAQ_COMPOSITE_POINTER_RENDER_HEIGHT_PX =
-  FAQ_COMPOSITE_POINTER_RENDER_WIDTH_PX * (32 / 33);
+const FAQ_COMPOSITE_POINTER_RENDER_HEIGHT_PX = FAQ_COMPOSITE_POINTER_RENDER_WIDTH_PX * (32 / 33);
 const FAQ_COMPOSITE_POINTER_TIP_VIEWBOX_X = 3.439;
 const FAQ_COMPOSITE_POINTER_TIP_VIEWBOX_Y = 2.939;
 const FAQ_COMPOSITE_HOTSPOT_X_PX =
@@ -134,11 +130,9 @@ const FAQ_COMPOSITE_HOTSPOT_Y_PX =
 const FAQ_COMPOSITE_ORANGE = "color(display-p3 1 0.602 0.001)";
 const FAQ_COMPOSITE_BADGE_SHADOW = "0px 0px 13px rgba(131, 131, 131, 0.43)";
 const FAQ_CURSOR_MIN_X_PX = FAQ_COMPOSITE_HOTSPOT_X_PX;
-const FAQ_CURSOR_MAX_X_PX =
-  CELL_WIDTH_PX - FAQ_COMPOSITE_WIDTH_PX + FAQ_COMPOSITE_HOTSPOT_X_PX;
+const FAQ_CURSOR_MAX_X_PX = CELL_WIDTH_PX - FAQ_COMPOSITE_WIDTH_PX + FAQ_COMPOSITE_HOTSPOT_X_PX;
 const FAQ_CURSOR_MIN_Y_PX = FAQ_COMPOSITE_HOTSPOT_Y_PX;
-const FAQ_CURSOR_MAX_Y_PX =
-  CELL_HEIGHT_PX - FAQ_COMPOSITE_HEIGHT_PX + FAQ_COMPOSITE_HOTSPOT_Y_PX;
+const FAQ_CURSOR_MAX_Y_PX = CELL_HEIGHT_PX - FAQ_COMPOSITE_HEIGHT_PX + FAQ_COMPOSITE_HOTSPOT_Y_PX;
 const FAQ_CURSOR_WAYPOINTS = [
   {
     x: Math.min(415 + FAQ_ARTBOARD_LAYOUT_OFFSET_X_PX, FAQ_CURSOR_MAX_X_PX),
@@ -216,8 +210,7 @@ const NEWSLETTER_COMPOSITE_HEIGHT_PX = 97.9375;
 const NEWSLETTER_COMPOSITE_BADGE_LEFT_PX = 43;
 const NEWSLETTER_COMPOSITE_BADGE_TOP_PX = 40;
 const NEWSLETTER_COMPOSITE_POINTER_RENDER_WIDTH_PX = 101;
-const NEWSLETTER_COMPOSITE_BADGE_SHADOW =
-  "0px 0px 13px color(display-p3 0.514 0.514 0.514 / 43%)";
+const NEWSLETTER_COMPOSITE_BADGE_SHADOW = "0px 0px 13px color(display-p3 0.514 0.514 0.514 / 43%)";
 const NEWSLETTER_COMPOSITE_BADGE_BACKGROUND = "color(display-p3 0.915 0 0)";
 const NEWSLETTER_COMPOSITE_BADGE_OUTLINE = "3px solid color(display-p3 1 1 1)";
 const NEWSLETTER_CURSOR_MIN_X_PX = FAQ_COMPOSITE_HOTSPOT_X_PX;
@@ -357,10 +350,7 @@ const DASHBOARD_CURSOR_WAYPOINTS = [
   { x: 380 + DASHBOARD_RT_ARTBOARD_LAYOUT_OFFSET_X_PX, y: legacyPaperIntroWaypointToCellY(125) },
   {
     x: Math.min(330 + DASHBOARD_RT_ARTBOARD_LAYOUT_OFFSET_X_PX, DASHBOARD_CURSOR_CHART_CENTER_X),
-    y: Math.min(
-      browserViewportOffsetY(DASHBOARD_CURSOR_CHART_CENTER_Y),
-      DASHBOARD_CURSOR_MAX_Y_PX,
-    ),
+    y: Math.min(browserViewportOffsetY(DASHBOARD_CURSOR_CHART_CENTER_Y), DASHBOARD_CURSOR_MAX_Y_PX),
   },
   {
     x: DASHBOARD_CURSOR_MIDDLE_CARD_CENTER_X - 15,
@@ -400,7 +390,8 @@ const DASHBOARD_CURSOR_WAYPOINTS = [
 ];
 
 const CHECKOUT_PAPER_ARTBOARD_HEIGHT_PX = 424;
-const CHECKOUT_PAPER_ARTBOARD_SCALE = BROWSER_VIEWPORT_HEIGHT_PX / CHECKOUT_PAPER_ARTBOARD_HEIGHT_PX;
+const CHECKOUT_PAPER_ARTBOARD_SCALE =
+  BROWSER_VIEWPORT_HEIGHT_PX / CHECKOUT_PAPER_ARTBOARD_HEIGHT_PX;
 const CHECKOUT_PAPER_ARTBOARD_LEFT_PX = FAQ_ARTBOARD_LEFT_PX;
 const CHECKOUT_PAPER_ARTBOARD_TOP_PX = 0;
 const CHECKOUT_PAPER_FIELD_SHADOW = NEWSLETTER_FIELD_SHADOW;
@@ -523,31 +514,19 @@ const CHECKOUT_CURSOR_WAYPOINTS = [
   },
   {
     x: CHECKOUT_CURSOR_BUTTON_CENTER_X + 12,
-    y: Math.min(
-      browserViewportOffsetY(CHECKOUT_CURSOR_BUTTON_CENTER_Y),
-      CHECKOUT_CURSOR_MAX_Y_PX,
-    ),
+    y: Math.min(browserViewportOffsetY(CHECKOUT_CURSOR_BUTTON_CENTER_Y), CHECKOUT_CURSOR_MAX_Y_PX),
   },
   {
     x: CHECKOUT_CURSOR_FIELD_CENTER_X - 15,
-    y: Math.min(
-      browserViewportOffsetY(CHECKOUT_CURSOR_BUTTON_CENTER_Y),
-      CHECKOUT_CURSOR_MAX_Y_PX,
-    ),
+    y: Math.min(browserViewportOffsetY(CHECKOUT_CURSOR_BUTTON_CENTER_Y), CHECKOUT_CURSOR_MAX_Y_PX),
   },
   {
     x: CHECKOUT_CURSOR_BUTTON_CENTER_X + 12,
-    y: Math.min(
-      browserViewportOffsetY(CHECKOUT_CURSOR_BUTTON_CENTER_Y),
-      CHECKOUT_CURSOR_MAX_Y_PX,
-    ),
+    y: Math.min(browserViewportOffsetY(CHECKOUT_CURSOR_BUTTON_CENTER_Y), CHECKOUT_CURSOR_MAX_Y_PX),
   },
   {
     x: CHECKOUT_CURSOR_BUTTON_CENTER_X,
-    y: Math.min(
-      browserViewportOffsetY(CHECKOUT_CURSOR_BUTTON_CENTER_Y),
-      CHECKOUT_CURSOR_MAX_Y_PX,
-    ),
+    y: Math.min(browserViewportOffsetY(CHECKOUT_CURSOR_BUTTON_CENTER_Y), CHECKOUT_CURSOR_MAX_Y_PX),
   },
 ];
 
@@ -1507,10 +1486,7 @@ const ChromeToolbarButton = ({ children }: ChromeToolbarButtonProps) => (
   </div>
 );
 
-const ChromeToolbarIcon = ({
-  children,
-  viewBox = "0 0 24 24",
-}: ChromeToolbarIconProps) => (
+const ChromeToolbarIcon = ({ children, viewBox = "0 0 24 24" }: ChromeToolbarIconProps) => (
   <svg
     viewBox={viewBox}
     width={CHROME_TOOLBAR_BUTTON_ICON_SIZE_PX}
@@ -1859,11 +1835,12 @@ export const BrowserCell = ({ frameOffset = 0, variant = "signup" }: BrowserCell
                 />
                 <feOffset dy="1" />
                 <feGaussianBlur stdDeviation="1.5" />
-                <feColorMatrix
-                  type="matrix"
-                  values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.35 0"
+                <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.35 0" />
+                <feBlend
+                  mode="normal"
+                  in2="BackgroundImageFix"
+                  result="effect1_dropShadow_2399_8369"
                 />
-                <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_2399_8369" />
                 <feBlend
                   mode="normal"
                   in="SourceGraphic"
@@ -1993,11 +1970,12 @@ export const BrowserCell = ({ frameOffset = 0, variant = "signup" }: BrowserCell
                 />
                 <feOffset dy="1" />
                 <feGaussianBlur stdDeviation="1.5" />
-                <feColorMatrix
-                  type="matrix"
-                  values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.35 0"
+                <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.35 0" />
+                <feBlend
+                  mode="normal"
+                  in2="BackgroundImageFix"
+                  result="effect1_dropShadow_2399_8369"
                 />
-                <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_2399_8369" />
                 <feBlend
                   mode="normal"
                   in="SourceGraphic"
@@ -2123,11 +2101,12 @@ export const BrowserCell = ({ frameOffset = 0, variant = "signup" }: BrowserCell
                 />
                 <feOffset dy="1" />
                 <feGaussianBlur stdDeviation="1.5" />
-                <feColorMatrix
-                  type="matrix"
-                  values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.35 0"
+                <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.35 0" />
+                <feBlend
+                  mode="normal"
+                  in2="BackgroundImageFix"
+                  result="effect1_dropShadow_2399_8369"
                 />
-                <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_2399_8369" />
                 <feBlend
                   mode="normal"
                   in="SourceGraphic"
@@ -2247,11 +2226,12 @@ export const BrowserCell = ({ frameOffset = 0, variant = "signup" }: BrowserCell
                 />
                 <feOffset dy="1" />
                 <feGaussianBlur stdDeviation="1.5" />
-                <feColorMatrix
-                  type="matrix"
-                  values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.35 0"
+                <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.35 0" />
+                <feBlend
+                  mode="normal"
+                  in2="BackgroundImageFix"
+                  result="effect1_dropShadow_2399_8369"
                 />
-                <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_2399_8369" />
                 <feBlend
                   mode="normal"
                   in="SourceGraphic"
@@ -2312,10 +2292,7 @@ export const BrowserCell = ({ frameOffset = 0, variant = "signup" }: BrowserCell
               <feOffset />
               <feGaussianBlur stdDeviation="1" />
               <feComposite in2="hardAlpha" operator="out" />
-              <feColorMatrix
-                type="matrix"
-                values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.22 0"
-              />
+              <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.22 0" />
               <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1_316" />
               <feBlend
                 mode="normal"
