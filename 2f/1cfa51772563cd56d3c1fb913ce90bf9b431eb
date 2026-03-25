@@ -1,0 +1,36 @@
+apps/cli/README.md
+  92c25600a699950b 45-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "2f1cfa51772563cd56d3c1fb913ce90bf9b431eb",
+  "prompts": {
+    "45189981203c73d1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "94b7e4e5-8be7-4858-a16e-13082812b2c2",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 78,
+      "total_deletions": 21,
+      "accepted_lines": 76,
+      "overriden_lines": 0
+    },
+    "92c25600a699950b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "2a77f589-30fb-4973-a02a-6016b28530d2",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 16,
+      "total_deletions": 0,
+      "accepted_lines": 8,
+      "overriden_lines": 0
+    }
+  }
+}
