@@ -1,0 +1,23 @@
+apps/cli/src/components/screens/port-picker-screen.tsx
+  aafb5bf052423559 153-154,238-241
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "8658417c4d2777d4b04e6e42a1a408744a94df79",
+  "prompts": {
+    "aafb5bf052423559": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c724b9aa-a93e-405f-bf44-e3bf5a3227d7",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 9,
+      "total_deletions": 5,
+      "accepted_lines": 9,
+      "overriden_lines": 0
+    }
+  }
+}
