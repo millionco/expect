@@ -6,7 +6,6 @@ export const TESTING_TIMER_UPDATE_INTERVAL_MS = 1000;
 export const SHIMMER_TICK_MS = 50;
 export const SHIMMER_GRADIENT_WIDTH = 16;
 export const FLOW_INPUT_HISTORY_LIMIT = 20;
-export const PROGRESS_BAR_WIDTH = 20;
 export const COMMIT_SELECTOR_WIDTH = 2;
 export const BRANCH_NAME_COLUMN_WIDTH = 32;
 export const BRANCH_AUTHOR_COLUMN_WIDTH = 16;

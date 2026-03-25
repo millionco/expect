@@ -5,6 +5,7 @@ import { DateTime, Option } from "effect";
 import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
 import * as Atom from "effect/unstable/reactivity/Atom";
 import { useAtom, useAtomValue } from "@effect/atom-react";
+import stringWidth from "string-width";
 
 import {
   ChangesFor,
@@ -15,7 +16,6 @@ import {
   type ExecutedTestPlan,
 } from "@expect/shared/models";
 import {
-  PROGRESS_BAR_WIDTH,
   TESTING_TIMER_UPDATE_INTERVAL_MS,
   TESTING_TOOL_TEXT_CHAR_LIMIT,
 } from "../../constants";
@@ -34,6 +34,7 @@ import { Image } from "../ui/image";
 import { ErrorMessage } from "../ui/error-message";
 import { createPlanFn } from "../../data/planning-atom";
 import { executePlanFn, screenshotPathsAtom } from "../../data/execution-atom";
+import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions";
 
 interface TestingScreenProps {
   changesFor: ChangesFor;
@@ -52,6 +53,7 @@ const getStepElapsedMs = (step: TestPlanStep): number | undefined => {
 export const TestingScreen = ({ changesFor, instruction, existingPlan }: TestingScreenProps) => {
   const setScreen = useNavigationStore((state) => state.setScreen);
   const COLORS = useColors();
+  const [columns] = useStdoutDimensions();
 
   const agentBackend = usePreferencesStore((state) => state.agentBackend);
   const skipPlanning = usePreferencesStore((state) => state.skipPlanning);
@@ -257,9 +259,29 @@ export const TestingScreen = ({ changesFor, instruction, existingPlan }: Testing
         ? "Finishing up"
         : "Starting";
 
+  const progressStateLabel = awaitingApproval
+    ? "READY"
+    : isPlanning
+      ? "PLANNING"
+      : isExecutingPlan
+        ? "RUNNING"
+        : "COMPLETE";
+  const progressStateText = `${figures.bullet} ${progressStateLabel}`;
+  const progressCountText = ` ${completedCount}/${totalCount} `;
+  const elapsedTimeText = isExecutingPlan || isPlanning ? ` ${figures.pointerSmall} ${elapsedTimeLabel}` : "";
+  const progressRowWidth = Math.max(0, columns - 2);
+  const progressBarWidth = Math.max(
+    0,
+    progressRowWidth -
+      stringWidth(progressStateText) -
+      1 -
+      stringWidth(progressCountText) -
+      1 -
+      stringWidth(elapsedTimeText),
+  );
   const filledWidth =
-    totalCount > 0 ? Math.round((completedCount / totalCount) * PROGRESS_BAR_WIDTH) : 0;
-  const emptyWidth = PROGRESS_BAR_WIDTH - filledWidth;
+    totalCount > 0 ? Math.round((completedCount / totalCount) * progressBarWidth) : 0;
+  const emptyWidth = progressBarWidth - filledWidth;
 
   return (
     <>
@@ -272,18 +294,29 @@ export const TestingScreen = ({ changesFor, instruction, existingPlan }: Testing
       </Static>
       <Box flexDirection="column" width="100%" paddingY={1}>
         <Box paddingX={1}>
-          <ScreenHeading title="Executing browser plan" subtitle={instruction} />
+          <ScreenHeading
+            title="Executing browser plan"
+            subtitle={instruction}
+            showDivider={false}
+          />
         </Box>
 
-        <Box marginTop={1} paddingX={1}>
-          <Text>
-            <Text color={COLORS.PRIMARY}>{"━".repeat(filledWidth)}</Text>
-            <Text color={COLORS.BORDER}>{"─".repeat(emptyWidth)}</Text>
+        <Box marginTop={1} paddingX={1} alignItems="center">
+          <Text bold color={COLORS.SELECTION}>
+            {progressStateText}
           </Text>
-          <Text color={COLORS.DIM}>
-            {`  ${completedCount}/${totalCount}`}
-            {isExecutingPlan || isPlanning ? ` ${figures.pointerSmall} ${elapsedTimeLabel}` : ""}
+          <Text> </Text>
+          <Text backgroundColor={COLORS.SELECTION}>
+            {" ".repeat(filledWidth)}
           </Text>
+          <Text backgroundColor={COLORS.DIVIDER}>
+            {" ".repeat(emptyWidth)}
+          </Text>
+          <Text> </Text>
+          <Text backgroundColor={COLORS.DIVIDER} color={COLORS.TEXT}>
+            {progressCountText}
+          </Text>
+          {elapsedTimeText ? <Text color={COLORS.DIM}>{elapsedTimeText}</Text> : null}
         </Box>
 
         <Box flexDirection="column" marginTop={1} paddingX={1}>
