@@ -1,4 +1,4 @@
-import { Effect, Layer, Schema, ServiceMap } from "effect";
+import { Config, Effect, Layer, Schema, ServiceMap } from "effect";
 import { ChildProcess } from "effect/unstable/process";
 import { ChildProcessSpawner } from "effect/unstable/process/ChildProcessSpawner";
 import { NodeServices } from "@effect/platform-node";
@@ -8,10 +8,9 @@ import { PostHog } from "posthog-node";
 
 import type { EventMap } from "./analytics-events";
 
-const POSTHOG_API_KEY = "phc_t5FKk9mlc4pKbbBimiIlrM5Acq9meRp1FSuNjmwxjAX";
+const POSTHOG_API_KEY_ENV_NAME = "POSTHOG_API_KEY";
+const POSTHOG_HOST_ENV_NAME = "POSTHOG_HOST";
 const POSTHOG_DEFAULT_HOST = "https://us.i.posthog.com";
-
-const posthogClient = new PostHog(POSTHOG_API_KEY, { host: POSTHOG_DEFAULT_HOST });
 
 const ClaudeAuthStatusResponse = Schema.Struct({
   email: Schema.String,
@@ -74,27 +73,37 @@ export class AnalyticsProvider extends ServiceMap.Service<
   AnalyticsProvider,
   AnalyticsProviderShape
 >()("@expect/AnalyticsProvider") {
-  static layerPostHog = Layer.succeed(this)({
-    capture: (event) =>
-      Effect.sync(() => {
-        posthogClient.captureImmediate({
-          event: event.eventName,
-          properties: event.properties,
-          distinctId: event.distinctId,
-        });
-      }),
-    identify: (params) =>
-      Effect.sync(() => {
-        posthogClient.identify({
-          distinctId: params.distinctId,
-          properties: { email: params.email, ...(params.name ? { name: params.name } : {}) },
-        });
-      }),
-    flush: Effect.tryPromise({
-      try: () => posthogClient.flush(),
-      catch: (cause) => cause,
-    }).pipe(Effect.ignore),
-  });
+  static layerPostHog = Layer.effect(this)(
+    Effect.gen(function* () {
+      const posthogApiKey = yield* Config.string(POSTHOG_API_KEY_ENV_NAME);
+      const posthogHost = yield* Config.string(POSTHOG_HOST_ENV_NAME).pipe(
+        Config.withDefault(POSTHOG_DEFAULT_HOST),
+      );
+      const posthogClient = new PostHog(posthogApiKey, { host: posthogHost });
+
+      return {
+        capture: (event) =>
+          Effect.sync(() => {
+            posthogClient.captureImmediate({
+              event: event.eventName,
+              properties: event.properties,
+              distinctId: event.distinctId,
+            });
+          }),
+        identify: (params) =>
+          Effect.sync(() => {
+            posthogClient.identify({
+              distinctId: params.distinctId,
+              properties: { email: params.email, ...(params.name ? { name: params.name } : {}) },
+            });
+          }),
+        flush: Effect.tryPromise({
+          try: () => posthogClient.flush(),
+          catch: (cause) => cause,
+        }).pipe(Effect.ignore),
+      } as const;
+    }),
+  );
 
   static layerDev = Layer.succeed(this)({
     capture: (event) =>
