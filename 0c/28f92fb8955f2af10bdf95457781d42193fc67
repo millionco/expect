@@ -1,0 +1,42 @@
+apps/cli/src/data/execution-atom.ts
+  157362bfa529bf18 8,23-28,30,32-55,57,59-64,66-73,75-77,79-85
+packages/supervisor/tests/executor.test.ts
+  185336a0eafc6a5d 2,43-70,73-74,92-93
+apps/cli/src/utils/run-test.ts
+  157362bfa529bf18 10,20-25,27-31,33-35,37-66,68-89,91,93-98,100-107,109-112,114-118
+apps/cli/src/utils/strip-undefined-requirement.ts
+  157362bfa529bf18 1-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "0c28f92fb8955f2af10bdf95457781d42193fc67",
+  "prompts": {
+    "157362bfa529bf18": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "61ad6627-71d5-4cdb-9467-7e713d60ddc8",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 174,
+      "total_deletions": 163,
+      "accepted_lines": 169,
+      "overriden_lines": 0
+    },
+    "185336a0eafc6a5d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "103e1cb9-3a3e-4fa9-aff1-61b73e0e6aad",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 33,
+      "total_deletions": 21,
+      "accepted_lines": 33,
+      "overriden_lines": 0
+    }
+  }
+}
