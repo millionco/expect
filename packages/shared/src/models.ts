@@ -374,6 +374,23 @@ export class TestPlanStep extends Schema.Class<TestPlanStep>("@supervisor/TestPl
   }
 }
 
+export class TestCoverageEntry extends Schema.Class<TestCoverageEntry>(
+  "@supervisor/TestCoverageEntry",
+)({
+  path: Schema.String,
+  testFiles: Schema.Array(Schema.String),
+  covered: Schema.Boolean,
+}) {}
+
+export class TestCoverageReport extends Schema.Class<TestCoverageReport>(
+  "@supervisor/TestCoverageReport",
+)({
+  entries: Schema.Array(TestCoverageEntry),
+  coveredCount: Schema.Number,
+  totalCount: Schema.Number,
+  percent: Schema.Number,
+}) {}
+
 export const DraftId = Schema.String.pipe(Schema.brand("DraftId"));
 export type DraftId = typeof DraftId.Type;
 
@@ -387,6 +404,7 @@ export class TestPlanDraft extends Schema.Class<TestPlanDraft>("@supervisor/Test
   baseUrl: Schema.Option(Schema.String),
   isHeadless: Schema.Boolean,
   requiresCookies: Schema.Boolean,
+  testCoverage: Schema.Option(TestCoverageReport),
 }) {
   update(
     fields: Partial<
@@ -907,6 +925,7 @@ export class TestReport extends ExecutedTestPlan.extend<TestReport>("@supervisor
   summary: Schema.String,
   screenshotPaths: Schema.Array(Schema.String),
   pullRequest: Schema.Option(Schema.suspend(() => PullRequest)),
+  testCoverageReport: Schema.Option(TestCoverageReport),
 }) {
   /** @todo(rasmus): UNUSED */
   get stepStatuses(): ReadonlyMap<
@@ -969,6 +988,21 @@ export class TestReport extends ExecutedTestPlan.extend<TestReport>("@supervisor
       lines.push(`  ${stepIcon} ${step.title}`);
       if (entry?.summary) {
         lines.push(`    ${entry.summary}`);
+      }
+    }
+
+    if (Option.isSome(this.testCoverageReport)) {
+      const coverage = this.testCoverageReport.value;
+      lines.push("");
+      lines.push(
+        `Test coverage: ${coverage.percent}% (${coverage.coveredCount}/${coverage.totalCount} changed files have tests)`,
+      );
+      const uncovered = coverage.entries.filter((entry) => !entry.covered);
+      if (uncovered.length > 0) {
+        lines.push("  Untested files:");
+        for (const entry of uncovered) {
+          lines.push(`    - ${entry.path}`);
+        }
       }
     }
 

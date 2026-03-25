@@ -19,6 +19,7 @@ import { Spinner } from "../ui/spinner";
 import { Logo } from "../ui/logo";
 import { ContextPicker } from "../ui/context-picker";
 import { useContextPicker } from "../../hooks/use-context-picker";
+import { useTestCoverage } from "../../hooks/use-test-coverage";
 import { trackEvent } from "../../utils/session-analytics";
 import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions";
 import { getFlowSuggestions } from "../../utils/get-flow-suggestions";
@@ -31,6 +32,32 @@ interface MainMenuProps {
 }
 
 const MIN_COLUMNS_FOR_CYCLE_HINT = 80;
+const COVERAGE_THRESHOLD_HIGH = 70;
+const COVERAGE_THRESHOLD_MEDIUM = 40;
+const COVERAGE_BAR_WIDTH = 10;
+
+const coverageColor = (percent: number): string => {
+  if (percent >= COVERAGE_THRESHOLD_HIGH) return "green";
+  if (percent >= COVERAGE_THRESHOLD_MEDIUM) return "yellow";
+  return "#e06c50";
+};
+
+const coverageBannerBg = (percent: number): string => {
+  if (percent >= COVERAGE_THRESHOLD_HIGH) return "#0a2b0a";
+  if (percent >= COVERAGE_THRESHOLD_MEDIUM) return "#332b00";
+  return "#331510";
+};
+
+const coverageRecommendation = (_percent: number): string => "Use Expect to test your changes.";
+
+const coverageBar = (percent: number): { filled: string; empty: string } => {
+  const filledCount = Math.round((percent / 100) * COVERAGE_BAR_WIDTH);
+  const emptyCount = COVERAGE_BAR_WIDTH - filledCount;
+  return {
+    filled: "\u2588".repeat(filledCount),
+    empty: "\u2591".repeat(emptyCount),
+  };
+};
 
 export const MainMenu = ({ gitState }: MainMenuProps) => {
   const COLORS = useColors();
@@ -47,6 +74,7 @@ export const MainMenu = ({ gitState }: MainMenuProps) => {
   const [savedCurrentInput, setSavedCurrentInput] = useState("");
   const cookiesEnabled = useProjectPreferencesStore((state) => state.cookiesEnabled);
   const toggleCookies = useProjectPreferencesStore((state) => state.toggleCookies);
+  const { data: testCoverage } = useTestCoverage(gitState);
 
   const navigateHistoryBack = () => {
     if (instructionHistory.length === 0) return;
@@ -230,45 +258,73 @@ export const MainMenu = ({ gitState }: MainMenuProps) => {
         <Logo />
       </Box>
 
-      {gitState?.hasUntestedChanges && (
-        <Box
-          paddingX={1}
-          paddingY={1}
-          marginBottom={1}
-          backgroundColor={COLORS.BANNER_BG}
-          width="100%"
-          flexDirection="column"
-          gap={0}
-        >
-          {(() => {
-            const stats = gitState.workingTreeFileStats;
-            const totalAdded = stats.reduce((sum, stat) => sum + stat.added, 0);
-            const totalRemoved = stats.reduce((sum, stat) => sum + stat.removed, 0);
-            return (
-              <Box>
-                <Text color={COLORS.YELLOW} bold>
-                  {figures.warning} Untested changes detected
-                </Text>
-                {stats.length > 0 && (
-                  <>
-                    <Text color={COLORS.DIM}>
-                      {" "}
-                      {stats.length} file{stats.length === 1 ? "" : "s"}{" "}
+      {gitState?.hasUntestedChanges &&
+        !(testCoverage && testCoverage.totalCount > 0 && testCoverage.percent >= 90) && (
+          <Box
+            paddingX={1}
+            paddingY={1}
+            marginBottom={1}
+            backgroundColor={
+              testCoverage && testCoverage.totalCount > 0 && testCoverage.coveredCount > 0
+                ? coverageBannerBg(testCoverage.percent)
+                : COLORS.BANNER_BG
+            }
+            width="100%"
+            flexDirection="column"
+            gap={0}
+          >
+            {(() => {
+              const hasCoverage =
+                testCoverage && testCoverage.totalCount > 0 && testCoverage.coveredCount > 0;
+
+              if (hasCoverage) {
+                return (
+                  <Box>
+                    <Text color={coverageColor(testCoverage.percent)} bold>
+                      {figures.warning} Untested changes
                     </Text>
-                    {totalAdded > 0 && <Text color={COLORS.GREEN}>+{totalAdded}</Text>}
-                    {totalAdded > 0 && totalRemoved > 0 && <Text color={COLORS.DIM}> </Text>}
-                    {totalRemoved > 0 && <Text color={COLORS.RED}>-{totalRemoved}</Text>}
-                  </>
-                )}
-              </Box>
-            );
-          })()}
-          <Text color={COLORS.DIM}>
-            Describe what to test and hit <Text color={COLORS.YELLOW}>enter</Text> to verify your
-            changes.
-          </Text>
-        </Box>
-      )}
+                    <Text> </Text>
+                    <Text color={coverageColor(testCoverage.percent)}>
+                      {coverageBar(testCoverage.percent).filled}
+                    </Text>
+                    <Text color={COLORS.DIM}>{coverageBar(testCoverage.percent).empty}</Text>
+                    <Text color={coverageColor(testCoverage.percent)}>
+                      {" "}
+                      {testCoverage.percent}% test coverage
+                    </Text>
+                  </Box>
+                );
+              }
+
+              const stats = gitState.workingTreeFileStats;
+              const totalAdded = stats.reduce((sum, stat) => sum + stat.added, 0);
+              const totalRemoved = stats.reduce((sum, stat) => sum + stat.removed, 0);
+              return (
+                <Box>
+                  <Text color={COLORS.YELLOW} bold>
+                    {figures.warning} Untested changes detected
+                  </Text>
+                  {stats.length > 0 && (
+                    <>
+                      <Text color={COLORS.DIM}>
+                        {" "}
+                        {stats.length} file{stats.length === 1 ? "" : "s"}{" "}
+                      </Text>
+                      {totalAdded > 0 && <Text color={COLORS.GREEN}>+{totalAdded}</Text>}
+                      {totalAdded > 0 && totalRemoved > 0 && <Text color={COLORS.DIM}> </Text>}
+                      {totalRemoved > 0 && <Text color={COLORS.RED}>-{totalRemoved}</Text>}
+                    </>
+                  )}
+                </Box>
+              );
+            })()}
+            <Text color={COLORS.DIM}>
+              {testCoverage && testCoverage.totalCount > 0 && testCoverage.coveredCount > 0
+                ? coverageRecommendation(testCoverage.percent)
+                : "Describe what to test and hit enter to verify your changes."}
+            </Text>
+          </Box>
+        )}
 
       <Box flexDirection="column" width="100%">
         <Box paddingX={1}>

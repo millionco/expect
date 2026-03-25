@@ -1,4 +1,4 @@
-import { Effect, Stream } from "effect";
+import { Effect, Option, Stream } from "effect";
 import { changesForDisplayName, type ChangesFor } from "@expect/shared/models";
 import { Executor, ExecutedTestPlan, Reporter } from "@expect/supervisor";
 import { Analytics } from "@expect/shared/observability";
@@ -83,6 +83,7 @@ export const runHeadless = (options: HeadlessRunOptions) =>
                     baseUrl: undefined as never,
                     isHeadless: !options.headed,
                     requiresCookies: false,
+                    testCoverage: Option.none(),
                     title: options.instruction,
                     rationale: "Direct execution",
                     steps: [],

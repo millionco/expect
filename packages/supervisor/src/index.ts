@@ -36,3 +36,4 @@ export {
   type ChangedFileSummary,
   type FileCategory,
 } from "./utils/categorize-changed-files";
+export { TestCoverage } from "./test-coverage";

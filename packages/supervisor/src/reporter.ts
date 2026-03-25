@@ -29,6 +29,7 @@ export class Reporter extends ServiceMap.Service<Reporter>()("@supervisor/Report
         summary,
         screenshotPaths,
         pullRequest: Option.none(),
+        testCoverageReport: executed.testCoverage,
       });
     });
 

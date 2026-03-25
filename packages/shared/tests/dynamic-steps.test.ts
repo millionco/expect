@@ -27,6 +27,7 @@ const makeEmptyPlan = (): TestPlan =>
     baseUrl: Option.none(),
     isHeadless: false,
     requiresCookies: false,
+    testCoverage: Option.none(),
   });
 
 const makeEmptyExecuted = (): ExecutedTestPlan =>

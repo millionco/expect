@@ -10,3 +10,25 @@ export const EXECUTION_RECENT_COMMIT_LIMIT = 5;
 export const EXPECT_STATE_DIR = ".expect";
 export const EXPECT_REPLAY_OUTPUT_ENV_NAME = "EXPECT_REPLAY_OUTPUT_PATH";
 export const TESTED_FINGERPRINT_FILE = "last-tested";
+
+export const SOURCE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mts", ".mjs", ".cts", ".cjs"];
+
+export const SKIP_DIRECTORIES = new Set([
+  "node_modules",
+  "dist",
+  "build",
+  ".git",
+  ".next",
+  ".turbo",
+  "coverage",
+  ".nyc_output",
+  ".cache",
+  ".repos",
+  ".specs",
+  "__snapshots__",
+  "__fixtures__",
+]);
+
+export const TEST_FILE_CONTENT_SIZE_LIMIT_BYTES = 256 * 1024;
+export const TEST_FILE_SCAN_LIMIT = 200;
+export const TEST_COVERAGE_TIMEOUT_MS = 15_000;

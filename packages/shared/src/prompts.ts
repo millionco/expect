@@ -1,4 +1,10 @@
-import type { ChangedFile, ChangesFor, CommitSummary, SavedFlow } from "./models";
+import type {
+  ChangedFile,
+  ChangesFor,
+  CommitSummary,
+  SavedFlow,
+  TestCoverageReport,
+} from "./models";
 
 const EXECUTION_CONTEXT_FILE_LIMIT = 12;
 const EXECUTION_RECENT_COMMIT_LIMIT = 5;
@@ -19,6 +25,7 @@ export interface ExecutionPromptOptions {
   readonly browserMcpServerName?: string;
   readonly savedFlow?: SavedFlow;
   readonly learnings?: string;
+  readonly testCoverage?: TestCoverageReport;
 }
 
 const formatSavedFlowGuidance = (savedFlow: SavedFlow | undefined): string[] => {
@@ -71,6 +78,31 @@ const getScopeStrategy = (scope: ChangesFor["_tag"]): string[] => {
         "- Do not stop after the happy path passes. The value of a branch review is catching what the developer might have missed.",
       ];
   }
+};
+
+const formatTestCoverageSection = (testCoverage: TestCoverageReport | undefined): string[] => {
+  if (!testCoverage || testCoverage.totalCount === 0) return [];
+
+  const lines = [
+    `Test coverage of changed files: ${testCoverage.percent}% (${testCoverage.coveredCount}/${testCoverage.totalCount} files have tests)`,
+  ];
+
+  const covered = testCoverage.entries.filter((entry) => entry.covered);
+  const uncovered = testCoverage.entries.filter((entry) => !entry.covered);
+
+  for (const entry of covered) {
+    lines.push(`  [covered] ${entry.path} (tested by: ${entry.testFiles.slice(0, 3).join(", ")})`);
+  }
+  for (const entry of uncovered) {
+    lines.push(`  [no test] ${entry.path}`);
+  }
+
+  if (uncovered.length > 0) {
+    lines.push("Prioritize browser-testing files WITHOUT existing test coverage.");
+  }
+
+  lines.push("");
+  return lines;
 };
 
 export const buildExecutionPrompt = (options: ExecutionPromptOptions): string => {
@@ -198,6 +230,7 @@ export const buildExecutionPrompt = (options: ExecutionPromptOptions): string =>
       ? changedFiles.map((file) => `- [${file.status}] ${file.path}`).join("\n")
       : "- No changed files detected",
     "",
+    ...formatTestCoverageSection(options.testCoverage),
     "Recent commits:",
     recentCommits.length > 0
       ? recentCommits.map((commit) => `- ${commit.shortHash} ${commit.subject}`).join("\n")

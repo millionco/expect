@@ -1,4 +1,4 @@
-import { Effect, Stream } from "effect";
+import { Effect, Option, Stream } from "effect";
 import * as Atom from "effect/unstable/reactivity/Atom";
 import { ExecutedTestPlan, Executor, Git, Reporter, type ExecuteOptions } from "@expect/supervisor";
 import { Analytics } from "@expect/shared/observability";
@@ -124,6 +124,7 @@ const execute = Effect.fnUntraced(
               baseUrl: undefined as never,
               isHeadless: input.options.isHeadless,
               requiresCookies: input.options.requiresCookies,
+              testCoverage: Option.none(),
               title: input.options.instruction,
               rationale: "Direct execution",
               steps: [],
@@ -255,6 +256,7 @@ export const executeAtomFn = cliAtomRuntime.fn(
                 baseUrl: undefined as never,
                 isHeadless: input.options.isHeadless,
                 requiresCookies: input.options.requiresCookies,
+                testCoverage: Option.none(),
                 title: input.options.instruction,
                 rationale: "Direct execution",
                 steps: [],

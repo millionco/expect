@@ -28,6 +28,7 @@ export const AUDIT_LINT_KEYWORDS = ["lint", "check", "format", "typecheck", "typ
 export const AUDIT_SCRIPT_TIMEOUT_MS = 120_000;
 
 export const GIT_STATE_TIMEOUT_MS = 10_000;
+export const TEST_COVERAGE_TIMEOUT_MS = 15_000;
 
 export const PORT_PICKER_VISIBLE_COUNT = 10;
 export const MIN_USER_PORT = 1024;

@@ -9,6 +9,7 @@ import {
   PlanId,
   RunStarted,
   type SavedFlow,
+  type TestCoverageReport,
   TestPlan,
 } from "@expect/shared/models";
 import { buildExecutionPrompt } from "@expect/shared/prompts";
@@ -40,6 +41,7 @@ export interface ExecuteOptions {
   readonly savedFlow?: SavedFlow;
   readonly learnings?: string;
   readonly liveViewUrl?: string;
+  readonly testCoverage?: TestCoverageReport;
 }
 
 export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Executor", {
@@ -87,6 +89,7 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
         requiresCookies: options.requiresCookies,
         savedFlow: options.savedFlow,
         learnings: options.learnings,
+        testCoverage: options.testCoverage,
       });
 
       const planId = PlanId.makeUnsafe(crypto.randomUUID());
@@ -107,6 +110,7 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
         baseUrl: options.baseUrl ? Option.some(options.baseUrl) : Option.none(),
         isHeadless: options.isHeadless,
         requiresCookies: options.requiresCookies,
+        testCoverage: options.testCoverage ? Option.some(options.testCoverage) : Option.none(),
         title: options.instruction,
         rationale: "Direct execution",
         steps: [],
