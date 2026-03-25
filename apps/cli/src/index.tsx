@@ -35,6 +35,7 @@ interface CommanderOpts {
   target?: Target;
   verbose?: boolean;
   headed?: boolean;
+  replayHost?: string;
 }
 
 const program = new Command()
@@ -48,6 +49,7 @@ const program = new Command()
   .option("-t, --target <target>", "what to test: unstaged, branch, or changes", "changes")
   .option("--verbose", "enable verbose logging")
   .option("--headed", "show a visible browser window during tests")
+  .option("--replay-host <url>", "website host for live replay viewer", "https://expect.dev")
   .addHelpText(
     "after",
     `
@@ -118,6 +120,7 @@ const seedStores = (opts: CommanderOpts, changesFor: ChangesFor) => {
   usePreferencesStore.setState({
     ...(opts.agent ? { agentBackend: opts.agent } : {}),
     browserHeaded: opts.headed ?? false,
+    replayHost: opts.replayHost ?? "https://expect.dev",
   });
 
   if (opts.message) {

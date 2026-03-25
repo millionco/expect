@@ -17,9 +17,10 @@ import { saveFlowFn } from "../../data/flow-storage-atom";
 
 interface ResultsScreenProps {
   report: TestReport;
+  replayUrl?: string;
 }
 
-export const ResultsScreen = ({ report }: ResultsScreenProps) => {
+export const ResultsScreen = ({ report, replayUrl }: ResultsScreenProps) => {
   const COLORS = useColors();
   const setScreen = useNavigationStore((state) => state.setScreen);
   const [clipboardStatusMessage, setClipboardStatusMessage] = useState<string | undefined>(
@@ -178,6 +179,17 @@ export const ResultsScreen = ({ report }: ResultsScreenProps) => {
           </Text>
         </Clickable>
       </Box>
+
+      {replayUrl && (
+        <Box flexDirection="column" paddingX={1} marginTop={1}>
+          <Text color={COLORS.DIM}>
+            Replay:{" "}
+            <Text color={COLORS.PRIMARY} bold>
+              {replayUrl}
+            </Text>
+          </Text>
+        </Box>
+      )}
 
       {report.screenshotPaths.map((screenshotPath) => (
         <Box key={screenshotPath} paddingX={1}>

@@ -56,6 +56,7 @@ export const TestingScreen = ({
 
   const agentBackend = usePreferencesStore((state) => state.agentBackend);
   const browserHeaded = usePreferencesStore((state) => state.browserHeaded);
+  const replayHost = usePreferencesStore((state) => state.replayHost);
   const [executionResult, triggerExecute] = useAtom(executeFn, {
     mode: "promiseExit",
   });
@@ -84,6 +85,7 @@ export const TestingScreen = ({
         savedFlow,
       },
       agentBackend,
+      replayHost,
       onUpdate: setExecutedPlan,
     });
 
@@ -100,12 +102,14 @@ export const TestingScreen = ({
     requiresCookies,
   ]);
 
+  const replayUrl = isExecutionComplete ? executionResult.value.replayUrl : undefined;
+
   useEffect(() => {
     if (isExecutionComplete && executedPlan && report) {
       usePlanExecutionStore.getState().setExecutedPlan(executedPlan);
-      setScreen(Screen.Results({ report }));
+      setScreen(Screen.Results({ report, replayUrl }));
     }
-  }, [isExecutionComplete, executedPlan, report, setScreen]);
+  }, [isExecutionComplete, executedPlan, report, replayUrl, setScreen]);
 
   const goToMain = () => {
     usePlanExecutionStore.getState().setExecutedPlan(undefined);
@@ -147,7 +151,7 @@ export const TestingScreen = ({
       }
       if (executedPlan && report) {
         usePlanExecutionStore.getState().setExecutedPlan(executedPlan);
-        setScreen(Screen.Results({ report }));
+        setScreen(Screen.Results({ report, replayUrl }));
         return;
       }
       goToMain();

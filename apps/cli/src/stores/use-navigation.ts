@@ -12,7 +12,7 @@ export type Screen = Data.TaggedEnum<{
     savedFlow?: SavedFlow;
     requiresCookies?: boolean;
   };
-  Results: { report: TestReport };
+  Results: { report: TestReport; replayUrl?: string };
   SavedFlowPicker: {};
 }>;
 export const Screen = Data.taggedEnum<Screen>();

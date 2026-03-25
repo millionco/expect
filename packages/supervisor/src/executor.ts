@@ -14,6 +14,7 @@ import {
 import { buildExecutionPrompt } from "@expect/shared/prompts";
 import { NodeServices } from "@effect/platform-node";
 import { Git } from "./git/git";
+import { EXPECT_LIVE_VIEW_URL_ENV_NAME } from "@expect/browser/mcp";
 import {
   EXECUTION_CONTEXT_FILE_LIMIT,
   EXECUTION_RECENT_COMMIT_LIMIT,
@@ -38,6 +39,7 @@ export interface ExecuteOptions {
   readonly baseUrl?: string;
   readonly savedFlow?: SavedFlow;
   readonly learnings?: string;
+  readonly liveViewUrl?: string;
 }
 
 export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Executor", {
@@ -115,12 +117,17 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
         events: [new RunStarted({ plan: syntheticPlan })],
       });
 
+      const mcpEnv = [{ name: EXPECT_REPLAY_OUTPUT_ENV_NAME, value: replayOutputPath }];
+      if (options.liveViewUrl) {
+        mcpEnv.push({ name: EXPECT_LIVE_VIEW_URL_ENV_NAME, value: options.liveViewUrl });
+      }
+
       const streamOptions = new AgentStreamOptions({
         cwd: process.cwd(),
         sessionId: Option.none(),
         prompt,
         systemPrompt: Option.none(),
-        mcpEnv: [{ name: EXPECT_REPLAY_OUTPUT_ENV_NAME, value: replayOutputPath }],
+        mcpEnv,
       });
 
       return agent.stream(streamOptions).pipe(

@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useEffect, useState, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import type { eventWithTime } from "@posthog/rrweb";
 import { ReplayViewer } from "@/components/replay/replay-viewer";
 import { startRecording, stopRecording } from "@/lib/rrweb";
 import { useMountEffect } from "@/hooks/use-mount-effect";
+import type { ViewerRunState } from "@/lib/replay-types";
 
-export default function ReplayPage() {
+const RecordingMode = () => {
   const [recording, setRecording] = useState(true);
   const [events, setEvents] = useState<eventWithTime[]>([]);
 
@@ -48,5 +50,107 @@ export default function ReplayPage() {
         </button>
       </div>
     </div>
+  );
+};
+
+const LiveMode = () => {
+  const [events, setEvents] = useState<eventWithTime[]>([]);
+  const [steps, setSteps] = useState<ViewerRunState | undefined>(undefined);
+  const [connected, setConnected] = useState(true);
+  const eventsRef = useRef<eventWithTime[]>([]);
+  const addEventsRef = useRef<((newEvents: eventWithTime[]) => void) | undefined>(undefined);
+
+  useEffect(() => {
+    let cancelled = false;
+    let eventSource: EventSource | undefined;
+
+    fetch("/latest.json")
+      .then((response) => (response.ok ? response.json() : []))
+      .then((initialEvents: eventWithTime[]) => {
+        if (cancelled || initialEvents.length === 0) return;
+        eventsRef.current = initialEvents;
+        setEvents([...initialEvents]);
+      })
+      .catch(() => {});
+
+    fetch("/steps")
+      .then((response) => (response.ok ? response.json() : undefined))
+      .then((initialSteps: ViewerRunState | undefined) => {
+        if (cancelled || !initialSteps) return;
+        setSteps(initialSteps);
+      })
+      .catch(() => {});
+
+    let sseErrorCount = 0;
+    const SSE_MAX_ERRORS_BEFORE_DISCONNECT = 20;
+
+    eventSource = new EventSource("/events");
+
+    eventSource.addEventListener("replay", (message) => {
+      sseErrorCount = 0;
+      try {
+        const newEvents: eventWithTime[] = JSON.parse(message.data);
+        eventsRef.current = [...eventsRef.current, ...newEvents];
+        setEvents([...eventsRef.current]);
+        addEventsRef.current?.(newEvents);
+      } catch {
+        /* ignore parse errors */
+      }
+    });
+
+    eventSource.addEventListener("steps", (message) => {
+      sseErrorCount = 0;
+      try {
+        const state: ViewerRunState = JSON.parse(message.data);
+        setSteps(state);
+      } catch {
+        /* ignore parse errors */
+      }
+    });
+
+    eventSource.onerror = () => {
+      sseErrorCount++;
+      if (sseErrorCount >= SSE_MAX_ERRORS_BEFORE_DISCONNECT) {
+        setConnected(false);
+        eventSource?.close();
+      }
+    };
+
+    return () => {
+      cancelled = true;
+      eventSource?.close();
+    };
+  }, []);
+
+  const handleAddEventsRef = (handler: (newEvents: eventWithTime[]) => void) => {
+    addEventsRef.current = handler;
+  };
+
+  return (
+    <ReplayViewer
+      events={events}
+      steps={steps}
+      live={connected}
+      onAddEventsRef={handleAddEventsRef}
+    />
+  );
+};
+
+const ReplayPageInner = () => {
+  const searchParams = useSearchParams();
+  const isLive = searchParams.get("live") === "true";
+
+  if (isLive) {
+    return <LiveMode />;
+  }
+
+  return <RecordingMode />;
+};
+
+export default function ReplayPage() {
+  return (
+    <Suspense>
+      <ReplayPageInner />
+    </Suspense>
   );
 }

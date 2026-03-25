@@ -4,7 +4,6 @@ import type { eventWithTime } from "@rrweb/types";
 import { Effect, Fiber, Predicate, PubSub, Schedule, Stream } from "effect";
 import { EVENT_COLLECT_INTERVAL_MS } from "../constants";
 import { evaluateRuntime } from "../utils/evaluate-runtime";
-import { buildReplayViewerHtml } from "../replay-viewer";
 import type { ViewerRunState } from "./viewer-events";
 
 const isViewerRunState = (value: unknown): value is ViewerRunState =>
@@ -27,6 +26,12 @@ export interface StartLiveViewServerOptions {
 }
 
 type SseClient = ServerResponse<IncomingMessage>;
+
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+} as const;
 
 const NO_CACHE_HEADERS = { "Cache-Control": "no-store" } as const;
 
@@ -54,11 +59,6 @@ export const startLiveViewServer = Effect.fn("LiveViewServer.start")(function* (
   let latestRunState: ViewerRunState | undefined;
 
   const stepsPubSub = yield* PubSub.unbounded<ViewerRunState>();
-
-  const viewerHtml = buildReplayViewerHtml({
-    title: "Expect Live View",
-    eventsSource: "sse",
-  });
 
   const broadcastSse = (eventType: string, data: string): void => {
     const message = `event: ${eventType}\ndata: ${data}\n\n`;
@@ -92,6 +92,7 @@ export const startLiveViewServer = Effect.fn("LiveViewServer.start")(function* (
     response.writeHead(200, {
       "Content-Type": "text/event-stream",
       Connection: "keep-alive",
+      ...CORS_HEADERS,
       ...NO_CACHE_HEADERS,
     });
     response.flushHeaders();
@@ -107,28 +108,36 @@ export const startLiveViewServer = Effect.fn("LiveViewServer.start")(function* (
         const body = Buffer.concat(chunks).toString("utf-8");
         const parsed: unknown = JSON.parse(body);
         if (!isViewerRunState(parsed)) {
-          response.writeHead(400, { "Content-Type": "text/plain", ...NO_CACHE_HEADERS });
+          response.writeHead(400, {
+            "Content-Type": "text/plain",
+            ...CORS_HEADERS,
+            ...NO_CACHE_HEADERS,
+          });
           response.end("Invalid step state: missing status or steps");
           return;
         }
         broadcastRunState(parsed);
-        response.writeHead(204, NO_CACHE_HEADERS);
+        response.writeHead(204, { ...CORS_HEADERS, ...NO_CACHE_HEADERS });
         response.end();
       } catch {
-        response.writeHead(400, { "Content-Type": "text/plain", ...NO_CACHE_HEADERS });
+        response.writeHead(400, {
+          "Content-Type": "text/plain",
+          ...CORS_HEADERS,
+          ...NO_CACHE_HEADERS,
+        });
         response.end("Invalid JSON");
       }
     });
   };
 
   const routeRequest = (request: IncomingMessage, response: SseClient): void => {
-    const pathname = new URL(request.url ?? "/", parsedUrl).pathname;
-
-    if (pathname === "/") {
-      response.writeHead(200, { "Content-Type": "text/html; charset=utf-8", ...NO_CACHE_HEADERS });
-      response.end(viewerHtml);
+    if (request.method === "OPTIONS") {
+      response.writeHead(204, CORS_HEADERS);
+      response.end();
       return;
     }
+
+    const pathname = new URL(request.url ?? "/", parsedUrl).pathname;
 
     if (pathname === "/events") {
       handleSseRequest(request, response);
@@ -140,6 +149,7 @@ export const startLiveViewServer = Effect.fn("LiveViewServer.start")(function* (
       response.writeHead(200, {
         "Content-Type": "application/json",
         "Content-Length": Buffer.byteLength(body),
+        ...CORS_HEADERS,
         ...NO_CACHE_HEADERS,
       });
       response.end(body);
@@ -155,13 +165,18 @@ export const startLiveViewServer = Effect.fn("LiveViewServer.start")(function* (
       response.writeHead(200, {
         "Content-Type": "application/json",
         "Content-Length": Buffer.byteLength(body),
+        ...CORS_HEADERS,
         ...NO_CACHE_HEADERS,
       });
       response.end(body);
       return;
     }
 
-    response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8", ...NO_CACHE_HEADERS });
+    response.writeHead(404, {
+      "Content-Type": "text/plain; charset=utf-8",
+      ...CORS_HEADERS,
+      ...NO_CACHE_HEADERS,
+    });
     response.end("Not found");
   };
 

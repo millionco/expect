@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { eventWithTime } from "@posthog/rrweb";
 import type { Replayer } from "@posthog/rrweb";
 import { formatTime } from "@/lib/format-time";
 import { createCursorZoom } from "@/lib/cursor-zoom";
 import { useMountEffect } from "@/hooks/use-mount-effect";
 import { MacWindow } from "@/components/replay/mac-window";
+import type { ViewerRunState } from "@/lib/replay-types";
 
 const SPEEDS = [1, 2, 4, 8] as const;
 const TIMER_INTERVAL_MS = 100;
@@ -87,17 +88,97 @@ const FullscreenIcon = ({ className }: ControlIconProps) => (
   </svg>
 );
 
+const STATUS_COLORS: Record<string, string> = {
+  running: "bg-blue-100 text-blue-700",
+  passed: "bg-emerald-100 text-emerald-700",
+  failed: "bg-red-100 text-red-700",
+  active: "text-blue-600",
+  pending: "text-neutral-400",
+};
+
+const STEP_ICONS: Record<string, string> = {
+  passed: "\u2713",
+  failed: "\u2717",
+  active: "\u25CF",
+  pending: "\u25CB",
+};
+
+const StepPanel = ({ steps }: { steps: ViewerRunState }) => {
+  const activeStep = steps.steps.find((step) => step.status === "active");
+  const activeIndex = activeStep
+    ? steps.steps.indexOf(activeStep)
+    : -1;
+
+  return (
+    <div
+      className="flex flex-col gap-3 rounded-[20px] bg-white/90 px-5 py-4 backdrop-blur-xl"
+      style={{ fontFamily: CONTROL_FONT_FAMILY }}
+    >
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-semibold text-neutral-800 leading-tight">
+          {steps.title || "Test Run"}
+        </span>
+        <span
+          className={`rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${STATUS_COLORS[steps.status] ?? ""}`}
+        >
+          {steps.status}
+        </span>
+      </div>
+      {steps.summary && (
+        <p className="text-xs text-neutral-500 leading-relaxed">{steps.summary}</p>
+      )}
+      <div className="flex flex-col gap-1">
+        {steps.steps.map((step, index) => (
+          <div
+            key={step.stepId}
+            className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm ${
+              step.status === "active" ? "bg-blue-50" : ""
+            }`}
+          >
+            <span
+              className={`flex size-5 shrink-0 items-center justify-center text-xs font-medium ${STATUS_COLORS[step.status] ?? "text-neutral-400"} ${step.status === "active" ? "animate-pulse" : ""}`}
+            >
+              {STEP_ICONS[step.status] ?? STEP_ICONS.pending}
+            </span>
+            <span className="text-neutral-400 text-xs font-medium">
+              {index + 1}.
+            </span>
+            <span
+              className={`font-medium ${step.status === "active" ? "text-neutral-900" : "text-neutral-600"}`}
+            >
+              {step.title}
+            </span>
+            {step.summary && (
+              <span className="ml-auto truncate text-xs text-neutral-400 max-w-[40%]">
+                {step.summary}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 interface ReplayViewerProps {
   events: eventWithTime[];
-  stepLabel?: string;
-  stepTitle?: string;
+  steps?: ViewerRunState;
+  live?: boolean;
+  onAddEventsRef?: (handler: (newEvents: eventWithTime[]) => void) => void;
 }
 
 export const ReplayViewer = ({
   events,
-  stepLabel = "Step 1",
-  stepTitle = "Open homepage",
+  steps,
+  live = false,
+  onAddEventsRef,
 }: ReplayViewerProps) => {
+  const activeStep = steps?.steps.find((step) => step.status === "active");
+  const activeStepIndex = activeStep
+    ? steps!.steps.indexOf(activeStep)
+    : -1;
+  const stepLabel = activeStep ? `Step ${activeStepIndex + 1}` : "";
+  const stepTitle = activeStep ? activeStep.title : "";
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(1);
@@ -141,6 +222,22 @@ export const ReplayViewer = ({
       destroyReplay();
     };
   });
+
+  useEffect(() => {
+    if (!onAddEventsRef) return;
+    onAddEventsRef((newEvents) => {
+      const replayer = replayerRef.current;
+      if (!replayer) return;
+      for (const event of newEvents) {
+        replayer.addEvent(event);
+      }
+    });
+  }, [onAddEventsRef]);
+
+  useEffect(() => {
+    if (!live || replayerRef.current || events.length < 2) return;
+    handlePlay();
+  }, [live, events.length]);
 
   const setupScalingAndZoom = () => {
     if (!replayRef.current || !backdropRef.current) return;
@@ -231,15 +328,20 @@ export const ReplayViewer = ({
       skipInactive: false,
       mouseTail: false,
       speed,
+      liveMode: live,
     });
     replayerRef.current = replayer;
 
-    const startTime = Math.min(currentTime, replayDuration);
-    setCurrentTime(startTime);
-
-    replayer.play(startTime);
-    setPlaying(true);
-    startTimer();
+    if (live) {
+      replayer.startLive();
+      setPlaying(true);
+    } else {
+      const startTime = Math.min(currentTime, replayDuration);
+      setCurrentTime(startTime);
+      replayer.play(startTime);
+      setPlaying(true);
+      startTimer();
+    }
 
     // HACK: defer scaling until rrweb sets iframe dimensions after first frame
     requestAnimationFrame(() => {
@@ -291,87 +393,112 @@ export const ReplayViewer = ({
   const canPlay = hasEvents;
   const timeLabel = formatPaperTime(currentTime);
   const totalTimeLabel = formatPaperTime(totalTime);
+  const showControls = !live;
 
   return (
     <div data-rrweb-block className="flex h-screen flex-col gap-6 p-6">
+      {steps && <StepPanel steps={steps} />}
+
       <div
         className="flex flex-col gap-4 rounded-[28px] bg-white/90 px-6 py-5 backdrop-blur-xl"
         style={{ fontFamily: CONTROL_FONT_FAMILY }}
       >
-        <div className="flex items-start gap-1.5 p-0 antialiased [font-synthesis:none]">
-          <div className="h-4.5 shrink-0 font-['SFProDisplay-Medium','SF_Pro_Display',system-ui,sans-serif] text-base/4.5 font-medium tracking-[0em] text-[color(display-p3_0.587_0.587_0.587)]">
-            {stepLabel}
+        {(stepLabel || stepTitle) && (
+          <div className="flex items-start gap-1.5 p-0 antialiased [font-synthesis:none]">
+            {stepLabel && (
+              <div className="h-4.5 shrink-0 font-['SFProDisplay-Medium','SF_Pro_Display',system-ui,sans-serif] text-base/4.5 font-medium tracking-[0em] text-[color(display-p3_0.587_0.587_0.587)]">
+                {stepLabel}
+              </div>
+            )}
+            {stepTitle && (
+              <div className="h-4.5 shrink-0 font-['SFProDisplay-Medium','SF_Pro_Display',system-ui,sans-serif] text-base/4.5 font-medium tracking-[0em] text-[color(display-p3_0.188_0.188_0.188)]">
+                {stepTitle}
+              </div>
+            )}
           </div>
-          <div className="h-4.5 shrink-0 font-['SFProDisplay-Medium','SF_Pro_Display',system-ui,sans-serif] text-base/4.5 font-medium tracking-[0em] text-[color(display-p3_0.188_0.188_0.188)]">
-            {stepTitle}
-          </div>
-        </div>
+        )}
 
-        <input
-          type="range"
-          value={Math.min(currentTime, totalTime || 1)}
-          min={0}
-          max={totalTime || 1}
-          step={100}
-          disabled={!hasEvents}
-          onChange={handleSeek}
-          className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-[color(display-p3_0.897_0.897_0.897)] outline-none disabled:cursor-default [&::-moz-range-thumb]:size-0 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:border-0 [&::-moz-range-track]:h-1.5 [&::-moz-range-track]:rounded-full [&::-webkit-slider-thumb]:size-0 [&::-webkit-slider-thumb]:appearance-none"
-          style={{
-            background: hasEvents
-              ? `linear-gradient(to right, oklch(0.345 0 0) 0%, oklch(0.431 0 0) ${((Math.min(currentTime, totalTime || 1) / (totalTime || 1)) * 100).toFixed(1)}%, color(display-p3 0.897 0.897 0.897) ${((Math.min(currentTime, totalTime || 1) / (totalTime || 1)) * 100).toFixed(1)}%, color(display-p3 0.897 0.897 0.897) 100%)`
-              : undefined,
-          }}
-        />
-
-        <div className="flex items-center justify-between gap-6">
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={handlePlay}
-              disabled={!canPlay}
-              aria-label={playing ? "Pause replay" : "Play replay"}
-              className="flex h-[35px] w-[60px] items-center justify-center rounded-full bg-white text-[color(display-p3_0.196_0.196_0.196)] transition-transform duration-150 ease-out disabled:opacity-40 active:scale-[0.97]"
-              style={{ boxShadow: CONTROL_BUTTON_SHADOW }}
-            >
-              {playing && <PauseIcon className="h-[12px] w-auto" />}
-              {!playing && <PlayIcon className="size-[22px]" />}
-            </button>
-
-            <span className="inline-flex items-center gap-2.5 pl-2 text-[15px] leading-4.5 font-medium tracking-[0em] tabular-nums text-[color(display-p3_0.361_0.361_0.361)]">
-              <span>{timeLabel}</span>
-              <span className="text-[color(display-p3_0.727_0.727_0.727)]">
-                /
-              </span>
-              <span>{totalTimeLabel}</span>
+        {live && (
+          <div className="flex items-center gap-2">
+            <div className="size-2.5 animate-pulse rounded-full bg-red-500" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-red-500">
+              Live
             </span>
+            {!hasEvents && (
+              <span className="text-xs text-neutral-400">Waiting for events...</span>
+            )}
           </div>
+        )}
 
-          <div className="flex items-center gap-1">
-            <select
-              value={`${speed}`}
-              onChange={handleSpeedChange}
+        {showControls && (
+          <>
+            <input
+              type="range"
+              value={Math.min(currentTime, totalTime || 1)}
+              min={0}
+              max={totalTime || 1}
+              step={100}
               disabled={!hasEvents}
-              aria-label="Replay speed"
-              className="cursor-pointer appearance-none rounded-full bg-transparent px-2 py-1 text-[15px] font-medium text-[color(display-p3_0.361_0.361_0.361)] outline-none disabled:cursor-default disabled:opacity-40"
-              style={{ fontFamily: CONTROL_FONT_FAMILY }}
-            >
-              {SPEEDS.map((supportedSpeed) => (
-                <option key={supportedSpeed} value={`${supportedSpeed}`}>
-                  {supportedSpeed}x
-                </option>
-              ))}
-            </select>
+              onChange={handleSeek}
+              className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-[color(display-p3_0.897_0.897_0.897)] outline-none disabled:cursor-default [&::-moz-range-thumb]:size-0 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:border-0 [&::-moz-range-track]:h-1.5 [&::-moz-range-track]:rounded-full [&::-webkit-slider-thumb]:size-0 [&::-webkit-slider-thumb]:appearance-none"
+              style={{
+                background: hasEvents
+                  ? `linear-gradient(to right, oklch(0.345 0 0) 0%, oklch(0.431 0 0) ${((Math.min(currentTime, totalTime || 1) / (totalTime || 1)) * 100).toFixed(1)}%, color(display-p3 0.897 0.897 0.897) ${((Math.min(currentTime, totalTime || 1) / (totalTime || 1)) * 100).toFixed(1)}%, color(display-p3 0.897 0.897 0.897) 100%)`
+                  : undefined,
+              }}
+            />
 
-            <button
-              type="button"
-              onClick={handleFullscreen}
-              aria-label="Toggle fullscreen"
-              className="flex size-9 items-center justify-center rounded-full text-black transition-transform duration-150 ease-out active:scale-[0.97]"
-            >
-              <FullscreenIcon className="size-[18px]" />
-            </button>
-          </div>
-        </div>
+            <div className="flex items-center justify-between gap-6">
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={handlePlay}
+                  disabled={!canPlay}
+                  aria-label={playing ? "Pause replay" : "Play replay"}
+                  className="flex h-[35px] w-[60px] items-center justify-center rounded-full bg-white text-[color(display-p3_0.196_0.196_0.196)] transition-transform duration-150 ease-out disabled:opacity-40 active:scale-[0.97]"
+                  style={{ boxShadow: CONTROL_BUTTON_SHADOW }}
+                >
+                  {playing && <PauseIcon className="h-[12px] w-auto" />}
+                  {!playing && <PlayIcon className="size-[22px]" />}
+                </button>
+
+                <span className="inline-flex items-center gap-2.5 pl-2 text-[15px] leading-4.5 font-medium tracking-[0em] tabular-nums text-[color(display-p3_0.361_0.361_0.361)]">
+                  <span>{timeLabel}</span>
+                  <span className="text-[color(display-p3_0.727_0.727_0.727)]">
+                    /
+                  </span>
+                  <span>{totalTimeLabel}</span>
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <select
+                  value={`${speed}`}
+                  onChange={handleSpeedChange}
+                  disabled={!hasEvents}
+                  aria-label="Replay speed"
+                  className="cursor-pointer appearance-none rounded-full bg-transparent px-2 py-1 text-[15px] font-medium text-[color(display-p3_0.361_0.361_0.361)] outline-none disabled:cursor-default disabled:opacity-40"
+                  style={{ fontFamily: CONTROL_FONT_FAMILY }}
+                >
+                  {SPEEDS.map((supportedSpeed) => (
+                    <option key={supportedSpeed} value={`${supportedSpeed}`}>
+                      {supportedSpeed}x
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  type="button"
+                  onClick={handleFullscreen}
+                  aria-label="Toggle fullscreen"
+                  className="flex size-9 items-center justify-center rounded-full text-black transition-transform duration-150 ease-out active:scale-[0.97]"
+                >
+                  <FullscreenIcon className="size-[18px]" />
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       <div
