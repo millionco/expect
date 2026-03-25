@@ -1,0 +1,38 @@
+apps/cli/src/index.tsx
+  a95dc64cb86a275c 169-172
+apps/website/components/replay/replay-viewer.tsx
+  6654492e34054df1 39-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "4b44c23311500d3097e603e10794d516dc71026a",
+  "prompts": {
+    "6654492e34054df1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ab3d8469-6494-4893-b4c4-905b6d7c3777",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 4,
+      "total_deletions": 2,
+      "accepted_lines": 4,
+      "overriden_lines": 0
+    },
+    "a95dc64cb86a275c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4bd63d34-7a69-4eaa-8b35-8fc56f304eed",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 4,
+      "total_deletions": 1,
+      "accepted_lines": 4,
+      "overriden_lines": 0
+    }
+  }
+}
