@@ -7,6 +7,8 @@ import { ALT_SCREEN_OFF, ALT_SCREEN_ON, VERSION } from "./constants";
 import { ChangesFor, Git, TestPlanDraft, DraftId } from "@expect/supervisor";
 import { runHeadless } from "./utils/run-test";
 import { runInit } from "./commands/init";
+import { isRunningInAgent } from "./utils/is-running-in-agent";
+import { isHeadless } from "./utils/is-headless";
 import type { AgentBackend } from "@expect/agent";
 import { useNavigationStore, Screen } from "./stores/use-navigation";
 import { usePreferencesStore } from "./stores/use-preferences";
@@ -55,8 +57,6 @@ Examples:
   $ expect --target branch                          test all branch changes
   $ expect --target unstaged                        test unstaged changes`,
   );
-
-const isHeadless = () => !process.stdin.isTTY;
 
 const renderApp = async (agent: AgentBackend) => {
   const sessionStartedAt = Date.now();
@@ -165,7 +165,7 @@ program.action(async () => {
     program.error(`Unknown target: ${target}. Use ${TARGETS.join(", ")}.`);
   }
 
-  if (isHeadless()) return runHeadlessForTarget(target, opts);
+  if (isRunningInAgent() || isHeadless()) return runHeadlessForTarget(target, opts);
 
   const hasDirectOptions = Boolean(opts.message || opts.flow || opts.yes || opts.target);
 
