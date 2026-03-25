@@ -1,0 +1,60 @@
+apps/cli/src/utils/session-analytics.ts
+  3ac84bebf4caca9c 3,14
+apps/cli/src/components/screens/testing-screen.tsx
+  45bedd291c467cd1 93-101
+  3ac84bebf4caca9c 58,82
+packages/shared/src/analytics/analytics-events.ts
+  3ac84bebf4caca9c 47
+apps/cli/src/utils/run-test.ts
+  3ac84bebf4caca9c 17,32,45,83
+apps/cli/src/stores/use-preferences.ts
+  3ac84bebf4caca9c 9,23
+apps/cli/src/index.tsx
+  3ac84bebf4caca9c 37,50,57,120,139,172
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "d357504b3a4df9713657e19abfe06f1acf230739",
+  "prompts": {
+    "3ac84bebf4caca9c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "6fef2cff-371e-4a8d-a3f9-6f95e807e83f",
+        "model": "composer-2"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 18,
+      "total_deletions": 4,
+      "accepted_lines": 17,
+      "overriden_lines": 0
+    },
+    "45bedd291c467cd1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d233c-486e-7fd3-8fe9-ed658faf70c7",
+        "model": "gpt-5.3-codex-spark"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 9,
+      "total_deletions": 1,
+      "accepted_lines": 9,
+      "overriden_lines": 0
+    },
+    "b5747bc5cc4b0ef8": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5cec881e-41e4-4b55-8328-6390589e1e4d",
+        "model": "composer-2"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 61,
+      "total_deletions": 1,
+      "accepted_lines": 61,
+      "overriden_lines": 0
+    }
+  }
+}
