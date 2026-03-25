@@ -1,4 +1,4 @@
-export const VERSION = "0.0.1";
+export const VERSION = "0.0.0";
 
 export const TESTING_TOOL_TEXT_CHAR_LIMIT = 100;
 export const TESTING_TIMER_UPDATE_INTERVAL_MS = 1000;
