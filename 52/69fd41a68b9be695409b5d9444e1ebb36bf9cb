@@ -1,0 +1,58 @@
+apps/cli/src/stores/use-project-preferences.ts
+  9307b5526a506b9e 1-23
+apps/cli/src/components/app.tsx
+  9307b5526a506b9e 84
+apps/cli/src/components/screens/testing-screen.tsx
+  9307b5526a506b9e 36,47-51,82,92
+packages/supervisor/src/index.ts
+  9307b5526a506b9e 32
+packages/browser/src/replay-viewer.ts
+  ab85f935f3ea2844 33-34,37-44,122-129,134
+apps/cli/src/components/screens/saved-flow-picker-screen.tsx
+  9307b5526a506b9e 34
+apps/cli/src/stores/use-navigation.ts
+  9307b5526a506b9e 9-14
+apps/cli/src/components/screens/main-menu-screen.tsx
+  9307b5526a506b9e 3,7,38-39,115-120,122,145-149,236-239,241-243,245-266
+apps/cli/src/components/ui/modeline.tsx
+  9307b5526a506b9e 66,82
+apps/cli/src/components/screens/cookie-sync-confirm-screen.tsx
+  9307b5526a506b9e 45,51
+packages/supervisor/src/project-preferences.ts
+  9307b5526a506b9e 1-35
+packages/browser/src/mcp/mcp-session.ts
+  ab85f935f3ea2844 322-331
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "5269fd41a68b9be695409b5d9444e1ebb36bf9cb",
+  "prompts": {
+    "9307b5526a506b9e": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "804f288f-4c05-467d-b57d-9a9e61a8c953",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 138,
+      "total_deletions": 18,
+      "accepted_lines": 124,
+      "overriden_lines": 2
+    },
+    "ab85f935f3ea2844": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "28881565-3bce-4c2b-ba22-c11af4cdba49",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 29,
+      "total_deletions": 4,
+      "accepted_lines": 29,
+      "overriden_lines": 0
+    }
+  }
+}
