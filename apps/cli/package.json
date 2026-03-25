@@ -1,6 +1,6 @@
 {
   "name": "expect-cli",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Let agents test your code in a real browser",
   "keywords": [
     "agents",
@@ -67,7 +67,9 @@
     "string-width": "^8.2.0",
     "supports-terminal-graphics": "^0.1.0",
     "zod": "^4.3.6",
-    "zustand": "^5.0.11"
+    "zustand": "^5.0.11",
+    "@expect/shared": "workspace:*",
+    "@expect/supervisor": "workspace:*"
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",

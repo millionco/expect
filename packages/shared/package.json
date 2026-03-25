@@ -1,6 +1,6 @@
 {
   "name": "@expect/shared",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "files": [
     "dist"
@@ -11,15 +11,18 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.mts",
-      "import": "./dist/index.mjs"
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
     },
     "./models": {
       "types": "./dist/models.d.mts",
-      "import": "./dist/models.mjs"
+      "import": "./dist/models.mjs",
+      "default": "./dist/models.mjs"
     },
     "./observability": {
       "types": "./dist/observability/exports.d.mts",
-      "import": "./dist/observability/exports.mjs"
+      "import": "./dist/observability/exports.mjs",
+      "default": "./dist/observability/exports.mjs"
     }
   },
   "scripts": {

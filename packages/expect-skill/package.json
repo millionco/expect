@@ -1,6 +1,6 @@
 {
   "name": "@expect/skill",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "description": "AI agent skill for using the expect CLI in headless mode",
   "license": "MIT",
