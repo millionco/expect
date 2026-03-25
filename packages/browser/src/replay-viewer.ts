@@ -178,12 +178,13 @@ export const buildReplayViewerHtml = (options: ReplayViewerOptions): string => {
       background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACwAAAAwCAYAAABqkJjhAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAzfHTVMAAATkSURBVGje7ZnbS1xXFMZ1xtFJvGQy8dZbMknNnTTTpKm0Sby0WkqgaISWvjQKKZi/IOTBBzWmLRQ6veRBKCpiffLJB6tQ0TwE9EHjg9BiqDcUKVHQjlVR0cm35duye3KmzpzsM5NCNnxkzjpj5nf2WWuvtfdKCIVCCf8nJbwEjiewMhLDyPYRLbAEc1BOSl7bDm4FWIAlQS4ohUrmtVMBf2GABWxKMBi8PTIychmfD0AZUCrk5n3boKMFdnAm9y8tLX2zvb291NnZWYrrV6AsyAPt43dsgbYCLFwgY35+/lvYQltbW38PDQ3dge1N6DXIKx7ILmgrwGIGvbOzs4GQMvr7+2thPwMdhg7RRbRDRwvs5OxlTU9P/yBA4cehxcXFHeienp57uHcOOgJlEjpZJ7RV4OyJiYmfBGRtbW3I7/fvQg8PD7fg/nnIR+g0Qjt1QFsFzhkfH78vgcX/o0LjYbph80NHGYzaoLUBh4F+Gzom3giUzoB9LmitwEZoBObD4uLiQq4gOTqgtQMbobFe/1lYWFgM+3Eol0lGhU6MO7AZdEFBwQewn2CSOWA1K9oGbAZdXV1dBvtJ6FWr0LYCG6E3Njb+aWho+AL2U4SWqTxiaNuBzaDr6+tvwH6aqfxgNNAxATaDrqurq2Qqf53QEdUfMQM2Qiup/Cz0RqRFU0yBzaC7u7u/Yv0RUdEUc2Az6K6urq9hf0upP1LDpfK4AJtBM5Wf36v+iBuwkM/n2ylPDdB+1h+m0HEFFvJ4PKHJycldaHz+VfHpZwIxZsDie5EOuMpQeXn5RdYe6eos2wKMH9uZOaNdncm9xurq6h9MLB6mcHuAZTCZPUhRUdEuEIqhu7DdgkQC+Qz6BBI78Cuso08o6VvWHIm2FfDiXxFURmhsVqWvPibsdYKKM46LTCR5zIByi5WifYaFC6gRL0ZLS4vpyiBHTU1NA2zXoPe5Ducx6+UyiWQYzzm0AauwfX19D+Rn4QbhAnB5efkJrj+G3lVcwGs4SXKpxb4WYDGTcjQ2Nrbi/s2xsbFHPK/4z6Wso6MjAFs+dyTq3i/JcFanZx1Ws1Vzc/PPuPc5VFFWVlYt7VVVVc9AC5us3PLz86+x3Mylz7psK37kGB0dfQB7OfQRJDaeBYODg20MMNNlTgag+B6uLzBZeDjDDq0HKVNTUz9KWLz+3+iLRdA7zFTnxD5uc3Nz2biaiMALBAL/ejvcPh1jsLnD7aytAIuozZyZmfle/NDCwsIjXF+F3mPxIiNd6GRvb2+9dB0RgKq/y7GysvJXU1PTLR4HZPI3tAA7+PQH5+bmvltbW/u9pKTkCkFPszzM5mv1MlOdCQaDj82yGezz7e3t9/GdD5ksfPw7rcDCv9LhBjcqKyvP8jX6CJfJKHfTdcSPH2lra/tSBV1fX19pbW1tZNIogS5xWVPPLRy6gF2cgQz6WxZBPUrhLVsKqZzxPFHQCH8eGBj4BRnxUwbnVc7s8TC7aC0tAyeh3ARKUxZ5tXbdPfwWM1dRUXGhtLT0MoPyEkGlG+XwnGKfIVFoa8o4OQvJSkMmybDIy36ImzDZDMSj1GG6gFepF5L26URZ6dMbWV7iWV6Liou5CSWD0cuHSFPSb0RtM6uNxYQIG4pqmyyZs+hW3McV7aHg8wBHOsK9EUuNyJfN8VjrKRBH46IWXfwqAAAAAElFTkSuQmCC') !important;
       background-size: contain !important;
       background-position: top left !important;
-      width: 24px !important;
-      height: 24px !important;
+      width: 72px !important;
+      height: 72px !important;
+      transition: left 0.15s cubic-bezier(0.25, 1, 0.5, 1), top 0.15s cubic-bezier(0.25, 1, 0.5, 1), width 0.2s ease-out, height 0.2s ease-out !important;
     }
     .replayer-mouse::after { display: none !important }
-    .replayer-mouse.active { animation: macos-click 0.2s ease-in-out 1 !important }
-    @keyframes macos-click { 0% { transform: scale(1) } 40% { transform: scale(0.9) } 100% { transform: scale(1) } }
+    .replayer-mouse.active { animation: macos-click 0.2s ease-out 1 !important }
+    @keyframes macos-click { 0% { transform: scale(1) } 40% { transform: scale(0.7) } 100% { transform: scale(1) } }
   </style>
 </head>
 <body>

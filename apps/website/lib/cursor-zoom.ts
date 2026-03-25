@@ -10,8 +10,8 @@ export interface CursorZoomOptions {
   mapCursor?: (x: number, y: number) => { x: number; y: number };
 }
 
-const CURSOR_SIZE_DEFAULT_PX = 24;
-const CURSOR_SIZE_ZOOMED_PX = 36;
+const CURSOR_SIZE_DEFAULT_PX = 72;
+const CURSOR_SIZE_ZOOMED_PX = 96;
 
 const DEFAULTS: Required<Omit<CursorZoomOptions, "mapCursor">> = {
   scale: 2,

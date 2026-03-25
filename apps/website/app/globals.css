@@ -151,11 +151,12 @@
 }
 
 .replayer-mouse {
-  background-image: url("/macos-cursor.png") !important;
+  background-image: url("/cursors/default.svg") !important;
   background-size: contain !important;
   background-position: top left !important;
-  width: 24px !important;
-  height: 24px !important;
+  width: 72px !important;
+  height: 72px !important;
+  transition: left 0.15s cubic-bezier(0.25, 1, 0.5, 1), top 0.15s cubic-bezier(0.25, 1, 0.5, 1), width 0.2s ease-out, height 0.2s ease-out !important;
 }
 
 .replayer-mouse::after {
@@ -171,7 +172,7 @@
     transform: scale(1);
   }
   40% {
-    transform: scale(0.9);
+    transform: scale(0.7);
   }
   100% {
     transform: scale(1);

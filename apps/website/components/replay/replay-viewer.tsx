@@ -5,12 +5,15 @@ import type { eventWithTime } from "@posthog/rrweb";
 import type { Replayer } from "@posthog/rrweb";
 import { formatTime } from "@/lib/format-time";
 import { createCursorZoom } from "@/lib/cursor-zoom";
+
 import { useMountEffect } from "@/hooks/use-mount-effect";
 import { MacWindow } from "@/components/replay/mac-window";
 import type { ViewerRunState, ViewerStepEvent } from "@/lib/replay-types";
 
 const SPEEDS = [1, 2, 4, 8] as const;
 const TIMER_INTERVAL_MS = 100;
+const IDLE_THRESHOLD_MS = 1000;
+const IDLE_SPEED = 2;
 const CONTROL_BUTTON_SHADOW = [
   "color(display-p3 0 0 0 / 12%) 0px 0px 0px 1px",
   "color(display-p3 0.752 0.752 0.752 / 12%) 0px 2px 2px",
@@ -200,6 +203,8 @@ export const ReplayViewer = ({
   const autoPlayTriggeredRef = useRef(false);
   const liveRef = useRef(live);
   liveRef.current = live;
+  const isIdleSpeedRef = useRef(false);
+  const userSpeedRef = useRef<(typeof SPEEDS)[number]>(1);
 
   const destroyReplay = () => {
     clearInterval(timerRef.current);
@@ -208,6 +213,16 @@ export const ReplayViewer = ({
     cleanupZoomRef.current = undefined;
     replayerRef.current?.destroy();
     replayerRef.current = undefined;
+  };
+
+  const findNextEventTime = (currentTimeMs: number) => {
+    if (events.length === 0) return undefined;
+    const replayStart = events[0].timestamp;
+    const absoluteTime = replayStart + currentTimeMs;
+    for (const event of events) {
+      if (event.timestamp > absoluteTime) return event.timestamp - replayStart;
+    }
+    return undefined;
   };
 
   const startTimer = () => {
@@ -227,6 +242,19 @@ export const ReplayViewer = ({
       if (time >= duration) {
         clearInterval(timerRef.current);
         setPlaying(false);
+        return;
+      }
+
+      const nextEventTime = findNextEventTime(time);
+      const gap = nextEventTime !== undefined ? nextEventTime - time : 0;
+      const shouldIdle = gap > IDLE_THRESHOLD_MS;
+
+      if (shouldIdle && !isIdleSpeedRef.current) {
+        isIdleSpeedRef.current = true;
+        replayer.setConfig({ speed: IDLE_SPEED });
+      } else if (!shouldIdle && isIdleSpeedRef.current) {
+        isIdleSpeedRef.current = false;
+        replayer.setConfig({ speed: userSpeedRef.current });
       }
     }, TIMER_INTERVAL_MS);
   };
@@ -374,6 +402,8 @@ export const ReplayViewer = ({
     if (!nextSpeed) return;
 
     setSpeed(nextSpeed);
+    userSpeedRef.current = nextSpeed;
+    isIdleSpeedRef.current = false;
     replayerRef.current?.setConfig({ speed: nextSpeed });
   };
 
