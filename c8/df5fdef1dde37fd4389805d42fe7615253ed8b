@@ -1,0 +1,113 @@
+apps/cli/src/components/screens/testing-screen.tsx
+  655433987ce8f287 22-31,33-37
+apps/cli/src/hooks/use-remote-branches.ts
+  655433987ce8f287 3
+apps/cli/src/hooks/use-context-picker.ts
+  655433987ce8f287 4,9
+apps/cli/src/data/flow-storage-atom.ts
+  655433987ce8f287 5
+packages/shared/src/prompts.ts
+  655433987ce8f287 2
+apps/cli/src/data/execution-atom.ts
+  655433987ce8f287 7
+apps/website/hooks/use-mount-effect.ts
+  ee2161c62b478fc2 6
+packages/supervisor/src/git/index.ts
+  655433987ce8f287 1-2
+apps/cli/src/components/screens/plan-review-screen.tsx
+  655433987ce8f287 5-11,13-17
+packages/agent/src/agent.ts
+  655433987ce8f287 8,10
+apps/cli/src/components/ui/modeline.tsx
+  655433987ce8f287 2,4-5,7-13
+packages/supervisor/src/git/git.ts
+  655433987ce8f287 17-18
+packages/supervisor/src/remote-branches.ts
+  655433987ce8f287 2
+packages/supervisor/src/git.ts
+  655433987ce8f287 2
+apps/cli/src/components/screens/cookie-sync-confirm-screen.tsx
+  655433987ce8f287 5-10
+apps/cli/src/stores/use-preferences.ts
+  655433987ce8f287 5
+packages/supervisor/src/flow-storage.ts
+  655433987ce8f287 5-6,12-13
+  ee2161c62b478fc2 98-99
+apps/cli/src/hooks/mouse-context.tsx
+  ee2161c62b478fc2 26
+apps/cli/src/components/screens/main-menu-screen.tsx
+  655433987ce8f287 6-20
+apps/cli/src/data/runtime.ts
+  655433987ce8f287 4
+packages/agent/tests/agent.test.ts
+  655433987ce8f287 3-4,6
+packages/supervisor/src/saved-flow-file.ts
+  655433987ce8f287 1
+apps/website/hooks/use-delayed-flag.ts
+  ee2161c62b478fc2 10-14,28
+packages/supervisor/src/index.ts
+  655433987ce8f287 1-4,25-30,36
+apps/cli/src/components/ui/context-picker.tsx
+  655433987ce8f287 2-3,5-7
+apps/website/app/page.tsx
+  ee2161c62b478fc2 3,566,672,722-724,726,730,736,741-761,989,1019,1055,1085
+  655433987ce8f287 670-671
+apps/cli/src/data/planning-atom.ts
+  655433987ce8f287 6
+packages/agent/src/index.ts
+  655433987ce8f287 1,10-11,13
+apps/cli/src/components/screens/results-screen.tsx
+  655433987ce8f287 7-17
+apps/cli/src/index.tsx
+  655433987ce8f287 5-8,10-11,13-17,19,21
+packages/supervisor/src/github.ts
+  655433987ce8f287 6
+apps/cli/src/components/app.tsx
+  ee2161c62b478fc2 34
+  655433987ce8f287 3-18,21
+apps/cli/src/utils/run-test.ts
+  655433987ce8f287 16-18
+packages/shared/src/models.ts
+  655433987ce8f287 2
+apps/website/hooks/use-sound.ts
+  ee2161c62b478fc2 3
+packages/supervisor/src/planner.ts
+  655433987ce8f287 6
+packages/agent/src/schemas/index.ts
+  655433987ce8f287 1
+apps/cli/src/components/screens/pr-picker-screen.tsx
+  655433987ce8f287 3,11-16,18-19,21-24,26-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "c8df5fdef1dde37fd4389805d42fe7615253ed8b",
+  "prompts": {
+    "655433987ce8f287": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4c91bb11-ee31-4b87-a5c2-c5c3f31b1a6a",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 185,
+      "total_deletions": 186,
+      "accepted_lines": 168,
+      "overriden_lines": 0
+    },
+    "ee2161c62b478fc2": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "19adfa7b-86ec-4df0-93f9-7068e4d20789",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 55,
+      "total_deletions": 73,
+      "accepted_lines": 48,
+      "overriden_lines": 0
+    }
+  }
+}
