@@ -1,0 +1,41 @@
+apps/cli/src/components/screens/results-screen.tsx
+  ce9bfcdba3673fea 10,53,63,72,77
+packages/shared/src/analytics/analytics-events.ts
+  ce9bfcdba3673fea 24,55-60,62-78
+apps/cli/src/data/execution-atom.ts
+  ce9bfcdba3673fea 64-65,142-155
+apps/cli/src/components/screens/port-picker-screen.tsx
+  ce9bfcdba3673fea 11,108-117
+apps/cli/src/components/screens/testing-screen.tsx
+  ce9bfcdba3673fea 30,448,462
+apps/cli/src/utils/session-analytics.ts
+  ce9bfcdba3673fea 2,5-9,14-16,20-21,25-30,40
+apps/cli/src/components/screens/cookie-sync-confirm-screen.tsx
+  ce9bfcdba3673fea 5,47-49
+apps/cli/src/components/screens/saved-flow-picker-screen.tsx
+  ce9bfcdba3673fea 15,36-37
+apps/cli/src/utils/run-test.ts
+  ce9bfcdba3673fea 40
+apps/cli/src/components/screens/main-menu-screen.tsx
+  ce9bfcdba3673fea 22,77-88,199,206
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "fbb049712fdc0cbdc152e9b81897a328f244cb4f",
+  "prompts": {
+    "ce9bfcdba3673fea": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "dfc628f3-cf6d-44a8-a73e-07198b0523e6",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 102,
+      "total_deletions": 11,
+      "accepted_lines": 101,
+      "overriden_lines": 2
+    }
+  }
+}
