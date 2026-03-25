@@ -13,6 +13,9 @@ jobs:
   e2e:
     name: E2E (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
