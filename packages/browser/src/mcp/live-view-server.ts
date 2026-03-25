@@ -3,6 +3,7 @@ import type { Page } from "playwright";
 import type { eventWithTime } from "@rrweb/types";
 import { Effect, Fiber, Predicate, PubSub, Schedule, Stream } from "effect";
 import { EVENT_COLLECT_INTERVAL_MS } from "../constants";
+import { buildReplayViewerHtml } from "../replay-viewer";
 import { evaluateRuntime } from "../utils/evaluate-runtime";
 import type { ViewerRunState } from "./viewer-events";
 
@@ -59,6 +60,11 @@ export const startLiveViewServer = Effect.fn("LiveViewServer.start")(function* (
   let latestRunState: ViewerRunState | undefined;
 
   const stepsPubSub = yield* PubSub.unbounded<ViewerRunState>();
+
+  const viewerHtml = buildReplayViewerHtml({
+    title: "Expect Live View",
+    eventsSource: "sse",
+  });
 
   const broadcastSse = (eventType: string, data: string): void => {
     const message = `event: ${eventType}\ndata: ${data}\n\n`;
@@ -138,6 +144,16 @@ export const startLiveViewServer = Effect.fn("LiveViewServer.start")(function* (
     }
 
     const pathname = new URL(request.url ?? "/", parsedUrl).pathname;
+
+    if (pathname === "/") {
+      response.writeHead(200, {
+        "Content-Type": "text/html; charset=utf-8",
+        ...CORS_HEADERS,
+        ...NO_CACHE_HEADERS,
+      });
+      response.end(viewerHtml);
+      return;
+    }
 
     if (pathname === "/events") {
       handleSseRequest(request, response);

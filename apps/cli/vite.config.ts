@@ -96,7 +96,7 @@ export default defineConfig({
     },
     deps: {
       alwaysBundle: [/^@expect\//],
-      neverBundle: ["playwright", "playwright-core", "chromium-bidi", "libsql", "ws", "undici"],
+      neverBundle: ["playwright", "playwright-core", "chromium-bidi", "ws", "undici"],
     },
     minify: true,
     plugins: [expectSubpathPlugin(), reactCompilerPlugin()],

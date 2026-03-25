@@ -2,7 +2,6 @@ import path from "node:path";
 import { Effect, Layer, Scope, ServiceMap } from "effect";
 import * as FileSystem from "effect/FileSystem";
 import { NodeServices } from "@effect/platform-node";
-import LibsqlDatabase from "libsql";
 import { CookieDatabaseCopyError, CookieReadError } from "./errors";
 
 const IS_BUN = "Bun" in globalThis;
@@ -58,11 +57,13 @@ export class SqliteEngine extends ServiceMap.Service<
   static layerLibSql = Layer.succeed(this, {
     open: (databasePath: string) =>
       Effect.acquireRelease(
-        Effect.try({
-          try: () =>
-            new LibsqlDatabase(databasePath, {
+        Effect.tryPromise({
+          try: async () => {
+            const { default: LibsqlDatabase } = await import("libsql");
+            return new LibsqlDatabase(databasePath, {
               readonly: true,
-            }) as unknown as SqliteDatabase,
+            }) as unknown as SqliteDatabase;
+          },
           catch: (cause) => new CookieReadError({ browser: "unknown", cause: String(cause) }),
         }),
         (database) => Effect.sync(() => database.close()),
