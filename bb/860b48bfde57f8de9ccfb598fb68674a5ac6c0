@@ -1,0 +1,27 @@
+apps/cli/vite.config.ts
+  21df06d859af1396 86
+apps/cli/src/browser-mcp.ts
+  21df06d859af1396 1
+packages/agent/src/acp-client.ts
+  21df06d859af1396 143
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "bb860b48bfde57f8de9ccfb598fb68674a5ac6c0",
+  "prompts": {
+    "21df06d859af1396": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "65fbba8a-8b91-4fde-a1b2-72d4a24f8ada",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 5,
+      "total_deletions": 3,
+      "accepted_lines": 5,
+      "overriden_lines": 0
+    }
+  }
+}
