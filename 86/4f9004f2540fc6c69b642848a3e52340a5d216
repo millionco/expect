@@ -1,0 +1,25 @@
+packages/shared/tests/estimate-browser-capacity.test.ts
+  94f3aaf1302b1036 1-37
+apps/cli/tests/placeholder.test.ts
+  94f3aaf1302b1036 1-7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "864f9004f2540fc6c69b642848a3e52340a5d216",
+  "prompts": {
+    "94f3aaf1302b1036": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "0e25ed9d-9e4b-4326-9426-64844feef1ca",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 44,
+      "total_deletions": 0,
+      "accepted_lines": 44,
+      "overriden_lines": 0
+    }
+  }
+}
