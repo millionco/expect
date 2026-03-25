@@ -1,0 +1,49 @@
+packages/browser/src/mcp/viewer-events.ts
+  82b280e60d87d7cf 6-7
+apps/website/lib/replay-types.ts
+  82b280e60d87d7cf 6-7
+apps/website/app/replay/page.tsx
+  82b280e60d87d7cf 3,5,12-17,63-72,77-93,96-100,110,129-133
+apps/cli/src/data/execution-atom.ts
+  82b280e60d87d7cf 98-114
+apps/cli/src/utils/push-step-state.ts
+  9516f512b3e1a9a4 1,5-7,26-27
+apps/cli/src/utils/replay-proxy-server.ts
+  9516f512b3e1a9a4 122-124,133-144,147-150
+  82b280e60d87d7cf 66-68,72-74,77,81,83-85,87,94-96,99,106-107,118,126
+apps/website/components/replay/replay-viewer.tsx
+  9516f512b3e1a9a4 10,38-65,119-124,126-133,145,153-170,172-175,177-178,180-190,219-220,238-241,379-380,386,391-392,394-395,422,428-437,439-441,444-451
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "6eaa9be59852a250efac6c0dee8722485be12b13",
+  "prompts": {
+    "82b280e60d87d7cf": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4460184a-49dc-4b79-9a34-6169fdc68320",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 104,
+      "total_deletions": 117,
+      "accepted_lines": 94,
+      "overriden_lines": 0
+    },
+    "9516f512b3e1a9a4": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "708af724-bbba-41dd-ba0b-5d07c1899c37",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 142,
+      "total_deletions": 71,
+      "accepted_lines": 142,
+      "overriden_lines": 0
+    }
+  }
+}
