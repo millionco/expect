@@ -1,0 +1,33 @@
+apps/website/lib/format-time.ts
+  9f928677c018df79 1-6
+apps/website/lib/rrweb.ts
+  9f928677c018df79 1-27
+apps/website/app/replay/page.tsx
+  9f928677c018df79 1-52
+apps/website/lib/cursor-zoom.ts
+  9f928677c018df79 1-133
+apps/website/components/replay/replay-viewer.tsx
+  9f928677c018df79 1-396
+apps/website/components/replay/mac-window.tsx
+  9f928677c018df79 1-30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "2e16805d11f6f321fb3aaa4e0daeee05d557390a",
+  "prompts": {
+    "9f928677c018df79": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "47fb7b29-9c6b-4530-8355-a75d3f1f80ba",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 646,
+      "total_deletions": 2,
+      "accepted_lines": 644,
+      "overriden_lines": 0
+    }
+  }
+}
