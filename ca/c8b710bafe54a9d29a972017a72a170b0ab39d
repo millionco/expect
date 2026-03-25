@@ -1,0 +1,40 @@
+apps/cli/vite.config.ts
+  c669c42f8f1f5996 99
+.github/workflows/publish-any-commit.yml
+  59ad80a9642d8e48 28-38
+apps/cli/package.json
+  c669c42f8f1f5996 71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "cac8b710bafe54a9d29a972017a72a170b0ab39d",
+  "prompts": {
+    "59ad80a9642d8e48": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a998d2b7-43b4-4980-9d1d-5a6b73975da2",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 15,
+      "total_deletions": 5,
+      "accepted_lines": 11,
+      "overriden_lines": 0
+    },
+    "c669c42f8f1f5996": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a60f03df-575c-49a7-9528-d73a6755ed2e",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 1,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}
