@@ -1,0 +1,39 @@
+packages/browser/src/mcp/mcp-session.ts
+  afe44cded8e2799d 58-61,64-66,156-167,173,296-303,305-306,378-380,382-384,386-415,432-445,449-450,453-464,468-472
+apps/cli/src/data/execution-atom.ts
+  afe44cded8e2799d 6,12,16-17,21-41,43-44,46-54,67-68,135,179-181
+apps/cli/src/stores/use-navigation.ts
+  afe44cded8e2799d 23
+apps/cli/src/components/screens/testing-screen.tsx
+  afe44cded8e2799d 420-421,426,428,498
+packages/browser/src/types.ts
+  afe44cded8e2799d 49
+apps/cli/src/components/screens/results-screen.tsx
+  afe44cded8e2799d 23-24,41-45,116-121,223,228-250
+packages/browser/src/mcp/server.ts
+  afe44cded8e2799d 286-298
+packages/browser/src/browser.ts
+  afe44cded8e2799d 15-16,183-193,195
+apps/cli/src/components/app.tsx
+  afe44cded8e2799d 98-105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "63fa89b036f261e1d47ba9d71cfc8239fb016f49",
+  "prompts": {
+    "afe44cded8e2799d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "0f48e9c5-d8da-4eeb-ae4d-6e5d88a30c74",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 229,
+      "total_deletions": 13,
+      "accepted_lines": 222,
+      "overriden_lines": 5
+    }
+  }
+}
