@@ -1,0 +1,23 @@
+apps/cli/vite.config.ts
+  21df06d859af1396 99
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "10d7ffdf40ccb50edd5e898d97981335c6404908",
+  "prompts": {
+    "21df06d859af1396": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "65fbba8a-8b91-4fde-a1b2-72d4a24f8ada",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 3,
+      "total_deletions": 1,
+      "accepted_lines": 3,
+      "overriden_lines": 0
+    }
+  }
+}
