@@ -1,0 +1,23 @@
+packages/shared/src/analytics/analytics.ts
+  92c25600a699950b 1,87-91,100-106,108-120,145
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "bbd55e1c2d510e0cd8165067a49e37a07d8f24d5",
+  "prompts": {
+    "92c25600a699950b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "2a77f589-30fb-4973-a02a-6016b28530d2",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 36,
+      "total_deletions": 81,
+      "accepted_lines": 27,
+      "overriden_lines": 0
+    }
+  }
+}
