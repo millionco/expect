@@ -1,0 +1,23 @@
+packages/shared/src/analytics/analytics.ts
+  5d54dc4a9ecab836 31-52,66,88,108,128-137
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "4824ccec0536b6ebb67f0bef3dfa0912ed90d5db",
+  "prompts": {
+    "5d54dc4a9ecab836": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c0a146b9-badc-45de-83dd-638dba8d0ca3",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 46,
+      "total_deletions": 17,
+      "accepted_lines": 37,
+      "overriden_lines": 0
+    }
+  }
+}
