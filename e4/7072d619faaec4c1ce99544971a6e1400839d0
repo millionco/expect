@@ -1,0 +1,25 @@
+packages/browser/tests/create-page.test.ts
+  facd7473d9bbd273 145-147,152,158-217,220
+packages/browser/src/browser.ts
+  facd7473d9bbd273 5,72-82,97,101-105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "e47072d619faaec4c1ce99544971a6e1400839d0",
+  "prompts": {
+    "facd7473d9bbd273": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "2828d0d8-4cc5-4daa-8174-f6c22b09b056",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 342,
+      "total_deletions": 144,
+      "accepted_lines": 245,
+      "overriden_lines": 0
+    }
+  }
+}
