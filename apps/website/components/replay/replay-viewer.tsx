@@ -13,12 +13,12 @@ import type { ViewerRunState, ViewerStepEvent } from "@/lib/replay-types";
 const SPEEDS = [1, 2, 4, 8] as const;
 const TIMER_INTERVAL_MS = 100;
 const LIVE_EDGE_THRESHOLD_MS = 2000;
-const IDLE_THRESHOLD_MS = 1000;
+const IDLE_THRESHOLD_MS = 4000;
 const IDLE_SPEED_TIERS = [
   { afterMs: 0, speed: 2 },
-  { afterMs: 5000, speed: 4 },
-  { afterMs: 15000, speed: 8 },
-  { afterMs: 30000, speed: 16 },
+  { afterMs: 8000, speed: 4 },
+  { afterMs: 20000, speed: 8 },
+  { afterMs: 40000, speed: 16 },
 ] as const;
 const CONTROL_BUTTON_SHADOW = [
   "color(display-p3 0 0 0 / 12%) 0px 0px 0px 1px",

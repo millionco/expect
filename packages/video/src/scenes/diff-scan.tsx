@@ -1,35 +1,35 @@
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
 import {
   BACKGROUND_COLOR,
-  FILE_SCAN_FONT_SIZE_PX,
-  FILE_SCAN_INITIAL_DELAY_FRAMES,
+  DIFF_FILE_FONT_SIZE_PX,
+  DIFF_SCAN_INITIAL_DELAY_FRAMES,
   FRAMES_PER_FILE,
+  GREEN_COLOR,
   MUTED_COLOR,
   OVERLAY_GRADIENT_BOTTOM_PADDING_PX,
   OVERLAY_GRADIENT_HEIGHT_PX,
   OVERLAY_GRADIENT_HORIZONTAL_PADDING_PX,
   RED_COLOR,
-  SCANNED_FILES,
-  SCENE_FILE_SCAN_DURATION_FRAMES,
+  DIFF_FILES,
+  SCENE_DIFF_SCAN_DURATION_FRAMES,
   TEXT_COLOR,
-  YELLOW_COLOR,
 } from "../constants";
 import { getBottomOverlayGradient } from "../utils/get-bottom-overlay-gradient";
 import { fontFamily } from "../utils/font";
 
 const LINE_HEIGHT_MULTIPLIER = 1.6;
-const LINE_HEIGHT_PX = FILE_SCAN_FONT_SIZE_PX * LINE_HEIGHT_MULTIPLIER;
+const LINE_HEIGHT_PX = DIFF_FILE_FONT_SIZE_PX * LINE_HEIGHT_MULTIPLIER;
 const FADE_IN_FRAMES = 6;
 const VIEWPORT_HEIGHT_PX = 1080;
 const CONTENT_PADDING_PX = 40;
 const USABLE_HEIGHT_PX = VIEWPORT_HEIGHT_PX - CONTENT_PADDING_PX * 2;
 const VISIBLE_ROW_COUNT = Math.floor(USABLE_HEIGHT_PX / LINE_HEIGHT_PX);
-const TOTAL_LIST_HEIGHT_PX = SCANNED_FILES.length * LINE_HEIGHT_PX;
+const TOTAL_LIST_HEIGHT_PX = DIFF_FILES.length * LINE_HEIGHT_PX;
 const MAX_SCROLL_PX = Math.max(0, TOTAL_LIST_HEIGHT_PX - USABLE_HEIGHT_PX);
-const SCROLL_START_FRAME = FILE_SCAN_INITIAL_DELAY_FRAMES + VISIBLE_ROW_COUNT * FRAMES_PER_FILE;
-const SCROLL_END_FRAME = FILE_SCAN_INITIAL_DELAY_FRAMES + SCANNED_FILES.length * FRAMES_PER_FILE;
+const SCROLL_START_FRAME = DIFF_SCAN_INITIAL_DELAY_FRAMES + VISIBLE_ROW_COUNT * FRAMES_PER_FILE;
+const SCROLL_END_FRAME = DIFF_SCAN_INITIAL_DELAY_FRAMES + DIFF_FILES.length * FRAMES_PER_FILE;
 
-const OVERLAY_START_FRAME = Math.floor(SCENE_FILE_SCAN_DURATION_FRAMES * 0.25);
+const OVERLAY_START_FRAME = Math.floor(SCENE_DIFF_SCAN_DURATION_FRAMES * 0.25);
 const OVERLAY_FADE_IN_FRAMES = 15;
 const OVERLAY_HOLD_FRAMES = 60;
 const OVERLAY_FADE_OUT_FRAMES = 15;
@@ -37,7 +37,7 @@ const OVERLAY_END_FRAME =
   OVERLAY_START_FRAME + OVERLAY_FADE_IN_FRAMES + OVERLAY_HOLD_FRAMES + OVERLAY_FADE_OUT_FRAMES;
 const TITLE_FONT_SIZE_PX = 88;
 
-export const FileScan = () => {
+export const DiffScan = () => {
   const frame = useCurrentFrame();
 
   const scrollY = interpolate(frame, [SCROLL_START_FRAME, SCROLL_END_FRAME], [0, MAX_SCROLL_PX], {
@@ -92,8 +92,8 @@ export const FileScan = () => {
         }}
       >
         <div style={{ transform: `translateY(-${scrollY}px)` }}>
-          {SCANNED_FILES.map((file, index) => {
-            const fileStartFrame = FILE_SCAN_INITIAL_DELAY_FRAMES + index * FRAMES_PER_FILE;
+          {DIFF_FILES.map((file, index) => {
+            const fileStartFrame = DIFF_SCAN_INITIAL_DELAY_FRAMES + index * FRAMES_PER_FILE;
             const localFrame = frame - fileStartFrame;
             const fileOpacity = interpolate(localFrame, [0, FADE_IN_FRAMES], [0, 1], {
               extrapolateLeft: "clamp",
@@ -101,15 +101,13 @@ export const FileScan = () => {
               easing: Easing.out(Easing.cubic),
             });
 
-            const hasIssues = file.errors > 0 || file.warnings > 0;
-
             return (
               <div
                 key={file.path}
                 style={{
                   opacity: fileOpacity,
                   fontFamily,
-                  fontSize: FILE_SCAN_FONT_SIZE_PX,
+                  fontSize: DIFF_FILE_FONT_SIZE_PX,
                   lineHeight: LINE_HEIGHT_MULTIPLIER,
                   color: TEXT_COLOR,
                   whiteSpace: "nowrap",
@@ -121,22 +119,11 @@ export const FileScan = () => {
                   <span style={{ color: MUTED_COLOR }}>{String(index + 1).padStart(2, " ")} </span>
                   <span>{file.path}</span>
                 </span>
-                {hasIssues && (
-                  <span>
-                    {file.errors > 0 && (
-                      <span style={{ color: RED_COLOR }}>
-                        {file.errors} error
-                        {file.errors > 1 ? "s" : ""}
-                      </span>
-                    )}
-                    {file.errors > 0 && file.warnings > 0 && (
-                      <span style={{ color: MUTED_COLOR }}>{"  "}</span>
-                    )}
-                    {file.warnings > 0 && (
-                      <span style={{ color: YELLOW_COLOR }}>{file.warnings} ⚠️</span>
-                    )}
-                  </span>
-                )}
+                <span>
+                  <span style={{ color: GREEN_COLOR }}>+{file.added}</span>
+                  {"  "}
+                  <span style={{ color: RED_COLOR }}>-{file.removed}</span>
+                </span>
               </div>
             );
           })}
@@ -169,7 +156,7 @@ export const FileScan = () => {
               lineHeight: 1.4,
             }}
           >
-            Scan for React issues
+            Scan your changes
           </div>
         </div>
       </AbsoluteFill>

@@ -1,17 +1,17 @@
 import { springTiming, TransitionSeries } from "@remotion/transitions";
 import { slide } from "@remotion/transitions/slide";
 import {
-  SCENE_AGENT_HANDOFF_DURATION_FRAMES,
-  SCENE_DIAGNOSTICS_DURATION_FRAMES,
-  SCENE_FILE_SCAN_DURATION_FRAMES,
-  SCENE_SCORE_REVEAL_DURATION_FRAMES,
+  SCENE_BROWSER_EXECUTION_DURATION_FRAMES,
+  SCENE_DIFF_SCAN_DURATION_FRAMES,
+  SCENE_RESULTS_DURATION_FRAMES,
+  SCENE_TEST_PLAN_DURATION_FRAMES,
   SCENE_TYPING_DURATION_FRAMES,
   TRANSITION_DURATION_FRAMES,
 } from "../constants";
-import { AgentHandoff } from "../scenes/agent-handoff";
-import { Diagnostics } from "../scenes/diagnostics";
-import { FileScan } from "../scenes/file-scan";
-import { ScoreReveal } from "../scenes/score-reveal";
+import { BrowserExecution } from "../scenes/browser-execution";
+import { DiffScan } from "../scenes/diff-scan";
+import { Results } from "../scenes/results";
+import { TestPlan } from "../scenes/test-plan";
 import { TerminalTyping } from "../scenes/terminal-typing";
 
 export const Main = () => {
@@ -29,20 +29,20 @@ export const Main = () => {
         })}
       />
 
-      <TransitionSeries.Sequence durationInFrames={SCENE_FILE_SCAN_DURATION_FRAMES}>
-        <FileScan />
+      <TransitionSeries.Sequence durationInFrames={SCENE_DIFF_SCAN_DURATION_FRAMES}>
+        <DiffScan />
       </TransitionSeries.Sequence>
 
-      <TransitionSeries.Sequence durationInFrames={SCENE_DIAGNOSTICS_DURATION_FRAMES}>
-        <Diagnostics />
+      <TransitionSeries.Sequence durationInFrames={SCENE_TEST_PLAN_DURATION_FRAMES}>
+        <TestPlan />
       </TransitionSeries.Sequence>
 
-      <TransitionSeries.Sequence durationInFrames={SCENE_AGENT_HANDOFF_DURATION_FRAMES}>
-        <AgentHandoff />
+      <TransitionSeries.Sequence durationInFrames={SCENE_BROWSER_EXECUTION_DURATION_FRAMES}>
+        <BrowserExecution />
       </TransitionSeries.Sequence>
 
-      <TransitionSeries.Sequence durationInFrames={SCENE_SCORE_REVEAL_DURATION_FRAMES}>
-        <ScoreReveal />
+      <TransitionSeries.Sequence durationInFrames={SCENE_RESULTS_DURATION_FRAMES}>
+        <Results />
       </TransitionSeries.Sequence>
     </TransitionSeries>
   );
