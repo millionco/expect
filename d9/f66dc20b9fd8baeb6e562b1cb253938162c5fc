@@ -1,0 +1,31 @@
+packages/supervisor/src/executor.ts
+  c5260251e57cc792 1,17-21,90-97,99,123
+packages/agent/src/types.ts
+  c5260251e57cc792 3-7,13
+packages/agent/src/agent.ts
+  c5260251e57cc792 35
+packages/supervisor/src/constants.ts
+  c5260251e57cc792 11
+packages/agent/src/acp-client.ts
+  c5260251e57cc792 145,149,165-168,170,172,203,208,212
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "d9f66dc20b9fd8baeb6e562b1cb253938162c5fc",
+  "prompts": {
+    "c5260251e57cc792": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "261ce49a-b28a-4da2-ba60-c59190a10ee0",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 37,
+      "total_deletions": 10,
+      "accepted_lines": 35,
+      "overriden_lines": 0
+    }
+  }
+}
