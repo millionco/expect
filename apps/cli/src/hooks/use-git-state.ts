@@ -2,6 +2,7 @@ import { Effect, Exit } from "effect";
 import { useQuery } from "@tanstack/react-query";
 import { Git, GitState } from "@expect/supervisor";
 import { GIT_STATE_TIMEOUT_MS } from "../constants";
+import { NodeServices } from "@effect/platform-node";
 
 export type { GitState };
 
@@ -34,6 +35,7 @@ export const useGitState = () =>
             duration: GIT_STATE_TIMEOUT_MS,
             onTimeout: () => Effect.succeed(NON_GIT_STATE),
           }),
+          Effect.provide(NodeServices.layer),
         ),
       );
       if (Exit.isSuccess(exit)) {

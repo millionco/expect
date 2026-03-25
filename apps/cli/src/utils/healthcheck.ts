@@ -55,8 +55,8 @@ const detectAgent = Effect.fn("detectAgent")(function* (rootDir: string) {
   if (content) {
     const parsed = yield* Effect.try({
       try: () => JSON.parse(content) as { packageManager?: string },
-      catch: () => new Error("Invalid package.json"),
-    }).pipe(Effect.catchTag("Error", () => Effect.succeed(undefined)));
+      catch: () => ({ _tag: "JsonParseError" as const }),
+    }).pipe(Effect.catchTag("JsonParseError", () => Effect.succeed(undefined)));
     if (parsed?.packageManager) {
       const agentName = parsed.packageManager.split("@")[0];
       if (agentName) return agentName;
@@ -72,7 +72,7 @@ const readPackageJson = Effect.fn("readPackageJson")(function* (directory: strin
   const content = yield* fileSystem.readFileString(packageJsonPath);
   return yield* Effect.try({
     try: () => JSON.parse(content) as { name?: string; scripts?: Record<string, string> },
-    catch: () => new Error("Invalid package.json"),
+    catch: () => ({ _tag: "JsonParseError" as const }),
   });
 });
 
@@ -120,7 +120,7 @@ const discoverPackages = Effect.fn("discoverPackages")(function* (rootDir: strin
   for (const directory of directories) {
     const packageJson = yield* readPackageJson(directory).pipe(
       Effect.catchTag("PlatformError", () => Effect.succeed(undefined)),
-      Effect.catchTag("Error", () => Effect.succeed(undefined)),
+      Effect.catchTag("JsonParseError", () => Effect.succeed(undefined)),
     );
 
     if (!packageJson?.scripts) continue;

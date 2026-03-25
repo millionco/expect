@@ -3,6 +3,7 @@
   "private": true,
   "license": "FSL-1.1-MIT",
   "scripts": {
+    "everything": "pnpm run build && pnpm run lint && pnpm run typecheck && pnpm run format && pnpm run check && pnpm run test",
     "dev": "turbo dev --filter='!./playground/*'",
     "build": "turbo build --filter='!./playground/*'",
     "lint": "turbo lint --filter='!./playground/*'",

@@ -301,7 +301,10 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
             resolvedReplayOutputPath,
             path.extname(resolvedReplayOutputPath),
           );
-          const htmlReportPath = path.join(path.dirname(resolvedReplayOutputPath), `${replayBaseName}.html`);
+          const htmlReportPath = path.join(
+            path.dirname(resolvedReplayOutputPath),
+            `${replayBaseName}.html`,
+          );
           const reportHtml = buildReplayViewerHtml({
             title: runState ? `Test Report: ${runState.title}` : "Expect Report",
             eventsSource: { ndjsonPath: replayFileName },

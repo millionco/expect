@@ -142,7 +142,9 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
 
     const browserMcpBinPath = fileURLToPath(import.meta.resolve("@expect/browser/cli"));
 
-    const buildMcpServers = (env: ReadonlyArray<{ name: string; value: string }>): acp.McpServer[] => [
+    const buildMcpServers = (
+      env: ReadonlyArray<{ name: string; value: string }>,
+    ): acp.McpServer[] => [
       {
         command: process.execPath,
         args: [browserMcpBinPath],

@@ -6,6 +6,7 @@ import type { AgentBackend } from "@expect/agent";
 import type { TestReport } from "@expect/shared/models";
 import { cliAtomRuntime } from "./runtime";
 import { stripUndefinedRequirement } from "../utils/strip-undefined-requirement";
+import { NodeServices } from "@effect/platform-node";
 
 interface ExecuteInput {
   readonly options: ExecuteOptions;
@@ -82,5 +83,5 @@ const execute = Effect.fnUntraced(
 );
 
 export const executeFn = cliAtomRuntime.fn<ExecuteInput>()((input, ctx) =>
-  stripUndefinedRequirement(execute(input, ctx)),
+  stripUndefinedRequirement(execute(input, ctx)).pipe(Effect.provide(NodeServices.layer)),
 );
