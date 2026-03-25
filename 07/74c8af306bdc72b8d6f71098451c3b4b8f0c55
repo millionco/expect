@@ -1,0 +1,23 @@
+apps/website/components/replay/replay-viewer.tsx
+  82b280e60d87d7cf 191,239-240,336-340,416-430,432-444,446-451,454-458,460,464-467,469-478,480-489
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "0774c8af306bdc72b8d6f71098451c3b4b8f0c55",
+  "prompts": {
+    "82b280e60d87d7cf": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4460184a-49dc-4b79-9a34-6169fdc68320",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 76,
+      "total_deletions": 88,
+      "accepted_lines": 76,
+      "overriden_lines": 0
+    }
+  }
+}
