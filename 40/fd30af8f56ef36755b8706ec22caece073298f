@@ -1,0 +1,38 @@
+apps/cli/src/components/screens/port-picker-screen.tsx
+  ce3d30faefdaa23f 12,73-74,81,93-95,104-108,116,134,139-144,156-160,162-185,205-213,242,244-245,248-254,268-274,276,279,284,321-364,368
+apps/website/components/replay/replay-viewer.tsx
+  6654492e34054df1 18-19,153-154,158,166-179,376-378
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "40fd30af8f56ef36755b8706ec22caece073298f",
+  "prompts": {
+    "6654492e34054df1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ab3d8469-6494-4893-b4c4-905b6d7c3777",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 22,
+      "total_deletions": 2,
+      "accepted_lines": 22,
+      "overriden_lines": 0
+    },
+    "ce3d30faefdaa23f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e44bd175-5440-4bdd-bc45-dbb513916166",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 126,
+      "total_deletions": 17,
+      "accepted_lines": 126,
+      "overriden_lines": 0
+    }
+  }
+}
