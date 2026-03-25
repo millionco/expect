@@ -1,0 +1,23 @@
+apps/website/app/page.tsx
+  73f966135fa3ef05 2035
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "f6536d682aff177f6f9200e12bdcddf1ed52ca95",
+  "prompts": {
+    "73f966135fa3ef05": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c5fa3a94-700a-4cff-a1dc-547ffe27b08c",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
