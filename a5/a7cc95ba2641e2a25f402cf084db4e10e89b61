@@ -1,0 +1,44 @@
+apps/cli/src/components/ui/modeline.tsx
+  e252c7cb582dcad5 29-33
+apps/cli/src/components/screens/saved-flow-picker-screen.tsx
+  e252c7cb582dcad5 1-161
+apps/cli/package.json
+  3358541d0305b9cd 46
+apps/cli/src/components/app.tsx
+  e252c7cb582dcad5 11,75-77,108-109
+apps/cli/src/hooks/use-saved-flows.ts
+  e252c7cb582dcad5 1-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "a5a7cc95ba2641e2a25f402cf084db4e10e89b61",
+  "prompts": {
+    "3358541d0305b9cd": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "cfaabee7-f59a-4f8e-8e59-78a5f5c0091d",
+        "model": "composer-2"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 0,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "e252c7cb582dcad5": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "32015774-e4a0-4796-b78b-c1b87b0a74be",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 223,
+      "total_deletions": 15,
+      "accepted_lines": 198,
+      "overriden_lines": 0
+    }
+  }
+}
