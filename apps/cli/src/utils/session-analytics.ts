@@ -1,5 +1,6 @@
 import { Effect, ManagedRuntime } from "effect";
 import { Analytics } from "@expect/shared/observability";
+import { usePreferencesStore } from "../stores/use-preferences";
 
 const analyticsRuntime = ManagedRuntime.make(Analytics.layerPostHog);
 
@@ -10,6 +11,7 @@ export const trackSessionStarted = () =>
       yield* analytics.capture("session:started", {
         mode: "interactive",
         skip_planning: false,
+        browser_headed: usePreferencesStore.getState().browserHeaded,
       });
     }),
   );

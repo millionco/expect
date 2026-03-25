@@ -44,6 +44,7 @@ export interface EventMap {
   "session:started": {
     readonly mode: "interactive" | "headless";
     readonly skip_planning: boolean;
+    readonly browser_headed: boolean;
   };
   "session:ended": { readonly session_ms: number };
 

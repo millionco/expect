@@ -55,6 +55,7 @@ export const TestingScreen = ({
   const [columns] = useStdoutDimensions();
 
   const agentBackend = usePreferencesStore((state) => state.agentBackend);
+  const browserHeaded = usePreferencesStore((state) => state.browserHeaded);
   const [executionResult, triggerExecute] = useAtom(executeFn, {
     mode: "promiseExit",
   });
@@ -78,7 +79,7 @@ export const TestingScreen = ({
       options: {
         changesFor,
         instruction,
-        isHeadless: true,
+        isHeadless: !browserHeaded,
         requiresCookies,
         savedFlow,
       },
@@ -89,7 +90,15 @@ export const TestingScreen = ({
     return () => {
       triggerExecute(Atom.Interrupt);
     };
-  }, [triggerExecute, agentBackend, changesFor, instruction, savedFlow, requiresCookies]);
+  }, [
+    triggerExecute,
+    agentBackend,
+    browserHeaded,
+    changesFor,
+    instruction,
+    savedFlow,
+    requiresCookies,
+  ]);
 
   useEffect(() => {
     if (isExecutionComplete && executedPlan && report) {

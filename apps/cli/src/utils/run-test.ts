@@ -14,6 +14,7 @@ interface HeadlessRunOptions {
   instruction: string;
   agent: AgentBackend;
   verbose: boolean;
+  headed: boolean;
 }
 
 export const runHeadless = (options: HeadlessRunOptions) =>
@@ -28,6 +29,7 @@ export const runHeadless = (options: HeadlessRunOptions) =>
         yield* analytics.capture("session:started", {
           mode: "headless",
           skip_planning: false,
+          browser_headed: options.headed,
         });
 
         console.log(`expect v${VERSION}`);
@@ -40,7 +42,7 @@ export const runHeadless = (options: HeadlessRunOptions) =>
           .execute({
             changesFor: options.changesFor,
             instruction: options.instruction,
-            isHeadless: true,
+            isHeadless: !options.headed,
             requiresCookies: false,
           })
           .pipe(
@@ -78,7 +80,7 @@ export const runHeadless = (options: HeadlessRunOptions) =>
                     fileStats: [],
                     instruction: options.instruction,
                     baseUrl: undefined as never,
-                    isHeadless: true,
+                    isHeadless: !options.headed,
                     requiresCookies: false,
                     title: options.instruction,
                     rationale: "Direct execution",

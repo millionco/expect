@@ -6,6 +6,7 @@ import { FLOW_INPUT_HISTORY_LIMIT } from "../constants";
 
 interface PreferencesStore {
   agentBackend: AgentBackend;
+  browserHeaded: boolean;
   autoSaveFlows: boolean;
   notifications: boolean | undefined;
   instructionHistory: string[];
@@ -19,6 +20,7 @@ export const usePreferencesStore = create<PreferencesStore>()(
   persist(
     (set) => ({
       agentBackend: "claude",
+      browserHeaded: false,
       autoSaveFlows: true,
       notifications: undefined,
       instructionHistory: [],

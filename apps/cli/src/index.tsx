@@ -34,6 +34,7 @@ interface CommanderOpts {
   agent?: AgentBackend;
   target?: Target;
   verbose?: boolean;
+  headed?: boolean;
 }
 
 const program = new Command()
@@ -46,12 +47,14 @@ const program = new Command()
   .option("-a, --agent <provider>", "agent provider to use (claude or codex)")
   .option("-t, --target <target>", "what to test: unstaged, branch, or changes", "changes")
   .option("--verbose", "enable verbose logging")
+  .option("--headed", "show a visible browser window during tests")
   .addHelpText(
     "after",
     `
 Examples:
   $ expect                                          open interactive TUI
   $ expect -m "test the login flow" -y              run immediately
+  $ expect --headed -m "smoke test" -y              run with a visible browser
   $ expect --target branch                          test all branch changes
   $ expect --target unstaged                        test unstaged changes`,
   );
@@ -114,6 +117,7 @@ const resolveChangesFor = async (target: Target) => {
 const seedStores = (opts: CommanderOpts, changesFor: ChangesFor) => {
   usePreferencesStore.setState({
     ...(opts.agent ? { agentBackend: opts.agent } : {}),
+    browserHeaded: opts.headed ?? false,
   });
 
   if (opts.message) {
@@ -132,6 +136,7 @@ const runHeadlessForTarget = async (target: Target, opts: CommanderOpts) => {
     instruction: opts.message ?? DEFAULT_INSTRUCTION,
     agent: opts.agent ?? "claude",
     verbose: opts.verbose ?? false,
+    headed: opts.headed ?? false,
   });
 };
 
@@ -164,6 +169,7 @@ program.action(async () => {
   if (hasDirectOptions) {
     await runInteractiveForTarget(target, opts);
   } else {
+    usePreferencesStore.setState({ browserHeaded: opts.headed ?? false });
     renderApp(opts.agent ?? "claude");
   }
 });
