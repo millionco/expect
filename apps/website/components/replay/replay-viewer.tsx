@@ -4,7 +4,7 @@ import { Calligraph } from "calligraph";
 import { useEffect, useRef, useState } from "react";
 import type { eventWithTime } from "@posthog/rrweb";
 import type { Replayer } from "@posthog/rrweb";
-import { motion } from "motion/react";
+import { animate, motion, useMotionValue, useTransform } from "motion/react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatTime } from "@/lib/format-time";
 import { createCursorZoom } from "@/lib/cursor-zoom";
@@ -51,6 +51,14 @@ const ACTIVE_STEP_CARD_TRANSITION = {
   duration: 0.16,
   ease: [0.2, 0.8, 0.2, 1],
 } as const;
+const PLAYBACK_BAR_RUBBER_BAND_DEAD_ZONE_PX = 32;
+const PLAYBACK_BAR_RUBBER_BAND_CURSOR_RANGE_PX = 200;
+const PLAYBACK_BAR_RUBBER_BAND_MAX_STRETCH_PX = 8;
+const PLAYBACK_BAR_RUBBER_BAND_TRANSITION = {
+  type: "spring",
+  visualDuration: 0.35,
+  bounce: 0.15,
+} as const;
 
 const getReplayDuration = (replayEvents: eventWithTime[]) => {
   if (replayEvents.length < 2) return 0;
@@ -85,6 +93,21 @@ const getPlaybackStepIndex = (
   }
 
   return 0;
+};
+
+const getPlaybackBarRubberBandStretch = (
+  playbackBarRect: DOMRect,
+  clientX: number,
+  direction: -1 | 1,
+) => {
+  const distancePastEdge =
+    direction < 0 ? playbackBarRect.left - clientX : clientX - playbackBarRect.right;
+  const overflowPx = Math.max(0, distancePastEdge - PLAYBACK_BAR_RUBBER_BAND_DEAD_ZONE_PX);
+  return (
+    direction *
+    PLAYBACK_BAR_RUBBER_BAND_MAX_STRETCH_PX *
+    Math.sqrt(Math.min(overflowPx / PLAYBACK_BAR_RUBBER_BAND_CURSOR_RANGE_PX, 1))
+  );
 };
 
 interface ControlIconProps {
@@ -144,6 +167,7 @@ export const ReplayViewer = ({
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(1);
+  const playbackBarRef = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
   const replayRef = useRef<HTMLDivElement>(null);
   const viewerShellRef = useRef<HTMLDivElement>(null);
@@ -161,6 +185,17 @@ export const ReplayViewer = ({
   const lastCursorPosRef = useRef("");
   const idleTicksRef = useRef(0);
   const cleanupIdleObserverRef = useRef<(() => void) | undefined>(undefined);
+  const playbackBarRectRef = useRef<DOMRect | undefined>(undefined);
+  const playbackBarPointerActiveRef = useRef(false);
+  const playbackBarRubberResetRef = useRef<{ stop: () => void } | undefined>(undefined);
+  const playbackBarRubberStretchPx = useMotionValue(0);
+  const playbackBarRubberBandWidth = useTransform(
+    playbackBarRubberStretchPx,
+    (stretchPx) => `calc(100% + ${Math.abs(stretchPx)}px)`,
+  );
+  const playbackBarRubberBandX = useTransform(playbackBarRubberStretchPx, (stretchPx) =>
+    stretchPx < 0 ? stretchPx : 0,
+  );
 
   const destroyReplay = () => {
     clearInterval(timerRef.current);
@@ -479,6 +514,84 @@ export const ReplayViewer = ({
     seekTo(Number(event.target.value));
   };
 
+  const updatePlaybackBarRubberBand = (clientX: number) => {
+    const playbackBarRect = playbackBarRectRef.current;
+    if (!playbackBarRect) return;
+
+    playbackBarRubberResetRef.current?.stop();
+    playbackBarRubberResetRef.current = undefined;
+
+    if (clientX < playbackBarRect.left) {
+      playbackBarRubberStretchPx.jump(
+        getPlaybackBarRubberBandStretch(playbackBarRect, clientX, -1),
+      );
+      return;
+    }
+
+    if (clientX > playbackBarRect.right) {
+      playbackBarRubberStretchPx.jump(
+        getPlaybackBarRubberBandStretch(playbackBarRect, clientX, 1),
+      );
+      return;
+    }
+
+    playbackBarRubberStretchPx.jump(0);
+  };
+
+  const finishPlaybackBarPointerInteraction = (
+    target?: HTMLInputElement,
+    pointerId?: number,
+  ) => {
+    if (!playbackBarPointerActiveRef.current) return;
+
+    playbackBarPointerActiveRef.current = false;
+    playbackBarRectRef.current = undefined;
+
+    if (target && pointerId !== undefined && target.hasPointerCapture(pointerId)) {
+      target.releasePointerCapture(pointerId);
+    }
+
+    playbackBarRubberResetRef.current?.stop();
+    playbackBarRubberResetRef.current = undefined;
+
+    if (playbackBarRubberStretchPx.get() === 0) return;
+
+    playbackBarRubberResetRef.current = animate(
+      playbackBarRubberStretchPx,
+      0,
+      PLAYBACK_BAR_RUBBER_BAND_TRANSITION,
+    );
+  };
+
+  const handlePlaybackBarPointerDown = (event: React.PointerEvent<HTMLInputElement>) => {
+    const playbackBarRect = playbackBarRef.current?.getBoundingClientRect();
+    if (!playbackBarRect) return;
+
+    playbackBarPointerActiveRef.current = true;
+    playbackBarRectRef.current = playbackBarRect;
+    playbackBarRubberResetRef.current?.stop();
+    playbackBarRubberResetRef.current = undefined;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    updatePlaybackBarRubberBand(event.clientX);
+  };
+
+  const handlePlaybackBarPointerMove = (event: React.PointerEvent<HTMLInputElement>) => {
+    if (!playbackBarPointerActiveRef.current) return;
+    updatePlaybackBarRubberBand(event.clientX);
+  };
+
+  const handlePlaybackBarPointerUp = (event: React.PointerEvent<HTMLInputElement>) => {
+    finishPlaybackBarPointerInteraction(event.currentTarget, event.pointerId);
+  };
+
+  const handlePlaybackBarPointerCancel = (event: React.PointerEvent<HTMLInputElement>) => {
+    finishPlaybackBarPointerInteraction(event.currentTarget, event.pointerId);
+  };
+
+  const handlePlaybackBarLostPointerCapture = () => {
+    finishPlaybackBarPointerInteraction();
+  };
+
   const handleSpeedChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const nextSpeed = SPEEDS.find((supportedSpeed) => {
       return `${supportedSpeed}` === event.target.value;
@@ -627,6 +740,11 @@ export const ReplayViewer = ({
       step={100}
       disabled={!hasEvents}
       onChange={handleSeek}
+      onPointerDown={handlePlaybackBarPointerDown}
+      onPointerMove={handlePlaybackBarPointerMove}
+      onPointerUp={handlePlaybackBarPointerUp}
+      onPointerCancel={handlePlaybackBarPointerCancel}
+      onLostPointerCapture={handlePlaybackBarLostPointerCapture}
       className="absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none rounded-full bg-transparent outline-none disabled:cursor-default [&::-moz-range-thumb]:size-0 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:border-0 [&::-moz-range-track]:h-full [&::-moz-range-track]:rounded-full [&::-moz-range-track]:border-0 [&::-moz-range-track]:bg-transparent [&::-webkit-slider-thumb]:size-0 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-runnable-track]:h-full [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-transparent"
     />
   );
@@ -802,7 +920,14 @@ export const ReplayViewer = ({
           </div>
         </div>
 
-        <div className="relative pb-6">
+        <motion.div
+          ref={playbackBarRef}
+          className="relative pb-6 will-change-transform"
+          style={{
+            width: playbackBarRubberBandWidth,
+            x: playbackBarRubberBandX,
+          }}
+        >
           <div
             className="relative h-9.75 overflow-hidden rounded-full"
             style={{
@@ -884,7 +1009,7 @@ export const ReplayViewer = ({
               1
             </div>
           )}
-        </div>
+        </motion.div>
       </div>
     </div>
   );
