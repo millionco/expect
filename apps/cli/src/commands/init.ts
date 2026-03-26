@@ -20,7 +20,13 @@ const GLOBAL_INSTALL_COMMANDS: Record<PackageManager, string> = {
   vp: "vp install -g expect-cli@latest",
 };
 
-const SKILL_COMMAND = "npx skills add https://github.com/millionco/expect --skill expect";
+const SKILL_COMMANDS: Record<PackageManager, string> = {
+  npm: "npx -y skills add https://github.com/millionco/expect --skill expect",
+  pnpm: "pnpm dlx skills add https://github.com/millionco/expect --skill expect",
+  yarn: "npx -y skills add https://github.com/millionco/expect --skill expect",
+  bun: "bunx skills add https://github.com/millionco/expect --skill expect",
+  vp: "npx -y skills add https://github.com/millionco/expect --skill expect",
+};
 
 export { detectAvailableAgents };
 
@@ -111,14 +117,15 @@ export const runInit = async (options: InitOptions = {}) => {
   }
 
   if (installSkill) {
+    const skillCommand = SKILL_COMMANDS[packageManager];
     const skillSpinner = spinner("Installing skill...").start();
-    const skillSuccess = await tryRun(SKILL_COMMAND);
+    const skillSuccess = await tryRun(skillCommand);
 
     if (skillSuccess) {
       skillSpinner.succeed("Skill installed.");
     } else {
       skillSpinner.fail("Failed to install skill.");
-      logger.dim(`  Run manually: ${highlighter.info(SKILL_COMMAND)}`);
+      logger.dim(`  Run manually: ${highlighter.info(skillCommand)}`);
     }
   }
 
