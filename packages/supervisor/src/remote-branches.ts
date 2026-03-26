@@ -1,6 +1,8 @@
 import { execFile } from "node:child_process";
 import { PR_LIMIT } from "./constants";
 
+const WHICH_COMMAND = process.platform === "win32" ? "where" : "which";
+
 const GH_PR_FIELDS = "headRefName,author,number,state,isDraft,updatedAt";
 
 interface RemoteBranchResult {
@@ -50,7 +52,7 @@ export const fetchRemoteBranches = async (cwd: string): Promise<RemoteBranchResu
 
   let ghAvailable = false;
   try {
-    await execCommand("which", ["gh"]);
+    await execCommand(WHICH_COMMAND, ["gh"]);
     ghAvailable = true;
   } catch {
     // gh not available

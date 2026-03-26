@@ -4,9 +4,11 @@ export type SupportedAgent = "claude" | "codex" | "cursor";
 
 const SUPPORTED_AGENTS: readonly SupportedAgent[] = ["claude", "codex", "cursor"];
 
+const WHICH_COMMAND = process.platform === "win32" ? "where" : "which";
+
 const isCommandAvailable = (command: string): boolean => {
   try {
-    execSync(`which ${command}`, { stdio: "pipe" });
+    execSync(`${WHICH_COMMAND} ${command}`, { stdio: "pipe" });
     return true;
   } catch {
     return false;

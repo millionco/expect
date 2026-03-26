@@ -1,6 +1,5 @@
 import * as path from "node:path";
 import { execFile } from "node:child_process";
-import { ResolverFactory } from "oxc-resolver";
 import { Effect, FileSystem, Layer, ServiceMap } from "effect";
 import { NodeServices } from "@effect/platform-node";
 import type { ChangedFile, TestCoverageReport } from "@expect/shared/models";
@@ -95,8 +94,13 @@ const listTrackedFiles = (repoRoot: string) =>
     catch: () => [] as string[],
   });
 
-const createResolver = (rootDir: string): ResolverFactory | undefined => {
+interface ModuleResolver {
+  sync(directory: string, specifier: string): { path?: string | null };
+}
+
+const createResolver = async (rootDir: string): Promise<ModuleResolver | undefined> => {
   try {
+    const { ResolverFactory } = await import("oxc-resolver");
     return new ResolverFactory({
       tsconfig: {
         configFile: path.join(rootDir, "tsconfig.json"),
@@ -112,7 +116,7 @@ const createResolver = (rootDir: string): ResolverFactory | undefined => {
 };
 
 const resolveSpecifier = (
-  resolver: ResolverFactory,
+  resolver: ModuleResolver,
   directory: string,
   specifier: string,
 ): string | undefined => {
@@ -134,7 +138,7 @@ const buildImportGraph = (
       (filePath) => isSourceFile(filePath) && !isInSkippedDirectory(filePath),
     );
 
-    const resolver = createResolver(rootDir);
+    const resolver = yield* Effect.promise(() => createResolver(rootDir));
     if (!resolver) return new Map() as ReadonlyMap<string, ReadonlySet<string>>;
 
     const edges = new Map<string, Set<string>>();

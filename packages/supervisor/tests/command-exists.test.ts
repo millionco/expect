@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { execFile } from "node:child_process";
 import { commandExists } from "../src/utils/command-exists";
 
 const availableCommands = new Set<string>();
@@ -14,6 +15,9 @@ vi.mock("node:child_process", () => ({
   }),
 }));
 
+const mockedExecFile = vi.mocked(execFile);
+const EXPECTED_LOOKUP = process.platform === "win32" ? "where" : "which";
+
 describe("commandExists", () => {
   beforeEach(() => {
     availableCommands.clear();
@@ -26,5 +30,16 @@ describe("commandExists", () => {
 
   it("returns false when the command is not found", async () => {
     expect(await commandExists("gh")).toBe(false);
+  });
+
+  it("uses platform-specific lookup command", async () => {
+    availableCommands.add("node");
+    await commandExists("node");
+    expect(mockedExecFile).toHaveBeenCalledWith(
+      EXPECTED_LOOKUP,
+      ["node"],
+      {},
+      expect.any(Function),
+    );
   });
 });

@@ -8,6 +8,8 @@ vi.mock("node:child_process", () => ({
 
 const mockedExecSync = vi.mocked(execSync);
 
+const WHICH_COMMAND = process.platform === "win32" ? "where" : "which";
+
 describe("detectAvailableAgents", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -15,7 +17,8 @@ describe("detectAvailableAgents", () => {
 
   it("returns agents whose binaries are on PATH", () => {
     mockedExecSync.mockImplementation((command) => {
-      if (String(command) === "which claude") return Buffer.from("/usr/local/bin/claude");
+      if (String(command) === `${WHICH_COMMAND} claude`)
+        return Buffer.from("/usr/local/bin/claude");
       throw new Error("not found");
     });
 
@@ -35,7 +38,8 @@ describe("detectAvailableAgents", () => {
   it("returns multiple agents when available", () => {
     mockedExecSync.mockImplementation((command) => {
       const cmd = String(command);
-      if (cmd === "which claude" || cmd === "which codex") return Buffer.from("");
+      if (cmd === `${WHICH_COMMAND} claude` || cmd === `${WHICH_COMMAND} codex`)
+        return Buffer.from("");
       throw new Error("not found");
     });
 
@@ -45,7 +49,8 @@ describe("detectAvailableAgents", () => {
 
   it("detects cursor as a supported agent", () => {
     mockedExecSync.mockImplementation((command) => {
-      if (String(command) === "which cursor") return Buffer.from("/usr/local/bin/cursor");
+      if (String(command) === `${WHICH_COMMAND} cursor`)
+        return Buffer.from("/usr/local/bin/cursor");
       throw new Error("not found");
     });
 
@@ -58,5 +63,14 @@ describe("detectAvailableAgents", () => {
 
     const agents = detectAvailableAgents();
     expect(agents).toEqual(["claude", "codex", "cursor"]);
+  });
+
+  it("uses platform-specific lookup command for every agent", () => {
+    mockedExecSync.mockReturnValue(Buffer.from(""));
+    detectAvailableAgents();
+
+    for (const call of mockedExecSync.mock.calls) {
+      expect(String(call[0])).toMatch(new RegExp(`^${WHICH_COMMAND} `));
+    }
   });
 });

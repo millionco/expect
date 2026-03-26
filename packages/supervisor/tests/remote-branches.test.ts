@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { execFile } from "node:child_process";
 import { fetchRemoteBranches } from "../src/remote-branches";
 
 const commandOutputs = new Map<string, string>();
@@ -22,10 +23,13 @@ vi.mock("node:child_process", () => ({
   ),
 }));
 
+const mockedExecFile = vi.mocked(execFile);
+
 const GH_PR_FIELDS = "headRefName,author,number,state,isDraft,updatedAt";
+const WHICH_COMMAND = process.platform === "win32" ? "where" : "which";
 
 const setGhAvailable = () => {
-  commandOutputs.set("which gh", "/usr/local/bin/gh");
+  commandOutputs.set(`${WHICH_COMMAND} gh`, "/usr/local/bin/gh");
 };
 
 const setRemoteBranches = (branches: string[]) => {
@@ -158,5 +162,16 @@ describe("fetchRemoteBranches", () => {
     const branches = await fetchRemoteBranches("/tmp/repo");
 
     expect(branches[0].prStatus).toBe("merged");
+  });
+
+  it("uses platform-specific lookup command to detect gh", async () => {
+    setRemoteBranches(["main"]);
+    await fetchRemoteBranches("/tmp/repo");
+
+    const ghLookupCall = mockedExecFile.mock.calls.find(
+      (call) => Array.isArray(call[1]) && call[1][0] === "gh",
+    );
+    expect(ghLookupCall).toBeDefined();
+    expect(ghLookupCall![0]).toBe(WHICH_COMMAND);
   });
 });
