@@ -1,0 +1,36 @@
+apps/cli/src/utils/headless-run-timeout.ts
+  848666916fec5e7d 1-31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.20",
+  "base_commit_sha": "eec6884693f08688d15116486fcea4ae2a5dc48b",
+  "prompts": {
+    "848666916fec5e7d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "2c7eb992-41c2-4e06-8ef1-e4558be3374c",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 32,
+      "total_deletions": 1,
+      "accepted_lines": 31,
+      "overriden_lines": 0
+    },
+    "98951c2f79539931": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4448efc0-249c-4483-84c9-673bdff5a7fa",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 69,
+      "total_deletions": 6,
+      "accepted_lines": 63,
+      "overriden_lines": 0
+    }
+  }
+}
