@@ -41,7 +41,7 @@ Examples:
   $ expect-cli --target branch                          test all branch changes
   $ expect-cli --target unstaged                        test unstaged changes
 
-Set `NO_TELEMTRY=1` to disable analytics events.
+Set `NO_TELEMETRY=1` to disable analytics events.
 ```
 
 ## How it works

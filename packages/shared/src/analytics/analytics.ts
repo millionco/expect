@@ -84,7 +84,7 @@ export class AnalyticsProvider extends ServiceMap.Service<
 export class Analytics extends ServiceMap.Service<Analytics>()("@expect/Analytics", {
   make: Effect.gen(function* () {
     const provider = yield* AnalyticsProvider;
-    const noTelemetryValue = yield* Config.option(Config.string("NO_TELEMTRY"));
+    const noTelemetryValue = yield* Config.option(Config.string("NO_TELEMETRY"));
     const telemetryDisabled = Option.match(noTelemetryValue, {
       onNone: () => false,
       onSome: (value) => value === "1",
