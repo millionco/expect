@@ -70,7 +70,6 @@
     "ink-spinner": "^5.0.0",
     "node-notifier": "^10.0.1",
     "ora": "^9.3.0",
-    "oxc-resolver": "^11.19.1",
     "picocolors": "^1.1.1",
     "playwright": "^1.52.0",
     "pretty-ms": "^9.3.0",
@@ -91,6 +90,9 @@
     "@types/react": "^19.2.14",
     "babel-plugin-react-compiler": "^1.0.0",
     "typescript": "^5.7.0"
+  },
+  "optionalDependencies": {
+    "oxc-resolver": "^11.19.1"
   },
   "engines": {
     "node": ">=18"
