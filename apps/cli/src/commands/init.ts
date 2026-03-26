@@ -1,4 +1,4 @@
-import { exec } from "node:child_process";
+import { spawn } from "node:child_process";
 import { detectAvailableAgents } from "@expect/agent";
 import figures from "figures";
 import pc from "picocolors";
@@ -49,12 +49,30 @@ const detectNonInteractive = (yesFlag: boolean): boolean =>
 const INSTALL_TIMEOUT_MS = 120_000;
 
 const tryRun = (command: string): Promise<boolean> =>
-  new Promise((resolve) => {
-    const child = exec(command, { timeout: INSTALL_TIMEOUT_MS }, (error) => {
-      resolve(Boolean(!error));
-    });
-    child.stdin?.end();
-  });
+  Promise.race([
+    new Promise<boolean>((resolve) => {
+      const child = spawn("sh", ["-c", command], {
+        detached: true,
+        stdio: "ignore",
+      });
+
+      child.unref();
+
+      child.on("close", (code) => {
+        resolve(code === 0);
+      });
+
+      child.on("error", () => {
+        resolve(false);
+      });
+    }),
+    new Promise<boolean>((resolve) => {
+      setTimeout(() => {
+        killed = true;
+        resolve(false);
+      }, INSTALL_TIMEOUT_MS);
+    }),
+  ]);
 
 interface InitOptions {
   yes?: boolean;

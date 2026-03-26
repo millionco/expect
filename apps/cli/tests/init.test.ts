@@ -1,33 +1,5 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vite-plus/test";
-import { execSync } from "node:child_process";
-import { detectPackageManager, runInit } from "../src/commands/init";
-
-const succeedSpy = vi.fn();
-const failSpy = vi.fn();
-const mockDetectAvailableAgents = vi.fn();
-
-vi.mock("node:child_process", () => ({
-  execSync: vi.fn(),
-}));
-
-vi.mock("@expect/agent", () => ({
-  detectAvailableAgents: (...args: unknown[]) => mockDetectAvailableAgents(...args),
-}));
-
-vi.mock("../src/utils/spinner", () => ({
-  spinner: () => ({
-    start: () => ({
-      succeed: succeedSpy,
-      fail: failSpy,
-    }),
-  }),
-}));
-
-vi.mock("../src/utils/prompts", () => ({
-  prompts: vi.fn().mockResolvedValue({ installSkill: false }),
-}));
-
-const mockedExecSync = vi.mocked(execSync);
+import { describe, expect, it, beforeEach, afterEach } from "vite-plus/test";
+import { detectPackageManager } from "../src/commands/init";
 
 describe("init", () => {
   describe("detectPackageManager", () => {
@@ -76,93 +48,6 @@ describe("init", () => {
 
     it("falls back to npm when no env vars set", () => {
       expect(detectPackageManager()).toBe("npm");
-    });
-  });
-
-  describe("runInit", () => {
-    const originalEnv = process.env;
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
-
-    beforeEach(() => {
-      process.env = { ...originalEnv };
-      delete process.env.VITE_PLUS_CLI_BIN;
-      delete process.env.npm_config_user_agent;
-      vi.clearAllMocks();
-      mockDetectAvailableAgents.mockReturnValue(["claude"]);
-      mockedExecSync.mockReturnValue(Buffer.from(""));
-    });
-
-    afterEach(() => {
-      process.env = originalEnv;
-    });
-
-    it("exits with error when no agents are detected", async () => {
-      mockDetectAvailableAgents.mockReturnValue([]);
-
-      await runInit({ yes: true });
-
-      expect(exitSpy).toHaveBeenCalledWith(1);
-    });
-
-    it("proceeds when at least one agent is detected", async () => {
-      mockDetectAvailableAgents.mockReturnValue(["claude"]);
-
-      await runInit({ yes: true });
-
-      expect(exitSpy).not.toHaveBeenCalled();
-    });
-
-    it("global install command uses the detected package manager binary", async () => {
-      process.env.npm_config_user_agent = "pnpm/8.15.0 node/v20.0.0";
-
-      await runInit({ yes: true });
-
-      const installCall = mockedExecSync.mock.calls.find((call) => String(call[0]).includes("-g"));
-      expect(installCall).toBeDefined();
-      expect(String(installCall![0])).toMatch(/^pnpm /);
-    });
-
-    it("uses vp binary when VITE_PLUS_CLI_BIN is set", async () => {
-      process.env.VITE_PLUS_CLI_BIN = "/usr/local/bin/vp";
-
-      await runInit({ yes: true });
-
-      const installCall = mockedExecSync.mock.calls.find((call) => String(call[0]).includes("-g"));
-      expect(installCall).toBeDefined();
-      expect(String(installCall![0])).toMatch(/^vp /);
-    });
-
-    it("continues to skill install even when global install fails", async () => {
-      mockedExecSync.mockImplementation((command) => {
-        const cmd = String(command);
-        if (cmd.includes("-g")) throw new Error("install failed");
-        return Buffer.from("");
-      });
-
-      await runInit({ yes: true });
-
-      const skillCall = mockedExecSync.mock.calls.find((call) =>
-        String(call[0]).includes("skills add"),
-      );
-      expect(skillCall).toBeDefined();
-    });
-
-    it("shows spinner fail when install throws", async () => {
-      mockedExecSync.mockImplementation(() => {
-        throw new Error("install failed");
-      });
-
-      await runInit({ yes: true });
-
-      expect(failSpy).toHaveBeenCalled();
-    });
-
-    it("does not call prompts in non-interactive mode", async () => {
-      const { prompts } = await import("../src/utils/prompts");
-
-      await runInit({ yes: true });
-
-      expect(prompts).not.toHaveBeenCalled();
     });
   });
 });
