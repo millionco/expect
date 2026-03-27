@@ -1,0 +1,23 @@
+apps/cli/src/utils/run-test.ts
+  848666916fec5e7d 352,356
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.20",
+  "base_commit_sha": "0b196b8dcf3dc0028207203efc30f9f3a0d3f6dc",
+  "prompts": {
+    "848666916fec5e7d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "2c7eb992-41c2-4e06-8ef1-e4558be3374c",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 27,
+      "total_deletions": 2,
+      "accepted_lines": 27,
+      "overriden_lines": 0
+    }
+  }
+}
