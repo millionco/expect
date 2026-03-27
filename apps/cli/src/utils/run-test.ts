@@ -26,6 +26,7 @@ interface HeadlessRunOptions {
 
 const HEADLESS_PROGRESS_HEARTBEAT_INTERVAL_MS = 15_000;
 const VERBOSE_EVENT_TEXT_CHAR_LIMIT = 140;
+const VERBOSE_ACP_RAW_TEXT_CHAR_LIMIT = 500;
 
 const truncateEventText = (text: string) => {
   const compactText = text.trim().replace(/\s+/g, " ");
@@ -42,74 +43,88 @@ const isProtocolMarkerMessage = (text: string) =>
   text.includes("STEP_SKIPPED|") ||
   text.includes("RUN_COMPLETED|");
 
+const stringifyAcpUpdateForConsole = (update: AcpSessionUpdate) =>
+  JSON.stringify(update, (_key, value) => {
+    if (typeof value === "string" && value.length > VERBOSE_ACP_RAW_TEXT_CHAR_LIMIT) {
+      return `${value.slice(0, VERBOSE_ACP_RAW_TEXT_CHAR_LIMIT - 3)}...`;
+    }
+    return value;
+  });
+
 const describeAcpUpdate = (update: AcpSessionUpdate, verbose: boolean) => {
+  const rawLine = verbose ? `[acp/raw] ${stringifyAcpUpdateForConsole(update)}` : undefined;
   switch (update.sessionUpdate) {
     case "session_info_update":
       return {
         activity: "session info update",
-        line: "[acp] session info update",
+        line: rawLine ?? "[acp] session info update",
       } as const;
     case "usage_update":
       return {
         activity: "usage update",
-        line: "[acp] usage update",
+        line: rawLine ?? "[acp] usage update",
       } as const;
     case "current_mode_update":
       return {
         activity: "current mode update",
-        line: "[acp] current mode update",
+        line: rawLine ?? "[acp] current mode update",
       } as const;
     case "available_commands_update":
       return {
         activity: "available commands update",
-        line: "[acp] available commands update",
+        line: rawLine ?? "[acp] available commands update",
       } as const;
     case "config_option_update":
       return {
         activity: "config option update",
-        line: "[acp] config option update",
+        line: rawLine ?? "[acp] config option update",
       } as const;
     case "plan":
       return {
         activity: `plan update (${update.entries.length} entries)`,
-        line: `[acp] plan update (${update.entries.length} entries)`,
+        line: rawLine ?? `[acp] plan update (${update.entries.length} entries)`,
       } as const;
     case "tool_call":
       return {
         activity: `tool call ${update.title}`,
-        line: `[acp] tool call ${update.title}`,
+        line: rawLine ?? `[acp] tool call ${update.title}`,
       } as const;
     case "tool_call_update": {
       const title = update.title ?? update.toolCallId;
       const status = update.status ?? "updated";
       return {
         activity: `tool ${title} ${status}`,
-        line: `[acp] tool ${title} ${status}`,
+        line: rawLine ?? `[acp] tool ${title} ${status}`,
       } as const;
     }
     case "agent_message_chunk":
       return {
         activity: "agent message chunk",
         line:
-          verbose && update.content.type === "text" && !isProtocolMarkerMessage(update.content.text)
+          rawLine ??
+          (verbose &&
+          update.content.type === "text" &&
+          !isProtocolMarkerMessage(update.content.text)
             ? `[acp] message: ${truncateEventText(update.content.text)}`
-            : undefined,
+            : undefined),
       } as const;
     case "agent_thought_chunk":
       return {
         activity: "agent thought chunk",
         line:
-          verbose && update.content.type === "text"
+          rawLine ??
+          (verbose && update.content.type === "text"
             ? `[acp] thinking: ${truncateEventText(update.content.text)}`
-            : undefined,
+            : undefined),
       } as const;
     case "user_message_chunk":
       return {
         activity: "user message chunk",
         line:
-          verbose && update.content.type === "text"
+          rawLine ??
+          (verbose && update.content.type === "text"
             ? `[acp] user: ${truncateEventText(update.content.text)}`
-            : undefined,
+            : undefined),
       } as const;
   }
 };
