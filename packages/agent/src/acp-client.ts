@@ -263,6 +263,11 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
     ) {
       yield* Effect.annotateCurrentSpan({ cwd });
       const mcpServers = buildMcpServers(mcpEnv);
+      yield* Effect.logInfo("Creating ACP session", {
+        cwd,
+        mcpServerCount: mcpServers.length,
+        provider: adapter.provider,
+      });
       return yield* Effect.tryPromise({
         try: () => connection.newSession({ cwd, mcpServers }),
         catch: (cause) => {
@@ -328,6 +333,10 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
         : yield* createSession(cwd, mcpEnv);
 
       yield* Effect.logDebug("ACP stream starting", { sessionId });
+      yield* Effect.logInfo("Dispatching ACP prompt", {
+        sessionId,
+        promptLength: prompt.length,
+      });
 
       const updatesQueue = yield* getQueueBySessionId(sessionId);
 

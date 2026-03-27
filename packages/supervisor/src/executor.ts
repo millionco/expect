@@ -9,6 +9,7 @@ import {
 } from "@expect/agent";
 import { Effect, Layer, Option, Schema, ServiceMap, Stream } from "effect";
 import {
+  type AcpSessionUpdate,
   type ChangesFor,
   type ChangedFile,
   type CommitSummary,
@@ -55,6 +56,7 @@ export interface ExecuteOptions {
   readonly learnings?: string;
   readonly liveViewUrl?: string;
   readonly testCoverage?: TestCoverageReport;
+  readonly onAcpUpdate?: (update: AcpSessionUpdate) => void;
 }
 
 export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Executor", {
@@ -157,6 +159,7 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
       });
 
       return agent.stream(streamOptions).pipe(
+        Stream.tap((part) => Effect.sync(() => options.onAcpUpdate?.(part))),
         Stream.mapAccum(
           () => initial,
           (executed, part) => {

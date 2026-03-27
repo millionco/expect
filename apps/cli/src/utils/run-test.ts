@@ -1,5 +1,10 @@
 import { Effect, Option, Stream } from "effect";
-import { changesForDisplayName, type ChangesFor, type ExecutionEvent } from "@expect/shared/models";
+import {
+  changesForDisplayName,
+  type AcpSessionUpdate,
+  type ChangesFor,
+  type ExecutionEvent,
+} from "@expect/shared/models";
 import { Executor, ExecutedTestPlan, Reporter } from "@expect/supervisor";
 import { Analytics } from "@expect/shared/observability";
 import type { AgentBackend } from "@expect/agent";
@@ -36,6 +41,78 @@ const isProtocolMarkerMessage = (text: string) =>
   text.includes("ASSERTION_FAILED|") ||
   text.includes("STEP_SKIPPED|") ||
   text.includes("RUN_COMPLETED|");
+
+const describeAcpUpdate = (update: AcpSessionUpdate, verbose: boolean) => {
+  switch (update.sessionUpdate) {
+    case "session_info_update":
+      return {
+        activity: "session info update",
+        line: "[acp] session info update",
+      } as const;
+    case "usage_update":
+      return {
+        activity: "usage update",
+        line: "[acp] usage update",
+      } as const;
+    case "current_mode_update":
+      return {
+        activity: "current mode update",
+        line: "[acp] current mode update",
+      } as const;
+    case "available_commands_update":
+      return {
+        activity: "available commands update",
+        line: "[acp] available commands update",
+      } as const;
+    case "config_option_update":
+      return {
+        activity: "config option update",
+        line: "[acp] config option update",
+      } as const;
+    case "plan":
+      return {
+        activity: `plan update (${update.entries.length} entries)`,
+        line: `[acp] plan update (${update.entries.length} entries)`,
+      } as const;
+    case "tool_call":
+      return {
+        activity: `tool call ${update.title}`,
+        line: `[acp] tool call ${update.title}`,
+      } as const;
+    case "tool_call_update": {
+      const title = update.title ?? update.toolCallId;
+      const status = update.status ?? "updated";
+      return {
+        activity: `tool ${title} ${status}`,
+        line: `[acp] tool ${title} ${status}`,
+      } as const;
+    }
+    case "agent_message_chunk":
+      return {
+        activity: "agent message chunk",
+        line:
+          verbose && update.content.type === "text" && !isProtocolMarkerMessage(update.content.text)
+            ? `[acp] message: ${truncateEventText(update.content.text)}`
+            : undefined,
+      } as const;
+    case "agent_thought_chunk":
+      return {
+        activity: "agent thought chunk",
+        line:
+          verbose && update.content.type === "text"
+            ? `[acp] thinking: ${truncateEventText(update.content.text)}`
+            : undefined,
+      } as const;
+    case "user_message_chunk":
+      return {
+        activity: "user message chunk",
+        line:
+          verbose && update.content.type === "text"
+            ? `[acp] user: ${truncateEventText(update.content.text)}`
+            : undefined,
+      } as const;
+  }
+};
 
 const describeExecutionEvent = (event: ExecutionEvent, verbose: boolean) => {
   switch (event._tag) {
@@ -146,6 +223,14 @@ export const runHeadless = (options: HeadlessRunOptions) => {
       const runStartedAt = Date.now();
       yield* analytics.capture("run:started", { plan_id: "direct" });
       const seenEvents = new Set<string>();
+      const onAcpUpdate = (update: AcpSessionUpdate) => {
+        const description = describeAcpUpdate(update, options.verbose);
+        lastActivityAt = Date.now();
+        lastActivitySummary = description.activity;
+        if (description.line) {
+          console.log(description.line);
+        }
+      };
       const printNewEvents = (executed: ExecutedTestPlan) => {
         for (const event of executed.events) {
           if (seenEvents.has(event.id)) continue;
@@ -165,6 +250,7 @@ export const runHeadless = (options: HeadlessRunOptions) => {
             instruction: options.instruction,
             isHeadless: !options.headed,
             requiresCookies: false,
+            onAcpUpdate,
           })
           .pipe(
             Stream.tap((executed) => Effect.sync(() => printNewEvents(executed))),
