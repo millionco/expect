@@ -6,7 +6,7 @@ import { containsUrl } from "../utils/detect-url";
 export type Screen = Data.TaggedEnum<{
   Main: {};
   SelectPr: {};
-  CookieSyncConfirm: { changesFor: ChangesFor; instruction: string; savedFlow?: SavedFlow };
+  CookieSyncConfirm: { changesFor?: ChangesFor; instruction?: string; savedFlow?: SavedFlow };
   PortPicker: {
     changesFor: ChangesFor;
     instruction: string;

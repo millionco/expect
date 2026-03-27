@@ -223,8 +223,12 @@ export const MainMenu = ({ gitState }: MainMenuProps) => {
       }
 
       if (key.ctrl && input === "k") {
-        clearCookieBrowserKeys();
-        trackEvent("cookies:cleared");
+        if (cookieBrowserKeys.length > 0) {
+          clearCookieBrowserKeys();
+          trackEvent("cookies:cleared");
+        } else {
+          setScreen(Screen.CookieSyncConfirm({}));
+        }
         return;
       }
 

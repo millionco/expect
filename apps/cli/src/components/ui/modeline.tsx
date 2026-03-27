@@ -36,7 +36,10 @@ const useHintSegments = (screen: Screen, gitState: GitState | undefined): HintSe
               ? `cookies (${cookieBrowserKeys.length})`
               : "cookies off",
           cta: true,
-          onClick: clearCookieBrowserKeys,
+          onClick:
+            cookieBrowserKeys.length > 0
+              ? clearCookieBrowserKeys
+              : () => setScreen(Screen.CookieSyncConfirm({})),
         },
         {
           key: "ctrl+r",

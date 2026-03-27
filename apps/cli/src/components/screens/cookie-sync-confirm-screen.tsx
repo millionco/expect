@@ -12,8 +12,8 @@ import { useProjectPreferencesStore } from "../../stores/use-project-preferences
 import { useInstalledBrowsers, type DetectedBrowser } from "../../hooks/use-installed-browsers";
 
 interface CookieSyncConfirmScreenProps {
-  changesFor: ChangesFor;
-  instruction: string;
+  changesFor?: ChangesFor;
+  instruction?: string;
   savedFlow?: SavedFlow;
 }
 
@@ -62,14 +62,18 @@ export const CookieSyncConfirmScreen = ({
       selected_count: keys.length,
       browsers: keys.join(","),
     });
-    setScreen(
-      screenForTestingOrPortPicker({
-        changesFor,
-        instruction,
-        savedFlow,
-        cookieBrowserKeys: keys,
-      }),
-    );
+    if (changesFor && instruction) {
+      setScreen(
+        screenForTestingOrPortPicker({
+          changesFor,
+          instruction,
+          savedFlow,
+          cookieBrowserKeys: keys,
+        }),
+      );
+    } else {
+      setScreen(Screen.Main());
+    }
   };
 
   useInput((input, key) => {
@@ -115,7 +119,7 @@ export const CookieSyncConfirmScreen = ({
         <Text wrap="truncate">
           {" "}
           <Text color={COLORS.DIM}>{figures.pointerSmall}</Text>{" "}
-          <Text color={COLORS.TEXT}>{instruction}</Text>
+          <Text color={COLORS.TEXT}>{instruction ?? "Select browsers for cookie sync"}</Text>
         </Text>
       </Box>
 
