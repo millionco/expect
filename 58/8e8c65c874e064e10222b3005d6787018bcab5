@@ -1,0 +1,23 @@
+packages/shared/src/models.ts
+  848666916fec5e7d 166-171,184
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.20",
+  "base_commit_sha": "588e8c65c874e064e10222b3005d6787018bcab5",
+  "prompts": {
+    "848666916fec5e7d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "2c7eb992-41c2-4e06-8ef1-e4558be3374c",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 7,
+      "total_deletions": 0,
+      "accepted_lines": 7,
+      "overriden_lines": 0
+    }
+  }
+}
