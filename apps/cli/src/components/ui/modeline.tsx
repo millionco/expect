@@ -1,4 +1,5 @@
 import { Box, Text } from "ink";
+import { ChangesFor } from "@expect/supervisor";
 import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions";
 import stringWidth from "string-width";
 import { useColors, theme } from "../theme-context";
@@ -7,6 +8,7 @@ import { Option } from "effect";
 import {
   useNavigationStore,
   Screen,
+  screenForWatchOrPortPicker,
   screenForTestingOrPortPicker,
 } from "../../stores/use-navigation";
 import { usePlanExecutionStore } from "../../stores/use-plan-execution-store";
@@ -16,6 +18,7 @@ import { usePreferencesStore } from "../../stores/use-preferences";
 import { useUpdateCheck } from "../../hooks/use-update-check";
 import { Clickable } from "./clickable";
 import { TextShimmer } from "./text-shimmer";
+import { DEFAULT_INSTRUCTION } from "../../utils/resolve-changes-for";
 
 const useHintSegments = (screen: Screen, gitState: GitState | undefined): HintSegment[] => {
   const COLORS = useColors();
@@ -49,6 +52,19 @@ const useHintSegments = (screen: Screen, gitState: GitState | undefined): HintSe
           cta: true,
           onClick: () => setScreen(Screen.SelectPr()),
         });
+        segments.push({
+          key: "ctrl+g",
+          label: "watch changes",
+          cta: true,
+          onClick: () =>
+            setScreen(
+              screenForWatchOrPortPicker({
+                changesFor: ChangesFor.makeUnsafe({ _tag: "WorkingTree" }),
+                instruction: DEFAULT_INSTRUCTION,
+                requiresCookies: cookiesEnabled,
+              }),
+            ),
+        });
       }
       return segments;
     }
@@ -80,12 +96,14 @@ const useHintSegments = (screen: Screen, gitState: GitState | undefined): HintSe
           cta: true,
           onClick: () => {
             setScreen(
-              screenForTestingOrPortPicker({
-                changesFor: screen.changesFor,
-                instruction: screen.instruction,
-                savedFlow: screen.savedFlow,
-                requiresCookies: true,
-              }),
+              (screen.mode === "watch" ? screenForWatchOrPortPicker : screenForTestingOrPortPicker)(
+                {
+                  changesFor: screen.changesFor,
+                  instruction: screen.instruction,
+                  savedFlow: screen.savedFlow,
+                  requiresCookies: true,
+                },
+              ),
             );
           },
         },
@@ -96,12 +114,14 @@ const useHintSegments = (screen: Screen, gitState: GitState | undefined): HintSe
           cta: true,
           onClick: () => {
             setScreen(
-              screenForTestingOrPortPicker({
-                changesFor: screen.changesFor,
-                instruction: screen.instruction,
-                savedFlow: screen.savedFlow,
-                requiresCookies: false,
-              }),
+              (screen.mode === "watch" ? screenForWatchOrPortPicker : screenForTestingOrPortPicker)(
+                {
+                  changesFor: screen.changesFor,
+                  instruction: screen.instruction,
+                  savedFlow: screen.savedFlow,
+                  requiresCookies: false,
+                },
+              ),
             );
           },
         },
@@ -127,6 +147,19 @@ const useHintSegments = (screen: Screen, gitState: GitState | undefined): HintSe
         { key: "ctrl+o", label: expandLabel, cta: true },
         { key: "esc", label: expanded ? "collapse" : "cancel" },
       ];
+    }
+    case "Watch": {
+      const notifyLabel = notifications === true ? "notify on" : "notify off";
+      const hints: HintSegment[] = [
+        {
+          key: "ctrl+n",
+          label: notifyLabel,
+          cta: true,
+          onClick: toggleNotifications,
+        },
+        { key: "esc", label: "stop watch", cta: true, onClick: () => setScreen(Screen.Main()) },
+      ];
+      return hints;
     }
     case "Results": {
       const hints: HintSegment[] = [{ key: "y", label: "copy", cta: true }];

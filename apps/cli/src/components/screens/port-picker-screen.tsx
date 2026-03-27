@@ -4,7 +4,7 @@ import figures from "figures";
 import type { ChangesFor, SavedFlow } from "@expect/shared/models";
 import { PORT_PICKER_VISIBLE_COUNT } from "../../constants";
 import { useColors } from "../theme-context";
-import { useNavigationStore, Screen } from "../../stores/use-navigation";
+import { type ExecutionMode, useNavigationStore, Screen } from "../../stores/use-navigation";
 import { useProjectPreferencesStore } from "../../stores/use-project-preferences";
 import { useListeningPorts } from "../../hooks/use-listening-ports";
 import { useScrollableList } from "../../hooks/use-scrollable-list";
@@ -19,6 +19,7 @@ interface PortPickerScreenProps {
   instruction: string;
   savedFlow?: SavedFlow;
   requiresCookies?: boolean;
+  mode?: ExecutionMode;
 }
 
 interface PortEntry {
@@ -62,6 +63,7 @@ export const PortPickerScreen = ({
   instruction,
   savedFlow,
   requiresCookies,
+  mode = "run",
 }: PortPickerScreenProps) => {
   const COLORS = useColors();
   const setScreen = useNavigationStore((state) => state.setScreen);
@@ -116,7 +118,7 @@ export const PortPickerScreen = ({
     }
 
     setScreen(
-      Screen.Testing({
+      (mode === "watch" ? Screen.Watch : Screen.Testing)({
         changesFor,
         instruction,
         savedFlow,

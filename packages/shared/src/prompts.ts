@@ -9,6 +9,7 @@ import type {
 const EXECUTION_CONTEXT_FILE_LIMIT = 12;
 const EXECUTION_RECENT_COMMIT_LIMIT = 5;
 const DIFF_PREVIEW_CHAR_LIMIT = 12_000;
+const WATCH_ASSESSMENT_DIFF_CHAR_LIMIT = 6_000;
 const DEFAULT_BROWSER_MCP_SERVER_NAME = "browser";
 
 export interface ExecutionPromptOptions {
@@ -25,6 +26,17 @@ export interface ExecutionPromptOptions {
   readonly browserMcpServerName?: string;
   readonly savedFlow?: SavedFlow;
   readonly learnings?: string;
+  readonly testCoverage?: TestCoverageReport;
+}
+
+export interface WatchAssessmentPromptOptions {
+  readonly userInstruction: string;
+  readonly currentBranch: string;
+  readonly mainBranch: string | undefined;
+  readonly changedFiles: readonly ChangedFile[];
+  readonly diffPreview: string;
+  readonly heuristicReason: string;
+  readonly changedFileSummary: string;
   readonly testCoverage?: TestCoverageReport;
 }
 
@@ -103,6 +115,46 @@ const formatTestCoverageSection = (testCoverage: TestCoverageReport | undefined)
 
   lines.push("");
   return lines;
+};
+
+export const buildWatchAssessmentPrompt = (options: WatchAssessmentPromptOptions): string => {
+  const changedFiles = options.changedFiles.slice(0, EXECUTION_CONTEXT_FILE_LIMIT);
+  const rawDiff = options.diffPreview || "";
+  const diffPreview =
+    rawDiff.length > WATCH_ASSESSMENT_DIFF_CHAR_LIMIT
+      ? rawDiff.slice(0, WATCH_ASSESSMENT_DIFF_CHAR_LIMIT) + "\n... (truncated)"
+      : rawDiff;
+
+  return [
+    "You are deciding whether the latest repository changes warrant an automated browser regression run.",
+    "Return exactly one line with this format and nothing else:",
+    "RUN_TEST|yes|<brief reason>",
+    "RUN_TEST|no|<brief reason>",
+    "",
+    "Decision policy:",
+    "- Return yes when the changes are likely to affect browser-visible behavior, shared client logic, routing, layout, styling, or user journeys.",
+    "- Return yes when the changes touch code with weak or missing automated coverage and browser testing would reduce risk.",
+    "- Return no when the changes are clearly docs-only, comments-only, assets-only, or test-only and are unlikely to change runtime browser behavior.",
+    "- If uncertain, prefer yes.",
+    "",
+    "Developer request for the eventual run:",
+    options.userInstruction,
+    "",
+    "Current repository context:",
+    `- Current branch: ${options.currentBranch}`,
+    `- Main branch: ${options.mainBranch ?? "unknown"}`,
+    `- Changed file summary: ${options.changedFileSummary}`,
+    `- Heuristic borderline reason: ${options.heuristicReason}`,
+    "",
+    "Changed files:",
+    changedFiles.length > 0
+      ? changedFiles.map((file) => `- [${file.status}] ${file.path}`).join("\n")
+      : "- No changed files detected",
+    "",
+    ...formatTestCoverageSection(options.testCoverage),
+    "Diff preview:",
+    diffPreview || "No diff preview available",
+  ].join("\n");
 };
 
 export const buildExecutionPrompt = (options: ExecutionPromptOptions): string => {

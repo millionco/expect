@@ -25,6 +25,7 @@
     "expect": "./dist/index.js",
     "expect-agent": "./dist/index.js",
     "expect-cli": "./dist/index.js",
+    "expect-watch": "./dist/watch.js",
     "testie": "./dist/index.js"
   },
   "files": [

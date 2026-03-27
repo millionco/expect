@@ -6,7 +6,12 @@ import { trackEvent } from "../../utils/session-analytics";
 import { useColors } from "../theme-context";
 import { Clickable } from "../ui/clickable";
 import { Logo } from "../ui/logo";
-import { useNavigationStore, screenForTestingOrPortPicker } from "../../stores/use-navigation";
+import {
+  type ExecutionMode,
+  useNavigationStore,
+  screenForTestingOrPortPicker,
+  screenForWatchOrPortPicker,
+} from "../../stores/use-navigation";
 
 interface ConfirmOption {
   id: "enable-sync" | "run-without-sync";
@@ -31,12 +36,14 @@ interface CookieSyncConfirmScreenProps {
   changesFor: ChangesFor;
   instruction: string;
   savedFlow?: SavedFlow;
+  mode?: ExecutionMode;
 }
 
 export const CookieSyncConfirmScreen = ({
   changesFor,
   instruction,
   savedFlow,
+  mode = "run",
 }: CookieSyncConfirmScreenProps) => {
   const COLORS = useColors();
   const setScreen = useNavigationStore((state) => state.setScreen);
@@ -48,7 +55,12 @@ export const CookieSyncConfirmScreen = ({
       choice: requiresCookies ? "use_cookies" : "skip_cookies",
     });
     setScreen(
-      screenForTestingOrPortPicker({ changesFor, instruction, savedFlow, requiresCookies }),
+      (mode === "watch" ? screenForWatchOrPortPicker : screenForTestingOrPortPicker)({
+        changesFor,
+        instruction,
+        savedFlow,
+        requiresCookies,
+      }),
     );
   };
 

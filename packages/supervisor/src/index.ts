@@ -11,6 +11,7 @@ export {
   type ExecutionEvent,
   FileStat,
   FindRepoRootError,
+  changesForDisplayName,
   formatFileStats,
   Git,
   GitError,
@@ -37,3 +38,25 @@ export {
   type FileCategory,
 } from "./utils/categorize-changed-files";
 export { TestCoverage } from "./test-coverage";
+export {
+  Watch,
+  type WatchDecision,
+  type WatchEvent,
+  type WatchExecutionInput,
+  type WatchExecutionResult,
+  type WatchHeuristicDecision,
+  type WatchHeuristicInput,
+  type WatchOptions,
+  type WatchSnapshot,
+  type WatchState,
+  type WatchStateAdvance,
+  type WatchStateInput,
+  INITIAL_WATCH_STATE,
+  WatchAssessmentResponseParseError,
+  assessWatchHeuristic,
+  advanceWatchState,
+  markWatchHandled,
+  markWatchRunFinished,
+  markWatchRunStarted,
+  parseWatchAssessmentResponse,
+} from "./watch";

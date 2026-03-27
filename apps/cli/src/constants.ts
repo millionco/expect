@@ -38,6 +38,9 @@ export const LISTENING_PORTS_REFETCH_INTERVAL_MS = 5000;
 
 export const CI_EXECUTION_TIMEOUT_MS = 30 * 60 * 1000;
 export const CI_HEARTBEAT_INTERVAL_MS = 60_000;
+export const WATCH_POLL_INTERVAL_MS = 1_500;
+export const WATCH_SETTLE_DELAY_MS = 2_000;
+export const WATCH_IDLE_STATUS_INTERVAL_MS = 30_000;
 
 export const NPM_PACKAGE_NAME = "expect-cli";
 export const UPDATE_CHECK_STALE_MS = 3_600_000;

@@ -36,6 +36,7 @@ const makeTestPlan = (): TestPlan =>
     baseUrl: Option.none(),
     isHeadless: false,
     requiresCookies: false,
+    testCoverage: Option.none(),
   } as any);
 
 const decode = Schema.decodeSync(AcpSessionUpdate);

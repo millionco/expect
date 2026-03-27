@@ -3,34 +3,45 @@ import * as Data from "effect/Data";
 import type { ChangesFor, SavedFlow, TestReport } from "@expect/shared/models";
 import { containsUrl } from "../utils/detect-url";
 
+export type ExecutionMode = "run" | "watch";
+
+interface ScreenExecutionProps {
+  readonly changesFor: ChangesFor;
+  readonly instruction: string;
+  readonly savedFlow?: SavedFlow;
+  readonly requiresCookies?: boolean;
+}
+
 export type Screen = Data.TaggedEnum<{
   Main: {};
   SelectPr: {};
-  CookieSyncConfirm: { changesFor: ChangesFor; instruction: string; savedFlow?: SavedFlow };
+  CookieSyncConfirm: ScreenExecutionProps & { mode?: ExecutionMode };
   PortPicker: {
-    changesFor: ChangesFor;
-    instruction: string;
-    savedFlow?: SavedFlow;
-    requiresCookies?: boolean;
-  };
-  Testing: {
-    changesFor: ChangesFor;
-    instruction: string;
-    savedFlow?: SavedFlow;
-    requiresCookies?: boolean;
+    mode?: ExecutionMode;
+  } & ScreenExecutionProps;
+  Watch: {
     baseUrls?: readonly string[];
-  };
+  } & ScreenExecutionProps;
+  Testing: {
+    baseUrls?: readonly string[];
+  } & ScreenExecutionProps;
   Results: { report: TestReport; replayUrl?: string; localReplayUrl?: string; videoUrl?: string };
   SavedFlowPicker: {};
 }>;
 export const Screen = Data.taggedEnum<Screen>();
 
-export const screenForTestingOrPortPicker = (props: {
-  changesFor: ChangesFor;
-  instruction: string;
-  savedFlow?: SavedFlow;
-  requiresCookies?: boolean;
-}): Screen => (containsUrl(props.instruction) ? Screen.Testing(props) : Screen.PortPicker(props));
+const screenForModeOrPortPicker = (mode: ExecutionMode, props: ScreenExecutionProps): Screen =>
+  containsUrl(props.instruction)
+    ? mode === "watch"
+      ? Screen.Watch(props)
+      : Screen.Testing(props)
+    : Screen.PortPicker({ ...props, mode });
+
+export const screenForTestingOrPortPicker = (props: ScreenExecutionProps): Screen =>
+  screenForModeOrPortPicker("run", props);
+
+export const screenForWatchOrPortPicker = (props: ScreenExecutionProps): Screen =>
+  screenForModeOrPortPicker("watch", props);
 
 interface NavigationStore {
   screen: Screen;

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vite-plus/test";
-import { buildExecutionPrompt, type ExecutionPromptOptions } from "../src/prompts";
+import {
+  buildExecutionPrompt,
+  buildWatchAssessmentPrompt,
+  type ExecutionPromptOptions,
+  type WatchAssessmentPromptOptions,
+} from "../src/prompts";
 
 const makeDefaultOptions = (
   overrides?: Partial<ExecutionPromptOptions>,
@@ -17,6 +22,22 @@ const makeDefaultOptions = (
   baseUrl: "http://localhost:3000",
   isHeadless: false,
   requiresCookies: false,
+  ...overrides,
+});
+
+const makeWatchAssessmentOptions = (
+  overrides?: Partial<WatchAssessmentPromptOptions>,
+): WatchAssessmentPromptOptions => ({
+  userInstruction: "Test the dashboard changes",
+  currentBranch: "feat/dashboard",
+  mainBranch: "main",
+  changedFiles: [
+    { path: "src/dashboard/card.tsx", status: "M" },
+    { path: "src/dashboard/use-dashboard.ts", status: "M" },
+  ],
+  diffPreview: "diff --git a/src/dashboard/card.tsx\n+<DashboardCard />",
+  heuristicReason: "Shared web code changed: 1 component, 1 module.",
+  changedFileSummary: "2 files changed (1 component, 1 module)",
   ...overrides,
 });
 
@@ -165,5 +186,43 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("Recovery policy");
     expect(prompt).toContain("Avoid rabbit holes");
     expect(prompt).toContain("four attempts fail");
+  });
+});
+
+describe("buildWatchAssessmentPrompt", () => {
+  it("requires the strict RUN_TEST response format", () => {
+    const prompt = buildWatchAssessmentPrompt(makeWatchAssessmentOptions());
+    expect(prompt).toContain("RUN_TEST|yes|<brief reason>");
+    expect(prompt).toContain("RUN_TEST|no|<brief reason>");
+    expect(prompt).toContain("Return exactly one line");
+  });
+
+  it("includes heuristic context for the borderline decision", () => {
+    const prompt = buildWatchAssessmentPrompt(makeWatchAssessmentOptions());
+    expect(prompt).toContain("Changed file summary: 2 files changed (1 component, 1 module)");
+    expect(prompt).toContain("Heuristic borderline reason: Shared web code changed");
+    expect(prompt).toContain("[M] src/dashboard/card.tsx");
+  });
+
+  it("includes coverage context when provided", () => {
+    const prompt = buildWatchAssessmentPrompt(
+      makeWatchAssessmentOptions({
+        testCoverage: {
+          entries: [
+            {
+              path: "src/dashboard/use-dashboard.ts",
+              testFiles: [],
+              covered: false,
+            },
+          ],
+          coveredCount: 0,
+          totalCount: 1,
+          percent: 0,
+        },
+      }),
+    );
+
+    expect(prompt).toContain("Test coverage of changed files: 0% (0/1 files have tests)");
+    expect(prompt).toContain("[no test] src/dashboard/use-dashboard.ts");
   });
 });

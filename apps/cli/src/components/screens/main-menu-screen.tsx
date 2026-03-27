@@ -8,6 +8,7 @@ import { useProjectPreferencesStore } from "../../stores/use-project-preferences
 import {
   useNavigationStore,
   Screen,
+  screenForWatchOrPortPicker,
   screenForTestingOrPortPicker,
 } from "../../stores/use-navigation";
 import { useColors, COLORS } from "../theme-context";
@@ -26,6 +27,7 @@ import { getFlowSuggestions } from "../../utils/get-flow-suggestions";
 import { getContextDisplayLabel, getContextDescription } from "../../utils/context-options";
 import { queryClient } from "../../query-client";
 import { containsUrl } from "../../utils/detect-url";
+import { DEFAULT_INSTRUCTION } from "../../utils/resolve-changes-for";
 
 interface MainMenuProps {
   gitState: GitState | undefined;
@@ -164,6 +166,42 @@ export const MainMenu = ({ gitState }: MainMenuProps) => {
     }
   };
 
+  const startWatch = () => {
+    if (!gitState) return;
+    if (activeContext?._tag === "Commit") {
+      setErrorMessage("Watch mode supports local changes, branches, or PRs, not single commits.");
+      return;
+    }
+
+    const trimmed = value.trim() || DEFAULT_INSTRUCTION;
+    const mainBranch = gitState.mainBranch ?? "main";
+    let changesFor: ChangesFor;
+
+    if (activeContext?._tag === "Branch" || activeContext?._tag === "PullRequest") {
+      if (activeContext.branch.name) {
+        checkoutBranch(process.cwd(), activeContext.branch.name);
+        void queryClient.invalidateQueries({ queryKey: ["git-state"] });
+      }
+      changesFor = ChangesFor.makeUnsafe({ _tag: "Branch", mainBranch });
+    } else {
+      changesFor = ChangesFor.makeUnsafe({ _tag: "WorkingTree" });
+    }
+
+    usePreferencesStore.getState().rememberInstruction(trimmed);
+    if (cookiesEnabled || containsUrl(trimmed)) {
+      setScreen(
+        screenForWatchOrPortPicker({
+          changesFor,
+          instruction: trimmed,
+          requiresCookies: cookiesEnabled,
+        }),
+      );
+      return;
+    }
+
+    setScreen(Screen.CookieSyncConfirm({ changesFor, instruction: trimmed, mode: "watch" }));
+  };
+
   const valueRef = useRef(value);
   valueRef.current = value;
 
@@ -225,6 +263,11 @@ export const MainMenu = ({ gitState }: MainMenuProps) => {
       if (key.ctrl && input === "k") {
         toggleCookies();
         trackEvent("cookies:toggled", { enabled: !cookiesEnabled });
+        return;
+      }
+
+      if (key.ctrl && input === "g") {
+        startWatch();
         return;
       }
 
@@ -399,6 +442,19 @@ export const MainMenu = ({ gitState }: MainMenuProps) => {
               <Text color={COLORS.PRIMARY}>@</Text> add context
             </Text>
           </Box>
+        )}
+        {gitState?.isGitRepo && !picker.pickerOpen && (
+          <Clickable
+            onClick={() => {
+              startWatch();
+            }}
+          >
+            <Box marginTop={1} paddingX={1}>
+              <Text color={COLORS.DIM}>
+                <Text color={COLORS.PRIMARY}>watch</Text> changes [ctrl+g]
+              </Text>
+            </Box>
+          </Clickable>
         )}
       </Box>
 

@@ -1,13 +1,21 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vite-plus/test";
-import { execSync } from "node:child_process";
-import { detectPackageManager, runInit } from "../src/commands/init";
+import { beforeAll, describe, expect, it, vi, beforeEach, afterEach } from "vite-plus/test";
+import { exec } from "node:child_process";
 
 const succeedSpy = vi.fn();
 const failSpy = vi.fn();
 const mockDetectAvailableAgents = vi.fn();
+let detectPackageManager: typeof import("../src/commands/init").detectPackageManager;
+let runInit: typeof import("../src/commands/init").runInit;
 
 vi.mock("node:child_process", () => ({
-  execSync: vi.fn(),
+  exec: vi.fn((_: string, __: unknown, callback: (error: Error | null) => void) => {
+    callback(null);
+    return {
+      stdin: {
+        end: vi.fn(),
+      },
+    };
+  }),
 }));
 
 vi.mock("@expect/agent", () => ({
@@ -27,9 +35,16 @@ vi.mock("../src/utils/prompts", () => ({
   prompts: vi.fn().mockResolvedValue({ installSkill: false }),
 }));
 
-const mockedExecSync = vi.mocked(execSync);
+const mockedExec = vi.mocked(exec);
 
 describe("init", () => {
+  beforeAll(async () => {
+    vi.stubGlobal("__VERSION__", "test");
+    const initModule = await import("../src/commands/init");
+    detectPackageManager = initModule.detectPackageManager;
+    runInit = initModule.runInit;
+  });
+
   describe("detectPackageManager", () => {
     const originalEnv = process.env;
 
@@ -89,7 +104,16 @@ describe("init", () => {
       delete process.env.npm_config_user_agent;
       vi.clearAllMocks();
       mockDetectAvailableAgents.mockReturnValue(["claude"]);
-      mockedExecSync.mockReturnValue(Buffer.from(""));
+      mockedExec.mockImplementation(
+        (_: string, __: unknown, callback: (error: Error | null) => void) => {
+          callback(null);
+          return {
+            stdin: {
+              end: vi.fn(),
+            },
+          };
+        },
+      );
     });
 
     afterEach(() => {
@@ -117,7 +141,7 @@ describe("init", () => {
 
       await runInit({ yes: true });
 
-      const installCall = mockedExecSync.mock.calls.find((call) => String(call[0]).includes("-g"));
+      const installCall = mockedExec.mock.calls.find((call) => String(call[0]).includes("-g"));
       expect(installCall).toBeDefined();
       expect(String(installCall![0])).toMatch(/^pnpm /);
     });
@@ -127,30 +151,43 @@ describe("init", () => {
 
       await runInit({ yes: true });
 
-      const installCall = mockedExecSync.mock.calls.find((call) => String(call[0]).includes("-g"));
+      const installCall = mockedExec.mock.calls.find((call) => String(call[0]).includes("-g"));
       expect(installCall).toBeDefined();
       expect(String(installCall![0])).toMatch(/^vp /);
     });
 
     it("continues to skill install even when global install fails", async () => {
-      mockedExecSync.mockImplementation((command) => {
-        const cmd = String(command);
-        if (cmd.includes("-g")) throw new Error("install failed");
-        return Buffer.from("");
-      });
+      mockedExec.mockImplementation(
+        (command: string, _options: unknown, callback: (error: Error | null) => void) => {
+          const cmd = String(command);
+          callback(cmd.includes("-g") ? new Error("install failed") : null);
+          return {
+            stdin: {
+              end: vi.fn(),
+            },
+          };
+        },
+      );
 
       await runInit({ yes: true });
 
-      const skillCall = mockedExecSync.mock.calls.find((call) =>
+      const skillCall = mockedExec.mock.calls.find((call) =>
         String(call[0]).includes("skills add"),
       );
       expect(skillCall).toBeDefined();
     });
 
     it("shows spinner fail when install throws", async () => {
-      mockedExecSync.mockImplementation(() => {
-        throw new Error("install failed");
-      });
+      mockedExec.mockImplementation(
+        (_: string, __: unknown, callback: (error: Error | null) => void) => {
+          callback(new Error("install failed"));
+          return {
+            stdin: {
+              end: vi.fn(),
+            },
+          };
+        },
+      );
 
       await runInit({ yes: true });
 

@@ -9,6 +9,7 @@ import { TestingScreen } from "./screens/testing-screen";
 import { ResultsScreen } from "./screens/results-screen";
 import { SavedFlowPickerScreen } from "./screens/saved-flow-picker-screen";
 import { MainMenu } from "./screens/main-menu-screen";
+import { WatchScreen } from "./screens/watch-screen";
 import { Modeline } from "./ui/modeline";
 import { useNavigationStore, Screen } from "../stores/use-navigation";
 import { usePlanExecutionStore } from "../stores/use-plan-execution-store";
@@ -72,7 +73,7 @@ export const App = ({ agent }: { agent: AgentBackend }) => {
       });
       return;
     }
-    if (key.escape && screen._tag !== "Main") {
+    if (key.escape && screen._tag !== "Main" && screen._tag !== "Watch") {
       goBack();
     }
     if (key.ctrl && input === "p" && screen._tag === "Main" && gitState?.isGitRepo) {
@@ -96,6 +97,17 @@ export const App = ({ agent }: { agent: AgentBackend }) => {
             instruction={screen.instruction}
             savedFlow={screen.savedFlow}
             requiresCookies={screen.requiresCookies}
+            mode={screen.mode}
+          />
+        );
+      case "Watch":
+        return (
+          <WatchScreen
+            changesFor={screen.changesFor}
+            instruction={screen.instruction}
+            savedFlow={screen.savedFlow}
+            requiresCookies={screen.requiresCookies}
+            baseUrls={screen.baseUrls}
           />
         );
       case "Testing":
@@ -125,6 +137,7 @@ export const App = ({ agent }: { agent: AgentBackend }) => {
             changesFor={screen.changesFor}
             instruction={screen.instruction}
             savedFlow={screen.savedFlow}
+            mode={screen.mode}
           />
         );
       case "SavedFlowPicker":
