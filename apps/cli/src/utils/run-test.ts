@@ -349,11 +349,11 @@ export const runHeadless = (options: HeadlessRunOptions) => {
   );
 
   return Effect.runPromise(runHeadlessEffect)
-    .then((exitCode) => {
+    .then(async (exitCode) => {
       stopHeartbeat();
       process.exit(exitCode);
     })
-    .catch((error) => {
+    .catch(async (error) => {
       stopHeartbeat();
       if (isHeadlessRunTimeoutError(error)) {
         console.error(

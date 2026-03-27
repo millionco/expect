@@ -740,6 +740,7 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
   events: Schema.Array(ExecutionEvent),
 }) {
   addEvent(update: AcpSessionUpdate): ExecutedTestPlan {
+    if ("raw" in update) return this;
     if (update.sessionUpdate === "agent_thought_chunk") {
       if (update.content.type !== "text" || update.content.text === undefined) return this;
       const base = this.finalizeTextBlock();

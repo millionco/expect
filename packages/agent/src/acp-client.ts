@@ -240,6 +240,21 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
     /** @note(rasmus): we run all the writable queue entries into the process stdin */
     yield* Stream.fromQueue(writableQueue).pipe(Stream.run(childProcess.stdin), Effect.forkScoped);
 
+    yield* childProcess.stderr.pipe(
+      Stream.decodeText(),
+      Stream.splitLines,
+      Stream.tap((line) => Effect.logWarning("ACP adapter stderr", { line })),
+      Stream.runDrain,
+      Effect.catchCause(() => Effect.void),
+      Effect.forkScoped,
+    );
+
+    yield* childProcess.exitCode.pipe(
+      Effect.tap((code) => Effect.logWarning("ACP adapter subprocess exited", { exitCode: code })),
+      Effect.catchCause(() => Effect.void),
+      Effect.forkScoped,
+    );
+
     const readable = Stream.toReadableStream(childProcess.stdout);
     const writable = new WritableStream<Uint8Array>({
       write: (chunk) => void Queue.offerUnsafe(writableQueue, chunk),
@@ -364,7 +379,12 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
         catch: (cause) => new AcpStreamError({ cause }),
       }).pipe(
         Effect.tap(() => Effect.logDebug("ACP prompt completed")),
-        Effect.tap(() => Queue.end(updatesQueue)),
+        Effect.tapCause((cause) =>
+          Effect.logError("ACP prompt fiber failed", {
+            error: Cause.pretty(cause),
+          }),
+        ),
+        Effect.ensuring(Queue.end(updatesQueue)),
         FiberMap.run(streamFiberMap, sessionId, { startImmediately: true }),
       );
 
