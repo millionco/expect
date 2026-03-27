@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - fix/le-ci-cd
   pull_request:
 
 permissions:
