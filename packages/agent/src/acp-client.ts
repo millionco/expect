@@ -234,6 +234,7 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
 
     const childProcess = yield* ChildProcess.make(adapter.bin, adapter.args, {
       env: adapter.env,
+      extendEnv: true,
     }).pipe(spawner.spawn);
     yield* Effect.annotateLogsScoped({ pid: childProcess.pid });
     yield* Effect.logDebug("ACP adapter subprocess spawned");
