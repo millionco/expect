@@ -1,9 +1,10 @@
 import { Effect, Option, Stream } from "effect";
-import { changesForDisplayName, type ChangesFor } from "@expect/shared/models";
+import { changesForDisplayName, type ChangesFor, type ExecutionEvent } from "@expect/shared/models";
 import { Executor, ExecutedTestPlan, Reporter } from "@expect/supervisor";
 import { Analytics } from "@expect/shared/observability";
 import type { AgentBackend } from "@expect/agent";
 import figures from "figures";
+import prettyMs from "pretty-ms";
 import { VERSION } from "../constants";
 import { layerCli } from "../layers";
 import { HeadlessRunTimeoutError, withHeadlessRunTimeout } from "./headless-run-timeout";
@@ -18,6 +19,92 @@ interface HeadlessRunOptions {
   headed: boolean;
 }
 
+const HEADLESS_PROGRESS_HEARTBEAT_INTERVAL_MS = 15_000;
+const VERBOSE_EVENT_TEXT_CHAR_LIMIT = 140;
+
+const truncateEventText = (text: string) => {
+  const compactText = text.trim().replace(/\s+/g, " ");
+  if (compactText.length <= VERBOSE_EVENT_TEXT_CHAR_LIMIT) {
+    return compactText;
+  }
+  return `${compactText.slice(0, VERBOSE_EVENT_TEXT_CHAR_LIMIT - 3)}...`;
+};
+
+const isProtocolMarkerMessage = (text: string) =>
+  text.includes("STEP_START|") ||
+  text.includes("STEP_DONE|") ||
+  text.includes("ASSERTION_FAILED|") ||
+  text.includes("STEP_SKIPPED|") ||
+  text.includes("RUN_COMPLETED|");
+
+const describeExecutionEvent = (event: ExecutionEvent, verbose: boolean) => {
+  switch (event._tag) {
+    case "RunStarted":
+      return {
+        activity: "run started",
+        line: `Starting ${event.plan.title}`,
+      } as const;
+    case "StepStarted":
+      return {
+        activity: `step ${event.stepId} started`,
+        line: `${figures.arrowRight} ${event.stepId} ${event.title}`,
+      } as const;
+    case "StepCompleted":
+      return {
+        activity: `step ${event.stepId} completed`,
+        line: `  ${figures.tick} ${event.stepId} ${event.summary}`,
+      } as const;
+    case "StepFailed":
+      return {
+        activity: `step ${event.stepId} failed`,
+        line: `  ${figures.cross} ${event.stepId} ${event.message}`,
+      } as const;
+    case "StepSkipped":
+      return {
+        activity: `step ${event.stepId} skipped`,
+        line: `  ${figures.arrowRight} ${event.stepId} [skipped] ${event.reason}`,
+      } as const;
+    case "ToolCall":
+      return {
+        activity: `tool ${event.toolName} started`,
+        line: `[tool] ${event.toolName} started`,
+      } as const;
+    case "ToolProgress":
+      return {
+        activity: `tool ${event.toolName} streaming (${event.outputSize} chars)`,
+        line: undefined,
+      } as const;
+    case "ToolResult":
+      return {
+        activity: `tool ${event.toolName} ${event.isError ? "failed" : "completed"}`,
+        line: `[tool] ${event.toolName} ${event.isError ? "failed" : "completed"}${
+          verbose ? ` (${event.result.length} chars)` : ""
+        }`,
+      } as const;
+    case "AgentThinking":
+      return {
+        activity: "agent thinking",
+        line:
+          verbose && event.text.trim().length > 0
+            ? `[agent] thinking: ${truncateEventText(event.text)}`
+            : undefined,
+      } as const;
+    case "AgentText":
+      return {
+        activity: "agent message",
+        line:
+          verbose && event.text.trim().length > 0 && !isProtocolMarkerMessage(event.text)
+            ? `[agent] ${truncateEventText(event.text)}`
+            : undefined,
+      } as const;
+    case "RunFinished":
+      return {
+        activity: `run finished ${event.status}`,
+        line: `Run ${event.status}: ${event.summary}`,
+      } as const;
+  }
+};
+
 const isHeadlessRunTimeoutError = (error: unknown): error is HeadlessRunTimeoutError =>
   typeof error === "object" &&
   error !== null &&
@@ -26,6 +113,19 @@ const isHeadlessRunTimeoutError = (error: unknown): error is HeadlessRunTimeoutE
   "message" in error;
 
 export const runHeadless = (options: HeadlessRunOptions) => {
+  const stdoutStartedAt = Date.now();
+  let lastActivityAt = stdoutStartedAt;
+  let lastActivitySummary = "starting browser test";
+  const heartbeatTimer = setInterval(() => {
+    console.log(
+      `[heartbeat] ${prettyMs(Date.now() - stdoutStartedAt)} elapsed; last activity ${prettyMs(
+        Date.now() - lastActivityAt,
+      )} ago: ${lastActivitySummary}`,
+    );
+  }, HEADLESS_PROGRESS_HEARTBEAT_INTERVAL_MS);
+  const stopHeartbeat = () => {
+    clearInterval(heartbeatTimer);
+  };
   const runHeadlessEffect = stripUndefinedRequirement(
     Effect.gen(function* () {
       const executor = yield* Executor;
@@ -50,22 +150,11 @@ export const runHeadless = (options: HeadlessRunOptions) => {
         for (const event of executed.events) {
           if (seenEvents.has(event.id)) continue;
           seenEvents.add(event.id);
-          switch (event._tag) {
-            case "RunStarted":
-              console.log(`Starting ${event.plan.title}`);
-              break;
-            case "StepStarted":
-              console.log(`${figures.arrowRight} ${event.stepId} ${event.title}`);
-              break;
-            case "StepCompleted":
-              console.log(`  ${figures.tick} ${event.stepId} ${event.summary}`);
-              break;
-            case "StepFailed":
-              console.log(`  ${figures.cross} ${event.stepId} ${event.message}`);
-              break;
-            case "StepSkipped":
-              console.log(`  ${figures.arrowRight} ${event.stepId} [skipped] ${event.reason}`);
-              break;
+          const description = describeExecutionEvent(event, options.verbose);
+          lastActivityAt = Date.now();
+          lastActivitySummary = description.activity;
+          if (description.line) {
+            console.log(description.line);
           }
         }
       };
@@ -154,11 +243,15 @@ export const runHeadless = (options: HeadlessRunOptions) => {
 
   return Effect.runPromise(runHeadlessEffect)
     .then((exitCode) => {
+      stopHeartbeat();
       process.exit(exitCode);
     })
     .catch((error) => {
+      stopHeartbeat();
       if (isHeadlessRunTimeoutError(error)) {
-        console.error(`\n${error.message}`);
+        console.error(
+          `\n${error.message} Last activity ${prettyMs(Date.now() - lastActivityAt)} ago: ${lastActivitySummary}.`,
+        );
         process.exit(1);
       }
       throw error;
