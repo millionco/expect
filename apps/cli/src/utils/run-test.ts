@@ -53,6 +53,12 @@ const stringifyAcpUpdateForConsole = (update: AcpSessionUpdate) =>
 
 const describeAcpUpdate = (update: AcpSessionUpdate, verbose: boolean) => {
   const rawLine = verbose ? `[acp/raw] ${stringifyAcpUpdateForConsole(update)}` : undefined;
+  if ("raw" in update) {
+    return {
+      activity: `unknown ACP update ${update.sessionUpdate}`,
+      line: rawLine ?? `[acp] unknown update ${update.sessionUpdate}`,
+    } as const;
+  }
   switch (update.sessionUpdate) {
     case "session_info_update":
       return {

@@ -163,6 +163,12 @@ export class AcpUsageUpdate extends Schema.Class<AcpUsageUpdate>("AcpUsageUpdate
   sessionUpdate: Schema.Literal("usage_update"),
 }) {}
 
+export class AcpUnknownUpdate extends Schema.Class<AcpUnknownUpdate>("AcpUnknownUpdate")({
+  sessionUpdate: Schema.String,
+  raw: Schema.Unknown,
+  decodeError: Schema.String,
+}) {}
+
 export const AcpSessionUpdate = Schema.Union([
   AcpAgentMessageChunk,
   AcpAgentThoughtChunk,
@@ -175,6 +181,7 @@ export const AcpSessionUpdate = Schema.Union([
   AcpConfigOptionUpdate,
   AcpSessionInfoUpdate,
   AcpUsageUpdate,
+  AcpUnknownUpdate,
 ]);
 export type AcpSessionUpdate = typeof AcpSessionUpdate.Type;
 

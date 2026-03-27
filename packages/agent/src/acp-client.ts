@@ -14,7 +14,7 @@ import {
   Stream,
   String as Str,
 } from "effect";
-import { AcpSessionUpdate, AgentProvider } from "@expect/shared/models";
+import { AcpSessionUpdate, AcpUnknownUpdate, AgentProvider } from "@expect/shared/models";
 import { hasStringMessage } from "@expect/shared/utils";
 
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
@@ -212,7 +212,22 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
         const updatesQueue = sessionUpdatesMap.get(SessionId.makeUnsafe(sessionId));
         if (updatesQueue === undefined)
           return console.warn(`updates queue not found for session ${sessionId}`);
-        const decoded = Schema.decodeUnknownSync(AcpSessionUpdate)(update);
+        let decoded: AcpSessionUpdate;
+        try {
+          decoded = Schema.decodeUnknownSync(AcpSessionUpdate)(update);
+        } catch (cause) {
+          decoded = new AcpUnknownUpdate({
+            sessionUpdate:
+              typeof update === "object" &&
+              update !== null &&
+              "sessionUpdate" in update &&
+              typeof update.sessionUpdate === "string"
+                ? update.sessionUpdate
+                : "unknown_update",
+            raw: update,
+            decodeError: Cause.pretty(Cause.fail(cause)),
+          });
+        }
         Queue.offerUnsafe(updatesQueue, decoded);
       },
     };
