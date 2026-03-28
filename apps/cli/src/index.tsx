@@ -50,7 +50,10 @@ const program = new Command()
   .option("-m, --message <instruction>", "natural language instruction for what to test")
   .option("-f, --flow <slug>", "reuse a saved flow by its slug")
   .option("-y, --yes", "run immediately without confirmation")
-  .option("-a, --agent <provider>", "agent provider to use (claude, codex, copilot, gemini, or cursor)")
+  .option(
+    "-a, --agent <provider>",
+    "agent provider to use (claude, codex, copilot, gemini, or cursor)",
+  )
   .option("-t, --target <target>", "what to test: unstaged, branch, or changes", "changes")
   .option("--verbose", "enable verbose logging")
   .option("--headed", "show a visible browser window during tests")
