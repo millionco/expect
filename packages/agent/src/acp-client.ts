@@ -8,6 +8,7 @@ import {
   Duration,
   Effect,
   FiberMap,
+  FileSystem,
   Layer,
   Match,
   Option,
@@ -243,42 +244,88 @@ export class AcpAdapter extends ServiceMap.Service<
   ).pipe(Layer.provide(NodeServices.layer));
 
   static layerCopilot = Layer.effect(AcpAdapter)(
-    Effect.try({
-      try: () => {
-        const binPath = resolvePackageBin("@github/copilot");
-        return AcpAdapter.of({
-          provider: "copilot",
-          bin: process.execPath,
-          args: [binPath, "--acp"],
-          env: {},
-        });
-      },
-      catch: (cause) =>
-        new AcpAdapterNotFoundError({
-          packageName: "@github/copilot",
-          cause,
-        }),
+    Effect.gen(function* () {
+      const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+
+      yield* ChildProcess.make("gh", ["auth", "token"]).pipe(
+        spawner.string,
+        Effect.flatMap((token) =>
+          token.trim().length > 0
+            ? Effect.void
+            : new AcpProviderUnauthenticatedError({ provider: "copilot" }).asEffect(),
+        ),
+        Effect.catchReason("PlatformError", "NotFound", () =>
+          new AcpProviderNotInstalledError({ provider: "copilot" }).asEffect(),
+        ),
+        Effect.catchTag("PlatformError", () =>
+          new AcpProviderUnauthenticatedError({ provider: "copilot" }).asEffect(),
+        ),
+      );
+
+      return yield* Effect.try({
+        try: () => {
+          const binPath = resolvePackageBin("@github/copilot");
+          return AcpAdapter.of({
+            provider: "copilot",
+            bin: process.execPath,
+            args: [binPath, "--acp"],
+            env: {},
+          });
+        },
+        catch: (cause) =>
+          new AcpAdapterNotFoundError({
+            packageName: "@github/copilot",
+            cause,
+          }),
+      });
     }),
-  );
+  ).pipe(Layer.provide(NodeServices.layer));
 
   static layerGemini = Layer.effect(AcpAdapter)(
-    Effect.try({
-      try: () => {
-        const binPath = resolvePackageBin("@google/gemini-cli");
-        return AcpAdapter.of({
-          provider: "gemini",
-          bin: process.execPath,
-          args: [binPath, "--acp"],
-          env: {},
-        });
-      },
-      catch: (cause) =>
-        new AcpAdapterNotFoundError({
-          packageName: "@google/gemini-cli",
-          cause,
-        }),
+    Effect.gen(function* () {
+      const fileSystem = yield* FileSystem.FileSystem;
+      const homedir = yield* Effect.sync(() =>
+        process.env["HOME"] ?? process.env["USERPROFILE"] ?? "",
+      );
+      const accountsPath = `${homedir}/.gemini/google_accounts.json`;
+      const AccountsSchema = Schema.Struct({ active: Schema.String });
+
+      yield* fileSystem.readFileString(accountsPath).pipe(
+        Effect.flatMap(Schema.decodeEffect(Schema.fromJsonString(AccountsSchema))),
+        Effect.flatMap(({ active }) =>
+          active.length > 0
+            ? Effect.void
+            : new AcpProviderUnauthenticatedError({ provider: "gemini" }).asEffect(),
+        ),
+        Effect.catchReason("PlatformError", "NotFound", () =>
+          new AcpProviderUnauthenticatedError({ provider: "gemini" }).asEffect(),
+        ),
+        Effect.catchTag("PlatformError", () =>
+          new AcpProviderUnauthenticatedError({ provider: "gemini" }).asEffect(),
+        ),
+        Effect.catchTag("SchemaError", () =>
+          new AcpProviderUnauthenticatedError({ provider: "gemini" }).asEffect(),
+        ),
+      );
+
+      return yield* Effect.try({
+        try: () => {
+          const binPath = resolvePackageBin("@google/gemini-cli");
+          return AcpAdapter.of({
+            provider: "gemini",
+            bin: process.execPath,
+            args: [binPath, "--acp"],
+            env: {},
+          });
+        },
+        catch: (cause) =>
+          new AcpAdapterNotFoundError({
+            packageName: "@google/gemini-cli",
+            cause,
+          }),
+      });
     }),
-  );
+  ).pipe(Layer.provide(NodeServices.layer));
 
   static layerCursor = Layer.effect(AcpAdapter)(
     Effect.gen(function* () {
