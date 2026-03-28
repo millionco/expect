@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import * as acp from "@agentclientprotocol/sdk";
 import {
   Cause,
+  Config,
   Duration,
   Effect,
   FiberMap,
@@ -89,6 +90,7 @@ export class AcpProviderUnauthenticatedError extends Schema.ErrorClass<AcpProvid
     Match.when("codex", () => "Please log in using `codex login`, and then re-run expect."),
     Match.when("copilot", () => "Please log in using `gh auth login`, and then re-run expect."),
     Match.when("gemini", () => "Please log in using `gemini auth login`, and then re-run expect."),
+    Match.when("cursor", () => "Please log in using `agent login`, and then re-run expect."),
     Match.orElse(() => "Please sign in to your coding agent, and then re-run expect."),
   );
 }
@@ -164,7 +166,7 @@ const resolvePackageBin = (packageName: string): string => {
     return join(packageDir, packageJson.bin);
   }
   if (typeof packageJson.bin === "object") {
-    const firstBinPath = Object.values(packageJson.bin)[0] as string;
+    const firstBinPath = String(Object.values(packageJson.bin)[0]);
     return join(packageDir, firstBinPath);
   }
   if (packageJson.main) {
@@ -247,6 +249,7 @@ export class AcpAdapter extends ServiceMap.Service<
     Effect.gen(function* () {
       const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
 
+      // HACK: only checks gh CLI auth, not env var (COPILOT_GITHUB_TOKEN/GH_TOKEN) or keyring auth
       yield* ChildProcess.make("gh", ["auth", "token"]).pipe(
         spawner.string,
         Effect.flatMap((token) =>
@@ -284,8 +287,8 @@ export class AcpAdapter extends ServiceMap.Service<
   static layerGemini = Layer.effect(AcpAdapter)(
     Effect.gen(function* () {
       const fileSystem = yield* FileSystem.FileSystem;
-      const homedir = yield* Effect.sync(() =>
-        process.env["HOME"] ?? process.env["USERPROFILE"] ?? "",
+      const homedir = yield* Config.string("HOME").pipe(
+        Config.orElse(() => Config.string("USERPROFILE")),
       );
       const accountsPath = `${homedir}/.gemini/google_accounts.json`;
       const AccountsSchema = Schema.Struct({ active: Schema.String });
@@ -333,8 +336,33 @@ export class AcpAdapter extends ServiceMap.Service<
 
       yield* ChildProcess.make("agent", ["--version"]).pipe(
         spawner.string,
+        Effect.timeoutOrElse({
+          duration: "3 seconds",
+          onTimeout: () =>
+            new AcpProviderNotInstalledError({ provider: "cursor" }).asEffect(),
+        }),
         Effect.catchReason("PlatformError", "NotFound", () =>
           new AcpProviderNotInstalledError({ provider: "cursor" }).asEffect(),
+        ),
+        Effect.catchTag("PlatformError", () =>
+          new AcpProviderNotInstalledError({ provider: "cursor" }).asEffect(),
+        ),
+      );
+
+      yield* ChildProcess.make("agent", ["auth", "whoami"]).pipe(
+        spawner.string,
+        Effect.flatMap((output) =>
+          output.trim().length > 0
+            ? Effect.void
+            : new AcpProviderUnauthenticatedError({ provider: "cursor" }).asEffect(),
+        ),
+        Effect.timeoutOrElse({
+          duration: "3 seconds",
+          onTimeout: () =>
+            new AcpProviderUnauthenticatedError({ provider: "cursor" }).asEffect(),
+        }),
+        Effect.catchTag("PlatformError", () =>
+          new AcpProviderUnauthenticatedError({ provider: "cursor" }).asEffect(),
         ),
       );
 

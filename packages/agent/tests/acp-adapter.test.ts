@@ -81,7 +81,7 @@ describe("AcpAdapter", () => {
   });
 
   describe("layerCursor", () => {
-    it("resolves or fails with not-installed error", async () => {
+    it("resolves or fails with not-installed/auth error", async () => {
       const exit = await Effect.gen(function* () {
         return yield* AcpAdapter;
       }).pipe(Effect.provide(AcpAdapter.layerCursor), Effect.runPromiseExit);
@@ -91,9 +91,13 @@ describe("AcpAdapter", () => {
         expect(exit.value.bin).toBe("agent");
         expect(exit.value.args).toEqual(["acp"]);
       } else {
-        expect(exit.cause.toString()).toContain("AcpProviderNotInstalledError");
+        const error = exit.cause.toString();
+        expect(
+          error.includes("AcpProviderNotInstalledError") ||
+            error.includes("AcpProviderUnauthenticatedError"),
+        ).toBe(true);
       }
-    });
+    }, 15_000);
   });
 
   describe("error messages", () => {
@@ -120,6 +124,11 @@ describe("AcpAdapter", () => {
     it("cursor not-installed error mentions cursor.com", () => {
       const error = new AcpProviderNotInstalledError({ provider: "cursor" });
       expect(error.message).toContain("cursor.com");
+    });
+
+    it("cursor unauthenticated error mentions agent login", () => {
+      const error = new AcpProviderUnauthenticatedError({ provider: "cursor" });
+      expect(error.message).toContain("agent login");
     });
 
     it("claude not-installed error mentions code.claude.com", () => {
