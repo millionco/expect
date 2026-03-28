@@ -287,9 +287,12 @@ export class AcpAdapter extends ServiceMap.Service<
   static layerGemini = Layer.effect(AcpAdapter)(
     Effect.gen(function* () {
       const fileSystem = yield* FileSystem.FileSystem;
-      const homedir = yield* Config.string("HOME").pipe(
-        Config.orElse(() => Config.string("USERPROFILE")),
+      const homeOption = yield* Config.option(
+        Config.string("HOME").pipe(Config.orElse(() => Config.string("USERPROFILE"))),
       );
+      const homedir = Option.isSome(homeOption)
+        ? homeOption.value
+        : yield* new AcpProviderUnauthenticatedError({ provider: "gemini" });
       const accountsPath = `${homedir}/.gemini/google_accounts.json`;
       const AccountsSchema = Schema.Struct({ active: Schema.String });
 
@@ -338,8 +341,7 @@ export class AcpAdapter extends ServiceMap.Service<
         spawner.string,
         Effect.timeoutOrElse({
           duration: "3 seconds",
-          onTimeout: () =>
-            new AcpProviderNotInstalledError({ provider: "cursor" }).asEffect(),
+          onTimeout: () => new AcpProviderNotInstalledError({ provider: "cursor" }).asEffect(),
         }),
         Effect.catchReason("PlatformError", "NotFound", () =>
           new AcpProviderNotInstalledError({ provider: "cursor" }).asEffect(),
@@ -358,8 +360,7 @@ export class AcpAdapter extends ServiceMap.Service<
         ),
         Effect.timeoutOrElse({
           duration: "3 seconds",
-          onTimeout: () =>
-            new AcpProviderUnauthenticatedError({ provider: "cursor" }).asEffect(),
+          onTimeout: () => new AcpProviderUnauthenticatedError({ provider: "cursor" }).asEffect(),
         }),
         Effect.catchTag("PlatformError", () =>
           new AcpProviderUnauthenticatedError({ provider: "cursor" }).asEffect(),
