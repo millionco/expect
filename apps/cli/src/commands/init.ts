@@ -45,17 +45,25 @@ export const runInit = async (options: InitOptions = {}) => {
 
   if (availableAgents.length === 0) {
     logger.error(
-      "No supported coding agent found. expect requires one of: Claude Code, Codex, or Cursor.",
+      "No supported coding agent found. expect requires one of: Claude Code, Codex, GitHub Copilot, Gemini, or Cursor.",
     );
     logger.break();
     logger.log(`  Install one to get started:`);
     logger.log(
-      `    ${highlighter.info("Claude Code")}  ${highlighter.dim("https://docs.anthropic.com/en/docs/claude-code")}`,
+      `    ${highlighter.info("Claude Code")}      ${highlighter.dim("https://docs.anthropic.com/en/docs/claude-code")}`,
     );
     logger.log(
-      `    ${highlighter.info("Codex")}        ${highlighter.dim("https://github.com/openai/codex")}`,
+      `    ${highlighter.info("Codex")}            ${highlighter.dim("https://github.com/openai/codex")}`,
     );
-    logger.log(`    ${highlighter.info("Cursor")}       ${highlighter.dim("https://cursor.com")}`);
+    logger.log(
+      `    ${highlighter.info("GitHub Copilot")}   ${highlighter.dim("npm install -g @github/copilot")}`,
+    );
+    logger.log(
+      `    ${highlighter.info("Gemini")}           ${highlighter.dim("npm install -g @google/gemini-cli")}`,
+    );
+    logger.log(
+      `    ${highlighter.info("Cursor")}           ${highlighter.dim("https://cursor.com")}`,
+    );
     logger.break();
     process.exit(1);
   }
