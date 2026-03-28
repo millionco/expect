@@ -1963,7 +1963,7 @@ function ThemeToggle({
         <ToggleGroupItem
           value="light"
           aria-label="Light mode"
-          className={`relative z-10 !rounded-full !p-1.5 sm:!p-1 !h-auto !min-w-0 !bg-transparent !border-0 hover:!bg-transparent aria-pressed:!bg-transparent text-black dark:text-white transition-opacity duration-75 ${theme !== "light" ? "opacity-40 hover:!opacity-80" : ""}`}
+          className={`relative z-10 !rounded-full !p-1.5 sm:!p-1 !h-auto !min-w-0 !bg-transparent !border-0 hover:!bg-transparent aria-pressed:!bg-transparent text-black dark:text-white transition-opacity duration-75 cursor-pointer ${theme !== "light" ? "opacity-40 hover:!opacity-80" : ""}`}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -1991,7 +1991,7 @@ function ThemeToggle({
         <ToggleGroupItem
           value="dark"
           aria-label="Dark mode"
-          className={`relative z-10 !rounded-full !p-1.5 sm:!p-1 !h-auto !min-w-0 !bg-transparent !border-0 hover:!bg-transparent aria-pressed:!bg-transparent text-black dark:text-white transition-opacity duration-75 ${theme !== "dark" ? "opacity-40 hover:!opacity-80" : ""}`}
+          className={`relative z-10 !rounded-full !p-1.5 sm:!p-1 !h-auto !min-w-0 !bg-transparent !border-0 hover:!bg-transparent aria-pressed:!bg-transparent text-black dark:text-white transition-opacity duration-75 cursor-pointer ${theme !== "dark" ? "opacity-40 hover:!opacity-80" : ""}`}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
