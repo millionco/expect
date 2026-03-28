@@ -47,10 +47,9 @@ describe("detectAvailableAgents", () => {
     expect(agents).toEqual(["claude", "codex"]);
   });
 
-  it("detects cursor as a supported agent", () => {
+  it("detects cursor as a supported agent via agent binary", () => {
     mockedExecSync.mockImplementation((command) => {
-      if (String(command) === `${WHICH_COMMAND} cursor`)
-        return Buffer.from("/usr/local/bin/cursor");
+      if (String(command) === `${WHICH_COMMAND} agent`) return Buffer.from("/usr/local/bin/agent");
       throw new Error("not found");
     });
 

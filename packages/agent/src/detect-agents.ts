@@ -10,6 +10,14 @@ const SUPPORTED_AGENTS: readonly SupportedAgent[] = [
   "cursor",
 ];
 
+const AGENT_BINARY_NAMES: Record<SupportedAgent, string> = {
+  claude: "claude",
+  codex: "codex",
+  copilot: "copilot",
+  gemini: "gemini",
+  cursor: "agent",
+};
+
 const WHICH_COMMAND = process.platform === "win32" ? "where" : "which";
 
 const isCommandAvailable = (command: string): boolean => {
@@ -22,4 +30,4 @@ const isCommandAvailable = (command: string): boolean => {
 };
 
 export const detectAvailableAgents = (): SupportedAgent[] =>
-  SUPPORTED_AGENTS.filter(isCommandAvailable);
+  SUPPORTED_AGENTS.filter((agent) => isCommandAvailable(AGENT_BINARY_NAMES[agent]));
