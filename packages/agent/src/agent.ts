@@ -57,14 +57,18 @@ export class Agent extends ServiceMap.Service<
   static layerGemini = Agent.layerAcp.pipe(Layer.provide(AcpAdapter.layerGemini));
   static layerCursor = Agent.layerAcp.pipe(Layer.provide(AcpAdapter.layerCursor));
 
-  static layerFor = (backend: AgentBackend) =>
-    ({
+  static layerFor = (backend: AgentBackend) => {
+    const layers = {
       claude: Agent.layerClaude,
       codex: Agent.layerCodex,
       copilot: Agent.layerCopilot,
       gemini: Agent.layerGemini,
       cursor: Agent.layerCursor,
-    })[backend];
+    };
+    const layer = layers[backend];
+    if (!layer) throw new Error(`Unknown agent backend: ${backend}`);
+    return layer;
+  };
 
   static layerTest = (fixturePath: string) =>
     Layer.effect(

@@ -165,7 +165,7 @@ const resolvePackageBin = (packageName: string): string => {
   if (typeof packageJson.bin === "string") {
     return join(packageDir, packageJson.bin);
   }
-  if (typeof packageJson.bin === "object") {
+  if (typeof packageJson.bin === "object" && packageJson.bin !== null) {
     const firstBinPath = String(Object.values(packageJson.bin)[0]);
     return join(packageDir, firstBinPath);
   }
@@ -250,15 +250,13 @@ export class AcpAdapter extends ServiceMap.Service<
       const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
 
       // HACK: only checks gh CLI auth, not env var (COPILOT_GITHUB_TOKEN/GH_TOKEN) or keyring auth
+      // gh CLI missing means we can't verify auth — treat as unauthenticated, not uninstalled
       yield* ChildProcess.make("gh", ["auth", "token"]).pipe(
         spawner.string,
         Effect.flatMap((token) =>
           token.trim().length > 0
             ? Effect.void
             : new AcpProviderUnauthenticatedError({ provider: "copilot" }).asEffect(),
-        ),
-        Effect.catchReason("PlatformError", "NotFound", () =>
-          new AcpProviderNotInstalledError({ provider: "copilot" }).asEffect(),
         ),
         Effect.catchTag("PlatformError", () =>
           new AcpProviderUnauthenticatedError({ provider: "copilot" }).asEffect(),
