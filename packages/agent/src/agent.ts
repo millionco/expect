@@ -1,7 +1,10 @@
-import { Effect, FileSystem, Layer, Match, Option, Schema, ServiceMap, Stream } from "effect";
+import { Config, Effect, FileSystem, Layer, Option, Schema, ServiceMap, Stream } from "effect";
 import {
   AcpAdapter,
+  type AcpAdapterNotFoundError,
   AcpClient,
+  type AcpConnectionInitError,
+  type AcpProviderNotInstalledError,
   type AcpProviderUnauthenticatedError,
   type AcpProviderUsageLimitError,
   type AcpSessionCreateError,
@@ -11,6 +14,16 @@ import {
 import { AcpSessionUpdate } from "@expect/shared/models";
 import { AgentStreamOptions } from "./types";
 import * as NodeServices from "@effect/platform-node/NodeServices";
+import { PlatformError } from "effect/PlatformError";
+
+type AgentLayerError =
+  | PlatformError
+  | Config.ConfigError
+  | Schema.SchemaError
+  | AcpProviderNotInstalledError
+  | AcpProviderUnauthenticatedError
+  | AcpConnectionInitError
+  | AcpAdapterNotFoundError;
 
 export type AgentBackend = "claude" | "codex" | "copilot" | "gemini" | "cursor";
 
@@ -57,15 +70,16 @@ export class Agent extends ServiceMap.Service<
   static layerGemini = Agent.layerAcp.pipe(Layer.provide(AcpAdapter.layerGemini));
   static layerCursor = Agent.layerAcp.pipe(Layer.provide(AcpAdapter.layerCursor));
 
-  static layerFor = (backend: AgentBackend) =>
-    Match.value(backend).pipe(
-      Match.when("claude", () => Agent.layerClaude),
-      Match.when("codex", () => Agent.layerCodex),
-      Match.when("copilot", () => Agent.layerCopilot),
-      Match.when("gemini", () => Agent.layerGemini),
-      Match.when("cursor", () => Agent.layerCursor),
-      Match.exhaustive,
-    );
+  static layerFor = (backend: AgentBackend): Layer.Layer<Agent, AgentLayerError> => {
+    const layers: Record<AgentBackend, Layer.Layer<Agent, AgentLayerError>> = {
+      claude: Agent.layerClaude,
+      codex: Agent.layerCodex,
+      copilot: Agent.layerCopilot,
+      gemini: Agent.layerGemini,
+      cursor: Agent.layerCursor,
+    };
+    return layers[backend];
+  };
 
   static layerTest = (fixturePath: string) =>
     Layer.effect(
