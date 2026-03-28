@@ -75,6 +75,7 @@
     "pretty-ms": "^9.3.0",
     "prompts": "^2.4.2",
     "react": "^19.2.4",
+    "rrweb": "^2.0.0-alpha.18",
     "string-width": "^8.2.0",
     "supports-terminal-graphics": "^0.1.0",
     "zod": "^4.3.6",
