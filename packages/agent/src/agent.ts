@@ -12,7 +12,7 @@ import { AcpSessionUpdate } from "@expect/shared/models";
 import { AgentStreamOptions } from "./types";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 
-export type AgentBackend = "claude" | "codex";
+export type AgentBackend = "claude" | "codex" | "copilot" | "gemini" | "cursor";
 
 export class Agent extends ServiceMap.Service<
   Agent,
@@ -53,9 +53,18 @@ export class Agent extends ServiceMap.Service<
 
   static layerCodex = Agent.layerAcp.pipe(Layer.provide(AcpAdapter.layerCodex));
   static layerClaude = Agent.layerAcp.pipe(Layer.provide(AcpAdapter.layerClaude));
+  static layerCopilot = Agent.layerAcp.pipe(Layer.provide(AcpAdapter.layerCopilot));
+  static layerGemini = Agent.layerAcp.pipe(Layer.provide(AcpAdapter.layerGemini));
+  static layerCursor = Agent.layerAcp.pipe(Layer.provide(AcpAdapter.layerCursor));
 
   static layerFor = (backend: AgentBackend) =>
-    backend === "claude" ? Agent.layerClaude : Agent.layerCodex;
+    ({
+      claude: Agent.layerClaude,
+      codex: Agent.layerCodex,
+      copilot: Agent.layerCopilot,
+      gemini: Agent.layerGemini,
+      cursor: Agent.layerCursor,
+    })[backend];
 
   static layerTest = (fixturePath: string) =>
     Layer.effect(

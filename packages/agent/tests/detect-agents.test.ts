@@ -58,11 +58,33 @@ describe("detectAvailableAgents", () => {
     expect(agents).toEqual(["cursor"]);
   });
 
-  it("checks all three supported agents", () => {
+  it("detects copilot as a supported agent", () => {
+    mockedExecSync.mockImplementation((command) => {
+      if (String(command) === `${WHICH_COMMAND} copilot`)
+        return Buffer.from("/usr/local/bin/copilot");
+      throw new Error("not found");
+    });
+
+    const agents = detectAvailableAgents();
+    expect(agents).toEqual(["copilot"]);
+  });
+
+  it("detects gemini as a supported agent", () => {
+    mockedExecSync.mockImplementation((command) => {
+      if (String(command) === `${WHICH_COMMAND} gemini`)
+        return Buffer.from("/usr/local/bin/gemini");
+      throw new Error("not found");
+    });
+
+    const agents = detectAvailableAgents();
+    expect(agents).toEqual(["gemini"]);
+  });
+
+  it("checks all five supported agents", () => {
     mockedExecSync.mockImplementation(() => Buffer.from(""));
 
     const agents = detectAvailableAgents();
-    expect(agents).toEqual(["claude", "codex", "cursor"]);
+    expect(agents).toEqual(["claude", "codex", "copilot", "gemini", "cursor"]);
   });
 
   it("uses platform-specific lookup command for every agent", () => {

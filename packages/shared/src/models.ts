@@ -209,12 +209,20 @@ export interface CommitSummary {
   subject: string;
 }
 
-export const AgentProvider = Schema.Literals(["claude", "codex", "cursor"] as const);
+export const AgentProvider = Schema.Literals([
+  "claude",
+  "codex",
+  "copilot",
+  "gemini",
+  "cursor",
+] as const);
 export type AgentProvider = typeof AgentProvider.Type;
 
 export const AGENT_PROVIDER_DISPLAY_NAMES: Record<AgentProvider, string> = {
   claude: "Claude",
   codex: "Codex",
+  copilot: "GitHub Copilot",
+  gemini: "Gemini",
   cursor: "Cursor",
 };
 const TOOL_CALL_DISPLAY_TEXT_CHAR_LIMIT = 80;

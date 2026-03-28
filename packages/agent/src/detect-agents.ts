@@ -1,8 +1,14 @@
 import { execSync } from "node:child_process";
 
-export type SupportedAgent = "claude" | "codex" | "cursor";
+export type SupportedAgent = "claude" | "codex" | "copilot" | "gemini" | "cursor";
 
-const SUPPORTED_AGENTS: readonly SupportedAgent[] = ["claude", "codex", "cursor"];
+const SUPPORTED_AGENTS: readonly SupportedAgent[] = [
+  "claude",
+  "codex",
+  "copilot",
+  "gemini",
+  "cursor",
+];
 
 const WHICH_COMMAND = process.platform === "win32" ? "where" : "which";
 
