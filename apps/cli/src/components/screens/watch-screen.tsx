@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import figures from "figures";
-import { Effect, Option, Ref, Stream } from "effect";
+import { Effect, Fiber, Option } from "effect";
 import type { ChangesFor, ExecutedTestPlan, TestPlanStep } from "@expect/shared/models";
 import type { WatchEvent } from "@expect/supervisor";
 import { Watch } from "@expect/supervisor";
@@ -48,14 +48,13 @@ export const WatchScreen = ({
   const [elapsedTimeMs, setElapsedTimeMs] = useState(0);
   const [lastError, setLastError] = useState<string | undefined>(undefined);
   const [showStopConfirmation, setShowStopConfirmation] = useState(false);
-  const abortRef = useRef<AbortController | undefined>(undefined);
+  const fiberRef = useRef<Fiber.Fiber<void, unknown> | undefined>(undefined);
 
   useMountEffect(() => {
-    const abortController = new AbortController();
-    abortRef.current = abortController;
+    let aborted = false;
 
     const handleEvent = (event: WatchEvent) => {
-      if (abortController.signal.aborted) return;
+      if (aborted) return;
 
       switch (event._tag) {
         case "Polling":
@@ -120,15 +119,23 @@ export const WatchScreen = ({
       yield* loop;
     }).pipe(Effect.provide(layerCli({ verbose: false, agent: agentBackend })));
 
-    Effect.runPromise(stripUndefinedRequirement(program)).catch((error) => {
-      if (!abortController.signal.aborted) {
-        setPhase("error");
-        setLastError(String(error));
-      }
-    });
+    const fiber = Effect.runFork(
+      stripUndefinedRequirement(program).pipe(
+        Effect.catchCause((cause) =>
+          Effect.sync(() => {
+            if (!aborted) {
+              setPhase("error");
+              setLastError(String(cause));
+            }
+          }),
+        ),
+      ),
+    );
+    fiberRef.current = fiber;
 
     return () => {
-      abortController.abort();
+      aborted = true;
+      Effect.runFork(Fiber.interrupt(fiber));
     };
   });
 
@@ -141,8 +148,12 @@ export const WatchScreen = ({
     return () => clearInterval(interval);
   }, [runStartedAt, phase]);
 
+  const toggleNotifications = usePreferencesStore((state) => state.toggleNotifications);
+
   const goToMain = () => {
-    abortRef.current?.abort();
+    if (fiberRef.current) {
+      Effect.runFork(Fiber.interrupt(fiberRef.current));
+    }
     setScreen(Screen.Main());
   };
 
@@ -156,6 +167,11 @@ export const WatchScreen = ({
       if (key.escape || input.toLowerCase() === "n") {
         setShowStopConfirmation(false);
       }
+      return;
+    }
+
+    if (key.ctrl && input === "n") {
+      toggleNotifications();
       return;
     }
 
@@ -180,7 +196,7 @@ export const WatchScreen = ({
       case "idle":
         return "Watching for changes";
       case "error":
-        return "Error occurred, will retry";
+        return "Error occurred";
     }
   })();
 

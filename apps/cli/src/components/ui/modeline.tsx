@@ -17,6 +17,7 @@ import { useUpdateCheck } from "../../hooks/use-update-check";
 import { Clickable } from "./clickable";
 import { TextShimmer } from "./text-shimmer";
 import { AGENT_PROVIDER_DISPLAY_NAMES } from "@expect/shared/models";
+import { ChangesFor } from "@expect/supervisor";
 import { useAtomValue } from "@effect/atom-react";
 import { agentProviderAtom } from "../../data/runtime";
 
@@ -56,6 +57,16 @@ const useHintSegments = (screen: Screen, gitState: GitState | undefined): HintSe
           key: "ctrl+w",
           label: "watch",
           cta: true,
+          onClick: () => {
+            const mainBranch = gitState?.mainBranch ?? "main";
+            setScreen(
+              Screen.Watch({
+                changesFor: ChangesFor.makeUnsafe({ _tag: "Changes", mainBranch }),
+                instruction:
+                  "Test all changes from main in the browser and verify they work correctly.",
+              }),
+            );
+          },
         });
         segments.push({
           key: "ctrl+p",
