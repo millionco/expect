@@ -16,6 +16,9 @@ import { usePreferencesStore } from "../../stores/use-preferences";
 import { useUpdateCheck } from "../../hooks/use-update-check";
 import { Clickable } from "./clickable";
 import { TextShimmer } from "./text-shimmer";
+import { AGENT_PROVIDER_DISPLAY_NAMES } from "@expect/shared/models";
+import { useAtomValue } from "@effect/atom-react";
+import { agentProviderAtom } from "../../data/runtime";
 
 const useHintSegments = (screen: Screen, gitState: GitState | undefined): HintSegment[] => {
   const COLORS = useColors();
@@ -149,6 +152,10 @@ export const Modeline = () => {
   const screen = useNavigationStore((state) => state.screen);
   const { latestVersion, updateAvailable } = useUpdateCheck();
   const baseSegments = useHintSegments(screen, gitState);
+  const agentProvider = useAtomValue(agentProviderAtom);
+  const agentLabel = Option.isSome(agentProvider)
+    ? AGENT_PROVIDER_DISPLAY_NAMES[agentProvider.value]
+    : "";
 
   const allSegments = updateAvailable
     ? [
@@ -180,18 +187,22 @@ export const Modeline = () => {
     totalWidth > columns ? allActions.filter((segment) => segment.key !== "ctrl+p") : allActions;
 
   const actionWidth = measureActions(actions);
-  const gap = Math.max(0, columns - actionWidth - rightWidth - 2);
+  const showAgent = screen._tag === "Main" && agentLabel.length > 0;
+  const agentLabelWidth = showAgent ? stringWidth(agentLabel) : 0;
+  const availableGap = columns - actionWidth - rightWidth - agentLabelWidth - 2;
+  const gap = Math.max(0, availableGap);
 
   return (
     <Box flexDirection="column">
-      {screen._tag === "Testing" ? (
+      {screen._tag === "Testing" && (
         <TextShimmer
           text={"─".repeat(columns)}
           baseColor={theme.shimmerBase}
           highlightColor={theme.shimmerHighlight}
           speed={3}
         />
-      ) : (
+      )}
+      {screen._tag !== "Testing" && (
         <Text color={theme.border}>{"─".repeat(columns)}</Text>
       )}
       <Box paddingX={1}>
@@ -225,6 +236,7 @@ export const Modeline = () => {
         {keybinds.length > 0 ? (
           <HintBar segments={keybinds} color={theme.primary} mutedColor={theme.textMuted} />
         ) : null}
+        {showAgent && availableGap > 0 && <Text color={theme.textMuted}>{agentLabel}</Text>}
       </Box>
     </Box>
   );

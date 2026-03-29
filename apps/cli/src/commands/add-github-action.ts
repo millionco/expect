@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { detectProject } from "@expect/supervisor/detect-project";
 import { highlighter } from "../utils/highlighter";
 import { logger } from "../utils/logger";
 import { prompts } from "../utils/prompts";
@@ -16,8 +17,6 @@ const DEV_COMMAND_DEFAULTS: Record<PackageManager, string> = {
   bun: "bun dev",
   vp: "vp dev",
 };
-
-const DEFAULT_DEV_URL = "http://localhost:3000";
 
 const DLX_COMMANDS: Record<PackageManager, string> = {
   npm: "npx",
@@ -106,8 +105,10 @@ export const runAddGithubAction = async (options: AddGithubActionOptions = {}) =
   const nonInteractive = detectNonInteractive(options.yes ?? false);
   const packageManager = detectPackageManager();
 
+  const detection = detectProject();
+  const detectedPort = detection.customPort ?? detection.defaultPort;
   let devCommand = DEV_COMMAND_DEFAULTS[packageManager];
-  let devUrl = DEFAULT_DEV_URL;
+  let devUrl = `http://localhost:${detectedPort}`;
 
   if (!nonInteractive) {
     const responses = await prompts([

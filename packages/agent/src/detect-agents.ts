@@ -29,7 +29,17 @@ const AGENT_BINARY_NAMES: Record<SupportedAgent, string> = {
   droid: "droid",
 };
 
-const WHICH_COMMAND = process.platform === "win32" ? "where" : "which";
+export const AGENT_SKILLS_CLI_NAMES: Record<SupportedAgent, string> = {
+  claude: "claude-code",
+  codex: "codex",
+  copilot: "github-copilot",
+  gemini: "gemini-cli",
+  cursor: "cursor",
+  opencode: "opencode",
+  droid: "droid",
+};
+
+const WHICH_COMMAND = process.platform === "win32" ? "where" : "/usr/bin/which";
 
 const isCommandAvailable = (command: string): boolean => {
   try {

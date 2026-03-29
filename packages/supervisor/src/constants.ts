@@ -34,3 +34,18 @@ export const TEST_FILE_SCAN_LIMIT = 200;
 export const TEST_COVERAGE_TIMEOUT_MS = 15_000;
 
 export const ALL_STEPS_TERMINAL_GRACE_MS = 2 * 60 * 1000;
+
+export const FRAMEWORK_DEFAULT_PORTS: Record<string, number> = {
+  next: 3000,
+  vite: 5173,
+  angular: 4200,
+  remix: 5173,
+  astro: 4321,
+  nuxt: 3000,
+  sveltekit: 5173,
+  gatsby: 8000,
+  "create-react-app": 3000,
+  unknown: 3000,
+};
+
+export const VITE_CONFIG_EXTENSIONS = ["ts", "js", "mjs", "mts"];

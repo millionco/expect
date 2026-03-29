@@ -1,10 +1,11 @@
 {
   "name": "@expect/supervisor",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./detect-project": "./src/detect-project.ts"
   },
   "scripts": {
     "lint": "vp lint && tsc --noEmit",
