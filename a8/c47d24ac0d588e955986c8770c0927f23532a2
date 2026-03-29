@@ -1,0 +1,23 @@
+apps/cli/src/utils/replay-proxy-server.ts
+  e011751701f01653 79,82-88,124,136
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.22",
+  "base_commit_sha": "a8c47d24ac0d588e955986c8770c0927f23532a2",
+  "prompts": {
+    "e011751701f01653": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "575b9791-d2e5-4dcb-be2e-06476d61641b",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 10,
+      "total_deletions": 3,
+      "accepted_lines": 10,
+      "overriden_lines": 0
+    }
+  }
+}
