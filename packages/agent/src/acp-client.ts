@@ -760,21 +760,24 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
     });
 
     const fetchConfigOptions = Effect.fn("AcpClient.fetchConfigOptions")(function* (cwd: string) {
-      const mcpServers = buildMcpServers([]);
-      const response = yield* Effect.tryPromise({
-        try: () => connection.newSession({ cwd, mcpServers }),
-        catch: (cause) => new AcpSessionCreateError({ cause }),
-      });
+      const sessionId = yield* createSession(cwd);
+      const queue = sessionUpdatesMap.get(sessionId);
+      if (!queue) return [] as AcpConfigOption[];
 
-      if (!response.configOptions || response.configOptions.length === 0) {
-        return [] as AcpConfigOption[];
+      const configOptions: AcpConfigOption[] = [];
+      let update = yield* Queue.poll(queue);
+      while (update._tag === "Some") {
+        if (update.value.sessionUpdate === "config_option_update") {
+          configOptions.push(...update.value.configOptions);
+        }
+        update = yield* Queue.poll(queue);
       }
 
-      const decoded = yield* decodeConfigOptions(response.configOptions);
       yield* Effect.logInfo("ACP config options fetched", {
-        count: decoded.length,
+        sessionId,
+        count: configOptions.length,
       });
-      return decoded;
+      return configOptions;
     });
 
     return {
