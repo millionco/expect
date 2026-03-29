@@ -751,17 +751,17 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
   addEvent(update: AcpSessionUpdate): ExecutedTestPlan {
     if (update.sessionUpdate === "agent_thought_chunk") {
       if (update.content.type !== "text" || update.content.text === undefined) return this;
-      const base = this.finalizeTextBlock();
-      const lastEvent = base.events.at(-1);
+      const lastEvent = this.events.at(-1);
       if (lastEvent?._tag === "AgentThinking") {
         return new ExecutedTestPlan({
-          ...base,
+          ...this,
           events: [
-            ...base.events.slice(0, -1),
+            ...this.events.slice(0, -1),
             new AgentThinking({ text: lastEvent.text + update.content.text }),
           ],
         });
       }
+      const base = this.finalizeTextBlock();
       return new ExecutedTestPlan({
         ...base,
         events: [...base.events, new AgentThinking({ text: update.content.text })],
@@ -770,17 +770,17 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
 
     if (update.sessionUpdate === "agent_message_chunk") {
       if (update.content.type !== "text" || update.content.text === undefined) return this;
-      const base = this.finalizeTextBlock();
-      const lastEvent = base.events.at(-1);
+      const lastEvent = this.events.at(-1);
       if (lastEvent?._tag === "AgentText") {
         return new ExecutedTestPlan({
-          ...base,
+          ...this,
           events: [
-            ...base.events.slice(0, -1),
+            ...this.events.slice(0, -1),
             new AgentText({ text: lastEvent.text + update.content.text }),
           ],
         });
       }
+      const base = this.finalizeTextBlock();
       return new ExecutedTestPlan({
         ...base,
         events: [...base.events, new AgentText({ text: update.content.text })],
@@ -1082,8 +1082,6 @@ export class TestReport extends ExecutedTestPlan.extend<TestReport>("@supervisor
     const stepWord = this.steps.length === 1 ? "step" : "steps";
     const lines = [
       `${icon} ${this.title} \u2014 ${this.status.toUpperCase()}`,
-      "",
-      this.summary,
       "",
       this.steps.length === 0
         ? "agent did not execute any test steps"

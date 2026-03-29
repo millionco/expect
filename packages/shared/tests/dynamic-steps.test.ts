@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import { Option } from "effect";
 import {
+  AcpAgentMessageChunk,
   ExecutedTestPlan,
   TestPlan,
   TestPlanStep,
@@ -231,6 +232,29 @@ describe("dynamic step discovery", () => {
     const finalized = executed.finalizeTextBlock();
     expect(finalized.completedStepCount).toBe(1);
     expect(finalized.steps[0].status).toBe("passed");
+  });
+
+  it("addEvent preserves step title when streaming chunks split the marker", () => {
+    let executed = makeEmptyExecuted();
+
+    const chunk = (text: string) =>
+      new AcpAgentMessageChunk({
+        sessionUpdate: "agent_message_chunk",
+        content: { type: "text" as const, text },
+      });
+
+    executed = executed.addEvent(chunk("STEP_START|step-01"));
+    executed = executed.addEvent(chunk("|Navigate to nisar.io\n"));
+    executed = executed.addEvent(chunk("Opening browser...\n"));
+    executed = executed.addEvent(chunk("ASSERTION_FAILED|step-01|DNS failed\n"));
+    executed = executed.addEvent(chunk("RUN_COMPLETED|failed|DNS resolution failed\n"));
+
+    const finalized = executed.finalizeTextBlock();
+
+    expect(finalized.steps.length).toBe(1);
+    expect(finalized.steps[0].title).toBe("Navigate to nisar.io");
+    expect(finalized.steps[0].status).toBe("failed");
+    expect(finalized.hasRunFinished).toBe(true);
   });
 });
 
