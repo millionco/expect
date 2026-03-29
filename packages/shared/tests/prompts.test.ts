@@ -41,6 +41,13 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("close — Close the browser");
   });
 
+  it("requires plain JavaScript in playwright snippets", () => {
+    const prompt = buildExecutionPrompt(makeDefaultOptions());
+    expect(prompt).toContain("playwright snippets run as plain JavaScript, not TypeScript");
+    expect(prompt).toContain("Never use TS-only syntax");
+    expect(prompt).toContain("`as`, type annotations, interfaces, enums, or generics");
+  });
+
   it("includes step marker protocol", () => {
     const prompt = buildExecutionPrompt(makeDefaultOptions());
     expect(prompt).toContain("STEP_START|<step-id>|<step-title>");

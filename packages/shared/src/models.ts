@@ -676,11 +676,52 @@ interface ProcessedTextBlock {
   readonly markers: readonly ExecutionEvent[];
 }
 
+interface MarkerMatch {
+  readonly marker: ExecutionEvent;
+  readonly start: number;
+  readonly end: number;
+}
+
 const buildTextEvent = (
   textEventTag: "AgentText" | "AgentThinking",
   text: string,
 ): AgentText | AgentThinking =>
   textEventTag === "AgentText" ? new AgentText({ text }) : new AgentThinking({ text });
+
+const MARKER_PREFIXES = [
+  "STEP_START|",
+  "STEP_DONE|",
+  "ASSERTION_FAILED|",
+  "STEP_SKIPPED|",
+  "RUN_COMPLETED|",
+] as const;
+
+const markerBoundaryAfter = (line: string, start: number): number => {
+  let earliestBoundary = line.length;
+  for (const prefix of MARKER_PREFIXES) {
+    const nextBoundary = line.indexOf(prefix, start + 1);
+    if (nextBoundary !== -1 && nextBoundary < earliestBoundary) {
+      earliestBoundary = nextBoundary;
+    }
+  }
+  return earliestBoundary;
+};
+
+const findMarkerInLine = (line: string): MarkerMatch | undefined => {
+  for (const prefix of MARKER_PREFIXES) {
+    const start = line.indexOf(prefix);
+    if (start === -1) continue;
+    const end = markerBoundaryAfter(line, start);
+    const marker = parseMarker(line.slice(start, end));
+    if (marker === undefined) continue;
+    return {
+      marker,
+      start,
+      end,
+    };
+  }
+  return undefined;
+};
 
 const processTextBlock = (
   textEventTag: "AgentText" | "AgentThinking",
@@ -698,11 +739,22 @@ const processTextBlock = (
   };
 
   const processLine = (line: string, hasTrailingNewline: boolean) => {
-    const marker = parseMarker(line);
-    if (marker !== undefined) {
+    const markerMatch = findMarkerInLine(line);
+    if (markerMatch !== undefined) {
+      const prefixText = line.slice(0, markerMatch.start);
+      if (prefixText.length > 0) {
+        bufferedText += prefixText;
+        if (hasTrailingNewline) {
+          bufferedText += "\n";
+        }
+      }
       flushBufferedText();
-      events.push(marker);
-      markers.push(marker);
+      events.push(markerMatch.marker);
+      markers.push(markerMatch.marker);
+      const suffixText = line.slice(markerMatch.end);
+      if (suffixText.length > 0) {
+        processLine(suffixText, hasTrailingNewline);
+      }
       return;
     }
     bufferedText += line;

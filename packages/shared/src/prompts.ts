@@ -121,6 +121,7 @@ export const buildExecutionPrompt = (options: ExecutionPromptOptions): string =>
     "",
     "1. open — Launch a browser and navigate to a URL.",
     "2. playwright — Execute Playwright code in Node. Globals: page (Page), context (BrowserContext), browser (Browser), ref(id) (resolves a snapshot ref like 'e4' to a Playwright Locator). Supports await. Return a value to get it back as JSON.",
+    "   IMPORTANT: playwright snippets run as plain JavaScript, not TypeScript. Never use TS-only syntax such as `as`, type annotations, interfaces, enums, or generics inside a playwright call.",
     "3. screenshot — Capture page state. Set mode: 'snapshot' (ARIA accessibility tree, default and preferred), 'screenshot' (PNG image), or 'annotated' (PNG with numbered labels on interactive elements).",
     "4. console_logs — Get browser console messages. Filter by type ('error', 'warning', 'log'). Use after navigation or interactions to catch errors.",
     "5. network_requests — Get captured network requests. Filter by method, URL substring, or resource type ('xhr', 'fetch', 'document').",

@@ -325,6 +325,52 @@ describe("dynamic step discovery", () => {
     );
     expect(remainingText).toHaveLength(0);
   });
+
+  it("splits leaked inline markers from the preceding summary text", () => {
+    let executed = makeEmptyExecuted();
+
+    const chunk = (text: string) =>
+      new AcpAgentMessageChunk({
+        sessionUpdate: "agent_message_chunk",
+        content: { type: "text" as const, text },
+      });
+
+    executed = executed.addEvent(
+      chunk(
+        "Recovered after hiccupSTEP_START|step-04|Retry submission with corrected JS payload\n",
+      ),
+    );
+
+    expect(executed.steps).toHaveLength(1);
+    expect(executed.steps[0].id).toBe("step-04");
+    expect(executed.steps[0].title).toBe("Retry submission with corrected JS payload");
+
+    const textEvents = executed.events.filter(
+      (event): event is AgentText => event._tag === "AgentText",
+    );
+    expect(textEvents).toHaveLength(1);
+    expect(textEvents[0].text).toBe("Recovered after hiccup\n");
+
+    executed = executed.addEvent(
+      chunk(
+        "Corrected payload capturedSTEP_DONE|step-04|Submission confirmedSTEP_START|step-05|Verify success state remains stable\n",
+      ),
+    );
+
+    expect(executed.steps).toHaveLength(2);
+    expect(executed.steps[0].status).toBe("active");
+    expect(executed.steps[1].status).toBe("active");
+    expect(executed.steps[1].title).toBe("Verify success state remains stable");
+
+    const updatedTextEvents = executed.events.filter(
+      (event): event is AgentText => event._tag === "AgentText",
+    );
+    expect(updatedTextEvents).toHaveLength(2);
+    expect(updatedTextEvents[1].text).toBe(
+      "Corrected payload capturedSTEP_DONE|step-04|Submission confirmed\n",
+    );
+    expect(updatedTextEvents[1].text.includes("STEP_START|")).toBe(false);
+  });
 });
 
 describe("run completion detection", () => {
