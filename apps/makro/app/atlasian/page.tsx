@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { MakroShell } from "@/components/makro-shell";
-import { runAtlasianForecast } from "@/lib/get-atlasian-forecast";
+import { getAtlasianSnapshot } from "@/lib/get-atlasian-snapshot";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +39,7 @@ const getSentimentLabel = (value: "positive" | "neutral" | "negative") => {
 };
 
 export default async function AtlasianPage() {
-  const atlasian = await runAtlasianForecast();
+  const atlasian = await getAtlasianSnapshot();
   const activeSources = atlasian.sourceStatuses.filter((sourceStatus) => sourceStatus.ok);
 
   return (
@@ -120,7 +120,10 @@ export default async function AtlasianPage() {
               3. Analiz sonucu özet, tema, tahmin ve zihin haritası olarak açılır.
             </div>
             <div className="rounded-2xl border border-border bg-background/90 p-4 text-sm leading-7 text-muted-foreground">
-              4. Kod bağlamı için kullanılan belge: <span className="font-mono text-foreground">{atlasian.contextDocumentPath}</span>
+              4. Son snapshot dosyası: <span className="font-mono text-foreground">{atlasian.snapshotPath}</span>
+            </div>
+            <div className="rounded-2xl border border-border bg-background/90 p-4 text-sm leading-7 text-muted-foreground">
+              5. Kod bağlamı için kullanılan belge: <span className="font-mono text-foreground">{atlasian.contextDocumentPath}</span>
             </div>
           </div>
         </article>
@@ -139,8 +142,16 @@ export default async function AtlasianPage() {
                 Duygu: {getSentimentLabel(atlasian.sentiment)}
               </span>
               <span className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground">
+                Mod: {atlasian.refreshMode === "fresh" ? "taze üretim" : "cache"}
+              </span>
+              <span className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground">
                 Haber: {atlasian.newsItemCount}
               </span>
+              {atlasian.lastSuccessfulGeneratedAt && (
+                <span className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground">
+                  Son başarılı üretim: {formatGeneratedAt(atlasian.lastSuccessfulGeneratedAt)}
+                </span>
+              )}
               {atlasian.error && (
                 <span className="rounded-full border border-rose-300/40 bg-rose-400/10 px-3 py-1 text-xs text-rose-700 dark:border-rose-200/20 dark:bg-rose-300/10 dark:text-rose-100">
                   Hata: {atlasian.error}

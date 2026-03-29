@@ -1,19 +1,25 @@
 import { NextResponse } from "next/server";
-import { runAtlasianForecast } from "@/lib/get-atlasian-forecast";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
+import {
+  getAtlasianSnapshot,
+  refreshAtlasianSnapshot,
+} from "@/lib/get-atlasian-snapshot";
 
 export const dynamic = "force-dynamic";
 
-// GET: Analizi çalıştır ve döndür (kaydetmez)
-export const GET = async () => {
-  const synthesis = await runAtlasianForecast();
+export const GET = async (request: Request) => {
+  const url = new URL(request.url);
+  const forceRefresh = url.searchParams.get("refresh") === "1";
+  const synthesis = forceRefresh
+    ? await refreshAtlasianSnapshot()
+    : await getAtlasianSnapshot();
+
   return NextResponse.json(synthesis);
 };
 
-// POST: Analizi çalıştır ve internal-forecasts.json'ı güncelle
 export const POST = async () => {
-  const synthesis = await runAtlasianForecast();
+  const synthesis = await refreshAtlasianSnapshot();
 
   if (synthesis.error || synthesis.forecasts.length === 0) {
     return NextResponse.json(

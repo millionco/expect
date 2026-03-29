@@ -15,7 +15,7 @@ const endpoints = [
   },
   {
     path: "/api/atlasian",
-    description: "ATLASIAN analysis payload with source articles, synthesis, and mind-map sections",
+    description: "ATLASIAN snapshot payload with source articles, synthesis, mind-map sections, and auto-refresh metadata",
   },
   {
     path: "/api/forecasts",

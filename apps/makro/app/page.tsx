@@ -18,6 +18,18 @@ interface Indicator {
   frequency: string; unit: string; descriptionShort: string; components: IndicatorComponent[];
 }
 interface NewsItem { id: string; sourceId: string; sourceLabel: string; title: string; description?: string; link: string; publishedAt: string }
+interface AtlasianArticle { id: string; sourceLabel: string; title: string; link?: string }
+interface AtlasianSnapshot {
+  summary: string;
+  sentiment: "positive" | "neutral" | "negative";
+  keyThemes: string[];
+  generatedAt: string;
+  newsItemCount: number;
+  sourceStatuses: Array<{ id: string; label: string; ok: boolean; itemCount: number }>;
+  articles: AtlasianArticle[];
+  refreshMode: "fresh" | "cached";
+  error?: string;
+}
 
 interface DashboardData {
   dataMode: string;
@@ -30,24 +42,27 @@ interface DashboardData {
   indicators: Indicator[];
   newsItems: NewsItem[];
   newsSources: { ok: number; total: number };
+  atlasian: AtlasianSnapshot | null;
   limitations: string[];
   fetchedAt: string;
 }
 
 // ─── Data fetcher (client-side parallel fetch) ────────────────────────────────
 const fetchDashboardData = async (): Promise<DashboardData> => {
-  const [makroRes, liveRes, internalRes, newsRes] = await Promise.all([
+  const [makroRes, liveRes, internalRes, newsRes, atlasianRes] = await Promise.all([
     fetch("/api/indicators?limit=50", { cache: "no-store" }),
     fetch("/api/live", { cache: "no-store" }),
     fetch("/api/internal-forecasts", { cache: "no-store" }),
     fetch("/api/news", { cache: "no-store" }),
+    fetch("/api/atlasian", { cache: "no-store" }),
   ]);
 
-  const [indicators, liveData, internal, news] = await Promise.all([
+  const [indicators, liveData, internal, news, atlasian] = await Promise.all([
     makroRes.ok ? makroRes.json() : { indicators: [] },
     liveRes.ok ? liveRes.json() : {},
     internalRes.ok ? internalRes.json() : { entries: [] },
     newsRes.ok ? newsRes.json() : { items: [], sources: [] },
+    atlasianRes.ok ? atlasianRes.json() : null,
   ]) as [
     { indicators: Indicator[] },
     {
@@ -57,7 +72,8 @@ const fetchDashboardData = async (): Promise<DashboardData> => {
       evdsForecastFeed?: { series: ForecastSeries[] };
     },
     { entries: InternalEntry[]; updatedAt?: string; missing?: boolean },
-    { items: NewsItem[]; sources: Array<{ ok: boolean }>; fetchedAt: string }
+    { items: NewsItem[]; sources: Array<{ ok: boolean }>; fetchedAt: string },
+    AtlasianSnapshot | null,
   ];
 
   return {
@@ -74,6 +90,7 @@ const fetchDashboardData = async (): Promise<DashboardData> => {
       ok: news?.sources?.filter((s) => s.ok).length ?? 0,
       total: news?.sources?.length ?? 0,
     },
+    atlasian,
     limitations: liveData?.limitations ?? [],
     fetchedAt: news?.fetchedAt ?? new Date().toISOString(),
   };
@@ -111,6 +128,8 @@ export default function HomePage() {
   const usd = data?.quotes.find((q) => q.code === "USD");
   const eur = data?.quotes.find((q) => q.code === "EUR");
   const gbp = data?.quotes.find((q) => q.code === "GBP");
+  const atlasianReadyCount =
+    data?.atlasian?.sourceStatuses.filter((sourceStatus) => sourceStatus.ok).length ?? 0;
   const internalReady = data?.internalEntries.filter((e) => e.value !== undefined).length ?? 0;
   const internalTotal = data?.internalEntries.length ?? 0;
 
@@ -133,7 +152,7 @@ export default function HomePage() {
       description="TCMB kur akışı, EVDS tahminler, ATLASIAN haber ağı ve AI analizi tek panelde."
     >
       {/* ─── Stat Kartları ────────────────────────────────────────────── */}
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
         {/* Kur tarihi */}
         <article className="makro-surface rounded-[1.25rem] p-4">
           <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Kur tarihi</p>
@@ -169,10 +188,24 @@ export default function HomePage() {
           </p>
           <p className="mt-1 text-xs text-muted-foreground">{loading ? "—" : `${data?.newsItems.length ?? 0} haber`}</p>
         </article>
+
+        <article className="makro-surface rounded-[1.25rem] p-4">
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">ATLASIAN</p>
+          <p className="mt-2 text-lg font-semibold tabular-nums text-foreground">
+            {loading ? "—" : `${atlasianReadyCount}/${data?.atlasian?.sourceStatuses.length ?? 0}`}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {loading
+              ? "—"
+              : data?.atlasian?.error
+                ? "analiz hatası"
+                : `${data?.atlasian?.newsItemCount ?? 0} haber baz alındı`}
+          </p>
+        </article>
       </section>
 
       {/* ─── Ana İçerik ────────────────────────────────────────────────── */}
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_20rem]">
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_24rem]">
         {/* Piyasa Beklentileri */}
         <article className="makro-surface rounded-[1.5rem] p-4 sm:p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -248,20 +281,63 @@ export default function HomePage() {
             </div>
           </article>
 
-          {/* ATLASIAN AI Butonu */}
-          <button
-            onClick={() => open({ type: "atlasian" })}
-            className="makro-interactive makro-surface rounded-[1.5rem] p-4 text-left hover:border-accent/30"
-          >
+          <article className="makro-surface rounded-[1.5rem] p-4">
             <div className="flex items-center justify-between gap-2">
               <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">ATLASIAN</p>
-              <span className="rounded-full border border-accent/24 bg-accent/10 px-2 py-0.5 text-[10px] font-medium text-accent">AI</span>
+              <Link href="/atlasian" className="text-[10px] text-accent hover:underline">Panel →</Link>
             </div>
-            <p className="mt-2 text-sm font-semibold text-foreground">Küresel Haber Analizi</p>
+            <p className="mt-2 text-sm font-semibold text-foreground">Otomatik haber sentezi</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              WSJ · CNBC · Yahoo Finance · CoinDesk · Investing.com — Claude AI sentezi
+              {loading && "ATLASIAN durumu yükleniyor…"}
+              {!loading && !data?.atlasian && "ATLASIAN çıktısı alınamadı."}
+              {!loading && data?.atlasian && data.atlasian.summary}
             </p>
-          </button>
+            {!loading && data?.atlasian && (
+              <div className="mt-3 grid gap-2">
+                <div className="flex flex-wrap gap-2">
+                  <span className="rounded-full border border-border bg-background/80 px-2 py-0.5 text-[10px] text-muted-foreground">
+                    {data.atlasian.refreshMode === "fresh" ? "taze üretim" : "cache"}
+                  </span>
+                  <span className="rounded-full border border-border bg-background/80 px-2 py-0.5 text-[10px] text-muted-foreground">
+                    {atlasianReadyCount}/{data.atlasian.sourceStatuses.length} kaynak
+                  </span>
+                  <span className="rounded-full border border-border bg-background/80 px-2 py-0.5 text-[10px] text-muted-foreground">
+                    {data.atlasian.newsItemCount} haber
+                  </span>
+                </div>
+                {data.atlasian.keyThemes.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {data.atlasian.keyThemes.slice(0, 3).map((theme) => (
+                      <span
+                        key={theme}
+                        className="rounded-full border border-accent/20 bg-accent/10 px-2 py-0.5 text-[10px] font-medium text-accent"
+                      >
+                        {theme}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {data.atlasian.articles.slice(0, 2).map((article) => (
+                  <a
+                    key={article.id}
+                    href={article.link ?? "/atlasian"}
+                    target={article.link ? "_blank" : undefined}
+                    rel={article.link ? "noopener noreferrer" : undefined}
+                    className="rounded-xl border border-border bg-background/80 px-3 py-2 text-xs text-foreground hover:border-accent/30 hover:text-accent"
+                  >
+                    <span className="block text-[10px] text-muted-foreground">{article.sourceLabel}</span>
+                    <span className="mt-1 block leading-5">{article.title}</span>
+                  </a>
+                ))}
+                <button
+                  onClick={() => open({ type: "atlasian" })}
+                  className="mt-1 rounded-full border border-accent/24 bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent hover:border-accent/40"
+                >
+                  Hızlı görünüm
+                </button>
+              </div>
+            )}
+          </article>
 
           {/* Ajan Durumu Butonu */}
           <button
