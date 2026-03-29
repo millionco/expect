@@ -136,7 +136,7 @@ export class Github extends ServiceMap.Service<Github>()("@supervisor/GitHub", {
         "api",
         `repos/{owner}/{repo}/issues/${prNumber}/comments`,
         "--jq",
-        `.[] | select(.body | contains("${escapedMarker}")) | .id`,
+        `[.[] | select(.body | contains("${escapedMarker}")) | .id] | first`,
       ]);
       const commentId = output.trim();
       return commentId.length > 0 ? Option.some(Number(commentId)) : Option.none();
