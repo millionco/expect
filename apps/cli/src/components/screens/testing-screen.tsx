@@ -269,7 +269,12 @@ export const TestingScreen = ({
   const agentProviderValue = useAtomValue(agentProviderAtom);
   const agentBackend = Option.isSome(agentProviderValue) ? agentProviderValue.value : "claude";
   const setConfigOptions = useAtomSet(agentConfigOptionsAtom);
-  const modelPreference = usePreferencesStore((state) => state.modelPreferences[agentBackend]);
+  const modelPreferenceConfigId = usePreferencesStore(
+    (state) => state.modelPreferences[agentBackend]?.configId,
+  );
+  const modelPreferenceValue = usePreferencesStore(
+    (state) => state.modelPreferences[agentBackend]?.value,
+  );
   const browserHeaded = usePreferencesStore((state) => state.browserHeaded);
   const replayHost = usePreferencesStore((state) => state.replayHost);
   const toggleNotifications = usePreferencesStore((state) => state.toggleNotifications);
@@ -417,7 +422,10 @@ export const TestingScreen = ({
         cookieBrowserKeys: [...cookieBrowserKeys],
         savedFlow,
         baseUrl,
-        modelPreference: modelPreference ?? undefined,
+        modelPreference:
+          modelPreferenceConfigId && modelPreferenceValue
+            ? { configId: modelPreferenceConfigId, value: modelPreferenceValue }
+            : undefined,
       },
       agentBackend,
       replayHost,
@@ -444,7 +452,8 @@ export const TestingScreen = ({
     cookieBrowserKeys,
     baseUrls,
     replayHost,
-    modelPreference,
+    modelPreferenceConfigId,
+    modelPreferenceValue,
     setConfigOptions,
   ]);
 
