@@ -135,12 +135,13 @@ export class Github extends ServiceMap.Service<Github>()("@supervisor/GitHub", {
       const output = yield* runGhCommand(cwd, [
         "api",
         `repos/{owner}/{repo}/issues/${prNumber}/comments`,
+        "--paginate",
         "--jq",
-        `[.[] | select(.body | contains("${escapedMarker}")) | .id] | first`,
+        `.[] | select(.body | contains("${escapedMarker}")) | .id`,
       ]);
-      const commentId = output.trim();
-      const parsed = Number(commentId);
-      return commentId.length > 0 && !Number.isNaN(parsed) ? Option.some(parsed) : Option.none();
+      const firstLine = output.trim().split("\n")[0] ?? "";
+      const parsed = Number(firstLine);
+      return firstLine.length > 0 && !Number.isNaN(parsed) ? Option.some(parsed) : Option.none();
     });
 
     const updateComment = Effect.fn("GitHub.updateComment")(function* (

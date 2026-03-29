@@ -326,6 +326,12 @@ export const runHeadless = (options: HeadlessRunOptions) =>
                 ? `\n**Video:** see workflow artifacts\n`
                 : "";
 
+              const maxBacktickRun = (report.toPlainText.match(/`+/g) ?? []).reduce(
+                (max, run) => Math.max(max, run.length),
+                2,
+              );
+              const fence = "`".repeat(maxBacktickRun + 1);
+
               const commentBody = [
                 COMMENT_MARKER,
                 `## expect test results`,
@@ -338,9 +344,9 @@ export const runHeadless = (options: HeadlessRunOptions) =>
                 videoSection,
                 "<details><summary>Full output</summary>",
                 "",
-                "```",
+                fence,
                 report.toPlainText,
-                "```",
+                fence,
                 "",
                 "</details>",
               ].join("\n");
