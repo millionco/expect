@@ -88,8 +88,7 @@ export const App = ({ agent }: { agent: AgentBackend }) => {
       setScreen(
         Screen.Watch({
           changesFor: ChangesFor.makeUnsafe({ _tag: "Changes", mainBranch }),
-          instruction:
-            "Test all changes from main in the browser and verify they work correctly.",
+          instruction: "Test all changes from main in the browser and verify they work correctly.",
         }),
       );
     }

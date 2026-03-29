@@ -99,10 +99,11 @@ export class Watch extends ServiceMap.Service<Watch>()("@supervisor/Watch", {
           (update): update is AcpAgentMessageChunk =>
             update.sessionUpdate === "agent_message_chunk",
         ),
-        Stream.map((update) =>
-          update.content.type === "text" ? update.content.text : "",
+        Stream.map((update) => (update.content.type === "text" ? update.content.text : "")),
+        Stream.runFold(
+          () => "",
+          (accumulated: string, chunk: string) => accumulated + chunk,
         ),
-        Stream.runFold(() => "", (accumulated: string, chunk: string) => accumulated + chunk),
       );
 
       const decision = parseAssessmentResponse(responseText);
@@ -166,11 +167,7 @@ export class Watch extends ServiceMap.Service<Watch>()("@supervisor/Watch", {
           decision = "run";
         } else {
           options.onEvent(WatchEvent.Assessing());
-          const assessResult = yield* assess(
-            changedFiles,
-            diffPreview,
-            options.instruction,
-          ).pipe(
+          const assessResult = yield* assess(changedFiles, diffPreview, options.instruction).pipe(
             Effect.catchTag("WatchAssessmentError", (assessmentError) =>
               Effect.gen(function* () {
                 yield* Ref.update(stateRef, (current) => ({
@@ -212,26 +209,22 @@ export class Watch extends ServiceMap.Service<Watch>()("@supervisor/Watch", {
           baseUrl: options.baseUrl,
         };
 
-        const finalExecuted = yield* executor
-          .execute(executeOptions)
-          .pipe(
-            Stream.tap((executed) =>
-              Effect.sync(() => options.onEvent(WatchEvent.RunUpdate({ executedPlan: executed }))),
-            ),
-            Stream.runLast,
-            Effect.map((option) =>
-              option._tag === "Some" ? option.value : undefined,
-            ),
-            Effect.catchTag("ExecutionError", (executionError) =>
-              Effect.gen(function* () {
-                options.onEvent(WatchEvent.Error({ error: executionError }));
-                yield* Effect.logWarning("Watch run execution error", {
-                  error: executionError.message,
-                });
-                return undefined;
-              }),
-            ),
-          );
+        const finalExecuted = yield* executor.execute(executeOptions).pipe(
+          Stream.tap((executed) =>
+            Effect.sync(() => options.onEvent(WatchEvent.RunUpdate({ executedPlan: executed }))),
+          ),
+          Stream.runLast,
+          Effect.map((option) => (option._tag === "Some" ? option.value : undefined)),
+          Effect.catchTag("ExecutionError", (executionError) =>
+            Effect.gen(function* () {
+              options.onEvent(WatchEvent.Error({ error: executionError }));
+              yield* Effect.logWarning("Watch run execution error", {
+                error: executionError.message,
+              });
+              return undefined;
+            }),
+          ),
+        );
 
         if (finalExecuted) {
           const completed = finalExecuted.finalizeTextBlock().synthesizeRunFinished();

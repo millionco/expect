@@ -2,11 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import figures from "figures";
 import { Effect, Option, Ref, Stream } from "effect";
-import type {
-  ChangesFor,
-  ExecutedTestPlan,
-  TestPlanStep,
-} from "@expect/shared/models";
+import type { ChangesFor, ExecutedTestPlan, TestPlanStep } from "@expect/shared/models";
 import type { WatchEvent } from "@expect/supervisor";
 import { Watch } from "@expect/supervisor";
 import { useMountEffect } from "../../hooks/use-mount-effect";
@@ -122,13 +118,9 @@ export const WatchScreen = ({
         onEvent: handleEvent,
       });
       yield* loop;
-    }).pipe(
-      Effect.provide(layerCli({ verbose: false, agent: agentBackend })),
-    );
+    }).pipe(Effect.provide(layerCli({ verbose: false, agent: agentBackend })));
 
-    Effect.runPromise(
-      stripUndefinedRequirement(program),
-    ).catch((error) => {
+    Effect.runPromise(stripUndefinedRequirement(program)).catch((error) => {
       if (!abortController.signal.aborted) {
         setPhase("error");
         setLastError(String(error));

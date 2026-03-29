@@ -6,5 +6,5 @@ export const useMountEffect = (callback: () => void | (() => void)) => {
     if (hasRun.current) return;
     hasRun.current = true;
     return callback();
-  }, [callback]);
+  }, []);
 };

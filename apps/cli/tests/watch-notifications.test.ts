@@ -8,7 +8,9 @@ describe("sendWatchNotification", () => {
   });
 
   it("returns undefined for ChangeDetected event", () => {
-    expect(sendWatchNotification(WatchEvent.ChangeDetected({ fingerprint: "abc123" }))).toBeUndefined();
+    expect(
+      sendWatchNotification(WatchEvent.ChangeDetected({ fingerprint: "abc123" })),
+    ).toBeUndefined();
   });
 
   it("returns undefined for Settling event", () => {
@@ -20,7 +22,9 @@ describe("sendWatchNotification", () => {
   });
 
   it("returns undefined for RunStarting event", () => {
-    expect(sendWatchNotification(WatchEvent.RunStarting({ fingerprint: "abc123" }))).toBeUndefined();
+    expect(
+      sendWatchNotification(WatchEvent.RunStarting({ fingerprint: "abc123" })),
+    ).toBeUndefined();
   });
 
   it("returns undefined for Skipped event", () => {
