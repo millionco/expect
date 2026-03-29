@@ -1,0 +1,61 @@
+packages/shared/tests/prompts.test.ts
+  b938c0999e81ec68 70-76,170-179,186-197
+packages/agent/src/build-session-meta.ts
+  b938c0999e81ec68 1-6,10-14,16-22,24,27-28,44-46
+packages/shared/src/prompts.ts
+  b938c0999e81ec68 113-138,279-282
+packages/agent/src/acp-client.ts
+  b938c0999e81ec68 25,480-486,571-573,575,581
+packages/agent/tests/build-session-meta.test.ts
+  b938c0999e81ec68 1-8,10-18,20-27,29-44,46-58
+.gitmodules
+  f63ea55ab3264a19 3
+packages/shared/src/analytics/analytics.ts
+  d528c03d5f27e3f0 89,98-99,101-108,110-118,120-133
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.22",
+  "base_commit_sha": "b0f1e10ab0a51dd2c29f729d050e0ed418082ebe",
+  "prompts": {
+    "b938c0999e81ec68": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f3becc87-f24a-4eac-afd6-f8bb6cf4e835",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 223,
+      "total_deletions": 63,
+      "accepted_lines": 153,
+      "overriden_lines": 21
+    },
+    "d528c03d5f27e3f0": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "984f0764-7f41-4c5b-b3e0-c46512403bc2",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 38,
+      "total_deletions": 31,
+      "accepted_lines": 34,
+      "overriden_lines": 0
+    },
+    "f63ea55ab3264a19": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "6e55a0b5-00b7-41cf-9609-176505c4b503",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
