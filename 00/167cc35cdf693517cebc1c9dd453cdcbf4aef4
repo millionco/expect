@@ -1,0 +1,23 @@
+apps/website/app/replay/page.tsx
+  e011751701f01653 69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.22",
+  "base_commit_sha": "00167cc35cdf693517cebc1c9dd453cdcbf4aef4",
+  "prompts": {
+    "e011751701f01653": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "575b9791-d2e5-4dcb-be2e-06476d61641b",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 0,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
