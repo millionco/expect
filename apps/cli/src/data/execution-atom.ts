@@ -3,7 +3,7 @@ import * as Atom from "effect/unstable/reactivity/Atom";
 import { ExecutedTestPlan, Executor, Git, Reporter, type ExecuteOptions } from "@expect/supervisor";
 import { Analytics } from "@expect/shared/observability";
 import type { AgentBackend } from "@expect/agent";
-import type { TestReport } from "@expect/shared/models";
+import type { AcpConfigOption, TestReport } from "@expect/shared/models";
 import { cliAtomRuntime } from "./runtime";
 import { stripUndefinedRequirement } from "../utils/strip-undefined-requirement";
 import * as NodeServices from "@effect/platform-node/NodeServices";
@@ -22,6 +22,7 @@ interface ExecuteInput {
   readonly replayHost?: string;
   readonly onUpdate: (executed: ExecutedTestPlan) => void;
   readonly onReplayUrl?: (url: string) => void;
+  readonly onConfigOptions?: (configOptions: readonly AcpConfigOption[]) => void;
 }
 
 export interface ExecutionResult {
@@ -62,6 +63,7 @@ const execute = Effect.fnUntraced(
     const executeOptions: ExecuteOptions = {
       ...input.options,
       liveViewUrl,
+      onConfigOptions: input.onConfigOptions,
     };
 
     yield* analytics.capture("run:started", { plan_id: "direct" });
@@ -197,6 +199,7 @@ export const executeAtomFn = cliAtomRuntime.fn(
       const executeOptions: ExecuteOptions = {
         ...input.options,
         liveViewUrl,
+        onConfigOptions: input.onConfigOptions,
       };
 
       yield* analytics.capture("run:started", { plan_id: "direct" });

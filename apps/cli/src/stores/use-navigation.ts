@@ -28,6 +28,7 @@ export type Screen = Data.TaggedEnum<{
     cookieBrowserKeys?: readonly string[];
     baseUrl?: string;
   };
+  AgentPicker: {};
 }>;
 export const Screen = Data.taggedEnum<Screen>();
 

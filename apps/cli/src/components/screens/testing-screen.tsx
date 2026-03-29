@@ -4,7 +4,7 @@ import figures from "figures";
 import { Cause, DateTime, Option } from "effect";
 import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
 import * as Atom from "effect/unstable/reactivity/Atom";
-import { useAtom, useAtomValue } from "@effect/atom-react";
+import { useAtom, useAtomSet, useAtomValue } from "@effect/atom-react";
 
 import {
   type ChangesFor,
@@ -27,6 +27,7 @@ import { formatElapsedTime } from "../../utils/format-elapsed-time";
 import { Image } from "../ui/image";
 import { ErrorMessage } from "../ui/error-message";
 import { executeFn, screenshotPathsAtom } from "../../data/execution-atom";
+import { agentConfigOptionsAtom } from "../../data/config-options";
 import { trackEvent } from "../../utils/session-analytics";
 import { formatToolCall, type FormattedToolCall } from "../../utils/format-tool-call";
 import { useScrollableList } from "../../hooks/use-scrollable-list";
@@ -265,6 +266,7 @@ export const TestingScreen = ({
   const [, terminalRows] = useStdoutDimensions();
 
   const agentBackend = usePreferencesStore((state) => state.agentBackend);
+  const setConfigOptions = useAtomSet(agentConfigOptionsAtom);
   const browserHeaded = usePreferencesStore((state) => state.browserHeaded);
   const replayHost = usePreferencesStore((state) => state.replayHost);
   const toggleNotifications = usePreferencesStore((state) => state.toggleNotifications);
@@ -417,6 +419,12 @@ export const TestingScreen = ({
       replayHost,
       onUpdate: setExecutedPlan,
       onReplayUrl: setLiveReplayUrl,
+      onConfigOptions: (configOptions) => {
+        setConfigOptions((previous) => ({
+          ...previous,
+          [agentBackend]: [...configOptions],
+        }));
+      },
     });
 
     return () => {
@@ -432,6 +440,7 @@ export const TestingScreen = ({
     cookieBrowserKeys,
     baseUrls,
     replayHost,
+    setConfigOptions,
   ]);
 
   const replayUrl = isExecutionComplete ? executionResult.value.replayUrl : undefined;

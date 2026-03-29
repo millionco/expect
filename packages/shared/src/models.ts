@@ -147,10 +147,44 @@ export class AcpCurrentModeUpdate extends Schema.Class<AcpCurrentModeUpdate>(
   sessionUpdate: Schema.Literal("current_mode_update"),
 }) {}
 
+const AcpConfigOptionCategory = Schema.Union([
+  Schema.Literal("mode"),
+  Schema.Literal("model"),
+  Schema.Literal("thought_level"),
+  Schema.String,
+]);
+
+export const AcpConfigSelectOption = Schema.Struct({
+  value: Schema.String,
+  name: Schema.String,
+  description: Schema.optional(Schema.NullOr(Schema.String)),
+});
+export type AcpConfigSelectOption = typeof AcpConfigSelectOption.Type;
+
+const AcpConfigSelectGroup = Schema.Struct({
+  group: Schema.String,
+  name: Schema.String,
+  options: Schema.Array(AcpConfigSelectOption),
+});
+
+export const AcpConfigOption = Schema.Struct({
+  id: Schema.String,
+  name: Schema.String,
+  category: Schema.optional(Schema.NullOr(AcpConfigOptionCategory)),
+  description: Schema.optional(Schema.NullOr(Schema.String)),
+  type: Schema.Literals(["select", "boolean"] as const),
+  currentValue: Schema.Union([Schema.String, Schema.Boolean]),
+  options: Schema.optional(
+    Schema.Array(Schema.Union([AcpConfigSelectOption, AcpConfigSelectGroup])),
+  ),
+});
+export type AcpConfigOption = typeof AcpConfigOption.Type;
+
 export class AcpConfigOptionUpdate extends Schema.Class<AcpConfigOptionUpdate>(
   "AcpConfigOptionUpdate",
 )({
   sessionUpdate: Schema.Literal("config_option_update"),
+  configOptions: Schema.Array(AcpConfigOption),
 }) {}
 
 export class AcpSessionInfoUpdate extends Schema.Class<AcpSessionInfoUpdate>(

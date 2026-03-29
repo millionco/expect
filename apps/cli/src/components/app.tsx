@@ -9,6 +9,7 @@ import { TestingScreen } from "./screens/testing-screen";
 import { ResultsScreen } from "./screens/results-screen";
 import { SavedFlowPickerScreen } from "./screens/saved-flow-picker-screen";
 import { WatchScreen } from "./screens/watch-screen";
+import { AgentPickerScreen } from "./screens/agent-picker-screen";
 import { MainMenu } from "./screens/main-menu-screen";
 import { Modeline } from "./ui/modeline";
 import { ChangesFor } from "@expect/supervisor";
@@ -46,6 +47,10 @@ export const App = ({ agent }: { agent: AgentBackend }) => {
     }
     if (screen._tag === "Results") {
       usePlanExecutionStore.getState().setExecutedPlan(undefined);
+      setScreen(Screen.Main());
+      return;
+    }
+    if (screen._tag === "AgentPicker") {
       setScreen(Screen.Main());
       return;
     }
@@ -91,6 +96,9 @@ export const App = ({ agent }: { agent: AgentBackend }) => {
           instruction: "Test all changes from main in the browser and verify they work correctly.",
         }),
       );
+    }
+    if (key.ctrl && input === "a" && screen._tag === "Main") {
+      navigateTo(Screen.AgentPicker());
     }
   });
 
@@ -149,6 +157,8 @@ export const App = ({ agent }: { agent: AgentBackend }) => {
             baseUrl={screen.baseUrl}
           />
         );
+      case "AgentPicker":
+        return <AgentPickerScreen />;
       default:
         return <MainMenu gitState={gitState} />;
     }

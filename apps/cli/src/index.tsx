@@ -112,7 +112,8 @@ const runHeadlessForTarget = async (target: Target, opts: CommanderOpts) => {
 const runInteractiveForTarget = async (target: Target, opts: CommanderOpts) => {
   const { changesFor } = await resolveChangesFor(target);
   seedStores(opts, changesFor);
-  renderApp(opts.agent ?? "claude");
+  const persistedAgent = usePreferencesStore.getState().agentBackend;
+  renderApp(opts.agent ?? persistedAgent ?? "claude");
 };
 
 program
@@ -185,7 +186,8 @@ program.action(async () => {
       browserHeaded: opts.headed ?? false,
       replayHost: opts.replayHost ?? "https://expect.dev",
     });
-    renderApp(opts.agent ?? "claude");
+    const persistedAgent = usePreferencesStore.getState().agentBackend;
+    renderApp(opts.agent ?? persistedAgent ?? "claude");
   }
 });
 

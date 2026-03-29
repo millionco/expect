@@ -11,7 +11,9 @@ interface PreferencesStore {
   autoSaveFlows: boolean;
   notifications: boolean | undefined;
   instructionHistory: string[];
+  modelPreferences: Record<AgentBackend, string | undefined>;
   setAgentBackend: (backend: AgentBackend) => void;
+  setModelPreference: (agent: AgentBackend, modelValue: string) => void;
   toggleAutoSave: () => void;
   toggleNotifications: () => void;
   rememberInstruction: (instruction: string) => void;
@@ -26,7 +28,20 @@ export const usePreferencesStore = create<PreferencesStore>()(
       autoSaveFlows: true,
       notifications: undefined,
       instructionHistory: [],
+      modelPreferences: {
+        claude: undefined,
+        codex: undefined,
+        copilot: undefined,
+        gemini: undefined,
+        cursor: undefined,
+        opencode: undefined,
+        droid: undefined,
+      },
       setAgentBackend: (backend: AgentBackend) => set({ agentBackend: backend }),
+      setModelPreference: (agent: AgentBackend, modelValue: string) =>
+        set((state) => ({
+          modelPreferences: { ...state.modelPreferences, [agent]: modelValue },
+        })),
       toggleAutoSave: () => set((state) => ({ autoSaveFlows: !state.autoSaveFlows })),
       toggleNotifications: () =>
         set((state) => ({ notifications: state.notifications === true ? false : true })),
@@ -44,8 +59,10 @@ export const usePreferencesStore = create<PreferencesStore>()(
       name: "prompt-history",
       storage: createJSONStorage(() => promptHistoryStorage),
       partialize: (state) => ({
+        agentBackend: state.agentBackend,
         instructionHistory: state.instructionHistory,
         notifications: state.notifications,
+        modelPreferences: state.modelPreferences,
       }),
     },
   ),

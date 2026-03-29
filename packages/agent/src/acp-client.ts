@@ -20,7 +20,12 @@ import {
   Stream,
   String as Str,
 } from "effect";
-import { AcpSessionUpdate, AgentProvider } from "@expect/shared/models";
+import {
+  AcpConfigOption,
+  AcpConfigOptionUpdate,
+  AcpSessionUpdate,
+  AgentProvider,
+} from "@expect/shared/models";
 import { hasStringMessage } from "@expect/shared/utils";
 
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
@@ -592,14 +597,39 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
           return new AcpSessionCreateError({ cause });
         },
       }).pipe(
-        Effect.map(({ sessionId }) => SessionId.makeUnsafe(sessionId)),
-        Effect.tap((sessionId) =>
+        Effect.tap((response) =>
           Effect.gen(function* () {
+            const sessionId = SessionId.makeUnsafe(response.sessionId);
             const updatesQueue = yield* Queue.unbounded<AcpSessionUpdate, SessionQueueError>();
             sessionUpdatesMap.set(sessionId, updatesQueue);
             yield* Effect.logInfo("ACP session created", { sessionId });
+
+            if (response.configOptions && response.configOptions.length > 0) {
+              const decoded = yield* Schema.decodeUnknownEffect(Schema.Array(AcpConfigOption))(
+                response.configOptions,
+              ).pipe(
+                Effect.catchTag("SchemaError", (schemaError) =>
+                  Effect.logWarning("Failed to decode config options", {
+                    error: String(schemaError),
+                  }).pipe(Effect.as([] as AcpConfigOption[])),
+                ),
+              );
+              if (decoded.length > 0) {
+                Queue.offerUnsafe(
+                  updatesQueue,
+                  new AcpConfigOptionUpdate({
+                    sessionUpdate: "config_option_update",
+                    configOptions: decoded,
+                  }),
+                );
+                yield* Effect.logDebug("ACP config options emitted", {
+                  count: decoded.length,
+                });
+              }
+            }
           }),
         ),
+        Effect.map(({ sessionId }) => SessionId.makeUnsafe(sessionId)),
       );
     });
 
@@ -691,9 +721,29 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
       );
     }, Stream.unwrap);
 
+    const setConfigOption = Effect.fn("AcpClient.setConfigOption")(function* (
+      sessionId: SessionId,
+      configId: string,
+      value: string | boolean,
+    ) {
+      yield* Effect.annotateCurrentSpan({ sessionId, configId });
+      const response = yield* Effect.tryPromise({
+        try: () =>
+          connection.setSessionConfigOption({
+            sessionId,
+            configId,
+            ...(typeof value === "boolean" ? { type: "boolean" as const, value } : { value }),
+          }),
+        catch: (cause) => new AcpStreamError({ cause }),
+      });
+      yield* Effect.logInfo("ACP config option set", { configId, value });
+      return response;
+    });
+
     return {
       createSession,
       stream,
+      setConfigOption,
     } as const;
   }),
 }) {

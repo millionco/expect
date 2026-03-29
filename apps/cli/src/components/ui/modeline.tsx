@@ -31,10 +31,20 @@ const useHintSegments = (screen: Screen, gitState: GitState | undefined): HintSe
   const notifications = usePreferencesStore((state) => state.notifications);
   const toggleNotifications = usePreferencesStore((state) => state.toggleNotifications);
   const expanded = usePlanExecutionStore((state) => state.expanded);
+  const agentProviderValue = useAtomValue(agentProviderAtom);
 
   switch (screen._tag) {
     case "Main": {
+      const agentLabel = Option.isSome(agentProviderValue)
+        ? AGENT_PROVIDER_DISPLAY_NAMES[agentProviderValue.value]
+        : "Agent";
       const segments: HintSegment[] = [
+        {
+          key: "ctrl+a",
+          label: agentLabel,
+          cta: true,
+          onClick: () => setScreen(Screen.AgentPicker()),
+        },
         {
           key: "ctrl+k",
           label:
@@ -86,6 +96,12 @@ const useHintSegments = (screen: Screen, gitState: GitState | undefined): HintSe
         { key: "enter", label: "select", color: COLORS.PRIMARY, cta: true },
       ];
     case "SavedFlowPicker":
+      return [
+        { key: "↑↓", label: "nav" },
+        { key: "esc", label: "back", cta: true, onClick: () => setScreen(Screen.Main()) },
+        { key: "enter", label: "select", color: COLORS.PRIMARY, cta: true },
+      ];
+    case "AgentPicker":
       return [
         { key: "↑↓", label: "nav" },
         { key: "esc", label: "back", cta: true, onClick: () => setScreen(Screen.Main()) },
@@ -180,10 +196,6 @@ export const Modeline = () => {
   const screen = useNavigationStore((state) => state.screen);
   const { latestVersion, updateAvailable } = useUpdateCheck();
   const baseSegments = useHintSegments(screen, gitState);
-  const agentProvider = useAtomValue(agentProviderAtom);
-  const agentLabel = Option.isSome(agentProvider)
-    ? AGENT_PROVIDER_DISPLAY_NAMES[agentProvider.value]
-    : "";
 
   const allSegments = updateAvailable
     ? [
@@ -215,9 +227,7 @@ export const Modeline = () => {
     totalWidth > columns ? allActions.filter((segment) => segment.key !== "ctrl+p") : allActions;
 
   const actionWidth = measureActions(actions);
-  const showAgent = screen._tag === "Main" && agentLabel.length > 0;
-  const agentLabelWidth = showAgent ? stringWidth(agentLabel) : 0;
-  const availableGap = columns - actionWidth - rightWidth - agentLabelWidth - 2;
+  const availableGap = columns - actionWidth - rightWidth - 2;
   const gap = Math.max(0, availableGap);
 
   return (
@@ -264,7 +274,6 @@ export const Modeline = () => {
         {keybinds.length > 0 ? (
           <HintBar segments={keybinds} color={theme.primary} mutedColor={theme.textMuted} />
         ) : null}
-        {showAgent && availableGap > 0 && <Text color={theme.textMuted}>{agentLabel}</Text>}
       </Box>
     </Box>
   );

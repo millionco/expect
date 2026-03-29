@@ -52,6 +52,11 @@ export class Agent extends ServiceMap.Service<
       SessionId,
       AcpSessionCreateError | AcpProviderUnauthenticatedError | AcpProviderUsageLimitError
     >;
+    readonly setConfigOption: (
+      sessionId: SessionId,
+      configId: string,
+      value: string | boolean,
+    ) => Effect.Effect<unknown, AcpStreamError>;
   }
 >()("@expect/Agent") {
   static layerAcp = Layer.effect(Agent)(
@@ -68,6 +73,8 @@ export class Agent extends ServiceMap.Service<
             mcpEnv: options.mcpEnv,
             systemPrompt: options.systemPrompt,
           }),
+        setConfigOption: (sessionId, configId, value) =>
+          acpClient.setConfigOption(sessionId as SessionId, configId, value),
       });
     }),
   ).pipe(Layer.provide(AcpClient.layer));
@@ -109,6 +116,7 @@ export class Agent extends ServiceMap.Service<
               Stream.orDie,
             ),
           createSession: () => Effect.die("createSession not supported for test layer"),
+          setConfigOption: () => Effect.die("setConfigOption not supported for test layer"),
         });
       }),
     ).pipe(Layer.provide(NodeServices.layer));
