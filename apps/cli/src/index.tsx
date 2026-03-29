@@ -1,26 +1,20 @@
-import { Effect } from "effect";
+import { Option } from "effect";
 import { Command } from "commander";
-import { render } from "ink";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { App } from "./components/app";
-import { ALT_SCREEN_OFF, ALT_SCREEN_ON, CI_EXECUTION_TIMEOUT_MS, VERSION } from "./constants";
-import { ChangesFor, Git } from "@expect/supervisor";
+import { ChangesFor } from "@expect/supervisor";
 import { runHeadless } from "./utils/run-test";
 import { runInit } from "./commands/init";
 import { runAddGithubAction } from "./commands/add-github-action";
 import { runAddSkill } from "./commands/add-skill";
 import { runAuditCommand } from "./commands/audit";
+import { runWatchCommand } from "./commands/watch";
 import { isRunningInAgent } from "./utils/is-running-in-agent";
 import { isHeadless } from "./utils/is-headless";
 import { type AgentBackend, detectAvailableAgents } from "@expect/agent";
 import { useNavigationStore, Screen } from "./stores/use-navigation";
 import { usePreferencesStore } from "./stores/use-preferences";
-import { queryClient } from "./query-client";
-import { setInkInstance } from "./utils/clear-ink-display";
-import { RegistryProvider } from "@effect/atom-react";
-import { agentProviderAtom } from "./data/runtime";
-import { flushSession, trackSessionStarted } from "./utils/session-analytics";
-import { Option } from "effect";
+import { resolveChangesFor } from "./utils/resolve-changes-for";
+import { renderApp } from "./program";
+import { CI_EXECUTION_TIMEOUT_MS, VERSION } from "./constants";
 
 const DEFAULT_INSTRUCTION =
   "Test all changes from main in the browser and verify they work correctly.";
@@ -70,58 +64,9 @@ Examples:
   $ expect --headed -m "smoke test" -y              run with a visible browser
   $ expect --target branch                          test all branch changes
   $ expect --target unstaged                        test unstaged changes
-  $ expect --no-cookies -m "test" -y                skip system browser cookie extraction`,
+  $ expect --no-cookies -m "test" -y                skip system browser cookie extraction
+  $ expect watch -m "test the login flow"           watch mode`,
   );
-
-const MOUSE_DISABLE = "\u001b[?1000l\u001b[?1006l";
-
-const renderApp = async (agent: AgentBackend) => {
-  const sessionStartedAt = Date.now();
-  await trackSessionStarted();
-
-  process.stdout.write(ALT_SCREEN_ON);
-  process.on("exit", () => process.stdout.write(MOUSE_DISABLE + ALT_SCREEN_OFF));
-  const instance = render(
-    <RegistryProvider initialValues={[[agentProviderAtom, Option.some(agent)]]}>
-      <QueryClientProvider client={queryClient}>
-        <App agent={agent} />
-      </QueryClientProvider>
-    </RegistryProvider>,
-  );
-  setInkInstance(instance);
-  await instance.waitUntilExit();
-  await flushSession(sessionStartedAt);
-  process.stdout.write(MOUSE_DISABLE + ALT_SCREEN_OFF);
-  process.exit(0);
-};
-
-const resolveChangesFor = async (target: Target) => {
-  const cwd = process.cwd();
-  return Effect.runPromise(
-    Effect.gen(function* () {
-      const git = yield* Git;
-      const mainBranch = yield* git.getMainBranch;
-      const currentBranch = yield* git.getCurrentBranch;
-
-      if (target === "branch") {
-        return {
-          changesFor: ChangesFor.makeUnsafe({ _tag: "Branch", mainBranch }),
-          currentBranch,
-        };
-      }
-      if (target === "changes") {
-        return {
-          changesFor: ChangesFor.makeUnsafe({ _tag: "Changes", mainBranch }),
-          currentBranch,
-        };
-      }
-      return {
-        changesFor: ChangesFor.makeUnsafe({ _tag: "WorkingTree" }),
-        currentBranch,
-      };
-    }).pipe(Effect.provide(Git.withRepoRoot(cwd))),
-  );
-};
 
 const seedStores = (opts: CommanderOpts, changesFor: ChangesFor) => {
   usePreferencesStore.setState({
@@ -197,6 +142,23 @@ program
   .description("audit your workspace for lint, type, and formatting issues")
   .action(async () => {
     await runAuditCommand();
+  });
+
+program
+  .command("watch")
+  .description("watch for file changes and auto-run browser tests")
+  .option("-m, --message <instruction>", "natural language instruction for what to test")
+  .option(
+    "-a, --agent <provider>",
+    "agent provider to use (claude, codex, copilot, gemini, cursor, opencode, or droid)",
+  )
+  .option("-t, --target <target>", "what to test: unstaged, branch, or changes", "changes")
+  .option("--verbose", "enable verbose logging")
+  .option("--headed", "show a visible browser window during tests")
+  .option("--no-cookies", "skip system browser cookie extraction")
+  .option("--replay-host <url>", "website host for live replay viewer", "https://expect.dev")
+  .action(async (opts: CommanderOpts) => {
+    await runWatchCommand(opts);
   });
 
 program.action(async () => {

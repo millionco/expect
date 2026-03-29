@@ -22,6 +22,12 @@ export type Screen = Data.TaggedEnum<{
   };
   Results: { report: TestReport; replayUrl?: string; localReplayUrl?: string; videoUrl?: string };
   SavedFlowPicker: {};
+  Watch: {
+    changesFor: ChangesFor;
+    instruction: string;
+    cookieBrowserKeys?: readonly string[];
+    baseUrl?: string;
+  };
 }>;
 export const Screen = Data.taggedEnum<Screen>();
 

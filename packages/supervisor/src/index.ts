@@ -37,3 +37,10 @@ export {
   type FileCategory,
 } from "./utils/categorize-changed-files";
 export { TestCoverage } from "./test-coverage";
+export {
+  Watch,
+  WatchAssessmentError,
+  WatchEvent,
+  type WatchDecision,
+  type WatchOptions,
+} from "./watch";

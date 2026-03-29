@@ -8,8 +8,10 @@ import { PortPickerScreen } from "./screens/port-picker-screen";
 import { TestingScreen } from "./screens/testing-screen";
 import { ResultsScreen } from "./screens/results-screen";
 import { SavedFlowPickerScreen } from "./screens/saved-flow-picker-screen";
+import { WatchScreen } from "./screens/watch-screen";
 import { MainMenu } from "./screens/main-menu-screen";
 import { Modeline } from "./ui/modeline";
+import { ChangesFor } from "@expect/supervisor";
 import { useNavigationStore, Screen } from "../stores/use-navigation";
 import { usePlanExecutionStore } from "../stores/use-plan-execution-store";
 import { useGitState } from "../hooks/use-git-state";
@@ -47,7 +49,7 @@ export const App = ({ agent }: { agent: AgentBackend }) => {
       setScreen(Screen.Main());
       return;
     }
-    if (screen._tag !== "Testing") {
+    if (screen._tag !== "Testing" && screen._tag !== "Watch") {
       setScreen(Screen.Main());
     }
   };
@@ -80,6 +82,16 @@ export const App = ({ agent }: { agent: AgentBackend }) => {
     }
     if (key.ctrl && input === "r" && screen._tag === "Main") {
       navigateTo(Screen.SavedFlowPicker());
+    }
+    if (key.ctrl && input === "w" && screen._tag === "Main" && gitState?.isGitRepo) {
+      const mainBranch = gitState.mainBranch ?? "main";
+      setScreen(
+        Screen.Watch({
+          changesFor: ChangesFor.makeUnsafe({ _tag: "Changes", mainBranch }),
+          instruction:
+            "Test all changes from main in the browser and verify they work correctly.",
+        }),
+      );
     }
   });
 
@@ -129,6 +141,15 @@ export const App = ({ agent }: { agent: AgentBackend }) => {
         );
       case "SavedFlowPicker":
         return <SavedFlowPickerScreen />;
+      case "Watch":
+        return (
+          <WatchScreen
+            changesFor={screen.changesFor}
+            instruction={screen.instruction}
+            cookieBrowserKeys={screen.cookieBrowserKeys}
+            baseUrl={screen.baseUrl}
+          />
+        );
       default:
         return <MainMenu gitState={gitState} />;
     }

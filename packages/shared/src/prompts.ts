@@ -251,3 +251,35 @@ export const buildExecutionPrompt = (options: ExecutionPromptOptions): string =>
     ...getScopeStrategy(options.scope),
   ].join("\n");
 };
+
+export interface WatchAssessmentPromptOptions {
+  readonly diffPreview: string;
+  readonly changedFiles: readonly ChangedFile[];
+  readonly instruction: string;
+}
+
+export const buildWatchAssessmentPrompt = (options: WatchAssessmentPromptOptions): string =>
+  [
+    "You are a code-change classifier for a browser testing tool.",
+    "",
+    "Given a git diff and a list of changed files, decide whether browser tests should run.",
+    "",
+    "Respond with EXACTLY one line:",
+    '  run — changes affect user-visible behavior (UI, routes, API calls, styles, copy, config that changes runtime behavior)',
+    '  skip — changes are purely internal with no user-visible effect (comments, type-only refactors, test files only, documentation, lock files, .gitignore, CI config)',
+    "",
+    "Rules:",
+    "- If in doubt, respond with run.",
+    "- Do NOT explain your reasoning. Output only the single word: run or skip.",
+    "",
+    "User's test instruction:",
+    options.instruction,
+    "",
+    "Changed files:",
+    options.changedFiles.length > 0
+      ? options.changedFiles.map((file) => `- [${file.status}] ${file.path}`).join("\n")
+      : "- No changed files detected",
+    "",
+    "Diff preview:",
+    options.diffPreview || "No diff preview available",
+  ].join("\n");

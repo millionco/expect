@@ -44,6 +44,8 @@ export const NPM_PACKAGE_NAME = "expect-cli";
 export const UPDATE_CHECK_STALE_MS = 3_600_000;
 export const UPDATE_CHECK_TIMEOUT_MS = 5_000;
 
+export const WATCH_POLL_DISPLAY_INTERVAL_MS = 1000;
+
 export const LOCK_FILE_TO_AGENT: Record<string, string> = {
   "pnpm-lock.yaml": "pnpm",
   "pnpm-workspace.yaml": "pnpm",

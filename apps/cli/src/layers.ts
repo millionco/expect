@@ -1,6 +1,6 @@
 import { Layer, References } from "effect";
 import { DevTools } from "effect/unstable/devtools";
-import { Executor, FlowStorage, Git, Reporter, Updates } from "@expect/supervisor";
+import { Executor, FlowStorage, Git, Reporter, Updates, Watch } from "@expect/supervisor";
 import { Agent, AgentBackend } from "@expect/agent";
 import { RrVideo } from "@expect/browser";
 import { Analytics, DebugFileLoggerLayer, Tracing } from "@expect/shared/observability";
@@ -8,8 +8,11 @@ import { Analytics, DebugFileLoggerLayer, Tracing } from "@expect/shared/observa
 export const layerCli = ({ verbose, agent }: { verbose: boolean; agent: AgentBackend }) => {
   const gitLayer = Git.withRepoRoot(process.cwd());
 
+  const executorLayer = Executor.layer.pipe(Layer.provide(gitLayer));
+  const watchLayer = Watch.layer.pipe(Layer.provide(executorLayer), Layer.provide(gitLayer));
+
   return Layer.mergeAll(
-    Executor.layer.pipe(Layer.provide(gitLayer)),
+    executorLayer,
     Reporter.layer,
     Updates.layer,
     FlowStorage.layer,
@@ -17,6 +20,7 @@ export const layerCli = ({ verbose, agent }: { verbose: boolean; agent: AgentBac
     gitLayer,
     Analytics.layerPostHog,
     RrVideo.layer,
+    watchLayer,
   ).pipe(
     Layer.provide(Agent.layerFor(agent ?? "claude")),
     Layer.provide(DebugFileLoggerLayer),
