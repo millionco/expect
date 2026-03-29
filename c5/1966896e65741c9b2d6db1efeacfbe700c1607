@@ -1,0 +1,27 @@
+apps/cli/src/constants.ts
+  9c8b08fc93170093 39
+apps/cli/src/hooks/use-listening-ports.ts
+  9c8b08fc93170093 3,9,12-13,18,168-187,196-202,204-207,210,212-214
+apps/cli/src/components/screens/port-picker-screen.tsx
+  9c8b08fc93170093 9,28,31-32,90,151-154,166,174-176,179,272-275,305,362
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.22",
+  "base_commit_sha": "c51966896e65741c9b2d6db1efeacfbe700c1607",
+  "prompts": {
+    "9c8b08fc93170093": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "51f5f86b-41f4-4285-9b17-1a039b199865",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 135,
+      "total_deletions": 89,
+      "accepted_lines": 64,
+      "overriden_lines": 0
+    }
+  }
+}
