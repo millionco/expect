@@ -1,329 +1,439 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { MakroShell } from "@/components/makro-shell";
-import { HOME_SOURCE_PREVIEW_COUNT } from "@/lib/constants";
-import { getMakroData } from "@/lib/get-makro-data";
+import { useDrawer } from "@/components/dashboard-drawer";
+import { getFrequencyLabel } from "@/lib/format-indicator-labels";
+import { getDifferenceToneClassName, getForecastComparisonRows } from "@/lib/get-forecast-comparison-rows";
 
-const metrics = [
-  {
-    key: "countries",
-    label: "Countries",
-    description: "Seeded country definitions",
-  },
-  {
-    key: "sources",
-    label: "Sources",
-    description: "Official and validation feeds",
-  },
-  {
-    key: "indicators",
-    label: "Indicators",
-    description: "Primary macroeconomic series",
-  },
-  {
-    key: "indicatorComponents",
-    label: "Components",
-    description: "Breakdowns for deeper reads",
-  },
-] as const;
+// ─── Types (mirroring server shapes) ─────────────────────────────────────────
+interface ExchangeQuote { code: string; name: string; forexSelling: number }
+interface CalendarRelease { key: string; title: string; releaseAt: string }
+interface ForecastSeries { key: string; label: string; status: string; latest?: { value: number; date: string } }
+interface InternalEntry { key: string; value?: number; note: string; detailHref: string }
+interface IndicatorComponent { componentCode: string; componentName: string; description: string; sortOrder: number }
+interface Indicator {
+  indicatorCode: string; indicatorName: string; category: string; categoryLabel: string;
+  frequency: string; unit: string; descriptionShort: string; components: IndicatorComponent[];
+}
+interface NewsItem { id: string; sourceId: string; sourceLabel: string; title: string; description?: string; link: string; publishedAt: string }
 
-export default async function HomePage() {
-  const makroData = await getMakroData();
-  const isDatabaseBacked = makroData.dataSource === "database";
-  const sourceBadgeLabel = isDatabaseBacked ? "Database-backed application" : "Seed fallback mode";
-  const sourceBadgeDescription = isDatabaseBacked
-    ? `Live PostgreSQL reads from ${makroData.databaseTarget}`
-    : `Falling back to ${makroData.filePath}`;
-  const headline = isDatabaseBacked
-    ? "Makro artik canli PostgreSQL verisini uygulama icinde gezilebilir bir veri sozlugune donusturuyor."
-    : "Makro uygulamasi seed SQL fallback ile calisiyor; canli veritabani tekrar baglandiginda otomatik gecis yapacak.";
-  const description = isDatabaseBacked
-    ? "Arayuz, kategorileri, kaynaklari, indikatorleri ve bilesenleri dogrudan veritabanindan okuyup urun yuzeyine tasiyor."
-    : "Arayuz dusmuyor; seed SQL icerigini okuyup kategori, kaynak, bilesen ve indikator katmanlarini ayni yuzeyde koruyor.";
+interface DashboardData {
+  dataMode: string;
+  dataTarget: string;
+  kurDate: string;
+  quotes: ExchangeQuote[];
+  calendarReleases: CalendarRelease[];
+  forecastSeries: ForecastSeries[];
+  internalEntries: InternalEntry[];
+  indicators: Indicator[];
+  newsItems: NewsItem[];
+  newsSources: { ok: number; total: number };
+  limitations: string[];
+  fetchedAt: string;
+}
+
+// ─── Data fetcher (client-side parallel fetch) ────────────────────────────────
+const fetchDashboardData = async (): Promise<DashboardData> => {
+  const [makroRes, liveRes, internalRes, newsRes] = await Promise.all([
+    fetch("/api/indicators?limit=50", { cache: "no-store" }),
+    fetch("/api/live", { cache: "no-store" }),
+    fetch("/api/internal-forecasts", { cache: "no-store" }),
+    fetch("/api/news", { cache: "no-store" }),
+  ]);
+
+  const [indicators, liveData, internal, news] = await Promise.all([
+    makroRes.ok ? makroRes.json() : { indicators: [] },
+    liveRes.ok ? liveRes.json() : {},
+    internalRes.ok ? internalRes.json() : { entries: [] },
+    newsRes.ok ? newsRes.json() : { items: [], sources: [] },
+  ]) as [
+    { indicators: Indicator[] },
+    {
+      exchangeSnapshot?: { date: string; quotes: ExchangeQuote[] };
+      calendarReleases?: CalendarRelease[];
+      limitations?: string[];
+      evdsForecastFeed?: { series: ForecastSeries[] };
+    },
+    { entries: InternalEntry[]; updatedAt?: string; missing?: boolean },
+    { items: NewsItem[]; sources: Array<{ ok: boolean }>; fetchedAt: string }
+  ];
+
+  return {
+    dataMode: "Seed modu",
+    dataTarget: "",
+    kurDate: liveData?.exchangeSnapshot?.date ?? "—",
+    quotes: liveData?.exchangeSnapshot?.quotes ?? [],
+    calendarReleases: liveData?.calendarReleases ?? [],
+    forecastSeries: liveData?.evdsForecastFeed?.series ?? [],
+    internalEntries: internal?.entries ?? [],
+    indicators: indicators?.indicators ?? [],
+    newsItems: news?.items ?? [],
+    newsSources: {
+      ok: news?.sources?.filter((s) => s.ok).length ?? 0,
+      total: news?.sources?.length ?? 0,
+    },
+    limitations: liveData?.limitations ?? [],
+    fetchedAt: news?.fetchedAt ?? new Date().toISOString(),
+  };
+};
+
+const formatRelativeTime = (isoDate: string) => {
+  const diff = Date.now() - new Date(isoDate).getTime();
+  const m = Math.floor(diff / 60_000);
+  const h = Math.floor(diff / 3_600_000);
+  if (m < 1) return "Az önce";
+  if (m < 60) return `${m} dk`;
+  if (h < 24) return `${h} sa`;
+  return new Date(isoDate).toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
+};
+
+// ─── Page Component ───────────────────────────────────────────────────────────
+export default function HomePage() {
+  const { open } = useDrawer();
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardData().then(setData).finally(() => setLoading(false));
+  }, []);
+
+  // Forecasts
+  const comparisonRows =
+    data
+      ? getForecastComparisonRows(
+          data.forecastSeries as Parameters<typeof getForecastComparisonRows>[0],
+          data.internalEntries as Parameters<typeof getForecastComparisonRows>[1],
+        )
+      : [];
+
+  const usd = data?.quotes.find((q) => q.code === "USD");
+  const eur = data?.quotes.find((q) => q.code === "EUR");
+  const gbp = data?.quotes.find((q) => q.code === "GBP");
+  const internalReady = data?.internalEntries.filter((e) => e.value !== undefined).length ?? 0;
+  const internalTotal = data?.internalEntries.length ?? 0;
+
+  // Featured indicators: 2 per category, first 6
+  const featuredIndicators = data
+    ? Object.values(
+        data.indicators.reduce<Record<string, Indicator[]>>((acc, ind) => {
+          acc[ind.category] = [...(acc[ind.category] ?? []), ind];
+          return acc;
+        }, {}),
+      )
+        .flatMap((group) => group.slice(0, 2))
+        .slice(0, 6)
+    : [];
 
   return (
     <MakroShell
-      eyebrow="Makro Workspace"
-      title="Türkiye makro verisini uygulama içinde keşfedilebilir bir veri sözlüğüne dönüştür."
-      description="Makro, aynı veri modelini hem canlı PostgreSQL hem de seed fallback üzerinden okunur bir ürün yüzeyine dönüştürüyor."
+      eyebrow="Ana ekran"
+      title="Güncel veri ve piyasa beklentileri"
+      description="TCMB kur akışı, EVDS tahminler, ATLASIAN haber ağı ve AI analizi tek panelde."
     >
-      <section className="grid gap-8 rounded-[2rem] border border-border/70 bg-panel/90 p-8 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur md:grid-cols-[1.35fr_0.65fr]">
-        <div className="space-y-6">
-          <div className="flex flex-wrap items-center gap-3 text-sm">
-            <span className="rounded-full border border-accent/20 bg-accent/10 px-3 py-1 font-medium text-accent">
-              {sourceBadgeLabel}
-            </span>
-            <span className="rounded-full border border-border bg-card px-3 py-1 text-muted-foreground">
-              {sourceBadgeDescription}
-            </span>
-            {makroData.fallbackReason && (
-              <span className="rounded-full border border-border bg-background px-3 py-1 text-muted-foreground">
-                fallback active
-              </span>
-            )}
-          </div>
-
-          <div className="space-y-4">
-            <h2 className="max-w-4xl text-4xl font-semibold tracking-[-0.04em] text-balance sm:text-5xl">
-              {headline}
-            </h2>
-            <p className="max-w-3xl text-base leading-7 text-muted-foreground sm:text-lg">
-              {description}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href="/indicators"
-              className="rounded-full border border-accent/20 bg-accent px-5 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
-            >
-              Indicators
-            </Link>
-            <Link
-              href="/categories"
-              className="rounded-full border border-border bg-background px-5 py-3 text-sm font-medium text-foreground transition-colors hover:border-accent/30 hover:text-accent"
-            >
-              Categories
-            </Link>
-            <Link
-              href="/sources"
-              className="rounded-full border border-border bg-background px-5 py-3 text-sm font-medium text-foreground transition-colors hover:border-accent/30 hover:text-accent"
-            >
-              Sources
-            </Link>
-            <Link
-              href="/components"
-              className="rounded-full border border-border bg-background px-5 py-3 text-sm font-medium text-foreground transition-colors hover:border-accent/30 hover:text-accent"
-            >
-              Components
-            </Link>
-            <Link
-              href="/setup"
-              className="rounded-full border border-border bg-background px-5 py-3 text-sm font-medium text-foreground transition-colors hover:border-accent/30 hover:text-accent"
-            >
-              Setup status
-            </Link>
-            <Link
-              href="/exports"
-              className="rounded-full border border-border bg-background px-5 py-3 text-sm font-medium text-foreground transition-colors hover:border-accent/30 hover:text-accent"
-            >
-              Exports
-            </Link>
-          </div>
-        </div>
-
-        <div className="grid gap-4 rounded-3xl border border-border bg-card/80 p-5">
-          <div className="flex items-center justify-between gap-4 border-b border-border pb-4">
-            <div>
-              <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                Runtime source
-              </p>
-              <p className="mt-2 text-sm font-medium text-foreground">
-                {isDatabaseBacked ? makroData.databaseTarget : makroData.filePath}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-border bg-background px-3 py-2 text-right">
-              <p className="font-mono text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-                indicators
-              </p>
-              <p className="text-2xl font-semibold">{makroData.counts.indicators}</p>
-            </div>
-          </div>
-
-          <div className="grid gap-3">
-            {makroData.sources.slice(0, HOME_SOURCE_PREVIEW_COUNT).map((source) => (
-              <div
-                key={source.sourceCode}
-                className="flex items-center justify-between rounded-2xl border border-border/80 bg-background/85 px-4 py-3"
-              >
-                <span className="font-mono text-sm text-foreground">{source.sourceCode}</span>
-                <span className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                  {source.reliabilityScore}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        {metrics.map((metric) => (
-          <article
-            key={metric.key}
-            className="rounded-3xl border border-border bg-card/85 p-5 shadow-[0_8px_30px_rgba(15,23,42,0.05)]"
-          >
-            <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-              {metric.label}
-            </p>
-            <p className="mt-4 text-4xl font-semibold tracking-[-0.04em] text-foreground">
-              {makroData.counts[metric.key]}
-            </p>
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">{metric.description}</p>
-          </article>
-        ))}
-        <article className="rounded-3xl border border-border bg-card/85 p-5 shadow-[0_8px_30px_rgba(15,23,42,0.05)]">
-          <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-            Primary sources
+      {/* ─── Stat Kartları ────────────────────────────────────────────── */}
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {/* Kur tarihi */}
+        <article className="makro-surface rounded-[1.25rem] p-4">
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Kur tarihi</p>
+          <p className="mt-2 text-lg font-semibold tabular-nums text-foreground">
+            {loading ? "—" : data?.kurDate ?? "—"}
           </p>
-          <p className="mt-4 text-4xl font-semibold tracking-[-0.04em] text-foreground">
-            {makroData.counts.primarySources}
-          </p>
-          <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            Resmi veri omurgasını taşıyan ana sağlayıcılar
-          </p>
+          <p className="mt-1 text-xs text-muted-foreground">TCMB canlı akışı</p>
         </article>
-        <article className="rounded-3xl border border-border bg-card/85 p-5 shadow-[0_8px_30px_rgba(15,23,42,0.05)]">
-          <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-            Explorer depth
+
+        {/* Resmi tahmin */}
+        <article className="makro-surface rounded-[1.25rem] p-4">
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Resmi tahmin</p>
+          <p className="mt-2 text-lg font-semibold tabular-nums text-foreground">
+            {loading ? "—" : `${comparisonRows.length}/${data?.forecastSeries.length ?? 0}`}
           </p>
-          <p className="mt-4 text-4xl font-semibold tracking-[-0.04em] text-foreground">
-            {makroData.counts.indicatorComponents}
+          <p className="mt-1 text-xs text-muted-foreground">EVDS3 hazır seri</p>
+        </article>
+
+        {/* İç tahmin */}
+        <article className="makro-surface rounded-[1.25rem] p-4">
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">İç tahmin</p>
+          <p className="mt-2 text-lg font-semibold tabular-nums text-foreground">
+            {loading ? "—" : `${internalReady}/${internalTotal}`}
           </p>
-          <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            Component explorer ile alt kirilimlar artik ayri bir yuzeye sahip
+          <p className="mt-1 text-xs text-muted-foreground">Yerel tahmin girişi</p>
+        </article>
+
+        {/* Haber ağı */}
+        <article className="makro-surface rounded-[1.25rem] p-4">
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Haber ağı</p>
+          <p className="mt-2 text-lg font-semibold tabular-nums text-foreground">
+            {loading ? "—" : `${data?.newsSources.ok ?? 0}/${data?.newsSources.total ?? 0}`}
           </p>
+          <p className="mt-1 text-xs text-muted-foreground">{loading ? "—" : `${data?.newsItems.length ?? 0} haber`}</p>
         </article>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
-        <article className="rounded-[2rem] border border-border bg-card/85 p-6">
-          <div className="flex items-center justify-between gap-4">
+      {/* ─── Ana İçerik ────────────────────────────────────────────────── */}
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_20rem]">
+        {/* Piyasa Beklentileri */}
+        <article className="makro-surface rounded-[1.5rem] p-4 sm:p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                Categories
-              </p>
-              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em]">
-                Veri yapısının omurgası
+              <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Piyasa beklentileri</p>
+              <h2 className="mt-2 text-lg font-semibold tracking-[-0.03em] text-foreground">
+                Resmi beklenti ve bizim tahminimiz
               </h2>
             </div>
+            <Link href="/forecasts" className="rounded-full border border-border bg-background/90 px-3 py-1.5 text-xs font-medium text-foreground hover:border-accent/30 hover:text-accent">
+              Tüm tahminler
+            </Link>
           </div>
 
-          <div className="mt-6 grid gap-4">
-            {makroData.categories.map((category) => (
-              <article
-                key={category.category}
-                className="rounded-3xl border border-border bg-background/90 p-5"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h3 className="text-xl font-semibold tracking-[-0.03em]">{category.label}</h3>
-                  <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
-                    {category.indicatorCount} indicators
-                  </span>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {category.highlightedIndicators.map((indicator) => (
-                    <Link
-                      key={indicator.indicatorCode}
-                      href={`/indicators/${indicator.indicatorCode}`}
-                      className="rounded-full border border-border bg-card px-3 py-2 font-mono text-xs text-foreground transition-colors hover:border-accent/30 hover:text-accent"
-                    >
-                      {indicator.indicatorCode}
-                    </Link>
+          <div className="mt-4 overflow-x-auto">
+            <table className="min-w-[50rem] border-separate border-spacing-y-1.5">
+              <thead>
+                <tr className="text-left">
+                  {["Gösterge", "Resmi", "Bizim", "Fark", "→"].map((h) => (
+                    <th key={h} className="px-3 pb-2 text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground">{h}</th>
                   ))}
-                  <Link
-                    href={`/categories/${category.category}`}
-                    className="rounded-full border border-border bg-card px-3 py-2 font-mono text-xs text-foreground transition-colors hover:border-accent/30 hover:text-accent"
-                  >
-                    view category
-                  </Link>
-                </div>
-              </article>
-            ))}
+                </tr>
+              </thead>
+              <tbody>
+                {loading && (
+                  <tr><td colSpan={5} className="px-3 py-4 text-sm text-muted-foreground">Yükleniyor…</td></tr>
+                )}
+                {!loading && comparisonRows.length === 0 && (
+                  <tr><td colSpan={5} className="px-3 py-4 text-sm text-muted-foreground">EVDS3 verisi bekleniyor.</td></tr>
+                )}
+                {comparisonRows.map((row) => (
+                  <tr key={row.key} className="rounded-xl border border-border bg-background/80 text-sm">
+                    <td className="rounded-l-xl px-3 py-2.5 align-top">
+                      <p className="font-medium text-foreground">{row.title}</p>
+                      <p className="mt-0.5 text-[10px] text-muted-foreground">{row.officialDate}</p>
+                    </td>
+                    <td className="px-3 py-2.5 font-mono text-sm font-semibold tabular-nums text-foreground">{row.officialValue}</td>
+                    <td className="px-3 py-2.5 font-mono text-sm font-semibold tabular-nums text-foreground">{row.internalValue}</td>
+                    <td className="px-3 py-2.5">
+                      <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-medium ${getDifferenceToneClassName(row.difference)}`}>
+                        {row.difference}
+                      </span>
+                    </td>
+                    <td className="rounded-r-xl px-3 py-2.5">
+                      <Link href={row.detailHref} className="inline-flex rounded-full border border-accent/20 bg-accent/10 px-2.5 py-1 text-[10px] font-medium text-accent hover:border-accent/35">
+                        {row.detailLabel}
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </article>
 
-        <article className="rounded-[2rem] border border-border bg-card/85 p-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-              SQL preview
-              </p>
-              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em]">
-                {isDatabaseBacked ? "Live database with seed visibility" : "Seed fallback preview"}
-              </h2>
+        {/* Sağ kolon — sadece kurlar + ATLASIAN + takvim */}
+        <div className="grid gap-3">
+          {/* Canlı Kurlar */}
+          <article className="makro-surface rounded-[1.5rem] p-4">
+            <div className="flex items-center justify-between gap-3">
+              <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Canlı kur</p>
+              <Link href="/live" className="text-[10px] text-accent hover:underline">Detay →</Link>
             </div>
-            <span className="rounded-full border border-border bg-background px-3 py-1.5 font-mono text-[11px] text-muted-foreground">
-              {makroData.filePath}
-            </span>
-          </div>
+            <div className="mt-3 grid gap-1.5">
+              {[{ label: "USD/TRY", q: usd }, { label: "EUR/TRY", q: eur }, { label: "GBP/TRY", q: gbp }].map(({ label, q }) => (
+                <div key={label} className="flex items-center justify-between rounded-xl border border-border bg-background/80 px-3 py-2">
+                  <span className="text-xs text-muted-foreground">{label}</span>
+                  <span className="font-mono text-sm font-bold tabular-nums text-accent">
+                    {loading ? "—" : q ? q.forexSelling.toFixed(4) : "Yok"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </article>
 
-          {makroData.fallbackReason && (
-            <p className="mt-6 rounded-3xl border border-border bg-background/90 px-4 py-3 text-sm leading-6 text-muted-foreground">
-              Database fallback reason: {makroData.fallbackReason}
+          {/* ATLASIAN AI Butonu */}
+          <button
+            onClick={() => open({ type: "atlasian" })}
+            className="makro-interactive makro-surface rounded-[1.5rem] p-4 text-left hover:border-accent/30"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">ATLASIAN</p>
+              <span className="rounded-full border border-accent/24 bg-accent/10 px-2 py-0.5 text-[10px] font-medium text-accent">AI</span>
+            </div>
+            <p className="mt-2 text-sm font-semibold text-foreground">Küresel Haber Analizi</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              WSJ · CNBC · Yahoo Finance · CoinDesk · Investing.com — Claude AI sentezi
             </p>
-          )}
+          </button>
 
-          <pre className="mt-6 overflow-x-auto rounded-3xl border border-border bg-ink px-5 py-4 font-mono text-[13px] leading-6 text-ink-foreground">
-            <code>{makroData.sqlPreview}</code>
-          </pre>
-        </article>
+          {/* Ajan Durumu Butonu */}
+          <button
+            onClick={() => open({ type: "agents" })}
+            className="makro-interactive makro-surface rounded-[1.5rem] p-4 text-left hover:border-accent/30"
+          >
+            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Ajan Durumu</p>
+            <p className="mt-2 text-sm font-semibold text-foreground">Kaynak &amp; Sistem İzleme</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              TCMB · EVDS · Haber kaynakları · Veritabanı
+            </p>
+          </button>
+
+          {/* Sıradaki Yayın */}
+          <article className="makro-surface rounded-[1.5rem] p-4">
+            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Sıradaki yayın</p>
+            {loading ? (
+              <p className="mt-2 text-sm text-muted-foreground">Yükleniyor…</p>
+            ) : (
+              <>
+                <p className="mt-2 text-sm font-semibold text-foreground">
+                  {data?.calendarReleases[0]?.title ?? "Yaklaşan yayın yok"}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {data?.calendarReleases[0]?.releaseAt ?? "—"}
+                </p>
+              </>
+            )}
+          </article>
+        </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <article className="rounded-[2rem] border border-border bg-card/85 p-6">
-          <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-            Featured indicators
-          </p>
-          <div className="mt-5 grid gap-4">
-            {makroData.indicators.slice(0, 6).map((indicator) => (
-              <Link
-                key={indicator.indicatorCode}
-                href={`/indicators/${indicator.indicatorCode}`}
-                className="rounded-3xl border border-border bg-background/90 p-5 transition-transform hover:-translate-y-0.5"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <span className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                    {indicator.indicatorCode}
-                  </span>
-                  <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
-                    {indicator.categoryLabel}
-                  </span>
-                </div>
-                <h3 className="mt-3 text-xl font-semibold tracking-[-0.03em]">
-                  {indicator.indicatorName}
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  {indicator.descriptionShort}
-                </p>
-              </Link>
-            ))}
+      {/* ─── Haber Ağı ─────────────────────────────────────────────────── */}
+      <section className="makro-surface rounded-[1.5rem] p-4 sm:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Haber ağı</p>
+            <h2 className="mt-2 text-lg font-semibold tracking-[-0.03em] text-foreground">
+              Son ekonomi haberleri
+            </h2>
           </div>
-        </article>
+          <Link href="/haber-agi" className="rounded-full border border-border bg-background/90 px-3 py-1.5 text-xs font-medium text-foreground hover:border-accent/30 hover:text-accent">
+            Tüm haberler
+          </Link>
+        </div>
 
-        <article className="rounded-[2rem] border border-border bg-card/85 p-6">
-          <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-            Honest status
-          </p>
-          <div className="mt-5 grid gap-4">
-            <div className="rounded-3xl border border-border bg-background/90 p-5">
-              <h3 className="text-xl font-semibold tracking-[-0.03em]">Çalışan kısım</h3>
-              <p className="mt-3 text-sm leading-7 text-muted-foreground">
-                Uygulama katmanı, canlı PostgreSQL okuması, seed fallback, çok sayfalı keşif akışı ve
-                JSON API birlikte çalışıyor.
-              </p>
-            </div>
-            <div className="rounded-3xl border border-border bg-background/90 p-5">
-              <h3 className="text-xl font-semibold tracking-[-0.03em]">
-                Henüz dış araç isteyen kısım
-              </h3>
-              <p className="mt-3 text-sm leading-7 text-muted-foreground">
-                Sonraki ürün adımı zaman serisi ingestion, gerçek güncel veri çekimi ve tercihe göre
-                Supabase auth veya yönetim akışı eklemek.
-              </p>
-            </div>
-            <Link
-              href="/setup"
-              className="inline-flex w-fit rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-accent/30 hover:text-accent"
+        <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+          {loading && Array.from({ length: 8 }, (_, i) => (
+            <div key={i} className="animate-pulse rounded-2xl border border-border bg-background/60 px-4 py-3 h-20" />
+          ))}
+          {!loading && data?.newsItems.slice(0, 8).map((item) => (
+            <button
+              key={item.id}
+              onClick={() => open({
+                type: "news",
+                title: item.title,
+                source: item.sourceLabel,
+                description: item.description,
+                link: item.link,
+                publishedAt: item.publishedAt,
+              })}
+              className="makro-interactive group rounded-2xl border border-border bg-background/80 px-4 py-3 text-left hover:border-accent/30"
             >
-              Setup durumuna git
-            </Link>
-            <Link
-              href="/exports"
-              className="inline-flex w-fit rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-accent/30 hover:text-accent"
-            >
-              Export ekranina git
-            </Link>
+              <div className="flex items-center justify-between gap-2">
+                <span className="truncate text-[10px] font-medium text-muted-foreground">{item.sourceLabel}</span>
+                <span className="flex-shrink-0 text-[10px] text-muted-foreground/50">{formatRelativeTime(item.publishedAt)}</span>
+              </div>
+              <p className="mt-1.5 line-clamp-2 text-xs font-medium leading-4 text-foreground group-hover:text-accent">
+                {item.title}
+              </p>
+            </button>
+          ))}
+          {!loading && (data?.newsItems.length ?? 0) === 0 && (
+            <p className="col-span-full text-sm text-muted-foreground">Haber kaynakları şu an erişilemiyor.</p>
+          )}
+        </div>
+      </section>
+
+      {/* ─── Öne Çıkan Göstergeler ─────────────────────────────────────── */}
+      <section className="makro-surface rounded-[1.5rem] p-4 sm:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Göstergeler</p>
+            <h2 className="mt-2 text-lg font-semibold tracking-[-0.03em] text-foreground">Öne çıkan seriler</h2>
           </div>
-        </article>
+          <Link href="/indicators" className="rounded-full border border-border bg-background/90 px-3 py-1.5 text-xs font-medium text-foreground hover:border-accent/30 hover:text-accent">
+            Tüm göstergeler
+          </Link>
+        </div>
+
+        <div className="mt-4 overflow-x-auto">
+          <table className="min-w-full border-separate border-spacing-y-1.5">
+            <thead>
+              <tr className="text-left">
+                {["Kod", "Gösterge", "Kategori", "Sıklık", "Alt Bileşenler"].map((h) => (
+                  <th key={h} className="px-3 pb-2 text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading && (
+                <tr><td colSpan={5} className="px-3 py-4 text-sm text-muted-foreground">Yükleniyor…</td></tr>
+              )}
+              {!loading && featuredIndicators.length === 0 && (
+                <tr><td colSpan={5} className="px-3 py-4 text-sm text-muted-foreground">Gösterge verisi bekleniyor.</td></tr>
+              )}
+              {featuredIndicators.map((ind) => (
+                <tr
+                  key={ind.indicatorCode}
+                  onClick={() => open({
+                    type: "indicator",
+                    code: ind.indicatorCode,
+                    name: ind.indicatorName,
+                    category: ind.categoryLabel,
+                    frequency: getFrequencyLabel(ind.frequency),
+                    description: ind.descriptionShort,
+                    components: ind.components.map((c) => ({
+                      code: c.componentCode,
+                      name: c.componentName,
+                      description: c.description,
+                    })),
+                  })}
+                  className="makro-interactive cursor-pointer rounded-xl border border-border bg-background/80 text-sm hover:border-accent/30"
+                >
+                  <td className="rounded-l-xl px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                    {ind.indicatorCode}
+                  </td>
+                  <td className="px-3 py-2.5 font-medium text-foreground">{ind.indicatorName}</td>
+                  <td className="px-3 py-2.5 text-xs text-muted-foreground">{ind.categoryLabel}</td>
+                  <td className="px-3 py-2.5 text-xs text-muted-foreground">{getFrequencyLabel(ind.frequency)}</td>
+                  <td className="rounded-r-xl px-3 py-2.5">
+                    <span className="rounded-full border border-accent/20 bg-accent/10 px-2.5 py-1 text-[10px] font-medium text-accent">
+                      {ind.components.length} bileşen →
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* ─── Yayın Akışı ───────────────────────────────────────────────── */}
+      <section className="makro-surface rounded-[1.5rem] p-4 sm:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Yayın akışı</p>
+            <h2 className="mt-2 text-lg font-semibold tracking-[-0.03em] text-foreground">Yaklaşan EVDS yayınları</h2>
+          </div>
+          <Link href="/live" className="rounded-full border border-border bg-background/90 px-3 py-1.5 text-xs font-medium text-foreground hover:border-accent/30 hover:text-accent">
+            Canlı veri
+          </Link>
+        </div>
+
+        <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          {loading && Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className="animate-pulse rounded-2xl border border-border bg-background/60 h-16" />
+          ))}
+          {!loading && (data?.calendarReleases ?? []).slice(0, 4).map((release) => (
+            <Link
+              key={release.key}
+              href="/live"
+              className="makro-interactive rounded-2xl border border-border bg-background/80 p-3 hover:border-accent/30"
+            >
+              <p className="text-sm font-medium text-foreground">{release.title}</p>
+              <p className="mt-1 text-[10px] text-muted-foreground">{release.releaseAt}</p>
+            </Link>
+          ))}
+          {!loading && (data?.calendarReleases.length ?? 0) === 0 && (
+            <p className="text-sm text-muted-foreground">Takvim verisi bekleniyor.</p>
+          )}
+        </div>
       </section>
     </MakroShell>
   );

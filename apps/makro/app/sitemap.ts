@@ -5,6 +5,9 @@ export default async function sitemap() {
   const makroData = await getMakroData();
   const staticRoutes = [
     "",
+    "/atlasian",
+    "/forecasts",
+    "/live",
     "/search",
     "/quality",
     "/taxonomy",

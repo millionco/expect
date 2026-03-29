@@ -165,8 +165,9 @@ const runInteractiveForTarget = async (target: Target, opts: CommanderOpts) => {
 program
   .command("init")
   .description("set up expect for your coding agent")
+  .option("-a, --agent <provider>", "agent provider for generated CI workflow (claude or codex)")
   .option("-y, --yes", "skip confirmation prompts")
-  .action(async (opts: { yes?: boolean }) => {
+  .action(async (opts: { yes?: boolean; agent?: AgentBackend }) => {
     await runInit(opts);
   });
 
@@ -175,8 +176,9 @@ const addCommand = program.command("add").description("add integrations to your 
 addCommand
   .command("github-action")
   .description("generate a GitHub Actions workflow for CI testing")
+  .option("-a, --agent <provider>", "agent provider for CI workflow (claude or codex)")
   .option("-y, --yes", "use defaults without prompting")
-  .action(async (opts: { yes?: boolean }) => {
+  .action(async (opts: { yes?: boolean; agent?: AgentBackend }) => {
     await runAddGithubAction(opts);
   });
 

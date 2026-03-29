@@ -10,6 +10,30 @@ const endpoints = [
     description: "High-level counts, categories, top sources, and featured indicators",
   },
   {
+    path: "/api/live",
+    description: "Current TCMB exchange snapshot plus official release links and EVDS3 numeric forecast feed",
+  },
+  {
+    path: "/api/atlasian",
+    description: "ATLASIAN analysis payload with source articles, synthesis, and mind-map sections",
+  },
+  {
+    path: "/api/forecasts",
+    description: "Merged official forecast rows with local internal forecast entries",
+  },
+  {
+    path: "/live",
+    description: "Dashboard page for current TCMB exchange data, release links, and EVDS3 numeric forecast series",
+  },
+  {
+    path: "/atlasian",
+    description: "Dedicated ATLASIAN workspace for source articles, AI synthesis, and the generated mind map",
+  },
+  {
+    path: "/forecasts",
+    description: "Dedicated forecast comparison page for official market expectations and internal forecasts",
+  },
+  {
     path: "/api/seed",
     description: "Full parsed seed payload for countries, sources, and indicators",
   },

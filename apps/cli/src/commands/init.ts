@@ -1,4 +1,4 @@
-import { detectAvailableAgents } from "@expect/agent";
+import { detectAvailableAgents, type AgentBackend } from "@expect/agent";
 import figures from "figures";
 import pc from "picocolors";
 import { VERSION } from "../constants";
@@ -27,6 +27,7 @@ const GLOBAL_INSTALL_COMMANDS: Record<PackageManager, string> = {
 
 interface InitOptions {
   yes?: boolean;
+  agent?: AgentBackend;
 }
 
 export const runInit = async (options: InitOptions = {}) => {
@@ -91,7 +92,11 @@ export const runInit = async (options: InitOptions = {}) => {
   }
 
   if (setupGithubAction) {
-    await runAddGithubAction({ yes: options.yes });
+    await runAddGithubAction({
+      yes: options.yes,
+      agent: options.agent,
+      availableAgents,
+    });
   }
 
   logger.break();

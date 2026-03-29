@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MakroShell } from "@/components/makro-shell";
+import { getFrequencyLabel, getUnitLabel } from "@/lib/format-indicator-labels";
 import { filterIndicators, getMakroData } from "@/lib/get-makro-data";
 
 const getSingleSearchParam = (value: string | string[] | undefined) => {
@@ -31,7 +32,7 @@ export default async function IndicatorsPage({
   });
   const frequencyOptions = Array.from(
     new Set(makroData.indicators.map((indicator) => indicator.frequency)),
-  ).sort((left, right) => left.localeCompare(right, "en"));
+  ).sort((left, right) => left.localeCompare(right, "tr"));
   const queryString = new URLSearchParams();
 
   if (searchTerm.length > 0) {
@@ -48,85 +49,73 @@ export default async function IndicatorsPage({
 
   const apiHref =
     queryString.size > 0 ? `/api/indicators?${queryString.toString()}` : "/api/indicators";
-
-  const visibleCategories = makroData.categories
-    .map((category) => {
-      const categoryIndicators = filteredIndicators.filter(
-        (indicator) => indicator.category === category.category,
-      );
-
-      return {
-        ...category,
-        indicatorCount: categoryIndicators.length,
-        indicators: categoryIndicators,
-      };
-    })
-    .filter((category) => category.indicatorCount > 0);
+  const visibleComponentCount = filteredIndicators.reduce(
+    (total, indicator) => total + indicator.components.length,
+    0,
+  );
+  const selectedCategoryLabel =
+    makroData.categories.find((category) => category.category === selectedCategory)?.label ??
+    "Tüm kategoriler";
+  const selectedFrequencyLabel =
+    selectedFrequency.length > 0 ? getFrequencyLabel(selectedFrequency) : "Tüm sıklıklar";
 
   return (
     <MakroShell
-      eyebrow="Indicator Library"
-      title="Tüm makro indikatörleri kategori bazında incele."
-      description="Her seri için kısa açıklama, ölçüm mantığı, uzman notları ve bileşen yapısını tek yerde topladım."
+      eyebrow="Göstergeler"
+      title="Makro gösterge listesi"
+      description="Bu ekran boş değil; tüm seriler burada. Görünümü sıkıştırdım, gereksiz kartları kaldırdım ve detaylara tek tıkla geçiş ekledim."
     >
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <article className="rounded-3xl border border-border bg-card/85 p-5">
-          <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-            Indicators
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <article className="makro-surface rounded-[1.25rem] p-4">
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+            Görünen seri
           </p>
-          <p className="mt-3 text-4xl font-semibold tracking-[-0.04em]">
-            {filteredIndicators.length}
-          </p>
+          <p className="mt-2 text-lg font-semibold text-foreground">{filteredIndicators.length}</p>
         </article>
-        <article className="rounded-3xl border border-border bg-card/85 p-5">
-          <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-            Components
+        <article className="makro-surface rounded-[1.25rem] p-4">
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+            Bileşen
           </p>
-          <p className="mt-3 text-4xl font-semibold tracking-[-0.04em]">
-            {makroData.counts.indicatorComponents}
-          </p>
+          <p className="mt-2 text-lg font-semibold text-foreground">{visibleComponentCount}</p>
         </article>
-        <article className="rounded-3xl border border-border bg-card/85 p-5 md:col-span-3">
-          <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-            Coverage
+        <article className="makro-surface rounded-[1.25rem] p-4">
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+            Kategori
           </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {makroData.categories.map((category) => (
-              <span
-                key={category.category}
-                className="rounded-full border border-border bg-background px-3 py-2 text-sm text-foreground"
-              >
-                {category.label} · {category.indicatorCount}
-              </span>
-            ))}
-          </div>
+          <p className="mt-2 text-lg font-semibold text-foreground">{selectedCategoryLabel}</p>
+        </article>
+        <article className="makro-surface rounded-[1.25rem] p-4">
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+            Sıklık
+          </p>
+          <p className="mt-2 text-lg font-semibold text-foreground">{selectedFrequencyLabel}</p>
         </article>
       </section>
 
-      <section className="rounded-[2rem] border border-border bg-card/85 p-6">
-        <form className="grid gap-4 lg:grid-cols-[1fr_220px_220px_240px]">
+      <section className="makro-surface rounded-[1.5rem] p-4 sm:p-5">
+        <form className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_190px_190px_auto]">
           <label className="grid gap-2">
-            <span className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-              Search
+            <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+              Arama
             </span>
             <input
               type="text"
               name="q"
               defaultValue={searchTerm}
-              placeholder="Indicator code or title"
-              className="rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none transition-colors focus:border-accent/40"
+              placeholder="Kod veya gösterge adı"
+              className="rounded-2xl border border-border bg-background/92 px-4 py-3 text-sm outline-none transition-colors focus:border-accent/40"
             />
           </label>
           <label className="grid gap-2">
-            <span className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-              Category
+            <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+              Kategori
             </span>
             <select
               name="category"
               defaultValue={selectedCategory}
-              className="rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none transition-colors focus:border-accent/40"
+              className="rounded-2xl border border-border bg-background/92 px-4 py-3 text-sm outline-none transition-colors focus:border-accent/40"
             >
-              <option value="">All categories</option>
+              <option value="">Tüm kategoriler</option>
               {makroData.categories.map((category) => (
                 <option key={category.category} value={category.category}>
                   {category.label}
@@ -135,38 +124,38 @@ export default async function IndicatorsPage({
             </select>
           </label>
           <label className="grid gap-2">
-            <span className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-              Frequency
+            <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+              Sıklık
             </span>
             <select
               name="frequency"
               defaultValue={selectedFrequency}
-              className="rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none transition-colors focus:border-accent/40"
+              className="rounded-2xl border border-border bg-background/92 px-4 py-3 text-sm outline-none transition-colors focus:border-accent/40"
             >
-              <option value="">All frequencies</option>
+              <option value="">Tüm sıklıklar</option>
               {frequencyOptions.map((frequency) => (
                 <option key={frequency} value={frequency}>
-                  {frequency}
+                  {getFrequencyLabel(frequency)}
                 </option>
               ))}
             </select>
           </label>
-          <div className="flex items-end gap-3">
+          <div className="flex flex-wrap items-end gap-2">
             <button
               type="submit"
-              className="rounded-full border border-accent/20 bg-accent px-5 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
+              className="rounded-full border border-accent/20 bg-accent px-4 py-2.5 text-sm font-medium text-white hover:opacity-90"
             >
-              Filter
+              Uygula
             </button>
             <Link
               href="/indicators"
-              className="rounded-full border border-border bg-background px-5 py-3 text-sm font-medium text-foreground transition-colors hover:border-accent/30 hover:text-accent"
+              className="rounded-full border border-border bg-background/92 px-4 py-2.5 text-sm font-medium text-foreground hover:border-accent/30 hover:text-accent"
             >
-              Reset
+              Temizle
             </Link>
             <Link
               href={apiHref}
-              className="rounded-full border border-border bg-background px-5 py-3 text-sm font-medium text-foreground transition-colors hover:border-accent/30 hover:text-accent"
+              className="rounded-full border border-border bg-background/92 px-4 py-2.5 text-sm font-medium text-foreground hover:border-accent/30 hover:text-accent"
             >
               JSON
             </Link>
@@ -174,69 +163,99 @@ export default async function IndicatorsPage({
         </form>
       </section>
 
-      <section className="grid gap-6">
-        {visibleCategories.length === 0 && (
-          <article className="rounded-[2rem] border border-border bg-card/85 p-8">
-            <p className="text-lg font-medium text-foreground">Sonuc bulunamadi.</p>
-            <p className="mt-3 text-sm leading-7 text-muted-foreground">
-              Farkli bir arama ifadesi ya da kategori secerek tekrar deneyebilirsin.
+      <section className="makro-surface rounded-[1.5rem] p-4 sm:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+              Seri listesi
+            </p>
+            <h2 className="mt-2 text-lg font-semibold tracking-[-0.03em] text-foreground">
+              Görünen göstergeler
+            </h2>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Kodlara veya satırdaki düğmeye tıklayarak detay ekranına girebilirsin.
+          </p>
+        </div>
+
+        {filteredIndicators.length === 0 && (
+          <article className="mt-4 rounded-2xl border border-border bg-background/92 p-5">
+            <p className="text-sm font-medium text-foreground">Sonuç bulunamadı.</p>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Farklı bir arama ifadesi, kategori veya sıklık seçerek tekrar deneyebilirsin.
             </p>
           </article>
         )}
 
-        {visibleCategories.map((category) => (
-          <article
-            key={category.category}
-            className="rounded-[2rem] border border-border bg-card/85 p-6"
-          >
-            <div className="flex flex-wrap items-end justify-between gap-4 border-b border-border pb-5">
-              <div>
-                <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                  {category.label}
-                </p>
-                <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em]">
-                  {category.indicatorCount} seri
-                </h2>
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-4 lg:grid-cols-2">
-              {category.indicators.map((indicator) => (
-                <Link
-                  key={indicator.indicatorCode}
-                  href={`/indicators/${indicator.indicatorCode}`}
-                  className="rounded-3xl border border-border bg-background/85 p-5 transition-transform hover:-translate-y-0.5"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <span className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
+        {filteredIndicators.length > 0 && (
+          <div className="mt-4 overflow-x-auto">
+            <table className="min-w-[68rem] border-separate border-spacing-y-2">
+              <thead>
+                <tr className="text-left">
+                  <th className="px-3 pb-1 text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+                    Kod
+                  </th>
+                  <th className="px-3 pb-1 text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+                    Gösterge
+                  </th>
+                  <th className="px-3 pb-1 text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+                    Kategori
+                  </th>
+                  <th className="px-3 pb-1 text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+                    Sıklık
+                  </th>
+                  <th className="px-3 pb-1 text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+                    Birim
+                  </th>
+                  <th className="px-3 pb-1 text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+                    Bileşen
+                  </th>
+                  <th className="px-3 pb-1 text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+                    Detay
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredIndicators.map((indicator) => (
+                  <tr
+                    key={indicator.indicatorCode}
+                    className="rounded-2xl border border-border bg-background/92 text-sm"
+                  >
+                    <td className="rounded-l-2xl px-3 py-3 align-top font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
                       {indicator.indicatorCode}
-                    </span>
-                    <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
-                      {indicator.frequency}
-                    </span>
-                  </div>
-                  <h3 className="mt-4 text-2xl font-semibold tracking-[-0.03em]">
-                    {indicator.indicatorName}
-                  </h3>
-                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                    {indicator.descriptionShort}
-                  </p>
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    <span className="rounded-full border border-border bg-card px-3 py-1 text-xs text-foreground">
-                      {indicator.unit}
-                    </span>
-                    <span className="rounded-full border border-border bg-card px-3 py-1 text-xs text-foreground">
-                      {indicator.valueType}
-                    </span>
-                    <span className="rounded-full border border-border bg-card px-3 py-1 text-xs text-foreground">
-                      {indicator.components.length} components
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </article>
-        ))}
+                    </td>
+                    <td className="px-3 py-3 align-top">
+                      <p className="font-medium text-foreground">{indicator.indicatorName}</p>
+                      <p className="mt-1 max-w-xl text-xs leading-5 text-muted-foreground">
+                        {indicator.descriptionShort}
+                      </p>
+                    </td>
+                    <td className="px-3 py-3 align-top text-muted-foreground">
+                      {indicator.categoryLabel}
+                    </td>
+                    <td className="px-3 py-3 align-top text-muted-foreground">
+                      {getFrequencyLabel(indicator.frequency)}
+                    </td>
+                    <td className="px-3 py-3 align-top text-muted-foreground">
+                      {getUnitLabel(indicator.unit)}
+                    </td>
+                    <td className="px-3 py-3 align-top text-muted-foreground">
+                      {indicator.components.length}
+                    </td>
+                    <td className="rounded-r-2xl px-3 py-3 align-top">
+                      <Link
+                        href={`/indicators/${indicator.indicatorCode}`}
+                        className="inline-flex rounded-full border border-accent/20 bg-accent/10 px-3 py-1 text-xs font-medium text-accent hover:border-accent/35"
+                      >
+                        Aç
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
     </MakroShell>
   );

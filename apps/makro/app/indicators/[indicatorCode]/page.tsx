@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MakroShell } from "@/components/makro-shell";
+import { getFrequencyLabel, getUnitLabel } from "@/lib/format-indicator-labels";
 import { getIndicatorByCode, getMakroData } from "@/lib/get-makro-data";
 
 export const generateStaticParams = async () => {
@@ -23,7 +24,7 @@ export const generateMetadata = async ({
 
   if (!indicator) {
     return {
-      title: "Indicator not found",
+      title: "Gösterge bulunamadı",
     } satisfies Metadata;
   }
 
@@ -56,7 +57,7 @@ export default async function IndicatorDetailPage({
           href="/indicators"
           className="rounded-full border border-border bg-background px-5 py-3 text-sm font-medium text-foreground transition-colors hover:border-accent/30 hover:text-accent"
         >
-          Tum indikatörler
+          Tüm göstergeler
         </Link>
         <Link
           href={`/api/indicators/${indicator.indicatorCode}`}
@@ -69,7 +70,7 @@ export default async function IndicatorDetailPage({
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <article className="rounded-3xl border border-border bg-card/85 p-5">
           <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-            Category
+            Kategori
           </p>
           <p className="mt-3 text-2xl font-semibold tracking-[-0.03em]">
             {indicator.categoryLabel}
@@ -77,19 +78,23 @@ export default async function IndicatorDetailPage({
         </article>
         <article className="rounded-3xl border border-border bg-card/85 p-5">
           <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-            Frequency
+            Sıklık
           </p>
-          <p className="mt-3 text-2xl font-semibold tracking-[-0.03em]">{indicator.frequency}</p>
+          <p className="mt-3 text-2xl font-semibold tracking-[-0.03em]">
+            {getFrequencyLabel(indicator.frequency)}
+          </p>
         </article>
         <article className="rounded-3xl border border-border bg-card/85 p-5">
           <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-            Unit
+            Birim
           </p>
-          <p className="mt-3 text-2xl font-semibold tracking-[-0.03em]">{indicator.unit}</p>
+          <p className="mt-3 text-2xl font-semibold tracking-[-0.03em]">
+            {getUnitLabel(indicator.unit)}
+          </p>
         </article>
         <article className="rounded-3xl border border-border bg-card/85 p-5">
           <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-            Components
+            Bileşen
           </p>
           <p className="mt-3 text-2xl font-semibold tracking-[-0.03em]">
             {indicator.components.length}
@@ -100,7 +105,7 @@ export default async function IndicatorDetailPage({
       <section className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
         <article className="rounded-[2rem] border border-border bg-card/85 p-6">
           <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-            Interpretation
+            Yorum
           </p>
           <p className="mt-4 text-base leading-7 text-muted-foreground">
             {indicator.interpretationText}
@@ -109,7 +114,7 @@ export default async function IndicatorDetailPage({
           <div className="mt-8 grid gap-4">
             <div className="rounded-3xl border border-border bg-background/90 p-4">
               <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                Formula
+                Formül
               </p>
               <p className="mt-3 font-mono text-sm leading-6 text-foreground">
                 {indicator.formulaText}
@@ -117,7 +122,7 @@ export default async function IndicatorDetailPage({
             </div>
             <div className="rounded-3xl border border-border bg-background/90 p-4">
               <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                Seasonal adjustment
+                Mevsim etkisi
               </p>
               <p className="mt-3 text-sm leading-6 text-foreground">
                 {indicator.seasonalAdjustment}
@@ -126,7 +131,7 @@ export default async function IndicatorDetailPage({
             {indicator.baseYear && (
               <div className="rounded-3xl border border-border bg-background/90 p-4">
                 <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                  Base year
+                  Baz yıl
                 </p>
                 <p className="mt-3 text-sm leading-6 text-foreground">{indicator.baseYear}</p>
               </div>
@@ -138,19 +143,19 @@ export default async function IndicatorDetailPage({
           <div className="grid gap-4 md:grid-cols-3">
             <div className="rounded-3xl border border-border bg-background/90 p-4">
               <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                Learner
+                Temel not
               </p>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">{indicator.learnerNote}</p>
             </div>
             <div className="rounded-3xl border border-border bg-background/90 p-4">
               <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                Analyst
+                Analist notu
               </p>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">{indicator.analystNote}</p>
             </div>
             <div className="rounded-3xl border border-border bg-background/90 p-4">
               <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                Expert
+                Uzman notu
               </p>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">{indicator.expertNote}</p>
             </div>
@@ -158,7 +163,7 @@ export default async function IndicatorDetailPage({
 
           <div className="mt-6 rounded-3xl border border-border bg-background/90 p-4">
             <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-              Description
+              Açıklama
             </p>
             <p className="mt-3 text-sm leading-7 text-muted-foreground">
               {indicator.descriptionLong}
@@ -171,7 +176,7 @@ export default async function IndicatorDetailPage({
         <div className="flex flex-wrap items-end justify-between gap-4 border-b border-border pb-5">
           <div>
             <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-              Components
+              Bileşenler
             </p>
             <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em]">
               {indicator.indicatorName} kırılımı

@@ -1,0 +1,41 @@
+{
+  "updatedAt": "2026-03-29",
+  "forecasts": [
+    {
+      "key": "yil-sonu-tufe",
+      "value": 25.38,
+      "note": "Geçici benchmark iç tahmin. 29 Mart 2026 itibarıyla resmi piyasa beklentisi baz alındı.",
+      "detailHref": "/indicators/CPI_YOY"
+    },
+    {
+      "key": "on-iki-ay-sonrasi-tufe",
+      "value": 22.17,
+      "note": "Geçici benchmark iç tahmin. 29 Mart 2026 itibarıyla resmi piyasa beklentisi baz alındı.",
+      "detailHref": "/indicators/CPI_YOY"
+    },
+    {
+      "key": "ilk-toplanti-politika-faizi",
+      "value": 37.00,
+      "note": "Geçici benchmark iç tahmin. 29 Mart 2026 itibarıyla resmi piyasa beklentisi baz alındı.",
+      "detailHref": "/indicators/POLICY_RATE"
+    },
+    {
+      "key": "on-iki-ay-sonrasi-politika-faizi",
+      "value": 28.48,
+      "note": "Geçici benchmark iç tahmin. 29 Mart 2026 itibarıyla resmi piyasa beklentisi baz alındı.",
+      "detailHref": "/indicators/POLICY_RATE"
+    },
+    {
+      "key": "yil-sonu-usd-try",
+      "value": 50.97,
+      "note": "Geçici benchmark iç tahmin. 29 Mart 2026 itibarıyla resmi piyasa beklentisi baz alındı.",
+      "detailHref": "/live"
+    },
+    {
+      "key": "on-iki-ay-sonrasi-usd-try",
+      "value": 52.70,
+      "note": "Geçici benchmark iç tahmin. 29 Mart 2026 itibarıyla resmi piyasa beklentisi baz alındı.",
+      "detailHref": "/live"
+    }
+  ]
+}

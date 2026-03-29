@@ -1,17 +1,39 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vite-plus/test";
-import { execSync } from "node:child_process";
-import { detectPackageManager, runInit } from "../src/commands/init";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { runInit } from "../src/commands/init";
+import { detectPackageManager } from "../src/commands/init-utils";
 
 const succeedSpy = vi.fn();
 const failSpy = vi.fn();
 const mockDetectAvailableAgents = vi.fn();
-
-vi.mock("node:child_process", () => ({
-  execSync: vi.fn(),
-}));
+const mockTryRun = vi.fn();
+const mockRunAddSkill = vi.fn();
+const mockRunAddGithubAction = vi.fn();
 
 vi.mock("@expect/agent", () => ({
   detectAvailableAgents: (...args: unknown[]) => mockDetectAvailableAgents(...args),
+}));
+
+vi.mock("../src/constants", () => ({
+  VERSION: "0.0.15",
+}));
+
+vi.mock("../src/commands/init-utils", async () => {
+  const actual = await vi.importActual<typeof import("../src/commands/init-utils")>(
+    "../src/commands/init-utils",
+  );
+
+  return {
+    ...actual,
+    tryRun: (...args: unknown[]) => mockTryRun(...args),
+  };
+});
+
+vi.mock("../src/commands/add-skill", () => ({
+  runAddSkill: (...args: unknown[]) => mockRunAddSkill(...args),
+}));
+
+vi.mock("../src/commands/add-github-action", () => ({
+  runAddGithubAction: (...args: unknown[]) => mockRunAddGithubAction(...args),
 }));
 
 vi.mock("../src/utils/spinner", () => ({
@@ -24,10 +46,8 @@ vi.mock("../src/utils/spinner", () => ({
 }));
 
 vi.mock("../src/utils/prompts", () => ({
-  prompts: vi.fn().mockResolvedValue({ installSkill: false }),
+  prompts: vi.fn().mockResolvedValue({ setupGithubAction: true }),
 }));
-
-const mockedExecSync = vi.mocked(execSync);
 
 describe("init", () => {
   describe("detectPackageManager", () => {
@@ -81,7 +101,11 @@ describe("init", () => {
 
   describe("runInit", () => {
     const originalEnv = process.env;
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
+    const exitSpy = vi
+      .spyOn(process, "exit")
+      .mockImplementation((code?: string | number | null) => {
+        throw new Error(`process.exit:${code ?? ""}`) as never;
+      });
 
     beforeEach(() => {
       process.env = { ...originalEnv };
@@ -89,7 +113,9 @@ describe("init", () => {
       delete process.env.npm_config_user_agent;
       vi.clearAllMocks();
       mockDetectAvailableAgents.mockReturnValue(["claude"]);
-      mockedExecSync.mockReturnValue(Buffer.from(""));
+      mockTryRun.mockResolvedValue(true);
+      mockRunAddSkill.mockResolvedValue(undefined);
+      mockRunAddGithubAction.mockResolvedValue(undefined);
     });
 
     afterEach(() => {
@@ -99,17 +125,23 @@ describe("init", () => {
     it("exits with error when no agents are detected", async () => {
       mockDetectAvailableAgents.mockReturnValue([]);
 
-      await runInit({ yes: true });
+      await expect(runInit({ yes: true })).rejects.toThrow("process.exit:1");
 
       expect(exitSpy).toHaveBeenCalledWith(1);
+      expect(mockRunAddSkill).not.toHaveBeenCalled();
+      expect(mockRunAddGithubAction).not.toHaveBeenCalled();
     });
 
     it("proceeds when at least one agent is detected", async () => {
-      mockDetectAvailableAgents.mockReturnValue(["claude"]);
-
       await runInit({ yes: true });
 
       expect(exitSpy).not.toHaveBeenCalled();
+      expect(mockRunAddSkill).toHaveBeenCalledWith({ yes: true });
+      expect(mockRunAddGithubAction).toHaveBeenCalledWith({
+        yes: true,
+        agent: undefined,
+        availableAgents: ["claude"],
+      });
     });
 
     it("global install command uses the detected package manager binary", async () => {
@@ -117,9 +149,7 @@ describe("init", () => {
 
       await runInit({ yes: true });
 
-      const installCall = mockedExecSync.mock.calls.find((call) => String(call[0]).includes("-g"));
-      expect(installCall).toBeDefined();
-      expect(String(installCall![0])).toMatch(/^pnpm /);
+      expect(mockTryRun).toHaveBeenCalledWith("pnpm add -g expect-cli@latest");
     });
 
     it("uses vp binary when VITE_PLUS_CLI_BIN is set", async () => {
@@ -127,34 +157,34 @@ describe("init", () => {
 
       await runInit({ yes: true });
 
-      const installCall = mockedExecSync.mock.calls.find((call) => String(call[0]).includes("-g"));
-      expect(installCall).toBeDefined();
-      expect(String(installCall![0])).toMatch(/^vp /);
+      expect(mockTryRun).toHaveBeenCalledWith("vp install -g expect-cli@latest");
     });
 
     it("continues to skill install even when global install fails", async () => {
-      mockedExecSync.mockImplementation((command) => {
-        const cmd = String(command);
-        if (cmd.includes("-g")) throw new Error("install failed");
-        return Buffer.from("");
-      });
+      mockTryRun.mockResolvedValueOnce(false);
 
       await runInit({ yes: true });
 
-      const skillCall = mockedExecSync.mock.calls.find((call) =>
-        String(call[0]).includes("skills add"),
-      );
-      expect(skillCall).toBeDefined();
+      expect(mockRunAddSkill).toHaveBeenCalledWith({ yes: true });
+      expect(mockRunAddGithubAction).toHaveBeenCalledTimes(1);
     });
 
-    it("shows spinner fail when install throws", async () => {
-      mockedExecSync.mockImplementation(() => {
-        throw new Error("install failed");
-      });
+    it("shows spinner fail when install returns false", async () => {
+      mockTryRun.mockResolvedValueOnce(false);
 
       await runInit({ yes: true });
 
       expect(failSpy).toHaveBeenCalled();
+    });
+
+    it("passes the selected agent to GitHub Action setup", async () => {
+      await runInit({ yes: true, agent: "codex" });
+
+      expect(mockRunAddGithubAction).toHaveBeenCalledWith({
+        yes: true,
+        agent: "codex",
+        availableAgents: ["claude"],
+      });
     });
 
     it("does not call prompts in non-interactive mode", async () => {

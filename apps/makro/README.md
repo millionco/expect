@@ -5,6 +5,7 @@ Makro is a Next.js application that prefers live PostgreSQL reads and falls back
 ## Included
 
 - Overview dashboard
+- Live data page at `/live`
 - Global search
 - Quality report
 - Taxonomy explorer
@@ -17,6 +18,7 @@ Makro is a Next.js application that prefers live PostgreSQL reads and falls back
 - Export hub at `/exports`
 - Setup status page
 - JSON API at `/api/seed`
+- Live feed API at `/api/live`
 - Unified search API at `/api/search`
 - Quality API at `/api/quality`
 - Taxonomy API at `/api/taxonomy`
@@ -60,6 +62,16 @@ Default local database target:
 Override it with:
 
 - `DATABASE_URL=postgresql://...`
+
+Current live integrations:
+
+- TCMB daily exchange XML at `https://www.tcmb.gov.tr/kurlar/today.xml`
+- TCMB forecast release pages for Piyasa Katılımcıları Anketi and Sektörel Enflasyon Beklentileri
+- EVDS3 public JSON forecast endpoint at `https://evds3.tcmb.gov.tr/igmevdsms-dis/fe`
+
+Current honest limitation:
+
+- EVDS3 forecast series are wired with verified default codes. Environment variables are now optional overrides, not blockers.
 
 ## Database bootstrap
 

@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import type { AgentBackend, SupportedAgent } from "@expect/agent";
 import { highlighter } from "../utils/highlighter";
 import { logger } from "../utils/logger";
 import { prompts } from "../utils/prompts";
@@ -7,6 +8,8 @@ import { type PackageManager, detectNonInteractive, detectPackageManager } from 
 
 interface AddGithubActionOptions {
   yes?: boolean;
+  agent?: AgentBackend;
+  availableAgents?: readonly SupportedAgent[];
 }
 
 const DEV_COMMAND_DEFAULTS: Record<PackageManager, string> = {
@@ -35,9 +38,37 @@ const INSTALL_COMMANDS: Record<PackageManager, string> = {
   vp: "npm ci",
 };
 
-const generateWorkflow = (packageManager: PackageManager, devCommand: string, devUrl: string) => {
+const GITHUB_ACTION_AGENTS: readonly AgentBackend[] = ["claude", "codex"];
+
+const GITHUB_ACTION_AGENT_LABELS: Record<AgentBackend, string> = {
+  claude: "Claude",
+  codex: "Codex",
+};
+
+const GITHUB_ACTION_AGENT_SECRETS: Record<AgentBackend, string> = {
+  claude: "ANTHROPIC_API_KEY",
+  codex: "OPENAI_API_KEY",
+};
+
+const isGithubActionAgent = (agent: SupportedAgent): agent is AgentBackend =>
+  agent === "claude" || agent === "codex";
+
+const getDefaultGithubActionAgent = (
+  availableAgents: readonly SupportedAgent[] = [],
+): AgentBackend => {
+  const detectedAgent = availableAgents.find(isGithubActionAgent);
+  return detectedAgent ?? "claude";
+};
+
+const generateWorkflow = (
+  packageManager: PackageManager,
+  devCommand: string,
+  devUrl: string,
+  agent: AgentBackend,
+) => {
   const dlx = DLX_COMMANDS[packageManager];
   const install = INSTALL_COMMANDS[packageManager];
+  const secretName = GITHUB_ACTION_AGENT_SECRETS[agent];
 
   const setupSteps = buildSetupSteps(packageManager);
 
@@ -52,7 +83,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      ANTHROPIC_API_KEY: \${{ secrets.ANTHROPIC_API_KEY }}
+      ${secretName}: \${{ secrets.${secretName} }}
       EXPECT_BASE_URL: "${devUrl}"
     steps:
       - uses: actions/checkout@v4
@@ -67,7 +98,7 @@ ${setupSteps}
         run: npx wait-on ${devUrl} --timeout 60000
 
       - name: Run expect
-        run: ${dlx} expect-cli@latest --ci
+        run: ${dlx} expect-cli@latest --ci --agent ${agent}
 `;
 };
 
@@ -105,12 +136,32 @@ const buildSetupSteps = (packageManager: PackageManager): string => {
 export const runAddGithubAction = async (options: AddGithubActionOptions = {}) => {
   const nonInteractive = detectNonInteractive(options.yes ?? false);
   const packageManager = detectPackageManager();
+  const defaultAgent = getDefaultGithubActionAgent(options.availableAgents);
 
   let devCommand = DEV_COMMAND_DEFAULTS[packageManager];
   let devUrl = DEFAULT_DEV_URL;
+  let agent = options.agent ?? defaultAgent;
 
   if (!nonInteractive) {
+    const providerQuestion =
+      options.agent === undefined
+        ? [
+            {
+              type: "select" as const,
+              name: "agent",
+              message: "GitHub Actions agent provider:",
+              initial: GITHUB_ACTION_AGENTS.indexOf(defaultAgent),
+              choices: GITHUB_ACTION_AGENTS.map((provider) => ({
+                title: GITHUB_ACTION_AGENT_LABELS[provider],
+                value: provider,
+                description: GITHUB_ACTION_AGENT_SECRETS[provider],
+              })),
+            },
+          ]
+        : [];
+
     const responses = await prompts([
+      ...providerQuestion,
       {
         type: "text",
         name: "devCommand",
@@ -124,6 +175,7 @@ export const runAddGithubAction = async (options: AddGithubActionOptions = {}) =
         initial: devUrl,
       },
     ]);
+    agent = responses.agent || agent;
     devCommand = responses.devCommand || devCommand;
     devUrl = responses.devUrl || devUrl;
   }
@@ -149,14 +201,16 @@ export const runAddGithubAction = async (options: AddGithubActionOptions = {}) =
     }
   }
 
-  const workflow = generateWorkflow(packageManager, devCommand, devUrl);
+  const workflow = generateWorkflow(packageManager, devCommand, devUrl, agent);
   mkdirSync(workflowDir, { recursive: true });
   writeFileSync(workflowPath, workflow);
 
   logger.break();
-  logger.success("Created .github/workflows/expect.yml");
+  logger.success(`Created .github/workflows/expect.yml for ${GITHUB_ACTION_AGENT_LABELS[agent]}`);
   logger.break();
-  logger.log(`  Add ${highlighter.info("ANTHROPIC_API_KEY")} to your repository secrets:`);
+  logger.log(
+    `  Add ${highlighter.info(GITHUB_ACTION_AGENT_SECRETS[agent])} to your repository secrets:`,
+  );
   logger.log(
     `  ${highlighter.dim("Settings → Secrets and variables → Actions → New repository secret")}`,
   );

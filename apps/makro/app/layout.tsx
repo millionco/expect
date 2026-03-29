@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { DashboardDrawerProvider } from "@/components/dashboard-drawer";
 import "./globals.css";
 
 const plexSans = IBM_Plex_Sans({
@@ -15,7 +16,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("http://localhost:3000"),
+  metadataBase: new URL("http://localhost:3100"),
   title: "Makro",
   description: "Turkey macro data workspace seeded from curated SQL definitions.",
   openGraph: {
@@ -37,7 +38,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr" className={`${plexSans.variable} ${plexMono.variable}`}>
-      <body>{children}</body>
+      <body>
+        <DashboardDrawerProvider>{children}</DashboardDrawerProvider>
+      </body>
     </html>
   );
 }

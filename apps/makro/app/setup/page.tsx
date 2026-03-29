@@ -1,8 +1,16 @@
 import { MakroShell } from "@/components/makro-shell";
+import { getEvdsForecastFeed } from "@/lib/get-evds-forecast-feed";
+import { getInternalForecastFeed } from "@/lib/get-internal-forecast-feed";
+import { getLiveDashboardFeed } from "@/lib/get-live-dashboard-feed";
 import { getMakroData } from "@/lib/get-makro-data";
 
 export default async function SetupPage() {
-  const makroData = await getMakroData();
+  const [makroData, liveDashboardFeed, evdsForecastFeed, internalForecastFeed] = await Promise.all([
+    getMakroData(),
+    getLiveDashboardFeed(),
+    getEvdsForecastFeed(),
+    getInternalForecastFeed(),
+  ]);
   const setupItems = [
     {
       title: "Çalışan uygulama",
@@ -26,6 +34,32 @@ export default async function SetupPage() {
         makroData.dataSource === "database"
           ? `Uygulama su an veriyi dogrudan ${makroData.databaseTarget} uzerindeki PostgreSQL instance'inden okuyor.`
           : `Veritabani erisilemedigi icin uygulama seed fallback ile calisiyor. Neden: ${makroData.fallbackReason ?? "unknown"}`,
+    },
+    {
+      title: "TCMB canlı feed",
+      status: liveDashboardFeed.exchangeSnapshot ? "done" : "blocked",
+      description: liveDashboardFeed.exchangeSnapshot
+        ? `Günlük kur akışı ${liveDashboardFeed.exchangeSnapshot.date} tarihli bültenle geliyor.`
+        : "TCMB günlük kur XML akışı bu ortamda çekilemedi.",
+    },
+    {
+      title: "EVDS3 sayısal tahmin akışı",
+      status: evdsForecastFeed.configuredSeriesCount > 0 ? "done" : "blocked",
+      description:
+        evdsForecastFeed.configuredSeriesCount > 0
+          ? `${evdsForecastFeed.configuredSeriesCount} EVDS serisi okunabilir durumda. Veri artık resmi EVDS3 JSON endpoint'inden geliyor.`
+          : "EVDS3 sayısal tahmin akışı bu ortamda doğrulanamadı.",
+    },
+    {
+      title: "İç tahmin katmanı",
+      status: "done",
+      description: `${internalForecastFeed.entries.length} yerel tahmin satırı ${internalForecastFeed.filePath} içinden okunuyor. Boş değerler dashboard'da Girilmedi olarak görünür.`,
+    },
+    {
+      title: "Seri kodu eşlemesi",
+      status: "done",
+      description:
+        "PKA uygun ortalamalar ekranından resmi seri kodları otomatik doğrulandı. Varsayılan eşleşmeler uygulama içine işlendi.",
     },
     {
       title: "Export yüzeyi",
@@ -56,14 +90,14 @@ export default async function SetupPage() {
 
   return (
     <MakroShell
-      eyebrow="Implementation Status"
+      eyebrow="Kurulum Durumu"
       title="Kurulumun ne kadarının gerçekten tamamlandığını şeffaf biçimde göster."
       description="Bu sayfa, çalışan parçaları ve hâlâ dış bağımlılık isteyen kısımları dürüstçe ayırıyor."
     >
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <article className="rounded-3xl border border-border bg-card/85 p-5">
           <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-            Runtime source
+            Çalışma kaynağı
           </p>
           <p className="mt-3 text-sm leading-6 text-foreground">
             {makroData.dataSource === "database" ? makroData.databaseTarget : makroData.filePath}
@@ -71,7 +105,7 @@ export default async function SetupPage() {
         </article>
         <article className="rounded-3xl border border-border bg-card/85 p-5">
           <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-            Country count
+            Ülke sayısı
           </p>
           <p className="mt-3 text-4xl font-semibold tracking-[-0.04em]">
             {makroData.counts.countries}
@@ -79,7 +113,7 @@ export default async function SetupPage() {
         </article>
         <article className="rounded-3xl border border-border bg-card/85 p-5">
           <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-            Source count
+            Kaynak sayısı
           </p>
           <p className="mt-3 text-4xl font-semibold tracking-[-0.04em]">
             {makroData.counts.sources}
@@ -87,7 +121,7 @@ export default async function SetupPage() {
         </article>
         <article className="rounded-3xl border border-border bg-card/85 p-5">
           <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-            Indicator count
+            Gösterge sayısı
           </p>
           <p className="mt-3 text-4xl font-semibold tracking-[-0.04em]">
             {makroData.counts.indicators}
@@ -105,12 +139,12 @@ export default async function SetupPage() {
               <h2 className="text-2xl font-semibold tracking-[-0.03em]">{item.title}</h2>
               {item.status === "done" && (
                 <span className="rounded-full border border-accent/20 bg-accent/10 px-3 py-1 text-xs text-accent">
-                  completed
+                  tamam
                 </span>
               )}
               {item.status === "blocked" && (
                 <span className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground">
-                  blocked by environment
+                  ortam tarafından engelli
                 </span>
               )}
             </div>
@@ -121,12 +155,12 @@ export default async function SetupPage() {
 
       <section className="rounded-[2rem] border border-border bg-card/85 p-6">
         <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-          Command runbook
+          Komut akışı
         </p>
         <div className="mt-5 grid gap-4 lg:grid-cols-2">
           <div className="rounded-3xl border border-border bg-background/90 p-4">
             <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-              Start database
+              Veritabanını başlat
             </p>
             <pre className="mt-3 overflow-x-auto rounded-2xl border border-border bg-ink px-4 py-3 font-mono text-xs text-ink-foreground">
               <code>npm run db:up</code>
@@ -134,7 +168,7 @@ export default async function SetupPage() {
           </div>
           <div className="rounded-3xl border border-border bg-background/90 p-4">
             <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-              Verify seed
+              Seed doğrula
             </p>
             <pre className="mt-3 overflow-x-auto rounded-2xl border border-border bg-ink px-4 py-3 font-mono text-xs text-ink-foreground">
               <code>npm run db:verify</code>
@@ -142,7 +176,7 @@ export default async function SetupPage() {
           </div>
           <div className="rounded-3xl border border-border bg-background/90 p-4">
             <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-              Open SQL shell
+              SQL kabuğunu aç
             </p>
             <pre className="mt-3 overflow-x-auto rounded-2xl border border-border bg-ink px-4 py-3 font-mono text-xs text-ink-foreground">
               <code>npm run db:shell</code>
@@ -150,7 +184,7 @@ export default async function SetupPage() {
           </div>
           <div className="rounded-3xl border border-border bg-background/90 p-4">
             <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-              Health endpoint
+              Sağlık endpoint&apos;i
             </p>
             <pre className="mt-3 overflow-x-auto rounded-2xl border border-border bg-ink px-4 py-3 font-mono text-xs text-ink-foreground">
               <code>GET /api/health</code>
@@ -158,7 +192,23 @@ export default async function SetupPage() {
           </div>
           <div className="rounded-3xl border border-border bg-background/90 p-4">
             <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-              API reference
+              Canlı akış
+            </p>
+            <pre className="mt-3 overflow-x-auto rounded-2xl border border-border bg-ink px-4 py-3 font-mono text-xs text-ink-foreground">
+              <code>GET /api/live</code>
+            </pre>
+          </div>
+          <div className="rounded-3xl border border-border bg-background/90 p-4">
+            <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
+              EVDS seri değişkenleri
+            </p>
+            <pre className="mt-3 overflow-x-auto rounded-2xl border border-border bg-ink px-4 py-3 font-mono text-xs text-ink-foreground">
+              <code>EVDS_YEAR_END_CPI_EXPECTATION_SERIES=TP.PKAUO.S01.D.U\nEVDS_12M_CPI_EXPECTATION_SERIES=TP.PKAUO.S01.E.U\nEVDS_POLICY_RATE_EXPECTATION_SERIES=TP.PKAUO.S04.C.U\nEVDS_12M_POLICY_RATE_EXPECTATION_SERIES=TP.PKAUO.S04.D.U\nEVDS_USDTRY_EXPECTATION_SERIES=TP.PKAUO.S05.B.U\nEVDS_12M_USDTRY_EXPECTATION_SERIES=TP.PKAUO.S05.C.U</code>
+            </pre>
+          </div>
+          <div className="rounded-3xl border border-border bg-background/90 p-4">
+            <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
+              API referansı
             </p>
             <pre className="mt-3 overflow-x-auto rounded-2xl border border-border bg-ink px-4 py-3 font-mono text-xs text-ink-foreground">
               <code>GET /api/reference</code>
@@ -166,7 +216,7 @@ export default async function SetupPage() {
           </div>
           <div className="rounded-3xl border border-border bg-background/90 p-4">
             <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-              Filtered indicators
+              Filtreli göstergeler
             </p>
             <pre className="mt-3 overflow-x-auto rounded-2xl border border-border bg-ink px-4 py-3 font-mono text-xs text-ink-foreground">
               <code>GET /api/indicators?q=faiz&amp;category=monetary</code>
@@ -174,7 +224,7 @@ export default async function SetupPage() {
           </div>
           <div className="rounded-3xl border border-border bg-background/90 p-4">
             <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-              Export CSV
+              CSV dışa aktar
             </p>
             <pre className="mt-3 overflow-x-auto rounded-2xl border border-border bg-ink px-4 py-3 font-mono text-xs text-ink-foreground">
               <code>GET /api/exports/indicators.csv</code>
@@ -182,7 +232,7 @@ export default async function SetupPage() {
           </div>
           <div className="rounded-3xl border border-border bg-background/90 p-4">
             <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-              Components API
+              Bileşen API
             </p>
             <pre className="mt-3 overflow-x-auto rounded-2xl border border-border bg-ink px-4 py-3 font-mono text-xs text-ink-foreground">
               <code>GET /api/components?indicatorCode=POLICY_RATE</code>
@@ -190,7 +240,7 @@ export default async function SetupPage() {
           </div>
           <div className="rounded-3xl border border-border bg-background/90 p-4">
             <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-              Global search
+              Genel arama
             </p>
             <pre className="mt-3 overflow-x-auto rounded-2xl border border-border bg-ink px-4 py-3 font-mono text-xs text-ink-foreground">
               <code>GET /api/search?q=faiz</code>
@@ -198,7 +248,7 @@ export default async function SetupPage() {
           </div>
           <div className="rounded-3xl border border-border bg-background/90 p-4">
             <p className="font-mono text-xs uppercase tracking-[0.24em] text-muted-foreground">
-              Quality report
+              Kalite raporu
             </p>
             <pre className="mt-3 overflow-x-auto rounded-2xl border border-border bg-ink px-4 py-3 font-mono text-xs text-ink-foreground">
               <code>GET /api/quality</code>

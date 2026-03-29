@@ -15,29 +15,31 @@
   --radius-4xl: 2rem;
 }
 
+/* ─── Dark Financial Terminal (default) ──────────────────────────── */
 :root {
-  --background: oklch(0.985 0.006 85);
-  --foreground: oklch(0.22 0.018 255);
-  --muted-foreground: oklch(0.5 0.02 240);
-  --border: oklch(0.88 0.01 90);
-  --card: oklch(0.993 0.004 95 / 0.92);
-  --panel: oklch(0.97 0.008 92 / 0.88);
-  --accent: oklch(0.54 0.09 210);
-  --ink: oklch(0.22 0.02 255);
-  --ink-foreground: oklch(0.97 0.004 95);
+  --background: oklch(0.075 0.016 264);
+  --foreground: oklch(0.93 0.008 255);
+  --muted-foreground: oklch(0.54 0.018 258);
+  --border: oklch(0.175 0.014 264);
+  --card: oklch(0.105 0.016 264 / 0.98);
+  --panel: oklch(0.092 0.015 264 / 0.98);
+  --accent: oklch(0.76 0.13 74);
+  --ink: oklch(0.055 0.012 264);
+  --ink-foreground: oklch(0.94 0.006 255);
 }
 
-@media (prefers-color-scheme: dark) {
+/* ─── Light Mode (opt-in via prefers-color-scheme) ───────────────── */
+@media (prefers-color-scheme: light) {
   :root {
-    --background: oklch(0.18 0.018 255);
-    --foreground: oklch(0.96 0.004 95);
-    --muted-foreground: oklch(0.74 0.016 240);
-    --border: oklch(0.31 0.018 255);
-    --card: oklch(0.23 0.018 255 / 0.92);
-    --panel: oklch(0.26 0.02 255 / 0.88);
-    --accent: oklch(0.72 0.09 205);
-    --ink: oklch(0.14 0.016 255);
-    --ink-foreground: oklch(0.95 0.004 95);
+    --background: oklch(0.964 0.008 255);
+    --foreground: oklch(0.17 0.022 258);
+    --muted-foreground: oklch(0.48 0.02 258);
+    --border: oklch(0.86 0.01 258);
+    --card: oklch(0.99 0.006 255 / 0.96);
+    --panel: oklch(0.975 0.007 255 / 0.97);
+    --accent: oklch(0.58 0.13 74);
+    --ink: oklch(0.13 0.018 258);
+    --ink-foreground: oklch(0.97 0.004 255);
   }
 }
 
@@ -48,22 +50,117 @@
 
   html {
     @apply font-sans;
+    color-scheme: dark;
   }
 
   body {
     background:
-      radial-gradient(circle at top left, color-mix(in oklab, var(--accent) 12%, transparent), transparent 34%),
-      radial-gradient(circle at top right, color-mix(in oklab, var(--foreground) 10%, transparent), transparent 30%),
+      radial-gradient(ellipse 80% 50% at 10% 0%, oklch(0.76 0.13 74 / 0.045) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 90% 100%, oklch(0.55 0.1 270 / 0.04) 0%, transparent 55%),
       var(--background);
     color: var(--foreground);
+    min-height: 100vh;
   }
 
   ::selection {
-    background: color-mix(in oklab, var(--accent) 30%, white);
+    background: oklch(0.76 0.13 74 / 0.28);
     color: var(--foreground);
   }
 
   a {
     text-decoration: none;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 2px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground);
+  }
+}
+
+@layer utilities {
+  /* Grid overlay */
+  .makro-grid {
+    background-image:
+      linear-gradient(to right, color-mix(in oklab, var(--border) 60%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklab, var(--border) 60%, transparent) 1px, transparent 1px);
+    background-position: center;
+    background-size: 32px 32px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.12), transparent 72%);
+  }
+
+  /* Accent glow orb */
+  .makro-orb {
+    filter: blur(32px);
+    position: absolute;
+    transform: translateZ(0);
+    opacity: 0.22;
+  }
+
+  /* Card surface */
+  .makro-surface {
+    background: linear-gradient(
+      160deg,
+      color-mix(in oklab, var(--card) 95%, oklch(0.76 0.13 74 / 0.06)),
+      var(--panel)
+    );
+    border: 1px solid var(--border);
+    box-shadow:
+      0 1px 0 0 color-mix(in oklab, white 6%, transparent) inset,
+      0 16px 40px oklch(0 0 0 / 0.28);
+  }
+
+  /* Hover-interactive elements */
+  .makro-interactive {
+    will-change: transform;
+    transition:
+      border-color 150ms ease,
+      background-color 150ms ease,
+      color 150ms ease,
+      box-shadow 150ms ease,
+      transform 150ms ease;
+  }
+
+  .makro-interactive:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px oklch(0 0 0 / 0.2);
+  }
+
+  /* Amber accent pill */
+  .makro-badge-accent {
+    background: oklch(0.76 0.13 74 / 0.14);
+    border: 1px solid oklch(0.76 0.13 74 / 0.28);
+    color: var(--accent);
+  }
+
+  /* Status colors */
+  .status-ok {
+    color: oklch(0.72 0.16 152);
+  }
+  .status-warning {
+    color: oklch(0.78 0.14 74);
+  }
+  .status-error {
+    color: oklch(0.68 0.18 28);
+  }
+
+  /* Ticker animation for news */
+  @keyframes slide-in-right {
+    from { transform: translateX(100%); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+  }
+
+  .drawer-enter {
+    animation: slide-in-right 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   }
 }
