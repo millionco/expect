@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import {
   buildExecutionPrompt,
+  buildExecutionSystemPrompt,
   buildWatchAssessmentPrompt,
   type ExecutionPromptOptions,
   type WatchAssessmentPromptOptions,
@@ -31,8 +32,8 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("Test the login flow");
   });
 
-  it("includes browser tool instructions", () => {
-    const prompt = buildExecutionPrompt(makeDefaultOptions());
+  it("includes browser tool instructions in system prompt", () => {
+    const prompt = buildExecutionSystemPrompt();
     expect(prompt).toContain("open — Launch a browser");
     expect(prompt).toContain("playwright — Execute Playwright");
     expect(prompt).toContain("screenshot — Capture page state");
@@ -41,8 +42,8 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("close — Close the browser");
   });
 
-  it("includes step marker protocol", () => {
-    const prompt = buildExecutionPrompt(makeDefaultOptions());
+  it("includes step marker protocol in system prompt", () => {
+    const prompt = buildExecutionSystemPrompt();
     expect(prompt).toContain("STEP_START|<step-id>|<step-title>");
     expect(prompt).toContain("STEP_DONE|<step-id>|<short-summary>");
     expect(prompt).toContain("ASSERTION_FAILED|<step-id>|<why-it-failed>");
@@ -146,41 +147,41 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).not.toContain("x".repeat(13000));
   });
 
-  it("instructs agent to create steps dynamically", () => {
-    const prompt = buildExecutionPrompt(makeDefaultOptions());
+  it("instructs agent to create steps dynamically in system prompt", () => {
+    const prompt = buildExecutionSystemPrompt();
     expect(prompt).toContain("Create your own step structure while executing");
     expect(prompt).toContain("step-01, step-02, step-03");
   });
 
-  it("includes snapshot-driven workflow instructions", () => {
-    const prompt = buildExecutionPrompt(makeDefaultOptions());
+  it("includes snapshot-driven workflow instructions in system prompt", () => {
+    const prompt = buildExecutionSystemPrompt();
     expect(prompt).toContain("Snapshot-driven workflow:");
     expect(prompt).toContain("ref()");
     expect(prompt).toContain("Never guess CSS selectors");
   });
 
-  it("includes assertion depth guidance", () => {
-    const prompt = buildExecutionPrompt(makeDefaultOptions());
+  it("includes assertion depth guidance in system prompt", () => {
+    const prompt = buildExecutionSystemPrompt();
     expect(prompt).toContain("Assertion depth");
     expect(prompt).toContain("two independent signals per step");
   });
 
-  it("includes code-level testing fallback guidance", () => {
-    const prompt = buildExecutionPrompt(makeDefaultOptions());
+  it("includes code-level testing fallback guidance in system prompt", () => {
+    const prompt = buildExecutionSystemPrompt();
     expect(prompt).toContain("Code-level testing fallback:");
     expect(prompt).toContain("built-in shell/bash tool");
     expect(prompt).toContain("no user-visible surface");
   });
 
-  it("includes project healthcheck guidance", () => {
-    const prompt = buildExecutionPrompt(makeDefaultOptions());
+  it("includes project healthcheck guidance in system prompt", () => {
+    const prompt = buildExecutionSystemPrompt();
     expect(prompt).toContain("Project healthcheck:");
     expect(prompt).toContain("package.json");
     expect(prompt).toContain("pnpm-lock.yaml");
   });
 
-  it("includes recovery and rabbit hole guidance", () => {
-    const prompt = buildExecutionPrompt(makeDefaultOptions());
+  it("includes recovery and rabbit hole guidance in system prompt", () => {
+    const prompt = buildExecutionSystemPrompt();
     expect(prompt).toContain("Recovery policy");
     expect(prompt).toContain("Avoid rabbit holes");
     expect(prompt).toContain("four attempts fail");

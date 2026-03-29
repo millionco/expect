@@ -20,7 +20,7 @@ import {
   type TestCoverageReport,
   TestPlan,
 } from "@expect/shared/models";
-import { buildExecutionPrompt } from "@expect/shared/prompts";
+import { buildExecutionPrompt, buildExecutionSystemPrompt } from "@expect/shared/prompts";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Git } from "./git/git";
 import {
@@ -106,6 +106,8 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
     const execute = Effect.fn("Executor.execute")(function* (options: ExecuteOptions) {
       const context = yield* gatherContext(options.changesFor);
 
+      const systemPrompt = buildExecutionSystemPrompt();
+
       const prompt = buildExecutionPrompt({
         userInstruction: options.instruction,
         scope: options.changesFor._tag,
@@ -169,7 +171,7 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
         cwd: process.cwd(),
         sessionId: Option.none(),
         prompt,
-        systemPrompt: Option.none(),
+        systemPrompt: Option.some(systemPrompt),
         mcpEnv,
         modelPreference: options.modelPreference,
       });

@@ -105,15 +105,8 @@ const formatTestCoverageSection = (testCoverage: TestCoverageReport | undefined)
   return lines;
 };
 
-export const buildExecutionPrompt = (options: ExecutionPromptOptions): string => {
-  const mcpName = options.browserMcpServerName ?? DEFAULT_BROWSER_MCP_SERVER_NAME;
-  const changedFiles = options.changedFiles.slice(0, EXECUTION_CONTEXT_FILE_LIMIT);
-  const recentCommits = options.recentCommits.slice(0, EXECUTION_RECENT_COMMIT_LIMIT);
-  const rawDiff = options.diffPreview || "";
-  const diffPreview =
-    rawDiff.length > DIFF_PREVIEW_CHAR_LIMIT
-      ? rawDiff.slice(0, DIFF_PREVIEW_CHAR_LIMIT) + "\n... (truncated)"
-      : rawDiff;
+export const buildExecutionSystemPrompt = (browserMcpServerName?: string): string => {
+  const mcpName = browserMcpServerName ?? DEFAULT_BROWSER_MCP_SERVER_NAME;
 
   return [
     "You are executing a browser regression test directly from repository context.",
@@ -222,7 +215,19 @@ export const buildExecutionPrompt = (options: ExecutionPromptOptions): string =>
     "- Do not get stuck in wait-action-wait loops. Every retry should be justified by something newly observed.",
     "",
     "Before emitting RUN_COMPLETED, call the close tool exactly once so the browser session flushes the video to disk.",
-    "",
+  ].join("\n");
+};
+
+export const buildExecutionPrompt = (options: ExecutionPromptOptions): string => {
+  const changedFiles = options.changedFiles.slice(0, EXECUTION_CONTEXT_FILE_LIMIT);
+  const recentCommits = options.recentCommits.slice(0, EXECUTION_RECENT_COMMIT_LIMIT);
+  const rawDiff = options.diffPreview || "";
+  const diffPreview =
+    rawDiff.length > DIFF_PREVIEW_CHAR_LIMIT
+      ? rawDiff.slice(0, DIFF_PREVIEW_CHAR_LIMIT) + "\n... (truncated)"
+      : rawDiff;
+
+  return [
     "Environment:",
     `- Base URL: ${options.baseUrl ?? "not provided"}`,
     `- Headed mode preference: ${options.isHeadless ? "headless" : "headed"}`,
