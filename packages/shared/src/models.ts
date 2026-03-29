@@ -1053,8 +1053,10 @@ export class TestReport extends ExecutedTestPlan.extend<TestReport>("@supervisor
   }
 
   get status(): "passed" | "failed" {
-    const runFinished = this.events.find((event) => event._tag === "RunFinished");
-    if (runFinished?._tag === "RunFinished" && runFinished.status === "failed") return "failed";
+    const runFinished = this.events.find(
+      (event): event is RunFinished => event._tag === "RunFinished",
+    );
+    if (runFinished && runFinished.status === "failed") return "failed";
     const statuses = this.stepStatuses;
     for (const { status } of statuses.values()) {
       if (status === "failed") return "failed";
