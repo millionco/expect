@@ -74,7 +74,6 @@ Examples:
 
 const seedStores = (opts: CommanderOpts, changesFor: ChangesFor) => {
   usePreferencesStore.setState({
-    ...(opts.agent ? { agentBackend: opts.agent } : {}),
     browserHeaded: opts.headed ?? false,
     replayHost: opts.replayHost ?? "https://expect.dev",
   });

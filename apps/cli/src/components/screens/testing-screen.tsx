@@ -28,6 +28,7 @@ import { Image } from "../ui/image";
 import { ErrorMessage } from "../ui/error-message";
 import { executeFn, screenshotPathsAtom } from "../../data/execution-atom";
 import { agentConfigOptionsAtom } from "../../data/config-options";
+import { agentProviderAtom } from "../../data/runtime";
 import { trackEvent } from "../../utils/session-analytics";
 import { formatToolCall, type FormattedToolCall } from "../../utils/format-tool-call";
 import { useScrollableList } from "../../hooks/use-scrollable-list";
@@ -265,7 +266,8 @@ export const TestingScreen = ({
   const COLORS = useColors();
   const [, terminalRows] = useStdoutDimensions();
 
-  const agentBackend = usePreferencesStore((state) => state.agentBackend);
+  const agentProviderValue = useAtomValue(agentProviderAtom);
+  const agentBackend = Option.isSome(agentProviderValue) ? agentProviderValue.value : "claude";
   const setConfigOptions = useAtomSet(agentConfigOptionsAtom);
   const browserHeaded = usePreferencesStore((state) => state.browserHeaded);
   const replayHost = usePreferencesStore((state) => state.replayHost);
