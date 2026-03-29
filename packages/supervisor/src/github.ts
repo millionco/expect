@@ -139,7 +139,10 @@ export class Github extends ServiceMap.Service<Github>()("@supervisor/GitHub", {
         `[.[] | select(.body | contains("${escapedMarker}")) | .id] | first`,
       ]);
       const commentId = output.trim();
-      return commentId.length > 0 ? Option.some(Number(commentId)) : Option.none();
+      const parsed = Number(commentId);
+      return commentId.length > 0 && !Number.isNaN(parsed)
+        ? Option.some(parsed)
+        : Option.none();
     });
 
     const updateComment = Effect.fn("GitHub.updateComment")(function* (
