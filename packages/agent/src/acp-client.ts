@@ -636,14 +636,13 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
     const getQueueBySessionId = Effect.fn("AcpClient.getQueueBySessionId")(function* (
       sessionId: SessionId,
     ) {
-      if (!sessionUpdatesMap.has(sessionId)) {
+      const existing = sessionUpdatesMap.get(sessionId);
+      if (!existing) {
         return yield* Effect.die(
           `Session ${sessionId} not initialized, did you forget to call createSession?`,
         );
       }
-      const fresh = yield* Queue.unbounded<AcpSessionUpdate, SessionQueueError>();
-      sessionUpdatesMap.set(sessionId, fresh);
-      return fresh;
+      return existing;
     });
 
     const stream = Effect.fn("AcpClient.stream")(function* ({

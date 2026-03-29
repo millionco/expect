@@ -107,11 +107,10 @@ export const AgentPickerScreen = () => {
     }
   }
 
-  const { highlightedIndex, setHighlightedIndex, scrollOffset, handleNavigation } =
-    useScrollableList({
-      itemCount: items.length,
-      visibleCount: VISIBLE_COUNT,
-    });
+  const { highlightedIndex, setHighlightedIndex, scrollOffset } = useScrollableList({
+    itemCount: items.length,
+    visibleCount: VISIBLE_COUNT,
+  });
 
   const visibleItems = items.slice(scrollOffset, scrollOffset + VISIBLE_COUNT);
 
@@ -132,7 +131,21 @@ export const AgentPickerScreen = () => {
   };
 
   useInput((input, key) => {
-    if (handleNavigation(input, key)) return;
+    const isDown = key.downArrow || input === "j" || (key.ctrl && input === "n");
+    const isUp = key.upArrow || input === "k" || (key.ctrl && input === "p");
+
+    if (isDown || isUp) {
+      setHighlightedIndex((previous) => {
+        const direction = isDown ? 1 : -1;
+        let next = previous + direction;
+        while (next >= 0 && next < items.length && items[next]?.isDisabled) {
+          next += direction;
+        }
+        if (next < 0 || next >= items.length) return previous;
+        return next;
+      });
+      return;
+    }
 
     if (key.return) {
       const selected = items[highlightedIndex];
