@@ -174,7 +174,25 @@ export const runHeadless = (options: HeadlessRunOptions) =>
           ),
           Effect.catchTag("ExecutionTimeoutError", (error) =>
             Effect.sync(() => {
-              if (!isJsonOutput) ciReporter.timeoutError(error.timeoutMs);
+              if (isJsonOutput) {
+                const resultOutput = new CiResultOutput({
+                  version: VERSION,
+                  status: "failed" as const,
+                  title: options.instruction,
+                  duration_ms: error.timeoutMs,
+                  steps: [],
+                  artifacts: {},
+                  summary: `Timed out after ${formatElapsedTime(error.timeoutMs)}`,
+                });
+                const jsonString = JSON.stringify(
+                  Schema.encodeSync(CiResultOutput)(resultOutput),
+                  undefined,
+                  2,
+                );
+                process.stdout.write(jsonString + "\n");
+              } else {
+                ciReporter.timeoutError(error.timeoutMs);
+              }
               process.exit(1);
             }),
           ),

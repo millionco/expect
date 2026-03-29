@@ -153,8 +153,8 @@ export class Github extends ServiceMap.Service<Github>()("@supervisor/GitHub", {
           const dir = yield* fileSystem.makeTempDirectoryScoped({
             prefix: COMMENT_DIRECTORY_PREFIX,
           });
-          const bodyPath = join(dir, "pull-request-comment.md");
-          yield* fileSystem.writeFileString(bodyPath, body);
+          const bodyPath = join(dir, "pull-request-comment.json");
+          yield* fileSystem.writeFileString(bodyPath, JSON.stringify({ body }));
           yield* runGhCommand(cwd, [
             "api",
             `repos/{owner}/{repo}/issues/comments/${commentId}`,
