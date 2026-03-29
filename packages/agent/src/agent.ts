@@ -78,6 +78,7 @@ export class Agent extends ServiceMap.Service<
             prompt: options.prompt,
             mcpEnv: options.mcpEnv,
             systemPrompt: options.systemPrompt,
+            modelPreference: options.modelPreference,
           }),
         setConfigOption: (sessionId, configId, value) =>
           acpClient.setConfigOption(sessionId as SessionId, configId, value),

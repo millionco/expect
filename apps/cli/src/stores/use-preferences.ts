@@ -11,9 +11,9 @@ interface PreferencesStore {
   autoSaveFlows: boolean;
   notifications: boolean | undefined;
   instructionHistory: string[];
-  modelPreferences: Record<AgentBackend, string | undefined>;
+  modelPreferences: Record<AgentBackend, { configId: string; value: string } | undefined>;
   setAgentBackend: (backend: AgentBackend) => void;
-  setModelPreference: (agent: AgentBackend, modelValue: string) => void;
+  setModelPreference: (agent: AgentBackend, configId: string, modelValue: string) => void;
   toggleAutoSave: () => void;
   toggleNotifications: () => void;
   rememberInstruction: (instruction: string) => void;
@@ -38,9 +38,9 @@ export const usePreferencesStore = create<PreferencesStore>()(
         droid: undefined,
       },
       setAgentBackend: (backend: AgentBackend) => set({ agentBackend: backend }),
-      setModelPreference: (agent: AgentBackend, modelValue: string) =>
+      setModelPreference: (agent: AgentBackend, configId: string, modelValue: string) =>
         set((state) => ({
-          modelPreferences: { ...state.modelPreferences, [agent]: modelValue },
+          modelPreferences: { ...state.modelPreferences, [agent]: { configId, value: modelValue } },
         })),
       toggleAutoSave: () => set((state) => ({ autoSaveFlows: !state.autoSaveFlows })),
       toggleNotifications: () =>

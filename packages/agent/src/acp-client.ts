@@ -558,6 +558,15 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
       capabilities: initResponse.agentCapabilities,
     });
 
+    const decodeConfigOptions = (raw: unknown[]) =>
+      Schema.decodeUnknownEffect(Schema.Array(AcpConfigOption))(raw).pipe(
+        Effect.catchTag("SchemaError", (schemaError) =>
+          Effect.logWarning("Failed to decode config options", {
+            error: String(schemaError),
+          }).pipe(Effect.as([] as AcpConfigOption[])),
+        ),
+      );
+
     const createSession = Effect.fn("AcpClient.createSession")(function* (
       cwd: string,
       mcpEnv: ReadonlyArray<{ name: string; value: string }> = [],
@@ -605,15 +614,7 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
             yield* Effect.logInfo("ACP session created", { sessionId });
 
             if (response.configOptions && response.configOptions.length > 0) {
-              const decoded = yield* Schema.decodeUnknownEffect(Schema.Array(AcpConfigOption))(
-                response.configOptions,
-              ).pipe(
-                Effect.catchTag("SchemaError", (schemaError) =>
-                  Effect.logWarning("Failed to decode config options", {
-                    error: String(schemaError),
-                  }).pipe(Effect.as([] as AcpConfigOption[])),
-                ),
-              );
+              const decoded = yield* decodeConfigOptions(response.configOptions);
               if (decoded.length > 0) {
                 Queue.offerUnsafe(
                   updatesQueue,
@@ -651,18 +652,37 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
       cwd,
       mcpEnv = [],
       systemPrompt = Option.none(),
+      modelPreference,
     }: {
       sessionId: Option.Option<SessionId>;
       prompt: string;
       cwd: string;
       mcpEnv?: ReadonlyArray<{ name: string; value: string }>;
       systemPrompt?: Option.Option<string>;
+      modelPreference?: { configId: string; value: string };
     }) {
       const sessionId = Option.isSome(sessionIdOption)
         ? sessionIdOption.value
         : yield* createSession(cwd, mcpEnv, systemPrompt);
 
       yield* Effect.logDebug("ACP stream starting", { sessionId });
+
+      if (modelPreference) {
+        yield* setConfigOption(sessionId, modelPreference.configId, modelPreference.value).pipe(
+          Effect.tap(() =>
+            Effect.logInfo("Model preference applied", {
+              configId: modelPreference.configId,
+              value: modelPreference.value,
+            }),
+          ),
+          Effect.tapErrorTag("AcpStreamError", (error) =>
+            Effect.logWarning("Failed to apply model preference", {
+              error: error.message,
+            }),
+          ),
+          Effect.catchTag("AcpStreamError", () => Effect.void),
+        );
+      }
 
       const updatesQueue = yield* getQueueBySessionId(sessionId);
       const lastActivityAt = yield* Ref.make(Date.now());
@@ -750,16 +770,7 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
         return [] as AcpConfigOption[];
       }
 
-      const decoded = yield* Schema.decodeUnknownEffect(Schema.Array(AcpConfigOption))(
-        response.configOptions,
-      ).pipe(
-        Effect.catchTag("SchemaError", (schemaError) =>
-          Effect.logWarning("Failed to decode config options", {
-            error: String(schemaError),
-          }).pipe(Effect.as([] as AcpConfigOption[])),
-        ),
-      );
-
+      const decoded = yield* decodeConfigOptions(response.configOptions);
       yield* Effect.logInfo("ACP config options fetched", {
         count: decoded.length,
       });

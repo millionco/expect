@@ -58,8 +58,13 @@ export const AgentPickerScreen = () => {
 
   const currentAgent = Option.isSome(agentProvider) ? agentProvider.value : "claude";
 
+  const isCurrentAgentInstalled = agents.some(
+    (agent) => agent.backend === currentAgent && agent.isInstalled,
+  );
   const hasCachedOptions = (cachedConfigOptions[currentAgent] ?? []).length > 0;
-  const { data: fetchedOptions, isLoading: isFetchingModels } = useConfigOptions(currentAgent);
+  const { data: fetchedOptions, isLoading: isFetchingModels } = useConfigOptions(
+    isCurrentAgentInstalled ? currentAgent : undefined,
+  );
 
   const configOptions = hasCachedOptions
     ? (cachedConfigOptions[currentAgent] ?? [])
@@ -94,7 +99,7 @@ export const AgentPickerScreen = () => {
 
   if (modelConfig) {
     const modelOptions = getModelOptions(modelConfig);
-    const currentModelPref = modelPreferences[currentAgent];
+    const currentModelPref = modelPreferences[currentAgent]?.value;
     const currentModelValue =
       typeof modelConfig.currentValue === "string" ? modelConfig.currentValue : undefined;
 
@@ -125,9 +130,11 @@ export const AgentPickerScreen = () => {
     }
   }
 
+  const firstEnabledIndex = items.findIndex((item) => !item.isDisabled);
   const { highlightedIndex, setHighlightedIndex, scrollOffset } = useScrollableList({
     itemCount: items.length,
     visibleCount: VISIBLE_COUNT,
+    initialIndex: firstEnabledIndex >= 0 ? firstEnabledIndex : 0,
   });
 
   const visibleItems = items.slice(scrollOffset, scrollOffset + VISIBLE_COUNT);
@@ -143,7 +150,7 @@ export const AgentPickerScreen = () => {
     }
 
     if (item.kind === "model" && item.modelValue && item.configId) {
-      setModelPreference(currentAgent, item.modelValue);
+      setModelPreference(currentAgent, item.configId, item.modelValue);
       setScreen(Screen.Main());
     }
   };

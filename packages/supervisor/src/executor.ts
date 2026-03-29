@@ -61,6 +61,7 @@ export interface ExecuteOptions {
   readonly liveViewUrl?: string;
   readonly testCoverage?: TestCoverageReport;
   readonly onConfigOptions?: (configOptions: readonly AcpConfigOption[]) => void;
+  readonly modelPreference?: { configId: string; value: string };
 }
 
 interface ExecutorAccumState {
@@ -170,6 +171,7 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
         prompt,
         systemPrompt: Option.none(),
         mcpEnv,
+        modelPreference: options.modelPreference,
       });
 
       return agent.stream(streamOptions).pipe(
