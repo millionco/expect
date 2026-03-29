@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: makro-postgres
+    environment:
+      POSTGRES_DB: makro
+      POSTGRES_USER: makro
+      POSTGRES_PASSWORD: makro
+    ports:
+      - "54329:5432"
+    volumes:
+      - makro-postgres-data:/var/lib/postgresql/data
+      - .:/workspace
+      - ./supabase/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./supabase/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+
+volumes:
+  makro-postgres-data:

@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-card: var(--card);
+  --color-panel: var(--panel);
+  --color-accent: var(--accent);
+  --color-ink: var(--ink);
+  --color-ink-foreground: var(--ink-foreground);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
+  --radius-4xl: 2rem;
+}
+
+:root {
+  --background: oklch(0.985 0.006 85);
+  --foreground: oklch(0.22 0.018 255);
+  --muted-foreground: oklch(0.5 0.02 240);
+  --border: oklch(0.88 0.01 90);
+  --card: oklch(0.993 0.004 95 / 0.92);
+  --panel: oklch(0.97 0.008 92 / 0.88);
+  --accent: oklch(0.54 0.09 210);
+  --ink: oklch(0.22 0.02 255);
+  --ink-foreground: oklch(0.97 0.004 95);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: oklch(0.18 0.018 255);
+    --foreground: oklch(0.96 0.004 95);
+    --muted-foreground: oklch(0.74 0.016 240);
+    --border: oklch(0.31 0.018 255);
+    --card: oklch(0.23 0.018 255 / 0.92);
+    --panel: oklch(0.26 0.02 255 / 0.88);
+    --accent: oklch(0.72 0.09 205);
+    --ink: oklch(0.14 0.016 255);
+    --ink-foreground: oklch(0.95 0.004 95);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply font-sans;
+  }
+
+  body {
+    background:
+      radial-gradient(circle at top left, color-mix(in oklab, var(--accent) 12%, transparent), transparent 34%),
+      radial-gradient(circle at top right, color-mix(in oklab, var(--foreground) 10%, transparent), transparent 30%),
+      var(--background);
+    color: var(--foreground);
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--accent) 30%, white);
+    color: var(--foreground);
+  }
+
+  a {
+    text-decoration: none;
+  }
+}
