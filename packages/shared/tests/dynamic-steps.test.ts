@@ -287,6 +287,17 @@ describe("run completion detection", () => {
     expect(executed.allStepsTerminal).toBe(true);
   });
 
+  it("synthesizeRunFinished marks failed when no steps were executed", () => {
+    const executed = makeEmptyExecuted();
+    const result = executed.synthesizeRunFinished();
+    const runFinished = result.events.find(
+      (event): event is RunFinished => event._tag === "RunFinished",
+    );
+    expect(runFinished).toBeDefined();
+    expect(runFinished!.status).toBe("failed");
+    expect(runFinished!.summary).toBe("Agent completed without executing any test steps");
+  });
+
   it("synthesizeRunFinished creates RunFinished with correct status for mixed results", () => {
     let executed = makeEmptyExecuted();
     executed = executed.applyMarker(

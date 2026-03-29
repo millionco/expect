@@ -136,7 +136,7 @@ export const ResultsScreen = ({
           {statusIcon} {statusLabel}
         </Text>
         {report.steps.length === 0 && (
-          <Text color={COLORS.DIM}>{"  "}no testing was necessary</Text>
+          <Text color={COLORS.DIM}>{"  "}agent did not execute any test steps</Text>
         )}
         {report.steps.length > 0 && (
           <Text color={COLORS.DIM}>

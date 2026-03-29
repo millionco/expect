@@ -970,6 +970,18 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
 
   synthesizeRunFinished(): ExecutedTestPlan {
     if (this.hasRunFinished) return this;
+    if (this.steps.length === 0) {
+      return new ExecutedTestPlan({
+        ...this,
+        events: [
+          ...this.events,
+          new RunFinished({
+            status: "failed",
+            summary: "Agent completed without executing any test steps",
+          }),
+        ],
+      });
+    }
     const hasFailures = this.steps.some((step) => step.status === "failed");
     const status = hasFailures ? ("failed" as const) : ("passed" as const);
     const passedCount = this.steps.filter((step) => step.status === "passed").length;
@@ -1068,7 +1080,7 @@ export class TestReport extends ExecutedTestPlan.extend<TestReport>("@supervisor
       this.summary,
       "",
       this.steps.length === 0
-        ? "no testing was necessary"
+        ? "agent did not execute any test steps"
         : `${summaryParts.join(", ")} out of ${this.steps.length} steps`,
       "",
     ];
