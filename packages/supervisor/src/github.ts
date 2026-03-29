@@ -131,11 +131,12 @@ export class Github extends ServiceMap.Service<Github>()("@supervisor/GitHub", {
       marker: string,
     ) {
       yield* Effect.annotateCurrentSpan({ prNumber, marker });
+      const escapedMarker = marker.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
       const output = yield* runGhCommand(cwd, [
         "api",
         `repos/{owner}/{repo}/issues/${prNumber}/comments`,
         "--jq",
-        `.[] | select(.body | contains("${marker}")) | .id`,
+        `.[] | select(.body | contains("${escapedMarker}")) | .id`,
       ]);
       const commentId = output.trim();
       return commentId.length > 0 ? Option.some(Number(commentId)) : Option.none();
@@ -166,21 +167,6 @@ export class Github extends ServiceMap.Service<Github>()("@supervisor/GitHub", {
       );
     });
 
-    const uploadVideo = Effect.fn("GitHub.uploadVideo")(function* (
-      cwd: string,
-      prNumber: number,
-      filePath: string,
-    ) {
-      yield* Effect.annotateCurrentSpan({ prNumber, filePath });
-      const output = yield* runGhCommand(cwd, [
-        "api",
-        `repos/{owner}/{repo}/issues/${prNumber}/comments`,
-        "-f",
-        `body=<video src="file://${filePath}" controls></video>`,
-      ]);
-      return output;
-    });
-
     const upsertComment = Effect.fn("GitHub.upsertComment")(function* (
       cwd: string,
       pullRequest: PullRequest,
@@ -202,7 +188,6 @@ export class Github extends ServiceMap.Service<Github>()("@supervisor/GitHub", {
       addComment,
       findComment,
       updateComment,
-      uploadVideo,
       upsertComment,
     } as const;
   }),

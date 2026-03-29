@@ -105,13 +105,17 @@ export const runHeadless = (options: HeadlessRunOptions) =>
               }
               case "StepFailed": {
                 const failedStep = executed.steps.find((step) => step.id === event.stepId);
+                const failedTitle = failedStep?.title ?? event.stepId;
                 const failedElapsed = failedStep ? getStepElapsedMs(failedStep) : undefined;
-                ciReporter.stepFailed(event.stepId, event.message, failedElapsed);
+                ciReporter.stepFailed(failedTitle, event.message, failedElapsed);
                 break;
               }
-              case "StepSkipped":
-                ciReporter.stepSkipped(event.stepId, event.reason);
+              case "StepSkipped": {
+                const skippedStep = executed.steps.find((step) => step.id === event.stepId);
+                const skippedTitle = skippedStep?.title ?? event.stepId;
+                ciReporter.stepSkipped(skippedTitle, event.reason);
                 break;
+              }
             }
           }
         };
