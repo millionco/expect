@@ -9,10 +9,12 @@ import { queryClient } from "./query-client";
 import { setInkInstance } from "./utils/clear-ink-display";
 import { agentProviderAtom } from "./data/runtime";
 import { flushSession, trackSessionStarted } from "./utils/session-analytics";
+import { usePreferencesStore } from "./stores/use-preferences";
 
 const MOUSE_DISABLE = "\u001b[?1000l\u001b[?1006l";
 
 export const renderApp = async (agent: AgentBackend) => {
+  usePreferencesStore.getState().setAgentBackend(agent);
   const sessionStartedAt = Date.now();
   await trackSessionStarted();
 
