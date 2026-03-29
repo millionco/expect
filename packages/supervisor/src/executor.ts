@@ -175,11 +175,13 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
       });
 
       return agent.stream(streamOptions).pipe(
-        Stream.tap((update) =>
-          update.sessionUpdate === "config_option_update" && options.onConfigOptions
-            ? Effect.sync(() => options.onConfigOptions!(update.configOptions))
-            : Effect.void,
-        ),
+        Stream.tap((update) => {
+          const callback = options.onConfigOptions;
+          if (update.sessionUpdate === "config_option_update" && callback) {
+            return Effect.sync(() => callback(update.configOptions));
+          }
+          return Effect.void;
+        }),
         Stream.mapAccum(
           (): ExecutorAccumState => ({
             plan: initial,

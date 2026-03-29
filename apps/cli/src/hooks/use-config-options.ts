@@ -8,13 +8,14 @@ export const useConfigOptions = (agent: AgentBackend | undefined) =>
   useQuery({
     queryKey: ["config-options", agent],
     enabled: agent !== undefined,
-    queryFn: () =>
-      Effect.runPromise(
+    queryFn: () => {
+      if (!agent) return Promise.resolve([] as readonly AcpConfigOption[]);
+      return Effect.runPromise(
         Effect.gen(function* () {
           const agentService = yield* Agent;
           return yield* agentService.fetchConfigOptions(process.cwd());
         }).pipe(
-          Effect.provide(Agent.layerFor(agent!)),
+          Effect.provide(Agent.layerFor(agent)),
           Effect.provide(NodeServices.layer),
           Effect.catchTags({
             AcpSessionCreateError: () => Effect.succeed([] as readonly AcpConfigOption[]),
@@ -22,7 +23,8 @@ export const useConfigOptions = (agent: AgentBackend | undefined) =>
             AcpProviderUsageLimitError: () => Effect.succeed([] as readonly AcpConfigOption[]),
           }),
         ),
-      ),
+      );
+    },
     staleTime: 60_000,
     retry: false,
   });
