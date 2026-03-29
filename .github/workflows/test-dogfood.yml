@@ -47,7 +47,10 @@ jobs:
           echo "What is 1+1?" | claude -p --max-turns 1
 
       - name: Install ttyd
-        run: sudo apt-get update && sudo apt-get install -y ttyd
+        run: |
+          sudo apt-get update && sudo apt-get install -y ttyd
+          sudo systemctl stop ttyd || true
+          sudo systemctl disable ttyd || true
 
       - name: Start and wait for website server
         run: |
