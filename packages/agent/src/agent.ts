@@ -11,7 +11,7 @@ import {
   type AcpStreamError,
   type SessionId,
 } from "./acp-client";
-import { AcpSessionUpdate } from "@expect/shared/models";
+import { AcpSessionUpdate, type AcpConfigOption } from "@expect/shared/models";
 import { AgentStreamOptions } from "./types";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { PlatformError } from "effect/PlatformError";
@@ -57,6 +57,12 @@ export class Agent extends ServiceMap.Service<
       configId: string,
       value: string | boolean,
     ) => Effect.Effect<unknown, AcpStreamError>;
+    readonly fetchConfigOptions: (
+      cwd: string,
+    ) => Effect.Effect<
+      readonly AcpConfigOption[],
+      AcpSessionCreateError | AcpProviderUnauthenticatedError | AcpProviderUsageLimitError
+    >;
   }
 >()("@expect/Agent") {
   static layerAcp = Layer.effect(Agent)(
@@ -75,6 +81,7 @@ export class Agent extends ServiceMap.Service<
           }),
         setConfigOption: (sessionId, configId, value) =>
           acpClient.setConfigOption(sessionId as SessionId, configId, value),
+        fetchConfigOptions: (cwd) => acpClient.fetchConfigOptions(cwd),
       });
     }),
   ).pipe(Layer.provide(AcpClient.layer));
@@ -117,6 +124,7 @@ export class Agent extends ServiceMap.Service<
             ),
           createSession: () => Effect.die("createSession not supported for test layer"),
           setConfigOption: () => Effect.die("setConfigOption not supported for test layer"),
+          fetchConfigOptions: () => Effect.succeed([] as AcpConfigOption[]),
         });
       }),
     ).pipe(Layer.provide(NodeServices.layer));

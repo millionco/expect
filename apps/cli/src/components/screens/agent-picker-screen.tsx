@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import { Box, Text, useInput } from "ink";
 import figures from "figures";
 import { Option } from "effect";
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { useAvailableAgents } from "../../hooks/use-available-agents";
+import { useConfigOptions } from "../../hooks/use-config-options";
 import { useNavigationStore, Screen } from "../../stores/use-navigation";
 import { usePreferencesStore } from "../../stores/use-preferences";
 import { useScrollableList } from "../../hooks/use-scrollable-list";
@@ -47,13 +49,30 @@ export const AgentPickerScreen = () => {
   const setScreen = useNavigationStore((state) => state.setScreen);
   const setAgentProvider = useAtomSet(agentProviderAtom);
   const agentProvider = useAtomValue(agentProviderAtom);
-  const configOptionsMap = useAtomValue(agentConfigOptionsAtom);
+  const cachedConfigOptions = useAtomValue(agentConfigOptionsAtom);
+  const setConfigOptions = useAtomSet(agentConfigOptionsAtom);
   const setAgentBackend = usePreferencesStore((state) => state.setAgentBackend);
   const modelPreferences = usePreferencesStore((state) => state.modelPreferences);
   const setModelPreference = usePreferencesStore((state) => state.setModelPreference);
   const { data: agents = [], isLoading } = useAvailableAgents();
 
   const currentAgent = Option.isSome(agentProvider) ? agentProvider.value : "claude";
+
+  const hasCachedOptions = (cachedConfigOptions[currentAgent] ?? []).length > 0;
+  const { data: fetchedOptions, isLoading: isFetchingModels } = useConfigOptions(currentAgent);
+
+  const configOptions = hasCachedOptions
+    ? (cachedConfigOptions[currentAgent] ?? [])
+    : (fetchedOptions ?? []);
+
+  useEffect(() => {
+    if (!hasCachedOptions && fetchedOptions && fetchedOptions.length > 0) {
+      setConfigOptions((previous) => ({
+        ...previous,
+        [currentAgent]: [...fetchedOptions],
+      }));
+    }
+  }, [hasCachedOptions, fetchedOptions, currentAgent, setConfigOptions]);
 
   const items: PickerItem[] = [];
 
@@ -69,8 +88,7 @@ export const AgentPickerScreen = () => {
     });
   }
 
-  const currentConfigOptions = configOptionsMap[currentAgent] ?? [];
-  const modelConfig = currentConfigOptions.find(
+  const modelConfig = configOptions.find(
     (option) => option.category === "model" && option.type === "select",
   );
 
@@ -179,6 +197,7 @@ export const AgentPickerScreen = () => {
           overflow="hidden"
           paddingX={1}
         >
+          {isFetchingModels && !hasCachedOptions && <Spinner message="Loading models..." />}
           {visibleItems.map((item, index) => {
             const actualIndex = index + scrollOffset;
             const isHighlighted = actualIndex === highlightedIndex;

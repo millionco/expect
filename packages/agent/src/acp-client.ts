@@ -739,10 +739,38 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
       return response;
     });
 
+    const fetchConfigOptions = Effect.fn("AcpClient.fetchConfigOptions")(function* (cwd: string) {
+      const mcpServers = buildMcpServers([]);
+      const response = yield* Effect.tryPromise({
+        try: () => connection.newSession({ cwd, mcpServers }),
+        catch: (cause) => new AcpSessionCreateError({ cause }),
+      });
+
+      if (!response.configOptions || response.configOptions.length === 0) {
+        return [] as AcpConfigOption[];
+      }
+
+      const decoded = yield* Schema.decodeUnknownEffect(Schema.Array(AcpConfigOption))(
+        response.configOptions,
+      ).pipe(
+        Effect.catchTag("SchemaError", (schemaError) =>
+          Effect.logWarning("Failed to decode config options", {
+            error: String(schemaError),
+          }).pipe(Effect.as([] as AcpConfigOption[])),
+        ),
+      );
+
+      yield* Effect.logInfo("ACP config options fetched", {
+        count: decoded.length,
+      });
+      return decoded;
+    });
+
     return {
       createSession,
       stream,
       setConfigOption,
+      fetchConfigOptions,
     } as const;
   }),
 }) {
