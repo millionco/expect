@@ -832,7 +832,11 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
       if (update.content.type !== "text" || update.content.text === undefined) return this;
       const lastEvent = this.events.at(-1);
       if (lastEvent?._tag === "AgentThinking") {
-        const processed = processTextBlock("AgentThinking", lastEvent.text + update.content.text, false);
+        const processed = processTextBlock(
+          "AgentThinking",
+          lastEvent.text + update.content.text,
+          false,
+        );
         const withEvents = new ExecutedTestPlan({
           ...this,
           events: [...this.events.slice(0, -1), ...processed.events],
@@ -852,7 +856,11 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
       if (update.content.type !== "text" || update.content.text === undefined) return this;
       const lastEvent = this.events.at(-1);
       if (lastEvent?._tag === "AgentText") {
-        const processed = processTextBlock("AgentText", lastEvent.text + update.content.text, false);
+        const processed = processTextBlock(
+          "AgentText",
+          lastEvent.text + update.content.text,
+          false,
+        );
         const withEvents = new ExecutedTestPlan({
           ...this,
           events: [...this.events.slice(0, -1), ...processed.events],

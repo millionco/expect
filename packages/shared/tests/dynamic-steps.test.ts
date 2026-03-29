@@ -266,7 +266,9 @@ describe("dynamic step discovery", () => {
         content: { type: "text" as const, text },
       });
 
-    executed = executed.addEvent(chunk("Planning next action...\nSTEP_START|step-01|Open login page\n"));
+    executed = executed.addEvent(
+      chunk("Planning next action...\nSTEP_START|step-01|Open login page\n"),
+    );
 
     expect(executed.steps.length).toBe(1);
     expect(executed.steps[0].title).toBe("Open login page");
@@ -280,7 +282,9 @@ describe("dynamic step discovery", () => {
     expect(agentTextEvents[0].text).toBe("Planning next action...\n");
     expect(agentTextEvents[0].text.includes("STEP_START|step-01|Open login page")).toBe(false);
 
-    executed = executed.addEvent(chunk("STEP_DONE|step-01|Login page loaded\nRUN_COMPLETED|passed|Completed successfully\n"));
+    executed = executed.addEvent(
+      chunk("STEP_DONE|step-01|Login page loaded\nRUN_COMPLETED|passed|Completed successfully\n"),
+    );
 
     expect(executed.steps[0].status).toBe("passed");
     expect(executed.hasRunFinished).toBe(true);
