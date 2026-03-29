@@ -27,6 +27,7 @@ import {
   AgentProvider,
 } from "@expect/shared/models";
 import { hasStringMessage } from "@expect/shared/utils";
+import { buildSessionMeta } from "./build-session-meta";
 
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import * as NodeServices from "@effect/platform-node/NodeServices";
@@ -481,6 +482,13 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
     yield* Effect.annotateLogsScoped({ adapter: adapter.args[0] });
     yield* Effect.logInfo(`Initializing AcpClient`);
     const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+    const githubActionsValue = yield* Config.option(Config.string("GITHUB_ACTIONS"));
+    const githubRunId = yield* Config.option(Config.string("GITHUB_RUN_ID"));
+    const isGitHubActions =
+      Option.match(githubActionsValue, {
+        onNone: () => false,
+        onSome: (value) => value !== "",
+      }) || Option.isSome(githubRunId);
     /** @note(rasmus): FiberMap that runs strems */
     const streamFiberMap = yield* FiberMap.make<SessionId>();
 
@@ -578,14 +586,17 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
     ) {
       yield* Effect.annotateCurrentSpan({ cwd });
       const mcpServers = buildMcpServers(mcpEnv);
+      const sessionMeta = buildSessionMeta({
+        provider: adapter.provider,
+        systemPrompt: Option.getOrUndefined(systemPrompt),
+        metadata: { isGitHubActions },
+      });
       return yield* Effect.tryPromise({
         try: () =>
           connection.newSession({
             cwd,
             mcpServers,
-            ...(adapter.provider === "claude" && Option.isSome(systemPrompt)
-              ? { _meta: { systemPrompt: systemPrompt.value } }
-              : {}),
+            ...(sessionMeta ? { _meta: sessionMeta } : {}),
           }),
         catch: (cause) => {
           const message = hasStringMessage(cause) ? cause.message : String(cause);

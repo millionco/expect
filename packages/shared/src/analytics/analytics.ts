@@ -86,6 +86,7 @@ export class Analytics extends ServiceMap.Service<Analytics>()("@expect/Analytic
     const provider = yield* AnalyticsProvider;
     const noTelemetryValue = yield* Config.option(Config.string("NO_TELEMETRY"));
     const noTelemetryLegacy = yield* Config.option(Config.string("NO_TELEMTRY"));
+    const githubActionsValue = yield* Config.string("GITHUB_ACTIONS").pipe(Config.withDefault(""));
     const telemetryDisabled =
       Option.match(noTelemetryValue, {
         onNone: () => false,
@@ -94,36 +95,42 @@ export class Analytics extends ServiceMap.Service<Analytics>()("@expect/Analytic
       Option.match(noTelemetryLegacy, {
         onNone: () => false,
         onSome: (value) => value === "1",
-      });
+      }) ||
+      githubActionsValue !== "";
 
-    const distinctId = yield* Effect.tryPromise(() => machineId()).pipe(Effect.orDie);
-    const projectId = hash(process.cwd());
+    const capture = telemetryDisabled
+      ? <K extends keyof EventMap>(
+          _eventName: K,
+          ..._properties: EventMap[K] extends undefined ? [] : [EventMap[K]]
+        ) => Effect.void
+      : yield* Effect.gen(function* () {
+          const distinctId = yield* Effect.tryPromise(() => machineId()).pipe(Effect.orDie);
+          const projectId = hash(process.cwd());
 
-    const capture = <K extends keyof EventMap>(
-      eventName: K,
-      ...[properties]: EventMap[K] extends undefined ? [] : [EventMap[K]]
-    ) =>
-      telemetryDisabled
-        ? Effect.void
-        : Effect.gen(function* () {
-            const commonProperties = {
-              timestamp: new Date().toISOString(),
-              projectId,
-            };
+          return <K extends keyof EventMap>(
+            eventName: K,
+            ...[properties]: EventMap[K] extends undefined ? [] : [EventMap[K]]
+          ) =>
+            Effect.gen(function* () {
+              const commonProperties = {
+                timestamp: new Date().toISOString(),
+                projectId,
+              };
 
-            yield* provider.capture({
-              eventName: eventName as string,
-              properties: { ...commonProperties, ...(properties ?? {}) },
-              distinctId,
-            });
-          }).pipe(
-            Effect.catchCause((cause) =>
-              Effect.logWarning("Analytics capture failed", {
-                eventName,
-                cause,
-              }).pipe(Effect.annotateLogs({ module: "Analytics" })),
-            ),
-          );
+              yield* provider.capture({
+                eventName: eventName as string,
+                properties: { ...commonProperties, ...(properties ?? {}) },
+                distinctId,
+              });
+            }).pipe(
+              Effect.catchCause((cause) =>
+                Effect.logWarning("Analytics capture failed", {
+                  eventName,
+                  cause,
+                }).pipe(Effect.annotateLogs({ module: "Analytics" })),
+              ),
+            );
+        });
 
     const track: {
       <K extends keyof EventMap>(

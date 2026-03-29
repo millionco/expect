@@ -67,6 +67,13 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("export const login = () => {}");
   });
 
+  it("includes coverage planning reminder", () => {
+    const prompt = buildExecutionPrompt(makeDefaultOptions());
+    expect(prompt).toContain("Coverage planning reminder:");
+    expect(prompt).toContain("Analyze every changed file below");
+    expect(prompt).toContain("Account for each changed file");
+  });
+
   it("includes environment context", () => {
     const prompt = buildExecutionPrompt(makeDefaultOptions());
     expect(prompt).toContain("Base URL: http://localhost:3000");
@@ -160,10 +167,34 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("Never guess CSS selectors");
   });
 
+  it("places tool and snapshot guidance after strategy sections", () => {
+    const prompt = buildExecutionSystemPrompt();
+    expect(prompt.indexOf("Change-analysis protocol:")).toBeLessThan(
+      prompt.indexOf("You have browser tools via the MCP server named"),
+    );
+    expect(prompt.indexOf("Execution strategy:")).toBeLessThan(
+      prompt.indexOf("Snapshot-driven workflow:"),
+    );
+  });
+
   it("includes assertion depth guidance in system prompt", () => {
     const prompt = buildExecutionSystemPrompt();
     expect(prompt).toContain("Assertion depth");
     expect(prompt).toContain("two independent signals per step");
+  });
+
+  it("includes change-analysis guidance in system prompt", () => {
+    const prompt = buildExecutionSystemPrompt();
+    expect(prompt).toContain("Change-analysis protocol:");
+    expect(prompt).toContain("Analyze EVERY changed file listed");
+    expect(prompt).toContain("developer request is a starting point");
+  });
+
+  it("includes coverage planning rules in system prompt", () => {
+    const prompt = buildExecutionSystemPrompt();
+    expect(prompt).toContain("Coverage planning rules:");
+    expect(prompt).toContain("test multiple consumers");
+    expect(prompt).toContain("every changed file is accounted for");
   });
 
   it("includes code-level testing fallback guidance in system prompt", () => {
