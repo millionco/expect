@@ -1,0 +1,41 @@
+packages/supervisor/src/executor.ts
+  04f244773d6cdcd6 22,106-107,171
+packages/shared/src/prompts.ts
+  04f244773d6cdcd6 109,218-230
+  d100e74488ed923c 108
+packages/shared/tests/prompts.test.ts
+  04f244773d6cdcd6 4,35-36,45-46,150-151,156-157,163-164,169-170,176-177,183-184
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.22",
+  "base_commit_sha": "d9f4d62aa21ed96a9eaa95cf75c29d85c56d9e6b",
+  "prompts": {
+    "04f244773d6cdcd6": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "beae48bc-654f-4c9e-b336-384a42122ef4",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 38,
+      "total_deletions": 28,
+      "accepted_lines": 35,
+      "overriden_lines": 0
+    },
+    "d100e74488ed923c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d3b9a-ede7-7ee0-8fef-109cfd28d6cb",
+        "model": "gpt-5.3-codex-spark"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 3,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
