@@ -140,9 +140,7 @@ export class Github extends ServiceMap.Service<Github>()("@supervisor/GitHub", {
       ]);
       const commentId = output.trim();
       const parsed = Number(commentId);
-      return commentId.length > 0 && !Number.isNaN(parsed)
-        ? Option.some(parsed)
-        : Option.none();
+      return commentId.length > 0 && !Number.isNaN(parsed) ? Option.some(parsed) : Option.none();
     });
 
     const updateComment = Effect.fn("GitHub.updateComment")(function* (

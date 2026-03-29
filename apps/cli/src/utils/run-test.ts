@@ -97,10 +97,7 @@ export const runHeadless = (options: HeadlessRunOptions) =>
               lastOutputAt = Date.now();
               switch (event._tag) {
                 case "RunStarted":
-                  ciReporter.planTitle(
-                    event.plan.title,
-                    Option.getOrUndefined(event.plan.baseUrl),
-                  );
+                  ciReporter.planTitle(event.plan.title, Option.getOrUndefined(event.plan.baseUrl));
                   break;
                 case "StepStarted":
                   ciReporter.stepStarted(event.title);
@@ -200,7 +197,7 @@ export const runHeadless = (options: HeadlessRunOptions) =>
               } else {
                 ciReporter.timeoutError(error.timeoutMs);
               }
-              return Effect.die(error);
+              return Effect.sync(() => process.exit(1));
             }),
           );
 
@@ -256,9 +253,7 @@ export const runHeadless = (options: HeadlessRunOptions) =>
                 Effect.catchTag("RrVideoConvertError", (error) =>
                   Effect.sync(() => {
                     if (!isJsonOutput) {
-                      process.stderr.write(
-                        `Warning: video generation failed: ${error.message}\n`,
-                      );
+                      process.stderr.write(`Warning: video generation failed: ${error.message}\n`);
                     }
                     return undefined;
                   }),
@@ -302,6 +297,8 @@ export const runHeadless = (options: HeadlessRunOptions) =>
 
               const statusEmoji = report.status === "passed" ? "\u2705" : "\u274c";
               const statusLabel = report.status === "passed" ? "Passed" : "Failed";
+              const escapeTableCell = (text: string) =>
+                text.replace(/\|/g, "\\|").replace(/\n/g, " ");
               const stepRows = report.steps
                 .map((step) => {
                   const entry = statuses.get(step.id);
@@ -318,8 +315,10 @@ export const runHeadless = (options: HeadlessRunOptions) =>
                   const stepTime = getStepElapsedMs(step);
                   const timeLabel = stepTime !== undefined ? formatElapsedTime(stepTime) : "-";
                   const statusCell =
-                    stepStatus === "failed" ? `${stepIcon} ${stepSummary}` : stepIcon;
-                  return `| ${step.title} | ${statusCell} | ${timeLabel} |`;
+                    stepStatus === "failed"
+                      ? `${stepIcon} ${escapeTableCell(stepSummary)}`
+                      : stepIcon;
+                  return `| ${escapeTableCell(step.title)} | ${statusCell} | ${timeLabel} |`;
                 })
                 .join("\n");
 

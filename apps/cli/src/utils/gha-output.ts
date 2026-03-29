@@ -38,7 +38,12 @@ export const writeGhaStepSummary = Effect.fn("writeGhaStepSummary")(function* (
     artifactLines.push("**Replay:** uploaded as artifact (see workflow artifacts above)");
   }
   const artifactSection = artifactLines.length > 0 ? `\n${artifactLines.join("\n")}\n` : "";
-  const summary = `## expect test results\n\n${badge}\n\n\`\`\`\n${reportText}\n\`\`\`\n${artifactSection}`;
+  const maxBacktickRun = (reportText.match(/`+/g) ?? []).reduce(
+    (max, run) => Math.max(max, run.length),
+    2,
+  );
+  const fence = "`".repeat(maxBacktickRun + 1);
+  const summary = `## expect test results\n\n${badge}\n\n${fence}\n${reportText}\n${fence}\n${artifactSection}`;
 
   yield* Effect.sync(() => appendFileSync(summaryPath.value, summary));
 });
