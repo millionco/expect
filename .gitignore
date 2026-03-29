@@ -5,6 +5,7 @@ dist
 .next
 .turbo
 .testie
+.expect
 tsup.config.bundled_*
 **/src/generated/
 .testie-agent-traces/
