@@ -594,14 +594,16 @@ const serializeToolResult = (value: unknown): string => {
 };
 
 const parseMarker = (line: string): ExecutionEvent | undefined => {
-  const pipeIndex = line.indexOf("|");
+  const normalizedLine = line.endsWith("\r") ? line.slice(0, -1) : line;
+  const pipeIndex = normalizedLine.indexOf("|");
   if (pipeIndex === -1) return undefined;
 
-  const marker = line.slice(0, pipeIndex);
-  const rest = line.slice(pipeIndex + 1);
+  const marker = normalizedLine.slice(0, pipeIndex);
+  const rest = normalizedLine.slice(pipeIndex + 1);
   const secondPipeIndex = rest.indexOf("|");
-  const first = secondPipeIndex === -1 ? rest : rest.slice(0, secondPipeIndex);
-  const second = secondPipeIndex === -1 ? "" : rest.slice(secondPipeIndex + 1);
+  if (secondPipeIndex === -1) return undefined;
+  const first = rest.slice(0, secondPipeIndex);
+  const second = rest.slice(secondPipeIndex + 1);
 
   if (marker === "STEP_START") {
     return new StepStarted({ stepId: StepId.makeUnsafe(first), title: second });
@@ -668,6 +670,83 @@ export class Update extends Schema.Class<Update>("@supervisor/Update")({
   content: UpdateContent,
   receivedAt: Schema.DateTimeUtc,
 }) {}
+
+interface ProcessedTextBlock {
+  readonly events: readonly ExecutionEvent[];
+  readonly markers: readonly ExecutionEvent[];
+}
+
+const buildTextEvent = (
+  textEventTag: "AgentText" | "AgentThinking",
+  text: string,
+): AgentText | AgentThinking =>
+  textEventTag === "AgentText" ? new AgentText({ text }) : new AgentThinking({ text });
+
+const processTextBlock = (
+  textEventTag: "AgentText" | "AgentThinking",
+  text: string,
+  includeTrailingPartialLine: boolean,
+): ProcessedTextBlock => {
+  const events: ExecutionEvent[] = [];
+  const markers: ExecutionEvent[] = [];
+  let bufferedText = "";
+
+  const flushBufferedText = () => {
+    if (bufferedText.length === 0) return;
+    events.push(buildTextEvent(textEventTag, bufferedText));
+    bufferedText = "";
+  };
+
+  const processLine = (line: string, hasTrailingNewline: boolean) => {
+    const marker = parseMarker(line);
+    if (marker !== undefined) {
+      flushBufferedText();
+      events.push(marker);
+      markers.push(marker);
+      return;
+    }
+    bufferedText += line;
+    if (hasTrailingNewline) {
+      bufferedText += "\n";
+    }
+  };
+
+  let completeLines: readonly string[] = [];
+  let trailingLine = "";
+
+  if (text.endsWith("\n")) {
+    completeLines = text.slice(0, -1).split("\n");
+  } else {
+    const parts = text.split("\n");
+    trailingLine = parts.pop() ?? "";
+    completeLines = parts;
+  }
+
+  for (const completeLine of completeLines) {
+    processLine(completeLine, true);
+  }
+
+  if (includeTrailingPartialLine) {
+    processLine(trailingLine, false);
+  } else {
+    bufferedText += trailingLine;
+  }
+
+  flushBufferedText();
+
+  return { events, markers };
+};
+
+const applyMarkersToPlan = (
+  executed: ExecutedTestPlan,
+  markers: readonly ExecutionEvent[],
+): ExecutedTestPlan => {
+  let result = executed;
+  for (const marker of markers) {
+    result = result.applyMarker(marker);
+  }
+  return result;
+};
 
 export class PullRequest extends Schema.Class<PullRequest>("@supervisor/PullRequest")({
   number: Schema.Number,
@@ -753,38 +832,40 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
       if (update.content.type !== "text" || update.content.text === undefined) return this;
       const lastEvent = this.events.at(-1);
       if (lastEvent?._tag === "AgentThinking") {
-        return new ExecutedTestPlan({
+        const processed = processTextBlock("AgentThinking", lastEvent.text + update.content.text, false);
+        const withEvents = new ExecutedTestPlan({
           ...this,
-          events: [
-            ...this.events.slice(0, -1),
-            new AgentThinking({ text: lastEvent.text + update.content.text }),
-          ],
+          events: [...this.events.slice(0, -1), ...processed.events],
         });
+        return applyMarkersToPlan(withEvents, processed.markers);
       }
       const base = this.finalizeTextBlock();
-      return new ExecutedTestPlan({
+      const processed = processTextBlock("AgentThinking", update.content.text, false);
+      const withEvents = new ExecutedTestPlan({
         ...base,
-        events: [...base.events, new AgentThinking({ text: update.content.text })],
+        events: [...base.events, ...processed.events],
       });
+      return applyMarkersToPlan(withEvents, processed.markers);
     }
 
     if (update.sessionUpdate === "agent_message_chunk") {
       if (update.content.type !== "text" || update.content.text === undefined) return this;
       const lastEvent = this.events.at(-1);
       if (lastEvent?._tag === "AgentText") {
-        return new ExecutedTestPlan({
+        const processed = processTextBlock("AgentText", lastEvent.text + update.content.text, false);
+        const withEvents = new ExecutedTestPlan({
           ...this,
-          events: [
-            ...this.events.slice(0, -1),
-            new AgentText({ text: lastEvent.text + update.content.text }),
-          ],
+          events: [...this.events.slice(0, -1), ...processed.events],
         });
+        return applyMarkersToPlan(withEvents, processed.markers);
       }
       const base = this.finalizeTextBlock();
-      return new ExecutedTestPlan({
+      const processed = processTextBlock("AgentText", update.content.text, false);
+      const withEvents = new ExecutedTestPlan({
         ...base,
-        events: [...base.events, new AgentText({ text: update.content.text })],
+        events: [...base.events, ...processed.events],
       });
+      return applyMarkersToPlan(withEvents, processed.markers);
     }
 
     if (update.sessionUpdate === "tool_call") {
@@ -859,19 +940,13 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
   finalizeTextBlock(): ExecutedTestPlan {
     const lastEvent = this.events.at(-1);
     if (lastEvent?._tag !== "AgentText" && lastEvent?._tag !== "AgentThinking") return this;
-    const foundMarkers = lastEvent.text
-      .split("\n")
-      .map(parseMarker)
-      .filter(Predicate.isNotUndefined);
-    if (foundMarkers.length === 0) return this;
-    let result: ExecutedTestPlan = new ExecutedTestPlan({
+    const processed = processTextBlock(lastEvent._tag, lastEvent.text, true);
+    if (processed.markers.length === 0) return this;
+    const withEvents = new ExecutedTestPlan({
       ...this,
-      events: [...this.events, ...foundMarkers],
+      events: [...this.events.slice(0, -1), ...processed.events],
     });
-    for (const marker of foundMarkers) {
-      result = result.applyMarker(marker);
-    }
-    return result;
+    return applyMarkersToPlan(withEvents, processed.markers);
   }
 
   applyMarker(marker: ExecutionEvent): ExecutedTestPlan {

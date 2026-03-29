@@ -94,21 +94,24 @@ export const runHeadless = (options: HeadlessRunOptions) =>
             for (const event of executed.events) {
               if (seenEvents.has(event.id)) continue;
               seenEvents.add(event.id);
-              lastOutputAt = Date.now();
               switch (event._tag) {
                 case "RunStarted":
+                  lastOutputAt = Date.now();
                   ciReporter.planTitle(event.plan.title, Option.getOrUndefined(event.plan.baseUrl));
                   break;
                 case "StepStarted":
+                  lastOutputAt = Date.now();
                   ciReporter.stepStarted(event.title);
                   break;
                 case "StepCompleted": {
+                  lastOutputAt = Date.now();
                   const step = executed.steps.find((step) => step.id === event.stepId);
                   const elapsed = step ? getStepElapsedMs(step) : undefined;
                   ciReporter.stepCompleted(event.summary, elapsed);
                   break;
                 }
                 case "StepFailed": {
+                  lastOutputAt = Date.now();
                   const failedStep = executed.steps.find((step) => step.id === event.stepId);
                   const failedTitle = failedStep?.title ?? event.stepId;
                   const failedElapsed = failedStep ? getStepElapsedMs(failedStep) : undefined;
@@ -116,6 +119,7 @@ export const runHeadless = (options: HeadlessRunOptions) =>
                   break;
                 }
                 case "StepSkipped": {
+                  lastOutputAt = Date.now();
                   const skippedStep = executed.steps.find((step) => step.id === event.stepId);
                   const skippedTitle = skippedStep?.title ?? event.stepId;
                   ciReporter.stepSkipped(skippedTitle, event.reason);

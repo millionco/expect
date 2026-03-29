@@ -7,7 +7,7 @@ import {
   Agent,
   AgentStreamOptions,
 } from "@expect/agent";
-import { Effect, Layer, Option, Schema, ServiceMap, Stream } from "effect";
+import { Effect, Fiber, Layer, Option, Queue, Ref, Schema, ServiceMap, Stream } from "effect";
 import {
   type ChangesFor,
   type ChangedFile,
@@ -170,28 +170,109 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
         mcpEnv,
       });
 
-      return agent.stream(streamOptions).pipe(
-        Stream.mapAccum(
-          (): ExecutorAccumState => ({
-            plan: initial,
-            allTerminalSince: undefined,
-          }),
-          (state, part) => {
-            const updated = state.plan.addEvent(part);
-            const terminalTimestamp = resolveTerminalTimestamp(updated, state.allTerminalSince);
-            const finalized =
-              terminalTimestamp !== undefined &&
-              !updated.hasRunFinished &&
-              Date.now() - terminalTimestamp >= ALL_STEPS_TERMINAL_GRACE_MS
-                ? updated.synthesizeRunFinished()
-                : updated;
+      return yield* Effect.gen(function* () {
+        const outputQueue = yield* Queue.unbounded<ExecutedTestPlan, ExecutionError>();
+        const terminalGraceFiberRef = yield* Ref.make<Option.Option<Fiber.RuntimeFiber<void, never>>>(
+          Option.none(),
+        );
 
-            return [{ plan: finalized, allTerminalSince: terminalTimestamp }, [finalized]] as const;
-          },
-        ),
-        Stream.takeUntil((executed) => executed.hasRunFinished),
-        Stream.mapError((reason) => new ExecutionError({ reason })),
-      );
+        const emit = (executed: ExecutedTestPlan) => Queue.offer(outputQueue, executed);
+        yield* emit(initial);
+        const cancelTerminalGraceWatcher = Effect.gen(function* () {
+          const currentFiber = yield* Ref.get(terminalGraceFiberRef);
+          if (Option.isNone(currentFiber)) return;
+          yield* Fiber.interrupt(currentFiber.value);
+          yield* Ref.set(terminalGraceFiberRef, Option.none());
+        });
+        const updateTerminalGraceWatcher = (executed: ExecutedTestPlan) =>
+          Effect.gen(function* () {
+            if (executed.hasRunFinished || !executed.allStepsTerminal) {
+              yield* cancelTerminalGraceWatcher;
+              return;
+            }
+
+            const currentFiber = yield* Ref.get(terminalGraceFiberRef);
+            if (Option.isSome(currentFiber)) {
+              return;
+            }
+
+            const graceFiber = yield* Effect.gen(function* () {
+              yield* Effect.sleep(`${ALL_STEPS_TERMINAL_GRACE_MS} millis`);
+              yield* emit(executed.synthesizeRunFinished());
+              yield* Queue.end(outputQueue);
+              yield* Ref.set(terminalGraceFiberRef, Option.none());
+            }).pipe(Effect.forkScoped);
+
+            yield* Ref.set(terminalGraceFiberRef, Option.some(graceFiber));
+          });
+
+        const runStream = agent.stream(streamOptions).pipe(
+          Stream.runFoldEffect(
+            {
+              plan: initial,
+              allTerminalSince: undefined,
+            } satisfies ExecutorAccumState,
+            (state, part) =>
+              Effect.gen(function* () {
+                const updated = state.plan.addEvent(part);
+                const terminalTimestamp = resolveTerminalTimestamp(updated, state.allTerminalSince);
+                const finalized =
+                  terminalTimestamp !== undefined &&
+                  !updated.hasRunFinished &&
+                  Date.now() - terminalTimestamp >= ALL_STEPS_TERMINAL_GRACE_MS
+                    ? updated.synthesizeRunFinished()
+                    : updated;
+
+                yield* emit(finalized);
+                yield* updateTerminalGraceWatcher(finalized);
+                if (finalized.hasRunFinished) {
+                  yield* Queue.end(outputQueue);
+                }
+
+                return {
+                  plan: finalized,
+                  allTerminalSince: terminalTimestamp,
+                } satisfies ExecutorAccumState;
+              }),
+          ),
+          Effect.flatMap((finalState) =>
+            Effect.gen(function* () {
+              const finalizedPlan = finalState.plan.finalizeTextBlock();
+              const finalizedTerminalTimestamp = resolveTerminalTimestamp(
+                finalizedPlan,
+                finalState.allTerminalSince,
+              );
+              const completedPlan =
+                finalizedTerminalTimestamp !== undefined && !finalizedPlan.hasRunFinished
+                  ? finalizedPlan.synthesizeRunFinished()
+                  : finalizedPlan;
+
+              if (completedPlan !== finalState.plan) {
+                yield* emit(completedPlan);
+              }
+              yield* updateTerminalGraceWatcher(completedPlan);
+              yield* Queue.end(outputQueue);
+            }),
+          ),
+          Effect.catchTag("AcpStreamError", (reason) =>
+            Queue.fail(outputQueue, new ExecutionError({ reason })),
+          ),
+          Effect.catchTag("AcpSessionCreateError", (reason) =>
+            Queue.fail(outputQueue, new ExecutionError({ reason })),
+          ),
+          Effect.catchTag("AcpProviderUnauthenticatedError", (reason) =>
+            Queue.fail(outputQueue, new ExecutionError({ reason })),
+          ),
+          Effect.catchTag("AcpProviderUsageLimitError", (reason) =>
+            Queue.fail(outputQueue, new ExecutionError({ reason })),
+          ),
+          Effect.forkScoped,
+        );
+
+        yield* runStream;
+
+        return Stream.fromQueue(outputQueue);
+      }).pipe(Stream.unwrap);
     }, Stream.unwrap);
 
     return { execute } as const;

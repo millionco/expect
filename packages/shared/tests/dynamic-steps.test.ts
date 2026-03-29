@@ -256,6 +256,71 @@ describe("dynamic step discovery", () => {
     expect(finalized.steps[0].status).toBe("failed");
     expect(finalized.hasRunFinished).toBe(true);
   });
+
+  it("addEvent parses complete marker lines immediately and strips them from AgentText", () => {
+    let executed = makeEmptyExecuted();
+
+    const chunk = (text: string) =>
+      new AcpAgentMessageChunk({
+        sessionUpdate: "agent_message_chunk",
+        content: { type: "text" as const, text },
+      });
+
+    executed = executed.addEvent(chunk("Planning next action...\nSTEP_START|step-01|Open login page\n"));
+
+    expect(executed.steps.length).toBe(1);
+    expect(executed.steps[0].title).toBe("Open login page");
+    expect(executed.steps[0].status).toBe("active");
+    expect(executed.events.some((event) => event._tag === "StepStarted")).toBe(true);
+
+    const agentTextEvents = executed.events.filter(
+      (event): event is AgentText => event._tag === "AgentText",
+    );
+    expect(agentTextEvents).toHaveLength(1);
+    expect(agentTextEvents[0].text).toBe("Planning next action...\n");
+    expect(agentTextEvents[0].text.includes("STEP_START|step-01|Open login page")).toBe(false);
+
+    executed = executed.addEvent(chunk("STEP_DONE|step-01|Login page loaded\nRUN_COMPLETED|passed|Completed successfully\n"));
+
+    expect(executed.steps[0].status).toBe("passed");
+    expect(executed.hasRunFinished).toBe(true);
+    const runFinished = executed.events.find(
+      (event): event is RunFinished => event._tag === "RunFinished",
+    );
+    expect(runFinished?.summary).toBe("Completed successfully");
+
+    const textAfterCompletion = executed.events.filter(
+      (event): event is AgentText => event._tag === "AgentText",
+    );
+    expect(textAfterCompletion).toHaveLength(1);
+    expect(textAfterCompletion[0].text).toBe("Planning next action...\n");
+  });
+
+  it("keeps partial marker text buffered until the line is complete", () => {
+    let executed = makeEmptyExecuted();
+
+    const chunk = (text: string) =>
+      new AcpAgentMessageChunk({
+        sessionUpdate: "agent_message_chunk",
+        content: { type: "text" as const, text },
+      });
+
+    executed = executed.addEvent(chunk("STEP_START|step-01|Open"));
+    expect(executed.steps).toHaveLength(0);
+    expect(executed.hasRunFinished).toBe(false);
+    const partialText = executed.events.findLast(
+      (event): event is AgentText => event._tag === "AgentText",
+    );
+    expect(partialText?.text).toBe("STEP_START|step-01|Open");
+
+    executed = executed.addEvent(chunk(" login page\n"));
+    expect(executed.steps).toHaveLength(1);
+    expect(executed.steps[0].title).toBe("Open login page");
+    const remainingText = executed.events.filter(
+      (event): event is AgentText => event._tag === "AgentText",
+    );
+    expect(remainingText).toHaveLength(0);
+  });
 });
 
 describe("run completion detection", () => {

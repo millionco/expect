@@ -313,5 +313,19 @@ describe("createCiReporter", () => {
       expect(output).toContain("Still running");
       expect(output).toContain("2m");
     });
+
+    it("remains the only visible progress signal when no step events are printed", () => {
+      const reporter = createCiReporter({
+        version: "1.0.0",
+        agent: "claude",
+        timeoutMs: undefined,
+        isGitHubActions: false,
+      });
+      reporter.heartbeat(120_000);
+      const output = stderrText();
+      expect(output).toContain("Still running");
+      expect(output).not.toContain("STEP_START|");
+      expect(output).not.toContain("RUN_COMPLETED|");
+    });
   });
 });
