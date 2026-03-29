@@ -1,0 +1,44 @@
+import { Config, Effect, Option } from "effect";
+import { appendFileSync } from "node:fs";
+
+export const writeGhaOutputs = Effect.fn("writeGhaOutputs")(function* (
+  status: string,
+  videoPath: string | undefined,
+  replayPath: string | undefined,
+) {
+  const githubOutputPath = yield* Config.option(Config.string("GITHUB_OUTPUT"));
+  if (Option.isNone(githubOutputPath)) return;
+
+  const outputLines: string[] = [`result=${status}`];
+  if (videoPath) {
+    outputLines.push(`video_path=${videoPath}`);
+  }
+  if (replayPath) {
+    outputLines.push(`replay_path=${replayPath}`);
+  }
+
+  yield* Effect.sync(() => appendFileSync(githubOutputPath.value, outputLines.join("\n") + "\n"));
+});
+
+export const writeGhaStepSummary = Effect.fn("writeGhaStepSummary")(function* (
+  reportText: string,
+  status: string,
+  videoPath: string | undefined,
+  replayPath: string | undefined,
+) {
+  const summaryPath = yield* Config.option(Config.string("GITHUB_STEP_SUMMARY"));
+  if (Option.isNone(summaryPath)) return;
+
+  const badge = status === "passed" ? "**Result: PASSED**" : "**Result: FAILED**";
+  const artifactLines: string[] = [];
+  if (videoPath) {
+    artifactLines.push("**Video:** uploaded as artifact (see workflow artifacts above)");
+  }
+  if (replayPath) {
+    artifactLines.push("**Replay:** uploaded as artifact (see workflow artifacts above)");
+  }
+  const artifactSection = artifactLines.length > 0 ? `\n${artifactLines.join("\n")}\n` : "";
+  const summary = `## expect test results\n\n${badge}\n\n\`\`\`\n${reportText}\n\`\`\`\n${artifactSection}`;
+
+  yield* Effect.sync(() => appendFileSync(summaryPath.value, summary));
+});

@@ -1,16 +1,18 @@
 import { Config, Effect, Option, Stream, Schema } from "effect";
-import { changesForDisplayName, type ChangesFor } from "@expect/shared/models";
-import { Executor, ExecutedTestPlan, Reporter } from "@expect/supervisor";
+import { type ChangesFor, CiResultOutput, CiStepResult } from "@expect/shared/models";
+import { Executor, ExecutedTestPlan, Reporter, Github } from "@expect/supervisor";
 import { Analytics } from "@expect/shared/observability";
 import type { AgentBackend } from "@expect/agent";
-import figures from "figures";
-import { appendFileSync } from "node:fs";
 import { VERSION, CI_HEARTBEAT_INTERVAL_MS } from "../constants";
 import { layerCli } from "../layers";
 import { playSound } from "./play-sound";
 import { stripUndefinedRequirement } from "./strip-undefined-requirement";
 import { extractCloseArtifacts } from "./extract-close-artifacts";
 import { RrVideo } from "@expect/browser";
+import { createCiReporter } from "./ci-reporter";
+import { writeGhaOutputs, writeGhaStepSummary } from "./gha-output";
+import { getStepElapsedMs, getTotalElapsedMs } from "./step-elapsed";
+import { formatElapsedTime } from "./format-elapsed-time";
 
 class ExecutionTimeoutError extends Schema.ErrorClass<ExecutionTimeoutError>(
   "ExecutionTimeoutError",
@@ -21,12 +23,7 @@ class ExecutionTimeoutError extends Schema.ErrorClass<ExecutionTimeoutError>(
   message = `expect execution timed out after ${this.timeoutMs}ms`;
 }
 
-const formatElapsed = (startMs: number) => {
-  const elapsed = (Date.now() - startMs) / 1000;
-  return `[${elapsed.toFixed(1)}s]`;
-};
-
-const ghaEscape = (text: string) => text.replace(/\r?\n/g, " ").replace(/::/g, ": :");
+const COMMENT_MARKER = "<!-- expect-ci-result -->";
 
 interface HeadlessRunOptions {
   changesFor: ChangesFor;
@@ -36,6 +33,7 @@ interface HeadlessRunOptions {
   headed: boolean;
   ci: boolean;
   timeoutMs: Option.Option<number>;
+  output: "text" | "json";
 }
 
 export const runHeadless = (options: HeadlessRunOptions) =>
@@ -55,67 +53,64 @@ export const runHeadless = (options: HeadlessRunOptions) =>
 
         const isGitHubActions =
           (yield* Config.string("GITHUB_ACTIONS").pipe(Config.withDefault(""))) !== "";
+        const isJsonOutput = options.output === "json";
 
-        const modeLabel = options.ci ? " [CI mode]" : "";
-        console.log(`expect v${VERSION}${modeLabel}`);
-        if (Option.isSome(options.timeoutMs)) {
-          console.log(`Timeout: ${options.timeoutMs.value}ms`);
-        }
-        console.log(`Agent: ${options.agent}`);
-        console.log(`Target: ${changesForDisplayName(options.changesFor)}`);
-        console.log("Starting browser test...");
+        const timeoutMs = Option.getOrUndefined(options.timeoutMs);
+        const ciReporter = createCiReporter({
+          version: VERSION,
+          agent: options.agent,
+          timeoutMs,
+          isGitHubActions,
+        });
 
-        if (isGitHubActions) {
-          console.log("::group::expect test execution");
+        if (!isJsonOutput) {
+          ciReporter.header();
+          ciReporter.groupOpen();
         }
 
         const runStartedAt = Date.now();
         let lastOutputAt = Date.now();
 
-        const heartbeatInterval = options.ci
-          ? setInterval(() => {
-              const now = Date.now();
-              if (now - lastOutputAt >= CI_HEARTBEAT_INTERVAL_MS) {
-                const elapsedMinutes = Math.floor((now - runStartedAt) / 60_000);
-                console.log(
-                  `${formatElapsed(runStartedAt)} Still running... (${elapsedMinutes} minute${elapsedMinutes === 1 ? "" : "s"} elapsed)`,
-                );
-                lastOutputAt = now;
-              }
-            }, CI_HEARTBEAT_INTERVAL_MS)
-          : undefined;
+        const heartbeatInterval =
+          options.ci && !isJsonOutput
+            ? setInterval(() => {
+                const now = Date.now();
+                if (now - lastOutputAt >= CI_HEARTBEAT_INTERVAL_MS) {
+                  ciReporter.heartbeat(now - runStartedAt);
+                  lastOutputAt = now;
+                }
+              }, CI_HEARTBEAT_INTERVAL_MS)
+            : undefined;
 
         yield* analytics.capture("run:started", { plan_id: "direct" });
         const seenEvents = new Set<string>();
         const printNewEvents = (executed: ExecutedTestPlan) => {
+          if (isJsonOutput) return;
           for (const event of executed.events) {
             if (seenEvents.has(event.id)) continue;
             seenEvents.add(event.id);
             lastOutputAt = Date.now();
-            const elapsed = formatElapsed(runStartedAt);
             switch (event._tag) {
               case "RunStarted":
-                console.log(`${elapsed} Starting ${event.plan.title}`);
+                ciReporter.planTitle(event.plan.title, Option.getOrUndefined(event.plan.baseUrl));
                 break;
               case "StepStarted":
-                console.log(`${elapsed} ${figures.arrowRight} ${event.stepId} ${event.title}`);
+                ciReporter.stepStarted(event.title);
                 break;
-              case "StepCompleted":
-                console.log(`${elapsed}   ${figures.tick} ${event.stepId} ${event.summary}`);
+              case "StepCompleted": {
+                const step = executed.steps.find((step) => step.id === event.stepId);
+                const elapsed = step ? getStepElapsedMs(step) : undefined;
+                ciReporter.stepCompleted(event.summary, elapsed);
                 break;
+              }
               case "StepFailed": {
-                console.log(`${elapsed}   ${figures.cross} ${event.stepId} ${event.message}`);
-                if (isGitHubActions) {
-                  console.log(
-                    `::error title=${ghaEscape(event.stepId)} failed::${ghaEscape(event.message)}`,
-                  );
-                }
+                const failedStep = executed.steps.find((step) => step.id === event.stepId);
+                const failedElapsed = failedStep ? getStepElapsedMs(failedStep) : undefined;
+                ciReporter.stepFailed(event.stepId, event.message, failedElapsed);
                 break;
               }
               case "StepSkipped":
-                console.log(
-                  `${elapsed}   ${figures.arrowRight} ${event.stepId} [skipped] ${event.reason}`,
-                );
+                ciReporter.stepSkipped(event.stepId, event.reason);
                 break;
             }
           }
@@ -156,7 +151,6 @@ export const runHeadless = (options: HeadlessRunOptions) =>
             ),
           );
 
-        const timeoutMs = Option.getOrUndefined(options.timeoutMs);
         const executeWithTimeout =
           timeoutMs !== undefined
             ? executeStream.pipe(
@@ -171,15 +165,12 @@ export const runHeadless = (options: HeadlessRunOptions) =>
           Effect.tapError(() =>
             Effect.sync(() => {
               if (heartbeatInterval) clearInterval(heartbeatInterval);
-              if (isGitHubActions) console.log("::endgroup::");
+              if (!isJsonOutput) ciReporter.groupClose();
             }),
           ),
           Effect.catchTag("ExecutionTimeoutError", (error) =>
             Effect.sync(() => {
-              if (isGitHubActions) {
-                console.log(`::error title=Execution timed out::${ghaEscape(error.message)}`);
-              }
-              console.error(`\n${error.message}`);
+              if (!isJsonOutput) ciReporter.timeoutError(error.timeoutMs);
               process.exit(1);
             }),
           ),
@@ -191,18 +182,23 @@ export const runHeadless = (options: HeadlessRunOptions) =>
 
         printNewEvents(finalExecuted);
 
-        if (isGitHubActions) {
-          console.log("::endgroup::");
+        if (!isJsonOutput) {
+          ciReporter.groupClose();
         }
 
         const report = yield* reporter.report(finalExecuted);
 
+        const statuses = report.stepStatuses;
         const passedCount = report.steps.filter(
-          (step) => report.stepStatuses.get(step.id)?.status === "passed",
+          (step) => statuses.get(step.id)?.status === "passed",
         ).length;
         const failedCount = report.steps.filter(
-          (step) => report.stepStatuses.get(step.id)?.status === "failed",
+          (step) => statuses.get(step.id)?.status === "failed",
         ).length;
+        const skippedCount = report.steps.filter(
+          (step) => statuses.get(step.id)?.status === "skipped",
+        ).length;
+        const totalDurationMs = getTotalElapsedMs(report.steps);
 
         yield* analytics.capture("run:completed", {
           plan_id: finalExecuted.id ?? "direct",
@@ -218,16 +214,12 @@ export const runHeadless = (options: HeadlessRunOptions) =>
         });
         yield* analytics.flush;
 
-        const reportText = report.toPlainText;
-        console.error(`\n${reportText}`);
-
         const artifacts = extractCloseArtifacts(finalExecuted.events);
 
         let generatedVideoPath: string | undefined;
         if (artifacts.replaySessionPath && artifacts.replaySessionPath.endsWith(".ndjson")) {
           const latestJsonPath = artifacts.replaySessionPath.replace(/\.ndjson$/, "-latest.json");
           const videoOutputPath = artifacts.replaySessionPath.replace(/\.ndjson$/, ".mp4");
-          console.error("\nGenerating session video...");
           const rrvideo = yield* RrVideo;
           generatedVideoPath = yield* rrvideo
             .convert({
@@ -237,57 +229,140 @@ export const runHeadless = (options: HeadlessRunOptions) =>
               speed: 1,
             })
             .pipe(
-              Effect.tap(() => Effect.sync(() => console.error(`Video: ${videoOutputPath}`))),
               Effect.catchTag("RrVideoConvertError", (error) =>
                 Effect.sync(() => {
-                  console.error(`Warning: video generation failed: ${error.message}`);
+                  if (!isJsonOutput) {
+                    process.stderr.write(`Warning: video generation failed: ${error.message}\n`);
+                  }
                   return undefined;
                 }),
               ),
             );
         }
 
-        if (artifacts.localReplayUrl) {
-          console.error(`Replay: ${artifacts.localReplayUrl}`);
-        }
-        if (!generatedVideoPath && artifacts.videoUrl) {
-          console.error(`Video:  ${artifacts.videoUrl}`);
+        const effectiveVideoPath = generatedVideoPath ?? artifacts.videoPath;
+
+        if (!isJsonOutput) {
+          ciReporter.summary(
+            passedCount,
+            failedCount,
+            skippedCount,
+            report.steps.length,
+            totalDurationMs,
+          );
+          ciReporter.artifacts(effectiveVideoPath, artifacts.localReplayUrl);
         }
 
         if (isGitHubActions) {
-          const githubOutputPath = yield* Config.option(Config.string("GITHUB_OUTPUT"));
-          if (Option.isSome(githubOutputPath)) {
-            const outputLines: string[] = [];
-            outputLines.push(`result=${report.status}`);
-            const effectiveVideoPath = generatedVideoPath ?? artifacts.videoPath;
-            if (effectiveVideoPath) {
-              outputLines.push(`video_path=${effectiveVideoPath}`);
-            }
-            if (artifacts.replayPath) {
-              outputLines.push(`replay_path=${artifacts.replayPath}`);
-            }
-            yield* Effect.sync(() =>
-              appendFileSync(githubOutputPath.value, outputLines.join("\n") + "\n"),
-            );
-          }
+          yield* writeGhaOutputs(report.status, effectiveVideoPath, artifacts.replayPath);
+          yield* writeGhaStepSummary(
+            report.toPlainText,
+            report.status,
+            effectiveVideoPath,
+            artifacts.replayPath,
+          );
+
+          yield* Effect.gen(function* () {
+            const github = yield* Github;
+            const cwd = process.cwd();
+            const currentBranch = finalExecuted.currentBranch;
+            if (!currentBranch) return;
+
+            const pullRequest = yield* github.findPullRequest(cwd, {
+              _tag: "Branch",
+              branchName: currentBranch,
+            });
+            if (Option.isNone(pullRequest)) return;
+
+            const statusEmoji = report.status === "passed" ? "\u2705" : "\u274c";
+            const statusLabel = report.status === "passed" ? "Passed" : "Failed";
+            const stepRows = report.steps
+              .map((step) => {
+                const entry = statuses.get(step.id);
+                const stepStatus = entry?.status ?? "not-run";
+                const stepIcon =
+                  stepStatus === "passed"
+                    ? "\u2713"
+                    : stepStatus === "failed"
+                      ? "\u2717"
+                      : stepStatus === "skipped"
+                        ? "\u2192"
+                        : "\u2013";
+                const stepSummary = entry?.summary ?? "";
+                const stepTime = getStepElapsedMs(step);
+                const timeLabel = stepTime !== undefined ? formatElapsedTime(stepTime) : "-";
+                const statusCell =
+                  stepStatus === "failed" ? `${stepIcon} ${stepSummary}` : stepIcon;
+                return `| ${step.title} | ${statusCell} | ${timeLabel} |`;
+              })
+              .join("\n");
+
+            const videoSection = effectiveVideoPath ? `\n**Video:** see workflow artifacts\n` : "";
+
+            const commentBody = [
+              COMMENT_MARKER,
+              `## expect test results`,
+              "",
+              `**${statusEmoji} ${statusLabel}** \u2014 ${report.steps.length} step${report.steps.length === 1 ? "" : "s"} in ${formatElapsedTime(totalDurationMs)}`,
+              "",
+              "| Step | Status | Time |",
+              "|------|--------|------|",
+              stepRows,
+              videoSection,
+              "<details><summary>Full output</summary>",
+              "",
+              "```",
+              report.toPlainText,
+              "```",
+              "",
+              "</details>",
+            ].join("\n");
+
+            yield* github.upsertComment(cwd, pullRequest.value, COMMENT_MARKER, commentBody);
+          }).pipe(
+            Effect.provide(Github.layer),
+            Effect.catchTag("GitHubCommandError", (error) =>
+              Effect.logWarning("PR comment failed", { error: error.message }),
+            ),
+          );
         }
 
-        const stepSummaryPath = isGitHubActions
-          ? yield* Config.option(Config.string("GITHUB_STEP_SUMMARY"))
-          : Option.none<string>();
-        if (Option.isSome(stepSummaryPath)) {
-          const badge = report.status === "passed" ? "**Result: PASSED**" : "**Result: FAILED**";
-          const artifactLines: string[] = [];
-          const summaryVideoPath = generatedVideoPath ?? artifacts.videoPath;
-          if (summaryVideoPath) {
-            artifactLines.push(`**Video:** uploaded as artifact (see workflow artifacts above)`);
-          }
-          if (artifacts.replayPath) {
-            artifactLines.push(`**Replay:** uploaded as artifact (see workflow artifacts above)`);
-          }
-          const artifactSection = artifactLines.length > 0 ? `\n${artifactLines.join("\n")}\n` : "";
-          const summary = `## expect test results\n\n${badge}\n\n\`\`\`\n${reportText}\n\`\`\`\n${artifactSection}`;
-          yield* Effect.sync(() => appendFileSync(stepSummaryPath.value, summary));
+        if (isJsonOutput) {
+          const stepResults = report.steps.map((step) => {
+            const entry = statuses.get(step.id);
+            const stepStatus = entry?.status ?? ("not-run" as const);
+            const elapsed = getStepElapsedMs(step);
+            return new CiStepResult({
+              title: step.title,
+              status: stepStatus,
+              ...(elapsed !== undefined ? { duration_ms: elapsed } : {}),
+              ...(stepStatus === "failed" && entry?.summary ? { error: entry.summary } : {}),
+            });
+          });
+
+          const summaryParts = [`${passedCount} passed`, `${failedCount} failed`];
+          if (skippedCount > 0) summaryParts.push(`${skippedCount} skipped`);
+          const summaryText = `${summaryParts.join(", ")} out of ${report.steps.length} step${report.steps.length === 1 ? "" : "s"}`;
+
+          const resultOutput = new CiResultOutput({
+            version: VERSION,
+            status: report.status,
+            title: report.title,
+            duration_ms: totalDurationMs,
+            steps: stepResults,
+            artifacts: {
+              ...(effectiveVideoPath ? { video: effectiveVideoPath } : {}),
+              ...(artifacts.replayPath ? { replay: artifacts.replayPath } : {}),
+            },
+            summary: summaryText,
+          });
+
+          const jsonString = JSON.stringify(
+            Schema.encodeSync(CiResultOutput)(resultOutput),
+            undefined,
+            2,
+          );
+          process.stdout.write(jsonString + "\n");
         }
 
         yield* Effect.promise(() => playSound());

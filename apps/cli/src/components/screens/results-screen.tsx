@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Box, Text, useInput } from "ink";
 import figures from "figures";
-import { DateTime, Option } from "effect";
+import { Option } from "effect";
 import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
 import { useAtom } from "@effect/atom-react";
 import type { TestReport } from "@expect/supervisor";
@@ -16,6 +16,7 @@ import { useNavigationStore, screenForTestingOrPortPicker } from "../../stores/u
 import { usePlanExecutionStore } from "../../stores/use-plan-execution-store";
 import { saveFlowFn } from "../../data/flow-storage-atom";
 import { formatElapsedTime } from "../../utils/format-elapsed-time";
+import { getStepElapsedMs, getTotalElapsedMs } from "../../utils/step-elapsed";
 
 interface ResultsScreenProps {
   report: TestReport;
@@ -23,20 +24,6 @@ interface ResultsScreenProps {
   localReplayUrl?: string;
   videoUrl?: string;
 }
-
-const getStepElapsedMs = (step: TestPlanStep): number | undefined => {
-  if (Option.isNone(step.startedAt) || Option.isNone(step.endedAt)) return undefined;
-  return DateTime.toEpochMillis(step.endedAt.value) - DateTime.toEpochMillis(step.startedAt.value);
-};
-
-const getTotalElapsedMs = (steps: readonly TestPlanStep[]): number => {
-  let totalMs = 0;
-  for (const step of steps) {
-    const elapsed = getStepElapsedMs(step);
-    if (elapsed !== undefined) totalMs += elapsed;
-  }
-  return totalMs;
-};
 
 export const ResultsScreen = ({
   report,

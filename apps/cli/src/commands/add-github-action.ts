@@ -52,6 +52,9 @@ jobs:
   expect:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: write
     env:
       ANTHROPIC_API_KEY: \${{ secrets.ANTHROPIC_API_KEY }}
       EXPECT_BASE_URL: "${devUrl}"
@@ -68,7 +71,17 @@ ${setupSteps}
         run: npx wait-on ${devUrl} --timeout 60000
 
       - name: Run expect
+        env:
+          GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
         run: ${dlx} expect-cli@latest --ci
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: expect-test-results
+          path: .expect/sessions/
+          if-no-files-found: ignore
 `;
 };
 

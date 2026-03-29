@@ -125,7 +125,86 @@ export class Github extends ServiceMap.Service<Github>()("@supervisor/GitHub", {
       );
     });
 
-    return { findPullRequest, listPullRequests, addComment } as const;
+    const findComment = Effect.fn("GitHub.findComment")(function* (
+      cwd: string,
+      prNumber: number,
+      marker: string,
+    ) {
+      yield* Effect.annotateCurrentSpan({ prNumber, marker });
+      const output = yield* runGhCommand(cwd, [
+        "api",
+        `repos/{owner}/{repo}/issues/${prNumber}/comments`,
+        "--jq",
+        `.[] | select(.body | contains("${marker}")) | .id`,
+      ]);
+      const commentId = output.trim();
+      return commentId.length > 0 ? Option.some(Number(commentId)) : Option.none();
+    });
+
+    const updateComment = Effect.fn("GitHub.updateComment")(function* (
+      cwd: string,
+      commentId: number,
+      body: string,
+    ) {
+      yield* Effect.annotateCurrentSpan({ commentId });
+      yield* Effect.scoped(
+        Effect.gen(function* () {
+          const dir = yield* fileSystem.makeTempDirectoryScoped({
+            prefix: COMMENT_DIRECTORY_PREFIX,
+          });
+          const bodyPath = join(dir, "pull-request-comment.md");
+          yield* fileSystem.writeFileString(bodyPath, body);
+          yield* runGhCommand(cwd, [
+            "api",
+            `repos/{owner}/{repo}/issues/comments/${commentId}`,
+            "-X",
+            "PATCH",
+            "--input",
+            bodyPath,
+          ]);
+        }),
+      );
+    });
+
+    const uploadVideo = Effect.fn("GitHub.uploadVideo")(function* (
+      cwd: string,
+      prNumber: number,
+      filePath: string,
+    ) {
+      yield* Effect.annotateCurrentSpan({ prNumber, filePath });
+      const output = yield* runGhCommand(cwd, [
+        "api",
+        `repos/{owner}/{repo}/issues/${prNumber}/comments`,
+        "-f",
+        `body=<video src="file://${filePath}" controls></video>`,
+      ]);
+      return output;
+    });
+
+    const upsertComment = Effect.fn("GitHub.upsertComment")(function* (
+      cwd: string,
+      pullRequest: PullRequest,
+      marker: string,
+      body: string,
+    ) {
+      yield* Effect.annotateCurrentSpan({ prNumber: pullRequest.number, marker });
+      const existingId = yield* findComment(cwd, pullRequest.number, marker);
+      yield* Option.match(existingId, {
+        onNone: () => addComment(cwd, pullRequest, body),
+        onSome: (commentId) => updateComment(cwd, commentId, body),
+      });
+      yield* Effect.logInfo("PR comment upserted", { prNumber: pullRequest.number });
+    });
+
+    return {
+      findPullRequest,
+      listPullRequests,
+      addComment,
+      findComment,
+      updateComment,
+      uploadVideo,
+      upsertComment,
+    } as const;
   }),
 }) {
   static layer = Layer.effect(this)(this.make).pipe(Layer.provide(NodeServices.layer));

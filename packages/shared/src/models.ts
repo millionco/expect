@@ -1079,6 +1079,7 @@ export class TestReport extends ExecutedTestPlan.extend<TestReport>("@supervisor
     const icon = this.status === "passed" ? "\u2705" : "\u274C";
     const summaryParts = [`${passedCount} passed`, `${failedCount} failed`];
     if (skippedCount > 0) summaryParts.push(`${skippedCount} skipped`);
+    const stepWord = this.steps.length === 1 ? "step" : "steps";
     const lines = [
       `${icon} ${this.title} \u2014 ${this.status.toUpperCase()}`,
       "",
@@ -1086,7 +1087,7 @@ export class TestReport extends ExecutedTestPlan.extend<TestReport>("@supervisor
       "",
       this.steps.length === 0
         ? "agent did not execute any test steps"
-        : `${summaryParts.join(", ")} out of ${this.steps.length} steps`,
+        : `${summaryParts.join(", ")} out of ${this.steps.length} ${stepWord}`,
       "",
     ];
 
@@ -1125,3 +1126,23 @@ export class TestReport extends ExecutedTestPlan.extend<TestReport>("@supervisor
     return lines.join("\n");
   }
 }
+
+export class CiStepResult extends Schema.Class<CiStepResult>("@shared/CiStepResult")({
+  title: Schema.String,
+  status: Schema.Literals(["passed", "failed", "skipped", "not-run"] as const),
+  duration_ms: Schema.optional(Schema.Number),
+  error: Schema.optional(Schema.String),
+}) {}
+
+export class CiResultOutput extends Schema.Class<CiResultOutput>("@shared/CiResultOutput")({
+  version: Schema.String,
+  status: Schema.Literals(["passed", "failed"] as const),
+  title: Schema.String,
+  duration_ms: Schema.Number,
+  steps: Schema.Array(CiStepResult),
+  artifacts: Schema.Struct({
+    video: Schema.optional(Schema.String),
+    replay: Schema.optional(Schema.String),
+  }),
+  summary: Schema.String,
+}) {}

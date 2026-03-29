@@ -11,8 +11,8 @@ export class Reporter extends ServiceMap.Service<Reporter>()("@supervisor/Report
       const summary = runFinished
         ? runFinished.summary
         : failedSteps.length > 0
-          ? `${failedSteps.length} step(s) failed, ${completedSteps.length} passed`
-          : `${completedSteps.length} step(s) completed`;
+          ? `${failedSteps.length} step${failedSteps.length === 1 ? "" : "s"} failed, ${completedSteps.length} passed`
+          : `${completedSteps.length} step${completedSteps.length === 1 ? "" : "s"} completed`;
 
       const screenshotPaths = executed.events
         .filter(

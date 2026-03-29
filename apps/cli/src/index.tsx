@@ -29,6 +29,8 @@ type Target = "unstaged" | "branch" | "changes";
 
 const TARGETS: readonly Target[] = ["unstaged", "branch", "changes"];
 
+type OutputFormat = "text" | "json";
+
 interface CommanderOpts {
   message?: string;
   flow?: string;
@@ -41,6 +43,7 @@ interface CommanderOpts {
   replayHost?: string;
   ci?: boolean;
   timeout?: number;
+  output?: OutputFormat;
 }
 
 const program = new Command()
@@ -60,6 +63,7 @@ const program = new Command()
   .option("--no-cookies", "skip system browser cookie extraction")
   .option("--ci", "force CI mode: headless, no cookies, auto-yes, 30-minute timeout")
   .option("--timeout <ms>", "execution timeout in milliseconds", parseInt)
+  .option("--output <format>", "output format: text (default) or json")
   .option("--replay-host <url>", "website host for live replay viewer", "https://expect.dev")
   .addHelpText(
     "after",
@@ -156,6 +160,7 @@ const runHeadlessForTarget = async (target: Target, opts: CommanderOpts) => {
     headed: ciMode ? false : (opts.headed ?? false),
     ci: ciMode,
     timeoutMs,
+    output: opts.output ?? "text",
   });
 };
 
