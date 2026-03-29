@@ -1,4 +1,5 @@
 import { detectAvailableAgents } from "@expect/agent";
+import { Effect } from "effect";
 import figures from "figures";
 import pc from "picocolors";
 import { VERSION } from "../constants";
@@ -12,6 +13,7 @@ import {
   type PackageManager,
   detectNonInteractive,
   detectPackageManager,
+  hasGitHubRemote,
   tryRun,
 } from "./init-utils";
 
@@ -92,20 +94,22 @@ export const runInit = async (options: InitOptions = {}) => {
 
   logger.break();
 
-  let setupGithubAction = nonInteractive;
+  if (await Effect.runPromise(hasGitHubRemote)) {
+    let setupGithubAction = nonInteractive;
 
-  if (!nonInteractive) {
-    const response = await prompts({
-      type: "confirm",
-      name: "setupGithubAction",
-      message: `Set up ${highlighter.info("GitHub Actions")} for CI testing?`,
-      initial: true,
-    });
-    setupGithubAction = response.setupGithubAction;
-  }
+    if (!nonInteractive) {
+      const response = await prompts({
+        type: "confirm",
+        name: "setupGithubAction",
+        message: `Set up ${highlighter.info("GitHub Actions")} for CI testing?`,
+        initial: true,
+      });
+      setupGithubAction = response.setupGithubAction;
+    }
 
-  if (setupGithubAction) {
-    await runAddGithubAction({ yes: options.yes });
+    if (setupGithubAction) {
+      await runAddGithubAction({ yes: options.yes });
+    }
   }
 
   logger.break();

@@ -27,6 +27,7 @@ export const TEST_FILE_SCAN_LIMIT = 50;
 export const AUDIT_LINT_KEYWORDS = ["lint", "check", "format", "typecheck", "type-check"];
 export const AUDIT_SCRIPT_TIMEOUT_MS = 120_000;
 
+export const GIT_REMOTE_TIMEOUT_MS = 5_000;
 export const GIT_STATE_TIMEOUT_MS = 10_000;
 export const TEST_COVERAGE_TIMEOUT_MS = 15_000;
 
