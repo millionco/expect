@@ -165,6 +165,20 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("two independent signals per step");
   });
 
+  it("includes code-level testing fallback guidance", () => {
+    const prompt = buildExecutionPrompt(makeDefaultOptions());
+    expect(prompt).toContain("Code-level testing fallback:");
+    expect(prompt).toContain("built-in shell/bash tool");
+    expect(prompt).toContain("no user-visible surface");
+  });
+
+  it("includes project healthcheck guidance", () => {
+    const prompt = buildExecutionPrompt(makeDefaultOptions());
+    expect(prompt).toContain("Project healthcheck:");
+    expect(prompt).toContain("package.json");
+    expect(prompt).toContain("pnpm-lock.yaml");
+  });
+
   it("includes recovery and rabbit hole guidance", () => {
     const prompt = buildExecutionPrompt(makeDefaultOptions());
     expect(prompt).toContain("Recovery policy");
