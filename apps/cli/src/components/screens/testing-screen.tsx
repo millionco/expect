@@ -442,7 +442,6 @@ export const TestingScreen = ({
     return () => {
       triggerExecute(Atom.Interrupt);
     };
-    // eslint-disable-next-line react-compiler/react-compiler
   }, [
     triggerExecute,
     agentBackend,
@@ -453,6 +452,9 @@ export const TestingScreen = ({
     cookieBrowserKeys,
     baseUrls,
     replayHost,
+    modelPreferenceConfigId,
+    modelPreferenceValue,
+    setConfigOptions,
   ]);
 
   const replayUrl = isExecutionComplete ? executionResult.value.replayUrl : undefined;
