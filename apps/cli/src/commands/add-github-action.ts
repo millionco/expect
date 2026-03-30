@@ -42,7 +42,7 @@ const generateWorkflow = (packageManager: PackageManager, devCommand: string, de
 
   const setupSteps = buildSetupSteps(packageManager);
 
-  return `name: Expect Tests
+  return `name: Expect Browser Tests
 
 on:
   pull_request:
@@ -57,6 +57,7 @@ jobs:
       pull-requests: write
     env:
       ANTHROPIC_API_KEY: \${{ secrets.ANTHROPIC_API_KEY }}
+      # Expect uses this local app URL as the browser test target in CI.
       EXPECT_BASE_URL: "${devUrl}"
     steps:
       - uses: actions/checkout@v4
@@ -64,17 +65,25 @@ ${setupSteps}
       - name: Install dependencies
         run: ${install}
 
+      # Expect runs against your dev server by default, not a production build or deployed preview.
+      # To test a preview URL instead, set EXPECT_BASE_URL to that URL. You can use
+      # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idneeds
+      # to pass preview URLs from other jobs.
       - name: Start dev server
         run: ${devCommand} &
 
+      # Wait until the local app is reachable before handing control to the browser agent.
       - name: Wait for dev server
         run: npx wait-on ${devUrl} --timeout 60000
 
+      
       - name: Run expect
         env:
+          # Expect uses the GitHub token to comment on the pull request.
           GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
         run: ${dlx} expect-cli@latest --ci
 
+      # Upload browser recordings and traces from .expect so failures are debuggable after the run.
       - name: Upload test artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -175,7 +184,12 @@ export const runAddGithubAction = async (options: AddGithubActionOptions = {}) =
   logger.success("Created .github/workflows/expect.yml");
   logger.break();
   logger.log(`  Add ${highlighter.info("ANTHROPIC_API_KEY")} to your repository secrets:`);
+  logger.break();
+  logger.log(`  You can use the ${highlighter.info("gh")} CLI to add repository secrets:`);
   logger.log(
-    `  ${highlighter.dim("Settings → Secrets and variables → Actions → New repository secret")}`,
+    `  ${highlighter.dim("claude setup-token")} ${highlighter.dim("# use Claude Code to generate a token, then paste it into ANTHROPIC_API_KEY")}`,
+  );
+  logger.log(
+    `  ${highlighter.dim("gh secret set ANTHROPIC_API_KEY")} ${highlighter.dim("# for an Anthropic API key or a token from claude setup-token")}`,
   );
 };
