@@ -44,3 +44,5 @@ export {
   type WatchDecision,
   type WatchOptions,
 } from "./watch";
+export { LiveViewer } from "./live-viewer";
+export { LiveViewerRpcsLive } from "./rpc/live-viewer.rpc.layer";

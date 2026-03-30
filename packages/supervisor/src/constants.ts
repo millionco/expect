@@ -9,6 +9,8 @@ export const EXECUTION_CONTEXT_FILE_LIMIT = 12;
 export const EXECUTION_RECENT_COMMIT_LIMIT = 5;
 export const EXPECT_STATE_DIR = ".expect";
 export const EXPECT_REPLAY_OUTPUT_ENV_NAME = "EXPECT_REPLAY_OUTPUT_PATH";
+export const EXPECT_PLAN_ID_ENV_NAME = "EXPECT_PLAN_ID";
+export const REPLAYS_DIRECTORY_NAME = "replays";
 export const TESTED_FINGERPRINT_FILE = "last-tested";
 
 export const SOURCE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mts", ".mjs", ".cts", ".cjs"];

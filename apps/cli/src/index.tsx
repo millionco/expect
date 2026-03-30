@@ -75,7 +75,6 @@ Examples:
 const seedStores = (opts: CommanderOpts, changesFor: ChangesFor) => {
   usePreferencesStore.setState({
     browserHeaded: opts.headed ?? false,
-    replayHost: opts.replayHost ?? "https://expect.dev",
   });
 
   if (opts.message) {
@@ -194,7 +193,6 @@ program.action(async () => {
   } else {
     usePreferencesStore.setState({
       browserHeaded: opts.headed ?? false,
-      replayHost: opts.replayHost ?? "https://expect.dev",
     });
     await waitForHydration();
     const persistedAgent = usePreferencesStore.getState().agentBackend;

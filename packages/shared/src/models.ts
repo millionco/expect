@@ -1,4 +1,4 @@
-import { DateTime, Match, Option, Predicate, Schema } from "effect";
+import { DateTime, Effect, Match, Option, Predicate, Schema, ServiceMap } from "effect";
 
 export interface SavedFlowStep {
   id: string;
@@ -315,8 +315,37 @@ export class GitState extends Schema.Class<GitState>("@supervisor/GitState")({
 export const StepId = Schema.String.pipe(Schema.brand("StepId"));
 export type StepId = typeof StepId.Type;
 
-export const PlanId = Schema.String.pipe(Schema.brand("PlanId"));
+export const PlanId = Schema.NonEmptyString.pipe(Schema.brand("PlanId"));
 export type PlanId = typeof PlanId.Type;
+
+export class CurrentPlanId extends ServiceMap.Service<CurrentPlanId, PlanId>()(
+  "@shared/CurrentPlanId",
+) {}
+
+export class ConsoleLog extends Schema.TaggedClass<ConsoleLog>()("ConsoleLog", {
+  type: Schema.String,
+  text: Schema.String,
+  timestamp: Schema.Number,
+}) {}
+
+export class NetworkRequest extends Schema.TaggedClass<NetworkRequest>()("NetworkRequest", {
+  url: Schema.String,
+  method: Schema.String,
+  status: Schema.UndefinedOr(Schema.Number),
+  resourceType: Schema.String,
+  timestamp: Schema.Number,
+}) {}
+
+export class RrwebEvent extends Schema.TaggedClass<RrwebEvent>()("RrwebEvent", {
+  event: Schema.Unknown,
+}) {}
+
+export class PlanUpdate extends Schema.TaggedClass<PlanUpdate>()("PlanUpdate", {
+  plan: Schema.suspend(() => ExecutedTestPlan),
+}) {}
+
+export const Artifact = Schema.Union([ConsoleLog, NetworkRequest, RrwebEvent, PlanUpdate]);
+export type Artifact = typeof Artifact.Type;
 
 export const ChangesFor = Schema.TaggedUnion({
   WorkingTree: {},

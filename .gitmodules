@@ -1,3 +1,0 @@
-[submodule ".repos/effect"]
-	path = .repos/effect
-	url = git@github.com:Effect-TS/effect-smol.git

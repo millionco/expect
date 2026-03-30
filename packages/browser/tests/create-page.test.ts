@@ -58,8 +58,9 @@ vi.mock("playwright", () => ({
   },
 }));
 
-import { Effect, Option } from "effect";
-import { runBrowser } from "../src/browser";
+import { Effect, Layer, Option } from "effect";
+import { Playwright } from "../src/playwright";
+import { Artifacts } from "../src/artifacts";
 
 const heliumProfile = {
   _tag: "ChromiumBrowser" as const,
@@ -120,12 +121,28 @@ const fallbackCookies = [
   }),
 ];
 
-describe("Browser.createPage cookie reuse", () => {
+const playwrightLayer = Playwright.layer.pipe(Layer.provide(Artifacts.layer));
+
+const openWithCookies = (url: string) =>
+  Effect.runPromise(
+    Effect.gen(function* () {
+      const pw = yield* Playwright;
+      yield* pw.open(url, { cookies: true });
+      yield* pw.close();
+    }).pipe(Effect.provide(playwrightLayer)),
+  );
+
+describe("Playwright.open cookie reuse", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
     gotoMock.mockResolvedValue(undefined);
-    newPageMock.mockResolvedValue({ goto: gotoMock });
+    newPageMock.mockResolvedValue({
+      goto: gotoMock,
+      on: vi.fn(),
+      evaluate: vi.fn().mockResolvedValue(undefined),
+      isClosed: vi.fn().mockReturnValue(false),
+    });
     addCookiesMock.mockResolvedValue(undefined);
     addInitScriptMock.mockResolvedValue(undefined);
     pagesMock.mockReturnValue([]);
@@ -149,7 +166,7 @@ describe("Browser.createPage cookie reuse", () => {
   it("extracts cookies from all profiles of the same browser", async () => {
     cookieExtractMock.mockReturnValue(Effect.succeed(profileCookies));
 
-    await runBrowser((browser) => browser.createPage("https://github.com", { cookies: true }));
+    await openWithCookies("https://github.com");
 
     expect(newContextMock).toHaveBeenCalledWith({ locale: "en-US" });
     expect(cookieExtractMock).toHaveBeenCalledWith(heliumProfile);
@@ -177,7 +194,7 @@ describe("Browser.createPage cookie reuse", () => {
       return Effect.succeed(workCookies);
     });
 
-    await runBrowser((browser) => browser.createPage("https://github.com", { cookies: true }));
+    await openWithCookies("https://github.com");
 
     expect(addCookiesMock).toHaveBeenCalledWith(
       [...profileCookies, ...workCookies].map((cookie) => cookie.playwrightFormat),
@@ -214,7 +231,7 @@ describe("Browser.createPage cookie reuse", () => {
       return Effect.succeed(otherVersion);
     });
 
-    await runBrowser((browser) => browser.createPage("https://github.com", { cookies: true }));
+    await openWithCookies("https://github.com");
 
     expect(addCookiesMock).toHaveBeenCalledWith(
       preferredVersion.map((cookie) => cookie.playwrightFormat),
@@ -227,7 +244,7 @@ describe("Browser.createPage cookie reuse", () => {
       return Effect.succeed(fallbackCookies);
     });
 
-    await runBrowser((browser) => browser.createPage("https://github.com", { cookies: true }));
+    await openWithCookies("https://github.com");
 
     expect(addCookiesMock).toHaveBeenCalledWith(
       fallbackCookies.map((cookie) => cookie.playwrightFormat),

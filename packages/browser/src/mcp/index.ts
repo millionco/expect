@@ -6,4 +6,6 @@ export {
 export { McpSession } from "./mcp-session";
 export { McpRuntime } from "./runtime";
 export { createBrowserMcpServer, startBrowserMcpServer } from "./server";
+export { layerMcpServer } from "../mcp-server";
+export { EXPECT_REPLAY_OUTPUT_ENV_NAME } from "./constants";
 export type { ViewerRunState, ViewerStepEvent } from "./viewer-events";

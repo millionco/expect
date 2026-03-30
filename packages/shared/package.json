@@ -8,7 +8,8 @@
     "./models": "./src/models.ts",
     "./prompts": "./src/prompts.ts",
     "./observability": "./src/observability/exports.ts",
-    "./utils": "./src/utils.ts"
+    "./utils": "./src/utils.ts",
+    "./rpcs": "./src/rpcs.ts"
   },
   "scripts": {
     "lint": "vp lint && tsc --noEmit",

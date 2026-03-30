@@ -22,6 +22,7 @@
   "dependencies": {
     "@effect/platform-node": "4.0.0-beta.35",
     "@expect/cookies": "workspace:*",
+    "@expect/shared": "workspace:*",
     "@medv/finder": "^4.0.2",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "effect": "4.0.0-beta.35",
@@ -30,6 +31,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@effect/vitest": "4.0.0-beta.35",
     "@types/node": "^22.15.0",
     "esbuild": "^0.25.0",
     "typescript": "^5.7.0"
