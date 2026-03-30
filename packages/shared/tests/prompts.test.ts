@@ -217,6 +217,13 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("Avoid rabbit holes");
     expect(prompt).toContain("four attempts fail");
   });
+
+  it("requires rich copy-pasteable failure reports", () => {
+    const prompt = buildExecutionSystemPrompt();
+    expect(prompt).toContain("copy-pasteable for a follow-up coding agent");
+    expect(prompt).toContain("category=<allowed-category>;");
+    expect(prompt).toContain("next-agent-prompt=<one sentence");
+  });
 });
 
 describe("buildWatchAssessmentPrompt", () => {
