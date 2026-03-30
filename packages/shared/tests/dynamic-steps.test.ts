@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { Option } from "effect";
+import { DateTime, Option } from "effect";
 import {
   AcpAgentMessageChunk,
   ExecutedTestPlan,
@@ -255,6 +255,37 @@ describe("dynamic step discovery", () => {
     expect(finalized.steps[0].title).toBe("Navigate to nisar.io");
     expect(finalized.steps[0].status).toBe("failed");
     expect(finalized.hasRunFinished).toBe(true);
+  });
+
+  it("timestamps parsed markers when their chunks arrive", () => {
+    let executed = makeEmptyExecuted();
+
+    executed = executed.addEvent(
+      new AcpAgentMessageChunk({
+        sessionUpdate: "agent_message_chunk",
+        content: { type: "text", text: "STEP_START|step-01|Authenticate\n" },
+      }),
+      DateTime.makeUnsafe("2026-03-29T17:00:00.000Z"),
+    );
+
+    executed = executed.addEvent(
+      new AcpAgentMessageChunk({
+        sessionUpdate: "agent_message_chunk",
+        content: { type: "text", text: "STEP_DONE|step-01|Authenticated\n" },
+      }),
+      DateTime.makeUnsafe("2026-03-29T17:00:12.000Z"),
+    );
+
+    const step = executed.steps[0];
+    expect(step).toBeDefined();
+    expect(Option.isSome(step.startedAt)).toBe(true);
+    expect(Option.isSome(step.endedAt)).toBe(true);
+    expect(DateTime.toEpochMillis(step.startedAt.value)).toBe(
+      DateTime.toEpochMillis(DateTime.makeUnsafe("2026-03-29T17:00:00.000Z")),
+    );
+    expect(DateTime.toEpochMillis(step.endedAt.value)).toBe(
+      DateTime.toEpochMillis(DateTime.makeUnsafe("2026-03-29T17:00:12.000Z")),
+    );
   });
 });
 

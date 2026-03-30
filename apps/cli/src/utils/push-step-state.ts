@@ -14,7 +14,7 @@ const deriveStatusFromSteps = (steps: ExecutedTestPlan["steps"]): ViewerRunState
 };
 
 export const toViewerRunState = (executed: ExecutedTestPlan): ViewerRunState => {
-  const runFinishedEvent = executed.events.find((event) => event._tag === "RunFinished");
+  const runFinishedEvent = executed.events.findLast((event) => event._tag === "RunFinished");
 
   const status: ViewerRunState["status"] =
     runFinishedEvent && runFinishedEvent._tag === "RunFinished"
