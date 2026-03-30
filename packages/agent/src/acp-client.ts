@@ -505,8 +505,12 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
         const updatesQueue = sessionUpdatesMap.get(SessionId.makeUnsafe(sessionId));
         if (updatesQueue === undefined)
           return console.warn(`updates queue not found for session ${sessionId}`);
-        const decoded = Schema.decodeUnknownSync(AcpSessionUpdate)(update);
-        Queue.offerUnsafe(updatesQueue, decoded);
+        try {
+          const decoded = Schema.decodeUnknownSync(AcpSessionUpdate)(update);
+          Queue.offerUnsafe(updatesQueue, decoded);
+        } catch {
+          // HACK: unknown session update types from newer ACP servers are silently dropped
+        }
       },
     };
 
