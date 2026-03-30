@@ -1,0 +1,27 @@
+apps/cli/tests/load-replay-events.test.ts
+  37f85793e89cbec0 1-107
+apps/cli/src/data/execution-atom.ts
+  37f85793e89cbec0 13,38-61,130-135,186-187,254-259,290-292,294-295
+apps/cli/src/utils/load-replay-events.ts
+  37f85793e89cbec0 1-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.22",
+  "base_commit_sha": "4f8c44d7a81209f5a56ebd3ed7eccb1d1a1b74d8",
+  "prompts": {
+    "37f85793e89cbec0": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d8c23344-c6b5-4351-b4f5-96b967cc92d6",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 199,
+      "total_deletions": 44,
+      "accepted_lines": 194,
+      "overriden_lines": 0
+    }
+  }
+}
