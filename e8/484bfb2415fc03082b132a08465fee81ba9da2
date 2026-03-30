@@ -1,0 +1,33 @@
+packages/shared/src/models.ts
+  37f85793e89cbec0 636-658,776,789,806,808,812,816,830,833,844,882,885-897,900,902-903,908,919,937,952,967,981
+packages/supervisor/src/reporter.ts
+  37f85793e89cbec0 9
+packages/supervisor/src/executor.ts
+  37f85793e89cbec0 10,182-183
+apps/cli/src/utils/push-step-state.ts
+  37f85793e89cbec0 17
+packages/shared/tests/dynamic-steps.test.ts
+  37f85793e89cbec0 2,259-288
+packages/supervisor/tests/executor.test.ts
+  37f85793e89cbec0 2,12-14,76-130,166-196
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.22",
+  "base_commit_sha": "e8484bfb2415fc03082b132a08465fee81ba9da2",
+  "prompts": {
+    "37f85793e89cbec0": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d8c23344-c6b5-4351-b4f5-96b967cc92d6",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 184,
+      "total_deletions": 34,
+      "accepted_lines": 183,
+      "overriden_lines": 0
+    }
+  }
+}
