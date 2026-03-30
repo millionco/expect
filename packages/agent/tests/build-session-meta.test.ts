@@ -42,7 +42,7 @@ describe("buildSessionMeta", () => {
     const sessionMeta = buildSessionMeta({
       provider: "claude",
       systemPrompt: "Test prompt",
-      metadata: { isGitHubActions: true } ,
+      metadata: { isGitHubActions: true },
     });
 
     expect(sessionMeta).toEqual({

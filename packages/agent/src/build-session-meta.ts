@@ -9,11 +9,7 @@ interface BuildSessionMetaOptions {
   };
 }
 
-export const buildSessionMeta = ({
-  provider,
-  systemPrompt,
-  metadata,
-}: BuildSessionMetaOptions) =>
+export const buildSessionMeta = ({ provider, systemPrompt, metadata }: BuildSessionMetaOptions) =>
   Match.value(provider).pipe(
     Match.when("claude", () => {
       const systemPromptOption = Match.value(systemPrompt).pipe(

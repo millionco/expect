@@ -669,8 +669,7 @@ const parseMarker = (line: string): ExecutionEvent | undefined => {
 
 const splitMarkerLines = (text: string, completeLinesOnly: boolean) => {
   const lines = text.split("\n");
-  const remainder =
-    completeLinesOnly && !text.endsWith("\n") ? (lines.pop() ?? "") : "";
+  const remainder = completeLinesOnly && !text.endsWith("\n") ? (lines.pop() ?? "") : "";
   const remainingLines: string[] = [];
   const markers: ExecutionEvent[] = [];
 
@@ -913,7 +912,10 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
     return this;
   }
 
-  finalizeTextBlock(receivedAt = DateTime.nowUnsafe(), completeLinesOnly = false): ExecutedTestPlan {
+  finalizeTextBlock(
+    receivedAt = DateTime.nowUnsafe(),
+    completeLinesOnly = false,
+  ): ExecutedTestPlan {
     const lastEvent = this.events.at(-1);
     if (lastEvent?._tag !== "AgentText" && lastEvent?._tag !== "AgentThinking") return this;
     const { remainingText, markers } = splitMarkerLines(lastEvent.text, completeLinesOnly);

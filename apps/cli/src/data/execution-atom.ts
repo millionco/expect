@@ -129,12 +129,7 @@ const execute = Effect.fnUntraced(
 
     const artifacts = extractCloseArtifacts(finalExecuted.events);
 
-    yield* syncReplayProxy(
-      replayUrl,
-      liveViewUrl,
-      artifacts.replaySessionPath,
-      finalExecuted,
-    );
+    yield* syncReplayProxy(replayUrl, liveViewUrl, artifacts.replaySessionPath, finalExecuted);
 
     const report = yield* reporter.report(finalExecuted);
 
@@ -187,109 +182,104 @@ export const executeFn = cliAtomRuntime.fn<ExecuteInput>()((input, ctx) =>
 
 const executeAtom = Effect.fnUntraced(
   function* (input: ExecuteInput, _ctx: Atom.FnContext) {
-      const reporter = yield* Reporter;
-      const executor = yield* Executor;
-      const analytics = yield* Analytics;
-      const git = yield* Git;
+    const reporter = yield* Reporter;
+    const executor = yield* Executor;
+    const analytics = yield* Analytics;
+    const git = yield* Git;
 
-      const runStartedAt = Date.now();
+    const runStartedAt = Date.now();
 
-      const liveViewPort = pickRandomPort();
-      const liveViewUrl = `http://localhost:${liveViewPort}`;
+    const liveViewPort = pickRandomPort();
+    const liveViewUrl = `http://localhost:${liveViewPort}`;
 
-      let replayUrl: string | undefined;
+    let replayUrl: string | undefined;
 
-      if (input.replayHost) {
-        const proxyHandle = yield* startReplayProxy({
-          replayHost: input.replayHost,
-          liveViewUrl,
-        });
-        replayUrl = `${proxyHandle.url}/replay`;
-
-        yield* Effect.logInfo("Replay viewer available", { replayUrl });
-        yield* Effect.sync(() => input.onReplayUrl?.(`${replayUrl}?live=true`));
-      }
-
-      const executeOptions: ExecuteOptions = {
-        ...input.options,
+    if (input.replayHost) {
+      const proxyHandle = yield* startReplayProxy({
+        replayHost: input.replayHost,
         liveViewUrl,
-        onConfigOptions: input.onConfigOptions,
-      };
-
-      yield* analytics.capture("run:started", { plan_id: "direct" });
-
-      const finalExecuted = yield* executor.execute(executeOptions).pipe(
-        Stream.tap((executed) =>
-          Effect.gen(function* () {
-            input.onUpdate(executed);
-            yield* pushStepState(liveViewUrl, toViewerRunState(executed));
-          }),
-        ),
-        Stream.runLast,
-        Effect.map((option) =>
-          (option._tag === "Some"
-            ? option.value
-            : new ExecutedTestPlan({
-                ...input.options,
-                id: "" as never,
-                changesFor: input.options.changesFor,
-                currentBranch: "",
-                diffPreview: "",
-                fileStats: [],
-                instruction: input.options.instruction,
-                baseUrl: undefined as never,
-                isHeadless: input.options.isHeadless,
-                cookieBrowserKeys: input.options.cookieBrowserKeys,
-                testCoverage: Option.none(),
-                title: input.options.instruction,
-                rationale: "Direct execution",
-                steps: [],
-                events: [],
-              })
-          )
-            .finalizeTextBlock()
-            .synthesizeRunFinished(),
-        ),
-      );
-
-      const artifacts = extractCloseArtifacts(finalExecuted.events);
-
-      yield* syncReplayProxy(
-        replayUrl,
-        liveViewUrl,
-        artifacts.replaySessionPath,
-        finalExecuted,
-      );
-
-      const report = yield* reporter.report(finalExecuted);
-
-      const passedCount = report.steps.filter(
-        (step) => report.stepStatuses.get(step.id)?.status === "passed",
-      ).length;
-      const failedCount = report.steps.filter(
-        (step) => report.stepStatuses.get(step.id)?.status === "failed",
-      ).length;
-
-      yield* analytics.capture("run:completed", {
-        plan_id: finalExecuted.id ?? "direct",
-        passed: passedCount,
-        failed: failedCount,
-        step_count: finalExecuted.steps.length,
-        file_count: 0,
-        duration_ms: Date.now() - runStartedAt,
       });
+      replayUrl = `${proxyHandle.url}/replay`;
 
-      if (report.status === "passed") {
-        yield* git.saveTestedFingerprint();
-      }
+      yield* Effect.logInfo("Replay viewer available", { replayUrl });
+      yield* Effect.sync(() => input.onReplayUrl?.(`${replayUrl}?live=true`));
+    }
 
-      return {
-        executedPlan: finalExecuted,
-        report,
-        replayUrl: replayUrl ?? artifacts.localReplayUrl,
-        localReplayUrl: artifacts.localReplayUrl,
-        videoUrl: artifacts.videoUrl,
-      } satisfies ExecutionResult;
+    const executeOptions: ExecuteOptions = {
+      ...input.options,
+      liveViewUrl,
+      onConfigOptions: input.onConfigOptions,
+    };
+
+    yield* analytics.capture("run:started", { plan_id: "direct" });
+
+    const finalExecuted = yield* executor.execute(executeOptions).pipe(
+      Stream.tap((executed) =>
+        Effect.gen(function* () {
+          input.onUpdate(executed);
+          yield* pushStepState(liveViewUrl, toViewerRunState(executed));
+        }),
+      ),
+      Stream.runLast,
+      Effect.map((option) =>
+        (option._tag === "Some"
+          ? option.value
+          : new ExecutedTestPlan({
+              ...input.options,
+              id: "" as never,
+              changesFor: input.options.changesFor,
+              currentBranch: "",
+              diffPreview: "",
+              fileStats: [],
+              instruction: input.options.instruction,
+              baseUrl: undefined as never,
+              isHeadless: input.options.isHeadless,
+              cookieBrowserKeys: input.options.cookieBrowserKeys,
+              testCoverage: Option.none(),
+              title: input.options.instruction,
+              rationale: "Direct execution",
+              steps: [],
+              events: [],
+            })
+        )
+          .finalizeTextBlock()
+          .synthesizeRunFinished(),
+      ),
+    );
+
+    const artifacts = extractCloseArtifacts(finalExecuted.events);
+
+    yield* syncReplayProxy(replayUrl, liveViewUrl, artifacts.replaySessionPath, finalExecuted);
+
+    const report = yield* reporter.report(finalExecuted);
+
+    const passedCount = report.steps.filter(
+      (step) => report.stepStatuses.get(step.id)?.status === "passed",
+    ).length;
+    const failedCount = report.steps.filter(
+      (step) => report.stepStatuses.get(step.id)?.status === "failed",
+    ).length;
+
+    yield* analytics.capture("run:completed", {
+      plan_id: finalExecuted.id ?? "direct",
+      passed: passedCount,
+      failed: failedCount,
+      step_count: finalExecuted.steps.length,
+      file_count: 0,
+      duration_ms: Date.now() - runStartedAt,
+    });
+
+    if (report.status === "passed") {
+      yield* git.saveTestedFingerprint();
+    }
+
+    return {
+      executedPlan: finalExecuted,
+      report,
+      replayUrl: replayUrl ?? artifacts.localReplayUrl,
+      localReplayUrl: artifacts.localReplayUrl,
+      videoUrl: artifacts.videoUrl,
+    } satisfies ExecutionResult;
   },
   Effect.annotateLogs({ fn: "executeAtomFn" }),
   Effect.provide(NodeServices.layer),

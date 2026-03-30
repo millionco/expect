@@ -113,7 +113,10 @@ const agentTestLayer = (updates: typeof fixtureUpdatesWithLateClose) =>
 const gitTestLayer = Layer.succeed(
   Git,
   Git.of({
-    withRepoRoot: () => <A, E, R>(effect: Effect.Effect<A, E, R>) => effect,
+    withRepoRoot:
+      () =>
+      <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+        effect,
     getMainBranch: Effect.succeed("main"),
     getCurrentBranch: Effect.succeed("feat/test"),
     isInsideWorkTree: Effect.succeed(true),
