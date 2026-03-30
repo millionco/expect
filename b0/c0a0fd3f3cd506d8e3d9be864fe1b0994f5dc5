@@ -1,0 +1,25 @@
+packages/shared/src/prompts.ts
+  b938c0999e81ec68 213-216
+packages/shared/tests/prompts.test.ts
+  b938c0999e81ec68 220-226
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.22",
+  "base_commit_sha": "b0c0a0fd3f3cd506d8e3d9be864fe1b0994f5dc5",
+  "prompts": {
+    "b938c0999e81ec68": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f3becc87-f24a-4eac-afd6-f8bb6cf4e835",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 11,
+      "total_deletions": 1,
+      "accepted_lines": 11,
+      "overriden_lines": 0
+    }
+  }
+}
