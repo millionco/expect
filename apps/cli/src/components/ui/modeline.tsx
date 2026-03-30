@@ -210,9 +210,10 @@ export const Modeline = () => {
   };
 
   const allActions = allSegments.filter((segment) => segment.cta);
-  const totalWidth = measureActions(allActions) + rightWidth + 2;
-  const actions =
-    totalWidth > columns ? allActions.filter((segment) => segment.key !== "ctrl+p") : allActions;
+  let actions = allActions;
+  while (actions.length > 0 && measureActions(actions) + rightWidth + 2 > columns) {
+    actions = actions.slice(0, -1);
+  }
 
   const actionWidth = measureActions(actions);
   const showAgent = screen._tag === "Main" && agentLabel.length > 0;
