@@ -31,12 +31,28 @@ const parseStringValue = (value: string): string => {
   return value;
 };
 
-const isSavedFlowStep = (value: unknown): value is SavedFlowFileData["flow"]["steps"][number] =>
-  Predicate.isObject(value) &&
-  typeof value.id === "string" &&
-  typeof value.title === "string" &&
-  typeof value.instruction === "string" &&
-  typeof value.expectedOutcome === "string";
+const normalizeSavedFlowStep = (
+  value: unknown,
+): SavedFlowFileData["flow"]["steps"][number] | undefined => {
+  if (
+    !Predicate.isObject(value) ||
+    typeof value.id !== "string" ||
+    typeof value.title !== "string" ||
+    typeof value.instruction !== "string" ||
+    typeof value.expectedOutcome !== "string"
+  ) {
+    return undefined;
+  }
+
+  return {
+    id: value.id,
+    title: value.title,
+    instruction: value.instruction,
+    expectedOutcome: value.expectedOutcome,
+    ...(typeof value.routeHint === "string" ? { routeHint: value.routeHint } : {}),
+    ...(typeof value.note === "string" ? { note: value.note } : {}),
+  };
+};
 
 const normalizeSavedFlow = (value: unknown): SavedFlowFileData["flow"] => {
   if (!Predicate.isObject(value)) {
@@ -50,7 +66,11 @@ const normalizeSavedFlow = (value: unknown): SavedFlowFileData["flow"] => {
   return {
     title: typeof value.title === "string" ? value.title : "",
     userInstruction: typeof value.userInstruction === "string" ? value.userInstruction : "",
-    steps: Array.isArray(value.steps) ? value.steps.filter(isSavedFlowStep) : [],
+    steps: Array.isArray(value.steps)
+      ? value.steps
+          .map((step) => normalizeSavedFlowStep(step))
+          .filter((step): step is SavedFlowFileData["flow"]["steps"][number] => step !== undefined)
+      : [],
   };
 };
 
