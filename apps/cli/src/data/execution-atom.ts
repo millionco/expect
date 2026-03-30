@@ -10,6 +10,7 @@ import * as NodeServices from "@effect/platform-node/NodeServices";
 import { startReplayProxy } from "../utils/replay-proxy-server";
 import { toViewerRunState, pushStepState } from "../utils/push-step-state";
 import { extractCloseArtifacts } from "../utils/extract-close-artifacts";
+import { loadReplayEvents } from "../utils/load-replay-events";
 
 const LIVE_VIEW_PORT_MIN = 50000;
 const LIVE_VIEW_PORT_RANGE = 10000;
@@ -34,6 +35,30 @@ export interface ExecutionResult {
 }
 
 export const screenshotPathsAtom = Atom.make<readonly string[]>([]);
+
+const syncReplayProxy = Effect.fn("syncReplayProxy")(function* (
+  replayUrl: string | undefined,
+  liveViewUrl: string,
+  replaySessionPath: string | undefined,
+  executed: ExecutedTestPlan,
+) {
+  if (!replayUrl) return;
+
+  const proxyBase = replayUrl.split("/replay")[0];
+  const replayEvents = yield* loadReplayEvents({ liveViewUrl, replaySessionPath });
+
+  if (replayEvents && replayEvents.length > 0) {
+    yield* Effect.tryPromise(() =>
+      fetch(`${proxyBase}/latest.json`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(replayEvents),
+      }),
+    ).pipe(Effect.catchCause(() => Effect.void));
+  }
+
+  yield* pushStepState(proxyBase, toViewerRunState(executed));
+});
 
 const execute = Effect.fnUntraced(
   function* (input: ExecuteInput, _ctx: Atom.FnContext) {
@@ -104,22 +129,12 @@ const execute = Effect.fnUntraced(
 
     const artifacts = extractCloseArtifacts(finalExecuted.events);
 
-    if (replayUrl) {
-      const proxyBase = replayUrl.split("/replay")[0];
-      yield* Effect.tryPromise(() =>
-        fetch(`${liveViewUrl}/latest.json`).then(async (response) => {
-          if (!response.ok) return;
-          const allEvents = await response.json();
-          await fetch(`${proxyBase}/latest.json`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(allEvents),
-          });
-        }),
-      ).pipe(Effect.catchCause(() => Effect.void));
-
-      yield* pushStepState(proxyBase, toViewerRunState(finalExecuted));
-    }
+    yield* syncReplayProxy(
+      replayUrl,
+      liveViewUrl,
+      artifacts.replaySessionPath,
+      finalExecuted,
+    );
 
     const report = yield* reporter.report(finalExecuted);
 
@@ -170,9 +185,8 @@ export const executeFn = cliAtomRuntime.fn<ExecuteInput>()((input, ctx) =>
   ),
 );
 
-export const executeAtomFn = cliAtomRuntime.fn(
-  Effect.fnUntraced(
-    function* (input: ExecuteInput, _ctx: Atom.FnContext) {
+const executeAtom = Effect.fnUntraced(
+  function* (input: ExecuteInput, _ctx: Atom.FnContext) {
       const reporter = yield* Reporter;
       const executor = yield* Executor;
       const analytics = yield* Analytics;
@@ -240,22 +254,12 @@ export const executeAtomFn = cliAtomRuntime.fn(
 
       const artifacts = extractCloseArtifacts(finalExecuted.events);
 
-      if (replayUrl) {
-        const proxyBase = replayUrl.split("/replay")[0];
-        yield* Effect.tryPromise(() =>
-          fetch(`${liveViewUrl}/latest.json`).then(async (response) => {
-            if (!response.ok) return;
-            const allEvents = await response.json();
-            await fetch(`${proxyBase}/latest.json`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(allEvents),
-            });
-          }),
-        ).pipe(Effect.catchCause(() => Effect.void));
-
-        yield* pushStepState(proxyBase, toViewerRunState(finalExecuted));
-      }
+      yield* syncReplayProxy(
+        replayUrl,
+        liveViewUrl,
+        artifacts.replaySessionPath,
+        finalExecuted,
+      );
 
       const report = yield* reporter.report(finalExecuted);
 
@@ -286,7 +290,9 @@ export const executeAtomFn = cliAtomRuntime.fn(
         localReplayUrl: artifacts.localReplayUrl,
         videoUrl: artifacts.videoUrl,
       } satisfies ExecutionResult;
-    },
-    Effect.annotateLogs({ fn: "executeAtomFn" }),
-  ),
+  },
+  Effect.annotateLogs({ fn: "executeAtomFn" }),
+  Effect.provide(NodeServices.layer),
 );
+
+export const executeAtomFn = cliAtomRuntime.fn(executeAtom);
