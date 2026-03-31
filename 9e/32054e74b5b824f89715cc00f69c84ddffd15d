@@ -1,0 +1,25 @@
+packages/agent/tests/build-session-meta.test.ts
+  14708b56d8ce0dca 5,14-21
+packages/agent/src/build-session-meta.ts
+  14708b56d8ce0dca 11,16-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.23",
+  "base_commit_sha": "9e32054e74b5b824f89715cc00f69c84ddffd15d",
+  "prompts": {
+    "14708b56d8ce0dca": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "dca4b75d-a971-478d-8fd8-1a89cab804a7",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 24,
+      "total_deletions": 7,
+      "accepted_lines": 20,
+      "overriden_lines": 0
+    }
+  }
+}
