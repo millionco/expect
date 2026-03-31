@@ -249,6 +249,76 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("category=<allowed-category>;");
     expect(prompt).toContain("next-agent-prompt=<one sentence");
   });
+
+  it("includes UI quality rules section in system prompt", () => {
+    const prompt = buildExecutionSystemPrompt();
+    expect(prompt).toContain("UI quality rules:");
+    expect(prompt).toContain("mandatory, not optional");
+  });
+
+  it("includes design system conformance rules", () => {
+    const prompt = buildExecutionSystemPrompt();
+    expect(prompt).toContain("Design system conformance:");
+    expect(prompt).toContain("tailwind.config");
+    expect(prompt).toContain("hardcoded hex/rgb colors");
+  });
+
+  it("includes responsive viewport sizes with tablet breakpoints", () => {
+    const prompt = buildExecutionSystemPrompt();
+    expect(prompt).toContain("Responsive design verification:");
+    expect(prompt).toContain("375\u00d7812 (iPhone SE)");
+    expect(prompt).toContain("390\u00d7844 (iPhone 14)");
+    expect(prompt).toContain("768\u00d71024 (iPad Mini portrait)");
+    expect(prompt).toContain("810\u00d71080 (iPad Air portrait)");
+    expect(prompt).toContain("1024\u00d7768 (iPad landscape)");
+    expect(prompt).toContain("setViewportSize");
+  });
+
+  it("includes touch interaction testing rules", () => {
+    const prompt = buildExecutionSystemPrompt();
+    expect(prompt).toContain("Touch interaction testing:");
+    expect(prompt).toContain("touchscreen.tap");
+    expect(prompt).toContain("also complete via tap");
+  });
+
+  it("includes cross-browser Safari/WebKit check", () => {
+    const prompt = buildExecutionSystemPrompt();
+    expect(prompt).toContain("Cross-browser check (Safari/WebKit):");
+    expect(prompt).toContain("playwright.webkit.launch");
+    expect(prompt).toContain("flexbox gap rendering");
+    expect(prompt).toContain("WebKit browser not available");
+  });
+
+  it("includes dark mode verification rules", () => {
+    const prompt = buildExecutionSystemPrompt();
+    expect(prompt).toContain("Dark mode verification:");
+    expect(prompt).toContain("prefers-color-scheme");
+    expect(prompt).toContain("colorScheme: 'dark'");
+  });
+
+  it("includes layout stability (CLS) rules", () => {
+    const prompt = buildExecutionSystemPrompt();
+    expect(prompt).toContain("Layout stability after load (CLS):");
+    expect(prompt).toContain("layout-shift");
+    expect(prompt).toContain("0.1");
+  });
+
+  it("includes font loading verification rules", () => {
+    const prompt = buildExecutionSystemPrompt();
+    expect(prompt).toContain("Font loading verification:");
+    expect(prompt).toContain("document.fonts");
+    expect(prompt).toContain("@font-face");
+    expect(prompt).toContain("system font stack");
+  });
+
+  it("places UI quality rules after execution strategy and before browser tools", () => {
+    const prompt = buildExecutionSystemPrompt();
+    const strategyIndex = prompt.indexOf("Execution strategy:");
+    const uiRulesIndex = prompt.indexOf("UI quality rules:");
+    const toolsIndex = prompt.indexOf("You have browser tools via the MCP server");
+    expect(strategyIndex).toBeLessThan(uiRulesIndex);
+    expect(uiRulesIndex).toBeLessThan(toolsIndex);
+  });
 });
 
 describe("buildWatchAssessmentPrompt", () => {
