@@ -176,35 +176,37 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
         modelPreference: options.modelPreference,
       });
 
-      return agent.stream(streamOptions).pipe(
-        Stream.tap((update) => {
-          const callback = options.onConfigOptions;
-          if (update.sessionUpdate === "config_option_update" && callback) {
-            return Effect.sync(() => callback(update.configOptions));
-          }
-          return Effect.void;
-        }),
-        Stream.mapAccum(
-          (): ExecutorAccumState => ({
-            plan: initial,
-            allTerminalSince: undefined,
+      return Stream.concat(
+        Stream.succeed(initial),
+        agent.stream(streamOptions).pipe(
+          Stream.tap((update) => {
+            const callback = options.onConfigOptions;
+            if (update.sessionUpdate === "config_option_update" && callback) {
+              return Effect.sync(() => callback(update.configOptions));
+            }
+            return Effect.void;
           }),
-          (state, part) => {
-            const updated = state.plan.addEvent(part);
-            const terminalTimestamp = resolveTerminalTimestamp(updated, state.allTerminalSince);
-            const finalized =
-              terminalTimestamp !== undefined &&
-              !updated.hasRunFinished &&
-              Date.now() - terminalTimestamp >= ALL_STEPS_TERMINAL_GRACE_MS
-                ? updated.synthesizeRunFinished()
-                : updated;
+          Stream.mapAccum(
+            (): ExecutorAccumState => ({
+              plan: initial,
+              allTerminalSince: undefined,
+            }),
+            (state, part) => {
+              const updated = state.plan.addEvent(part);
+              const terminalTimestamp = resolveTerminalTimestamp(updated, state.allTerminalSince);
+              const finalized =
+                terminalTimestamp !== undefined &&
+                !updated.hasRunFinished &&
+                Date.now() - terminalTimestamp >= ALL_STEPS_TERMINAL_GRACE_MS
+                  ? updated.synthesizeRunFinished()
+                  : updated;
 
-            return [{ plan: finalized, allTerminalSince: terminalTimestamp }, [finalized]] as const;
-          },
+              return [{ plan: finalized, allTerminalSince: terminalTimestamp }, [finalized]] as const;
+            },
+          ),
+          Stream.mapError((reason) => new ExecutionError({ reason })),
         ),
-        Stream.takeUntil((executed) => executed.hasRunFinished),
-        Stream.mapError((reason) => new ExecutionError({ reason })),
-      );
+      ).pipe(Stream.takeUntil((executed) => executed.hasRunFinished));
     }, Stream.unwrap);
 
     return { execute } as const;
