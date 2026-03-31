@@ -271,7 +271,11 @@ export const runHeadless = (options: HeadlessRunOptions) =>
               report.steps.length,
               totalDurationMs,
             );
-            ciReporter.artifacts(effectiveVideoPath, artifacts.localReplayUrl);
+            ciReporter.artifacts(
+              effectiveVideoPath,
+              artifacts.localReplayUrl,
+              artifacts.screenshotPaths,
+            );
           }
 
           if (isGitHubActions) {
@@ -386,6 +390,9 @@ export const runHeadless = (options: HeadlessRunOptions) =>
               artifacts: {
                 ...(effectiveVideoPath ? { video: effectiveVideoPath } : {}),
                 ...(artifacts.replayPath ? { replay: artifacts.replayPath } : {}),
+                ...(artifacts.screenshotPaths.length > 0
+                  ? { screenshots: [...artifacts.screenshotPaths] }
+                  : {}),
               },
               summary: summaryText,
             });

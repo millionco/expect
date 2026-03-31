@@ -225,6 +225,7 @@ export const createBrowserMcpServer = <E>(
           if (session.hasIosSession()) {
             const ios = yield* session.requireIosSession();
             const base64 = yield* ios.client.screenshot();
+            yield* session.saveScreenshot(Buffer.from(base64, "base64"));
             return imageResult(base64);
           }
 
@@ -239,6 +240,7 @@ export const createBrowserMcpServer = <E>(
 
           if (resolvedMode === "annotated") {
             const result = yield* session.annotatedScreenshot(page, { fullPage });
+            yield* session.saveScreenshot(result.screenshot);
             return {
               content: [
                 {
@@ -260,6 +262,7 @@ export const createBrowserMcpServer = <E>(
           }
 
           const buffer = yield* Effect.tryPromise(() => page.screenshot({ fullPage }));
+          yield* session.saveScreenshot(buffer);
           return imageResult(buffer.toString("base64"));
         }),
       ),
@@ -562,6 +565,9 @@ export const createBrowserMcpServer = <E>(
             lines.push(`Playwright video: ${result.tmpVideoPath}`);
           } else if (result.videoPath) {
             lines.push(`Playwright video: ${result.videoPath}`);
+          }
+          for (const screenshotPath of result.screenshotPaths) {
+            lines.push(`Screenshot: ${screenshotPath}`);
           }
           return textResult(lines.join("\n"));
         }),

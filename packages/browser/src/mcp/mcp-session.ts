@@ -83,6 +83,7 @@ export interface CloseResult {
   readonly tmpReplaySessionPath: string | undefined;
   readonly tmpReportPath: string | undefined;
   readonly tmpVideoPath: string | undefined;
+  readonly screenshotPaths: readonly string[];
 }
 
 type IosSessionData = Effect.Success<ReturnType<typeof createIosSession>>;
@@ -144,6 +145,29 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
     const pollingFiberRef = yield* Ref.make<Fiber.Fiber<unknown> | undefined>(undefined);
     const latestRunStateRef = yield* Ref.make<ViewerRunState | undefined>(undefined);
     const preExtractedCookiesRef = yield* Ref.make<Cookie[] | undefined>(undefined);
+    const savedScreenshotPaths: string[] = [];
+
+    const saveScreenshot = Effect.fn("McpSession.saveScreenshot")(function* (buffer: Buffer) {
+      const screenshotIndex = savedScreenshotPaths.length;
+      const screenshotPath = path.join(
+        TMP_ARTIFACT_OUTPUT_DIRECTORY,
+        `screenshot-${screenshotIndex}.png`,
+      );
+      yield* fileSystem
+        .makeDirectory(TMP_ARTIFACT_OUTPUT_DIRECTORY, { recursive: true })
+        .pipe(
+          Effect.catchCause((cause) =>
+            Effect.logDebug("Failed to create screenshot directory", { cause }),
+          ),
+        );
+      yield* fileSystem
+        .writeFile(screenshotPath, new Uint8Array(buffer))
+        .pipe(
+          Effect.catchCause((cause) => Effect.logDebug("Failed to save screenshot", { cause })),
+        );
+      savedScreenshotPaths.push(screenshotPath);
+      yield* Effect.logDebug("Screenshot saved", { path: screenshotPath, index: screenshotIndex });
+    });
 
     if (!cookiesDisabled) {
       yield* browserService.preExtractCookies(cookieBrowserKeys).pipe(
@@ -363,6 +387,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
           tmpReplaySessionPath: undefined,
           tmpReportPath: undefined,
           tmpVideoPath: undefined,
+          screenshotPaths: [...savedScreenshotPaths],
         } satisfies CloseResult;
       }
 
@@ -593,6 +618,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         tmpReplaySessionPath,
         tmpReportPath,
         tmpVideoPath,
+        screenshotPaths: [...savedScreenshotPaths],
       } satisfies CloseResult;
     });
 
@@ -608,6 +634,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       annotatedScreenshot,
       updateLastSnapshot,
       pushStepEvent,
+      saveScreenshot,
       openIos,
       listIosDevices: listAllDevices,
       close,

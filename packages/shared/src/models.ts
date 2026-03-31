@@ -1170,6 +1170,7 @@ export class CiResultOutput extends Schema.Class<CiResultOutput>("@shared/CiResu
   artifacts: Schema.Struct({
     video: Schema.optional(Schema.String),
     replay: Schema.optional(Schema.String),
+    screenshots: Schema.optional(Schema.Array(Schema.String)),
   }),
   summary: Schema.String,
 }) {}
