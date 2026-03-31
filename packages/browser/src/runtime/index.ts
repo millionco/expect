@@ -222,6 +222,15 @@ export const getPerformanceMetrics = (): PerformanceMetricsResult => {
   };
 };
 
+interface PageHealthEntry {
+  type: "viewport-overflow" | "broken-image" | "image-no-dimensions" | "duplicate-id";
+  severity: "error" | "warning";
+  selector: string;
+  detail: string;
+}
+
+const DOM_NODE_WARN_THRESHOLD = 1500;
+
 export interface PerformanceTrace {
   webVitals: PerformanceMetricsResult;
   navigation: NavigationEntry | null;
@@ -231,6 +240,12 @@ export interface PerformanceTrace {
     totalTransferSizeBytes: number;
     slowest: ResourceEntry[];
     largest: ResourceEntry[];
+  };
+  pageHealth: {
+    domNodeCount: number;
+    domNodeWarning: boolean;
+    viewportOverflow: boolean;
+    issues: PageHealthEntry[];
   };
 }
 
@@ -288,11 +303,68 @@ export const getPerformanceTrace = (): PerformanceTrace => {
     };
   } catch {}
 
+  const issues: PageHealthEntry[] = [];
+
+  const viewportOverflow =
+    document.documentElement.scrollWidth > document.documentElement.clientWidth;
+  if (viewportOverflow) {
+    issues.push({
+      type: "viewport-overflow",
+      severity: "error",
+      selector: "html",
+      detail: `scrollWidth (${document.documentElement.scrollWidth}) > clientWidth (${document.documentElement.clientWidth})`,
+    });
+  }
+
+  const images = document.querySelectorAll("img");
+  for (const img of images) {
+    if (img.complete && img.naturalWidth === 0 && img.src) {
+      issues.push({
+        type: "broken-image",
+        severity: "error",
+        selector: img.src,
+        detail: "Image failed to load",
+      });
+    }
+    if (!img.hasAttribute("width") || !img.hasAttribute("height")) {
+      issues.push({
+        type: "image-no-dimensions",
+        severity: "warning",
+        selector: img.src || img.outerHTML.slice(0, 120),
+        detail: "Missing width/height attributes (causes layout shift)",
+      });
+    }
+  }
+
+  const idMap = new Map<string, number>();
+  for (const element of document.querySelectorAll("[id]")) {
+    const id = element.id;
+    if (id) idMap.set(id, (idMap.get(id) ?? 0) + 1);
+  }
+  for (const [id, count] of idMap) {
+    if (count > 1) {
+      issues.push({
+        type: "duplicate-id",
+        severity: "error",
+        selector: `#${id}`,
+        detail: `ID "${id}" appears ${count} times`,
+      });
+    }
+  }
+
+  const domNodeCount = document.querySelectorAll("*").length;
+
   return {
     webVitals,
     navigation,
     longAnimationFrames: [...performanceState.loafEntries],
     resources,
+    pageHealth: {
+      domNodeCount,
+      domNodeWarning: domNodeCount > DOM_NODE_WARN_THRESHOLD,
+      viewportOverflow,
+      issues,
+    },
   };
 };
 

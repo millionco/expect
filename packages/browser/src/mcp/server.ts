@@ -10,6 +10,7 @@ import { formatPerformanceTrace } from "../performance-trace";
 import { McpSession } from "./mcp-session";
 import { DEFAULT_SWIPE_DURATION_MS } from "../ios/constants";
 import { autoDiscoverCdp } from "../cdp-discovery";
+import { DUPLICATE_REQUEST_WINDOW_MS } from "./constants";
 
 const textResult = (text: string) => ({
   content: [{ type: "text" as const, text }],
@@ -292,9 +293,16 @@ export const createBrowserMcpServer = <E>(
             ? sessionData.consoleMessages.filter((entry) => entry.type === type)
             : sessionData.consoleMessages;
           if (clear) sessionData.consoleMessages.length = 0;
-          return entries.length === 0
-            ? textResult("No console messages captured.")
-            : jsonResult(entries);
+          if (entries.length === 0) return textResult("No console messages captured.");
+
+          const errorCount = entries.filter((entry) => entry.type === "error").length;
+          const warningCount = entries.filter((entry) => entry.type === "warning").length;
+          const summary =
+            errorCount > 0 || warningCount > 0
+              ? `${errorCount} error(s), ${warningCount} warning(s) out of ${entries.length} total messages\n\n`
+              : "";
+
+          return jsonResult({ summary: summary || undefined, messages: entries });
         }),
       ),
   );
@@ -304,7 +312,7 @@ export const createBrowserMcpServer = <E>(
     {
       title: "Network Requests",
       description:
-        "Get captured network requests. Optionally filter by HTTP method, URL substring, or resource type (document, script, stylesheet, image, xhr, fetch, etc.).",
+        "Get captured network requests with automatic issue detection. Flags failed requests (4xx/5xx), duplicate requests (same URL+method within 500ms), and mixed content (HTTP on HTTPS pages). Optionally filter by HTTP method, URL substring, or resource type.",
       annotations: { readOnlyHint: true },
       inputSchema: {
         method: z.string().optional().describe("Filter by HTTP method (e.g. 'GET', 'POST')"),
@@ -330,9 +338,58 @@ export const createBrowserMcpServer = <E>(
               (!normalizedResourceType || entry.resourceType === normalizedResourceType),
           );
           if (clear) sessionData.networkRequests.length = 0;
-          return entries.length === 0
-            ? textResult("No network requests captured.")
-            : jsonResult(entries);
+          if (entries.length === 0) return textResult("No network requests captured.");
+
+          const failed = entries.filter(
+            (entry) => entry.status !== undefined && entry.status >= 400,
+          );
+
+          const duplicates: { url: string; method: string; count: number }[] = [];
+          const seen = new Map<string, number>();
+          for (const entry of entries) {
+            const key = `${entry.method}:${entry.url}`;
+            const previous = seen.get(key);
+            if (
+              previous !== undefined &&
+              entry.timestamp - previous < DUPLICATE_REQUEST_WINDOW_MS
+            ) {
+              const existing = duplicates.find(
+                (duplicate) => duplicate.url === entry.url && duplicate.method === entry.method,
+              );
+              if (existing) {
+                existing.count++;
+              } else {
+                duplicates.push({ url: entry.url, method: entry.method, count: 2 });
+              }
+            }
+            seen.set(key, entry.timestamp);
+          }
+
+          const isHttps = entries.some(
+            (entry) => entry.resourceType === "document" && entry.url.startsWith("https://"),
+          );
+          const mixedContent = isHttps
+            ? entries.filter(
+                (entry) => entry.resourceType !== "document" && entry.url.startsWith("http://"),
+              )
+            : [];
+
+          const issues = {
+            failedRequests: failed.map((entry) => ({
+              url: entry.url,
+              method: entry.method,
+              status: entry.status,
+            })),
+            duplicateRequests: duplicates,
+            mixedContent: mixedContent.map((entry) => entry.url),
+          };
+
+          const hasIssues = failed.length > 0 || duplicates.length > 0 || mixedContent.length > 0;
+
+          return jsonResult({
+            issues: hasIssues ? issues : undefined,
+            requests: entries,
+          });
         }),
       ),
   );
@@ -389,6 +446,22 @@ export const createBrowserMcpServer = <E>(
           summary.push(
             `\nResources: ${trace.resources.totalCount} loaded (${Math.round(trace.resources.totalTransferSizeBytes / 1024)}KB total)`,
           );
+
+          const { pageHealth } = trace;
+          summary.push(
+            `\nPage Health: ${pageHealth.domNodeCount} DOM nodes${pageHealth.domNodeWarning ? " (warning: >1500)" : ""}`,
+          );
+          if (pageHealth.viewportOverflow) {
+            summary.push("  Viewport overflow detected (horizontal scroll)");
+          }
+          if (pageHealth.issues.length > 0) {
+            const errors = pageHealth.issues.filter((issue) => issue.severity === "error").length;
+            const warnings = pageHealth.issues.filter(
+              (issue) => issue.severity === "warning",
+            ).length;
+            summary.push(`  ${errors} error(s), ${warnings} warning(s)`);
+          }
+
           summary.push(`\nFull trace: ${tracePath}`);
 
           return textResult(summary.join("\n"));

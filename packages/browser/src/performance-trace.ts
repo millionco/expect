@@ -125,6 +125,28 @@ export const formatPerformanceTrace = (trace: PerformanceTrace): string => {
     }
   }
 
+  const { pageHealth } = trace;
+  lines.push("");
+  lines.push("## Page Health");
+  lines.push("");
+  lines.push(
+    `- **DOM Nodes**: ${pageHealth.domNodeCount}${pageHealth.domNodeWarning ? " (warning: exceeds 1500)" : ""}`,
+  );
+  if (pageHealth.viewportOverflow) {
+    lines.push("- **Viewport Overflow**: horizontal scroll detected (content wider than viewport)");
+  }
+
+  if (pageHealth.issues.length > 0) {
+    lines.push("");
+    lines.push("### Issues");
+    lines.push("");
+    for (const issue of pageHealth.issues) {
+      const icon = issue.severity === "error" ? "ERROR" : "WARN";
+      lines.push(`- [${icon}] **${issue.type}**: ${issue.detail}`);
+      lines.push(`  - ${issue.selector}`);
+    }
+  }
+
   lines.push("");
   return lines.join("\n");
 };
