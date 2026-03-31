@@ -14,7 +14,7 @@ One command scans your unstaged changes or branch diff, generates a test plan, a
 ## Install
 
 ```bash
-npx -y expect-cli@latest init
+npx expect-cli@latest init
 ```
 
 ## Usage

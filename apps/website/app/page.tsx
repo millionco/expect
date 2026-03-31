@@ -2017,15 +2017,10 @@ function ThemeToggle({
   );
 }
 
-/**
- * from Paper
- * https://app.paper.design/file/01KKVJZGYDH7NE03PKQE86N5EK?node=9JZ-0
- * on Mar 20, 2026
- */
 function InstallCommands() {
   return (
     <div className="flex flex-col gap-1.5 w-full">
-      <CommandRow command="npx -y expect-cli@latest init" />
+      <CommandRow command="npx expect-cli@latest init" />
       <div className="[font-synthesis:none] antialiased w-full mt-4">
         <div className="w-fit h-5 tracking-[-0.01em] text-[color(display-p3_0.361_0.361_0.361)] dark:text-[color(display-p3_0.55_0.55_0.55)] font-['ABC_Diatype',system-ui,sans-serif] shrink-0 text-[15px]/5 sm:text-[13px]/4.5">
           Add skill
