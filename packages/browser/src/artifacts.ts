@@ -19,9 +19,7 @@ export class Artifacts extends ServiceMap.Service<Artifacts>()("@browser/Artifac
     return { push, all } as const;
   }),
 }) {
-  static layer = Layer.effect(this)(this.make).pipe(
-    Layer.provide(ArtifactStorage.layerRpc),
-  );
+  static layer = Layer.effect(this)(this.make).pipe(Layer.provide(ArtifactStorage.layerRpc));
 
   static layerTest = (onPush: (artifacts: readonly Artifact[]) => void) =>
     Layer.effect(this)(this.make).pipe(
