@@ -29,6 +29,7 @@
     "accessibility-checker-engine": "^4.0.16",
     "effect": "4.0.0-beta.35",
     "playwright": "^1.52.0",
+    "retire": "^5.4.2",
     "rrweb": "^2.0.0-alpha.18",
     "zod": "^4.3.6"
   },

@@ -135,7 +135,11 @@ export class CdpClient extends ServiceMap.Service<CdpClient>()("@cookies/CdpClie
       profilePath: string;
       executablePath: string;
     }) {
-      const port = yield* Effect.promise(() => getPort());
+      const port = yield* Effect.tryPromise({
+        try: () => getPort(),
+        catch: (cause) =>
+          new ExtractionError({ reason: new UnknownError({ cause: String(cause) }) }),
+      });
 
       yield* Effect.annotateCurrentSpan({
         profilePath,

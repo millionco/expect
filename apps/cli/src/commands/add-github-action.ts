@@ -15,6 +15,7 @@ import {
   hasGhCli,
   isGhAuthenticated,
   setGhSecret,
+  setGhVariable,
 } from "./init-utils";
 
 interface AddGithubActionOptions {
@@ -68,7 +69,8 @@ jobs:
     env:
       ANTHROPIC_API_KEY: \${{ secrets.ANTHROPIC_API_KEY }}
       # Expect uses this local app URL as the browser test target in CI.
-      EXPECT_BASE_URL: "${devUrl}"
+      # Override by setting the EXPECT_BASE_URL repository variable.
+      EXPECT_BASE_URL: \${{ vars.EXPECT_BASE_URL || '${devUrl}' }}
     steps:
       - uses: actions/checkout@v4
 ${setupSteps}
@@ -88,7 +90,7 @@ ${setupSteps}
 
       # Wait until the local app is reachable before handing control to the browser agent.
       - name: Wait for dev server
-        run: npx wait-on ${devUrl} --timeout 60000
+        run: npx wait-on $EXPECT_BASE_URL --timeout 60000
 
       
       - name: Run expect
@@ -235,6 +237,8 @@ export const runAddGithubAction = async (options: AddGithubActionOptions = {}) =
     logger.break();
   }
 
+  let secretSet = false;
+
   if (ghAuthed && hasClaude && !nonInteractive) {
     const response = await prompts({
       type: "confirm",
@@ -269,38 +273,70 @@ export const runAddGithubAction = async (options: AddGithubActionOptions = {}) =
 
       if (tokenResult.status === "secret-set") {
         logger.success("ANTHROPIC_API_KEY secret set.");
-        return;
-      }
-
-      if (tokenResult.status === "token-failed") {
+        secretSet = true;
+      } else if (tokenResult.status === "token-failed") {
         logger.warn("Could not generate token via claude setup-token.");
+        logger.log(
+          `  You can set it manually: ${highlighter.dim("gh secret set ANTHROPIC_API_KEY")}`,
+        );
       } else {
         logger.warn("Token generated but failed to set secret via gh.");
         if (tokenResult.reason) {
           logger.dim(`  ${tokenResult.reason}`);
         }
+        logger.log(
+          `  You can set it manually: ${highlighter.dim("gh secret set ANTHROPIC_API_KEY")}`,
+        );
       }
-      logger.log(
-        `  You can set it manually: ${highlighter.dim("gh secret set ANTHROPIC_API_KEY")}`,
-      );
-      return;
     }
   }
 
-  logSecretInstructions(ghAvailable);
+  if (!secretSet) {
+    logManualInstructions(ghAvailable, "ANTHROPIC_API_KEY", "secret");
+  }
+
+  if (ghAuthed && !nonInteractive) {
+    logger.break();
+    const response = await prompts({
+      type: "confirm",
+      name: "setBaseUrl",
+      message: `Set ${highlighter.info("EXPECT_BASE_URL")} repository variable to ${highlighter.info(devUrl)}?`,
+      initial: true,
+    });
+
+    if (response.setBaseUrl) {
+      const variableResult = await Effect.runPromise(
+        setGhVariable("EXPECT_BASE_URL", devUrl).pipe(
+          Effect.as(true),
+          Effect.catchTag("GhVariableSetError", (error) => {
+            logger.warn("Failed to set EXPECT_BASE_URL variable.");
+            if (error.reason) {
+              logger.dim(`  ${error.reason}`);
+            }
+            return Effect.succeed(false);
+          }),
+        ),
+      );
+
+      if (variableResult) {
+        logger.success(`EXPECT_BASE_URL set to ${devUrl}.`);
+      }
+    }
+  }
 };
 
-const logSecretInstructions = (ghAvailable: boolean) => {
-  logger.log(`  Add ${highlighter.info("ANTHROPIC_API_KEY")} to your repository secrets:`);
+const logManualInstructions = (ghAvailable: boolean, name: string, kind: "secret" | "variable") => {
+  const ghCommand = kind === "secret" ? "gh secret set" : "gh variable set";
+  logger.log(`  Add ${highlighter.info(name)} to your repository ${kind}s:`);
   logger.break();
   if (ghAvailable) {
-    logger.log(`  ${highlighter.dim("gh secret set ANTHROPIC_API_KEY")}`);
+    logger.log(`  ${highlighter.dim(`${ghCommand} ${name}`)}`);
   } else {
     logger.log(`  Install the ${highlighter.info("gh")} CLI, then run:`);
-    logger.log(`  ${highlighter.dim("gh secret set ANTHROPIC_API_KEY")}`);
+    logger.log(`  ${highlighter.dim(`${ghCommand} ${name}`)}`);
     logger.break();
     logger.log(
-      `  Or add it at ${highlighter.dim("https://github.com/<owner>/<repo>/settings/secrets/actions")}`,
+      `  Or add it at ${highlighter.dim(`https://github.com/<owner>/<repo>/settings/${kind}s/actions`)}`,
     );
   }
 };

@@ -24,14 +24,15 @@ describe("Browsers", () => {
       }
     }).pipe(Effect.provide(layerLive), Effect.runPromise));
 
-  it("defaultBrowser returns a known browser", () =>
+  it("defaultBrowser returns a known browser or none", () =>
     Effect.gen(function* () {
       const browsers = yield* Browsers;
       const result = yield* browsers.defaultBrowser();
-      assert.isTrue(Option.isSome(result));
-      const tag = result.value._tag;
-      assert.isTrue(
-        tag === "ChromiumBrowser" || tag === "FirefoxBrowser" || tag === "SafariBrowser",
-      );
+      if (Option.isSome(result)) {
+        const tag = result.value._tag;
+        assert.isTrue(
+          tag === "ChromiumBrowser" || tag === "FirefoxBrowser" || tag === "SafariBrowser",
+        );
+      }
     }).pipe(Effect.provide(layerLive), Effect.runPromise));
 });

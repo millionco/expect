@@ -21,6 +21,14 @@ const TEST_HTML = `<!DOCTYPE html>
 </body>
 </html>`;
 
+const VULNERABLE_HTML = `<!DOCTYPE html>
+<html>
+<body>
+  <h1>Vulnerable Page</h1>
+  <script src="https://code.jquery.com/jquery-1.6.1.min.js"></script>
+</body>
+</html>`;
+
 let testServerUrl: string;
 let httpServer: ReturnType<typeof http.createServer>;
 
@@ -82,6 +90,7 @@ describe("MCP server tools", () => {
       "performance_metrics",
       "playwright",
       "screenshot",
+      "security_audit",
       "swipe",
       "tap",
     ]);
@@ -207,6 +216,41 @@ describe("MCP server tools", () => {
       code: `await ref('e1').click();`,
     });
     expect(textContent(result)).toContain("No snapshot taken yet");
+    await callTool("close");
+  });
+
+  it("security_audit detects vulnerable JavaScript libraries", async () => {
+    const vulnerableServer = http.createServer((_req, res) => {
+      res.writeHead(200, { "Content-Type": "text/html" });
+      res.end(VULNERABLE_HTML);
+    });
+    await new Promise<void>((resolve) => vulnerableServer.listen(0, resolve));
+    const vulnerablePort = (vulnerableServer.address() as AddressInfo).port;
+    const vulnerableServerUrl = `http://127.0.0.1:${vulnerablePort}`;
+
+    try {
+      await callTool("open", { url: vulnerableServerUrl });
+      const result = await callTool("security_audit");
+      const data = JSON.parse(textContent(result));
+
+      expect(data.summary.total).toBeGreaterThan(0);
+      expect(data.findings).toBeInstanceOf(Array);
+
+      const jqueryFinding = data.findings.find(
+        (f: { library: string }) => f.library === "jquery",
+      );
+      expect(jqueryFinding).toBeDefined();
+      expect(jqueryFinding.version).toBe("1.6.1");
+    } finally {
+      await callTool("close").catch(() => {});
+      vulnerableServer.close();
+    }
+  });
+
+  it("security_audit returns clean result for safe page", async () => {
+    await callTool("open", { url: testServerUrl });
+    const result = await callTool("security_audit");
+    expect(textContent(result)).toBe("No vulnerable JavaScript libraries detected.");
     await callTool("close");
   });
 });

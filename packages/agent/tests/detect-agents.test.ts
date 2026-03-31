@@ -1,24 +1,28 @@
 import { describe, expect, it, vi, beforeEach } from "vite-plus/test";
-import { execSync } from "node:child_process";
-import { detectAvailableAgents } from "../src/detect-agents";
+import { detectAvailableAgents, isCommandAvailable } from "../src/detect-agents";
 
-vi.mock("node:child_process", () => ({
-  execSync: vi.fn(),
+vi.mock("which", () => ({
+  default: {
+    sync: vi.fn(),
+  },
 }));
 
-const mockedExecSync = vi.mocked(execSync);
-
-const WHICH_COMMAND = process.platform === "win32" ? "where" : "which";
+const getMockedWhichSync = async () => {
+  const whichModule = await import("which");
+  return vi.mocked(whichModule.default.sync);
+};
 
 describe("detectAvailableAgents", () => {
-  beforeEach(() => {
+  let mockedWhichSync: ReturnType<typeof vi.fn>;
+
+  beforeEach(async () => {
     vi.clearAllMocks();
+    mockedWhichSync = await getMockedWhichSync();
   });
 
   it("returns agents whose binaries are on PATH", () => {
-    mockedExecSync.mockImplementation((command) => {
-      if (String(command) === `${WHICH_COMMAND} claude`)
-        return Buffer.from("/usr/local/bin/claude");
+    mockedWhichSync.mockImplementation((command: string) => {
+      if (command === "claude") return "/usr/local/bin/claude";
       throw new Error("not found");
     });
 
@@ -27,7 +31,7 @@ describe("detectAvailableAgents", () => {
   });
 
   it("returns empty array when no agents are found", () => {
-    mockedExecSync.mockImplementation(() => {
+    mockedWhichSync.mockImplementation(() => {
       throw new Error("not found");
     });
 
@@ -36,10 +40,8 @@ describe("detectAvailableAgents", () => {
   });
 
   it("returns multiple agents when available", () => {
-    mockedExecSync.mockImplementation((command) => {
-      const cmd = String(command);
-      if (cmd === `${WHICH_COMMAND} claude` || cmd === `${WHICH_COMMAND} codex`)
-        return Buffer.from("");
+    mockedWhichSync.mockImplementation((command: string) => {
+      if (command === "claude" || command === "codex") return `/usr/local/bin/${command}`;
       throw new Error("not found");
     });
 
@@ -48,8 +50,8 @@ describe("detectAvailableAgents", () => {
   });
 
   it("detects cursor as a supported agent via agent binary", () => {
-    mockedExecSync.mockImplementation((command) => {
-      if (String(command) === `${WHICH_COMMAND} agent`) return Buffer.from("/usr/local/bin/agent");
+    mockedWhichSync.mockImplementation((command: string) => {
+      if (command === "agent") return "/usr/local/bin/agent";
       throw new Error("not found");
     });
 
@@ -58,9 +60,8 @@ describe("detectAvailableAgents", () => {
   });
 
   it("detects copilot as a supported agent", () => {
-    mockedExecSync.mockImplementation((command) => {
-      if (String(command) === `${WHICH_COMMAND} copilot`)
-        return Buffer.from("/usr/local/bin/copilot");
+    mockedWhichSync.mockImplementation((command: string) => {
+      if (command === "copilot") return "/usr/local/bin/copilot";
       throw new Error("not found");
     });
 
@@ -69,9 +70,8 @@ describe("detectAvailableAgents", () => {
   });
 
   it("detects gemini as a supported agent", () => {
-    mockedExecSync.mockImplementation((command) => {
-      if (String(command) === `${WHICH_COMMAND} gemini`)
-        return Buffer.from("/usr/local/bin/gemini");
+    mockedWhichSync.mockImplementation((command: string) => {
+      if (command === "gemini") return "/usr/local/bin/gemini";
       throw new Error("not found");
     });
 
@@ -80,9 +80,8 @@ describe("detectAvailableAgents", () => {
   });
 
   it("detects opencode as a supported agent", () => {
-    mockedExecSync.mockImplementation((command) => {
-      if (String(command) === `${WHICH_COMMAND} opencode`)
-        return Buffer.from("/usr/local/bin/opencode");
+    mockedWhichSync.mockImplementation((command: string) => {
+      if (command === "opencode") return "/usr/local/bin/opencode";
       throw new Error("not found");
     });
 
@@ -91,8 +90,8 @@ describe("detectAvailableAgents", () => {
   });
 
   it("detects droid as a supported agent", () => {
-    mockedExecSync.mockImplementation((command) => {
-      if (String(command) === `${WHICH_COMMAND} droid`) return Buffer.from("/usr/local/bin/droid");
+    mockedWhichSync.mockImplementation((command: string) => {
+      if (command === "droid") return "/usr/local/bin/droid";
       throw new Error("not found");
     });
 
@@ -101,18 +100,21 @@ describe("detectAvailableAgents", () => {
   });
 
   it("checks all seven supported agents", () => {
-    mockedExecSync.mockImplementation(() => Buffer.from(""));
+    mockedWhichSync.mockImplementation((command: string) => `/usr/local/bin/${command}`);
 
     const agents = detectAvailableAgents();
     expect(agents).toEqual(["claude", "codex", "copilot", "gemini", "cursor", "opencode", "droid"]);
   });
 
-  it("uses platform-specific lookup command for every agent", () => {
-    mockedExecSync.mockReturnValue(Buffer.from(""));
-    detectAvailableAgents();
+  it("isCommandAvailable returns true when binary is on PATH", () => {
+    mockedWhichSync.mockReturnValue("/usr/local/bin/node");
+    expect(isCommandAvailable("node")).toBe(true);
+  });
 
-    for (const call of mockedExecSync.mock.calls) {
-      expect(String(call[0])).toMatch(new RegExp(`^${WHICH_COMMAND} `));
-    }
+  it("isCommandAvailable returns false when binary is not found", () => {
+    mockedWhichSync.mockImplementation(() => {
+      throw new Error("not found");
+    });
+    expect(isCommandAvailable("nonexistent")).toBe(false);
   });
 });

@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+import whichSync from "which";
 
 export type SupportedAgent =
   | "claude"
@@ -25,12 +25,9 @@ const SUPPORTED_AGENTS: Record<SupportedAgent, AgentMeta> = {
   droid: { binary: "droid", displayName: "Factory Droid", skillDir: ".droid/skills" },
 };
 
-const WHICH_COMMAND = process.platform === "win32" ? "where" : "/usr/bin/which";
-
-const isCommandAvailable = (command: string): boolean => {
+export const isCommandAvailable = (command: string): boolean => {
   try {
-    execSync(`${WHICH_COMMAND} ${command}`, { stdio: "pipe" });
-    return true;
+    return Boolean(whichSync.sync(command));
   } catch {
     return false;
   }

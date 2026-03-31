@@ -1,5 +1,6 @@
 import { spawn, spawnSync } from "node:child_process";
 import { Effect } from "effect";
+import { isCommandAvailable } from "@expect/agent";
 import {
   CLAUDE_SETUP_TOKEN_TIMEOUT_MS,
   GH_CLI_DETECT_TIMEOUT_MS,
@@ -48,14 +49,7 @@ export const hasGitHubRemote = Effect.tryPromise({
   Effect.orElseSucceed(() => false),
 );
 
-export const hasGhCli = Effect.try({
-  try: () =>
-    spawnSync("gh", ["--version"], {
-      stdio: "ignore",
-      timeout: GH_CLI_DETECT_TIMEOUT_MS,
-    }).status === 0,
-  catch: () => ({ _tag: "GhCliDetectError" as const }),
-}).pipe(Effect.catchTag("GhCliDetectError", () => Effect.succeed(false)));
+export const hasGhCli = Effect.sync(() => isCommandAvailable("gh"));
 
 export const isGhAuthenticated = Effect.try({
   try: () =>
@@ -142,6 +136,24 @@ export const setGhSecret = (name: string, value: string) =>
     },
     catch: (error) => ({
       _tag: "GhSecretSetError" as const,
+      reason: error instanceof Error ? error.message : String(error),
+    }),
+  });
+
+export const setGhVariable = (name: string, value: string) =>
+  Effect.try({
+    try: () => {
+      const result = spawnSync("gh", ["variable", "set", name, "--body", value], {
+        stdio: ["pipe", "pipe", "pipe"],
+        timeout: GH_SECRET_SET_TIMEOUT_MS,
+      });
+      if (result.status !== 0) {
+        const stderr = result.stderr ? result.stderr.toString().trim() : "";
+        throw new Error(stderr || `gh variable set exited with code ${result.status}`);
+      }
+    },
+    catch: (error) => ({
+      _tag: "GhVariableSetError" as const,
       reason: error instanceof Error ? error.message : String(error),
     }),
   });

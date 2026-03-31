@@ -24,10 +24,12 @@
     "@google/gemini-cli": "^0.35.3",
     "@zed-industries/claude-agent-acp": "^0.22.2",
     "@zed-industries/codex-acp": "^0.10.0",
-    "effect": "4.0.0-beta.35"
+    "effect": "4.0.0-beta.35",
+    "which": "^6.0.1"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
+    "@types/which": "^3.0.4",
     "typescript": "^5.7.0"
   }
 }
