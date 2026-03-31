@@ -44,7 +44,6 @@ import {
 } from "./errors";
 import { type Artifact, ConsoleLog, NetworkRequest, RrwebEvent } from "@expect/shared/models";
 import { Artifacts } from "./artifacts";
-import { collectAllEvents } from "./recorder";
 import { toActionError } from "./utils/action-error";
 import { compactTree } from "./utils/compact-tree";
 import { createLocator } from "./utils/create-locator";

@@ -86,6 +86,7 @@
     "@expect/agent": "workspace:*",
     "@expect/shared": "workspace:*",
     "@expect/supervisor": "workspace:*",
+    "@expect/website": "workspace:*",
     "@types/node-notifier": "^8.0.5",
     "@types/prompts": "^2.4.9",
     "@types/react": "^19.2.14",

@@ -8,9 +8,15 @@ export const LiveViewerRpcsLive = LiveViewerRpcs.toLayer(
 
     return LiveViewerRpcs.of({
       "liveViewer.PushRrwebEvents": (request) =>
-        liveViewer.push(request.planId, { _tag: "RrwebBatch", events: request.events }),
+        liveViewer.push(request.planId, {
+          _tag: "RrwebBatch",
+          events: request.events,
+        }),
       "liveViewer.StreamEvents": (request) => {
-        console.error("[RPC] StreamEvents called planId=%s", JSON.stringify(request.planId));
+        console.error(
+          "[RPC] StreamEvents called planId=%s",
+          JSON.stringify(request.planId)
+        );
         return liveViewer.stream(request.planId);
       },
       "liveViewer.ListTests": () =>
@@ -20,15 +26,17 @@ export const LiveViewerRpcsLive = LiveViewerRpcs.toLayer(
               console.error(
                 "[RPC] ListTests returning %d tests: %s",
                 tests.length,
-                JSON.stringify(tests.map((t) => t.id)),
-              ),
-            ),
+                JSON.stringify(tests.map((t) => t.id))
+              )
+            )
           ),
           Effect.tapCause((cause) =>
-            Effect.sync(() => console.error("[RPC] ListTests FAILED:", cause.toString())),
+            Effect.sync(() =>
+              console.error("[RPC] ListTests FAILED:", cause.toString())
+            )
           ),
-          Effect.orDie,
+          Effect.orDie
         ),
     });
-  }),
-);
+  })
+).pipe(Layer.provide(LiveViewer.layer));

@@ -1,6 +1,5 @@
 import { Effect, Stream } from "effect";
-import * as Atom from "effect/unstable/reactivity/Atom";
-import { ViewerClient, ViewerRuntime } from "../rpc/client";
+import { ViewerClient, ViewerRuntime } from "../rpc-client";
 import { __EXPECT_INJECTED_EVENTS__ } from "../injected-events";
 import { selectedTestIdAtom } from "./selected-test";
 

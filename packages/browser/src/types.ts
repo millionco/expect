@@ -1,6 +1,7 @@
 import type { eventWithTime } from "@rrweb/types";
 import type { Effect } from "effect";
 import type { Locator, Page } from "playwright";
+import type { Cookie } from "@expect/shared/models";
 import type { RefNotFoundError } from "./errors";
 
 export type AriaRole = Parameters<Page["getByRole"]>[0];

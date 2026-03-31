@@ -11,7 +11,6 @@ import { Artifacts } from "./artifacts";
 import { McpServerStartError, NoSnapshotError, PlaywrightExecutionError } from "./errors";
 import { evaluateRuntime } from "./utils/evaluate-runtime";
 import type { SnapshotResult } from "./types";
-import { Artifacts } from "./artifacts";
 import { autoDiscoverCdp } from "./cdp-discovery";
 
 const textResult = (text: string) => ({
