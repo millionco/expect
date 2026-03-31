@@ -31,6 +31,10 @@ export const GIT_REMOTE_TIMEOUT_MS = 5_000;
 export const GIT_STATE_TIMEOUT_MS = 10_000;
 export const TEST_COVERAGE_TIMEOUT_MS = 15_000;
 
+export const GH_CLI_DETECT_TIMEOUT_MS = 5_000;
+export const GH_SECRET_SET_TIMEOUT_MS = 30_000;
+export const CLAUDE_SETUP_TOKEN_TIMEOUT_MS = 120_000;
+
 export const PORT_PICKER_VISIBLE_COUNT = 10;
 export const MIN_USER_PORT = 1024;
 export const MAX_PORT = 65535;

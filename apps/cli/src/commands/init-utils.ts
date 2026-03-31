@@ -1,6 +1,11 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { Effect } from "effect";
-import { GIT_REMOTE_TIMEOUT_MS } from "../constants";
+import {
+  CLAUDE_SETUP_TOKEN_TIMEOUT_MS,
+  GH_CLI_DETECT_TIMEOUT_MS,
+  GH_SECRET_SET_TIMEOUT_MS,
+  GIT_REMOTE_TIMEOUT_MS,
+} from "../constants";
 import { isRunningInAgent } from "../utils/is-running-in-agent";
 import { isHeadless } from "../utils/is-headless";
 
@@ -43,6 +48,24 @@ export const hasGitHubRemote = Effect.tryPromise({
   Effect.orElseSucceed(() => false),
 );
 
+export const hasGhCli = Effect.try({
+  try: () =>
+    spawnSync("gh", ["--version"], {
+      stdio: "ignore",
+      timeout: GH_CLI_DETECT_TIMEOUT_MS,
+    }).status === 0,
+  catch: () => ({ _tag: "GhCliDetectError" as const }),
+}).pipe(Effect.catchTag("GhCliDetectError", () => Effect.succeed(false)));
+
+export const isGhAuthenticated = Effect.try({
+  try: () =>
+    spawnSync("gh", ["auth", "status"], {
+      stdio: "ignore",
+      timeout: GH_CLI_DETECT_TIMEOUT_MS,
+    }).status === 0,
+  catch: () => ({ _tag: "GhAuthCheckError" as const }),
+}).pipe(Effect.catchTag("GhAuthCheckError", () => Effect.succeed(false)));
+
 const INSTALL_TIMEOUT_MS = 60_000;
 
 export const tryRun = (command: string): Promise<boolean> =>
@@ -58,4 +81,67 @@ export const tryRun = (command: string): Promise<boolean> =>
     child.on("error", () => {
       resolve(false);
     });
+  });
+
+const CLAUDE_TOKEN_PATTERN = /^(sk-ant-\S+)$/m;
+const ESC = String.fromCharCode(0x1b);
+const ANSI_ESCAPE_PATTERN = new RegExp(`${ESC}\\[[0-9;]*[a-zA-Z]`, "g");
+
+const stripAnsi = (text: string): string => text.replace(ANSI_ESCAPE_PATTERN, "");
+
+export const generateClaudeToken = Effect.tryPromise({
+  try: () =>
+    new Promise<string>((resolve, reject) => {
+      const child = spawn("claude", ["setup-token"], {
+        stdio: ["inherit", "pipe", "inherit"],
+      });
+      let stdout = "";
+      const timeout = setTimeout(() => {
+        child.kill();
+        reject(new Error("claude setup-token timed out"));
+      }, CLAUDE_SETUP_TOKEN_TIMEOUT_MS);
+
+      child.stdout.on("data", (chunk: Buffer) => {
+        const text = chunk.toString();
+        stdout += text;
+        process.stdout.write(text);
+      });
+      child.on("close", (code) => {
+        clearTimeout(timeout);
+        if (code !== 0) {
+          reject(new Error(`claude setup-token exited with code ${code}`));
+          return;
+        }
+        const match = stripAnsi(stdout).match(CLAUDE_TOKEN_PATTERN);
+        if (match) {
+          resolve(match[1]);
+        } else {
+          reject(new Error("Could not extract token from output"));
+        }
+      });
+      child.on("error", (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      });
+    }),
+  catch: () => ({ _tag: "ClaudeTokenGenerateError" as const }),
+});
+
+export const setGhSecret = (name: string, value: string) =>
+  Effect.try({
+    try: () => {
+      const result = spawnSync("gh", ["secret", "set", name], {
+        input: value,
+        stdio: ["pipe", "pipe", "pipe"],
+        timeout: GH_SECRET_SET_TIMEOUT_MS,
+      });
+      if (result.status !== 0) {
+        const stderr = result.stderr ? result.stderr.toString().trim() : "";
+        throw new Error(stderr || `gh secret set exited with code ${result.status}`);
+      }
+    },
+    catch: (error) => ({
+      _tag: "GhSecretSetError" as const,
+      reason: error instanceof Error ? error.message : String(error),
+    }),
   });

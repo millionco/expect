@@ -137,7 +137,7 @@ export const runInit = async (options: InitOptions = {}) => {
     }
 
     if (setupGithubAction) {
-      await runAddGithubAction({ yes: options.yes });
+      await runAddGithubAction({ yes: options.yes, agents: availableAgents });
     }
   }
 

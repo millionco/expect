@@ -2,14 +2,24 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Effect } from "effect";
+import { detectAvailableAgents, type SupportedAgent } from "@expect/agent";
 import { detectProject } from "@expect/supervisor/detect-project";
 import { highlighter } from "../utils/highlighter";
 import { logger } from "../utils/logger";
 import { prompts } from "../utils/prompts";
-import { type PackageManager, detectNonInteractive, detectPackageManager } from "./init-utils";
+import {
+  type PackageManager,
+  detectNonInteractive,
+  detectPackageManager,
+  generateClaudeToken,
+  hasGhCli,
+  isGhAuthenticated,
+  setGhSecret,
+} from "./init-utils";
 
 interface AddGithubActionOptions {
   yes?: boolean;
+  agents?: SupportedAgent[];
 }
 
 const DEV_COMMAND_DEFAULTS: Record<PackageManager, string> = {
@@ -212,13 +222,85 @@ export const runAddGithubAction = async (options: AddGithubActionOptions = {}) =
   logger.break();
   logger.success("Created .github/workflows/expect.yml");
   logger.break();
+
+  const ghAvailable = await Effect.runPromise(hasGhCli);
+  const ghAuthed = ghAvailable && (await Effect.runPromise(isGhAuthenticated));
+  const agents = options.agents ?? detectAvailableAgents();
+  const hasClaude = agents.includes("claude");
+
+  if (ghAvailable && !ghAuthed) {
+    logger.dim(
+      `  ${highlighter.info("gh")} is installed but not authenticated. Run ${highlighter.info("gh auth login")} first.`,
+    );
+    logger.break();
+  }
+
+  if (ghAuthed && hasClaude && !nonInteractive) {
+    const response = await prompts({
+      type: "confirm",
+      name: "generateToken",
+      message: `Generate API token via ${highlighter.info("claude setup-token")} and set as ${highlighter.info("ANTHROPIC_API_KEY")} secret?`,
+      initial: true,
+    });
+
+    if (response.generateToken) {
+      logger.break();
+
+      const tokenResult = await Effect.runPromise(
+        generateClaudeToken.pipe(
+          Effect.andThen((token) =>
+            setGhSecret("ANTHROPIC_API_KEY", token).pipe(
+              Effect.as({ status: "secret-set" as const }),
+            ),
+          ),
+          Effect.catchTag("ClaudeTokenGenerateError", () =>
+            Effect.succeed({ status: "token-failed" as const }),
+          ),
+          Effect.catchTag("GhSecretSetError", (error) =>
+            Effect.succeed({
+              status: "secret-failed" as const,
+              reason: error.reason,
+            }),
+          ),
+        ),
+      );
+
+      logger.break();
+
+      if (tokenResult.status === "secret-set") {
+        logger.success("ANTHROPIC_API_KEY secret set.");
+        return;
+      }
+
+      if (tokenResult.status === "token-failed") {
+        logger.warn("Could not generate token via claude setup-token.");
+      } else {
+        logger.warn("Token generated but failed to set secret via gh.");
+        if (tokenResult.reason) {
+          logger.dim(`  ${tokenResult.reason}`);
+        }
+      }
+      logger.log(
+        `  You can set it manually: ${highlighter.dim("gh secret set ANTHROPIC_API_KEY")}`,
+      );
+      return;
+    }
+  }
+
+  logSecretInstructions(ghAvailable);
+};
+
+const logSecretInstructions = (ghAvailable: boolean) => {
   logger.log(`  Add ${highlighter.info("ANTHROPIC_API_KEY")} to your repository secrets:`);
   logger.break();
-  logger.log(`  You can use the ${highlighter.info("gh")} CLI to add repository secrets:`);
-  logger.log(
-    `  ${highlighter.dim("claude setup-token")} ${highlighter.dim("# use Claude Code to generate a token, then paste it into ANTHROPIC_API_KEY")}`,
-  );
-  logger.log(
-    `  ${highlighter.dim("gh secret set ANTHROPIC_API_KEY")} ${highlighter.dim("# for an Anthropic API key or a token from claude setup-token")}`,
-  );
+  if (ghAvailable) {
+    logger.log(`  ${highlighter.dim("gh secret set ANTHROPIC_API_KEY")}`);
+  } else {
+    logger.log(`  Install the ${highlighter.info("gh")} CLI, then run:`);
+    logger.log(`  ${highlighter.dim("gh secret set ANTHROPIC_API_KEY")}`);
+    logger.break();
+    logger.log(
+      `  Or add it at ${highlighter.dim("https://github.com/<owner>/<repo>/settings/secrets/actions")}`,
+    );
+  }
 };
