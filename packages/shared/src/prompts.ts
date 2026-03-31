@@ -41,8 +41,6 @@ const formatSavedFlowGuidance = (savedFlow: SavedFlow | undefined): string[] => 
       `Step ${index + 1}: ${step.title}`,
       `Instruction: ${step.instruction}`,
       `Expected: ${step.expectedOutcome}`,
-      ...(step.routeHint ? [`Route hint: ${step.routeHint}`] : []),
-      ...(step.note ? [`Note from prior run: ${step.note}`] : []),
       "",
     ]),
   ];

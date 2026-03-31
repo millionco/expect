@@ -22,8 +22,6 @@ const savedFlowFileData: SavedFlowFileData = {
         title: "Open the search page",
         instruction: "Navigate to the search experience.",
         expectedOutcome: "The search UI is visible.",
-        routeHint: "/search",
-        note: "Previous run passed after waiting for the index to hydrate.",
       },
     ],
   },
@@ -48,10 +46,10 @@ describe("saved-flow-file", () => {
 
   it("tolerates legacy undefined selected_commit values", () => {
     const formattedFile = formatSavedFlowFile(savedFlowFileData).replace(
-      'flow: {"title":"Validate search user journey","userInstruction":"Validate the search experience on production.","steps":[{"id":"step-01","title":"Open the search page","instruction":"Navigate to the search experience.","expectedOutcome":"The search UI is visible.","routeHint":"/search","note":"Previous run passed after waiting for the index to hydrate."}]}',
+      'flow: {"title":"Validate search user journey","userInstruction":"Validate the search experience on production.","steps":[{"id":"step-01","title":"Open the search page","instruction":"Navigate to the search experience.","expectedOutcome":"The search UI is visible."}]}',
       [
         "selected_commit: undefined",
-        'flow: {"title":"Validate search user journey","userInstruction":"Validate the search experience on production.","steps":[{"id":"step-01","title":"Open the search page","instruction":"Navigate to the search experience.","expectedOutcome":"The search UI is visible.","routeHint":"/search","note":"Previous run passed after waiting for the index to hydrate."}]}',
+        'flow: {"title":"Validate search user journey","userInstruction":"Validate the search experience on production.","steps":[{"id":"step-01","title":"Open the search page","instruction":"Navigate to the search experience.","expectedOutcome":"The search UI is visible."}]}',
       ].join("\n"),
     );
 
@@ -72,28 +70,6 @@ describe("saved-flow-file", () => {
       flow: {
         ...savedFlowFileData.flow,
         steps: [],
-      },
-    });
-  });
-
-  it("drops invalid optional saved step fields", () => {
-    const formattedFile = formatSavedFlowFile(savedFlowFileData).replace(
-      '"routeHint":"/search","note":"Previous run passed after waiting for the index to hydrate."',
-      '"routeHint":123,"note":false',
-    );
-
-    expect(parseSavedFlowFile(formattedFile)).toEqual({
-      ...savedFlowFileData,
-      flow: {
-        ...savedFlowFileData.flow,
-        steps: [
-          {
-            id: "step-01",
-            title: "Open the search page",
-            instruction: "Navigate to the search experience.",
-            expectedOutcome: "The search UI is visible.",
-          },
-        ],
       },
     });
   });

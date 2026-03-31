@@ -21,8 +21,6 @@ export interface SavedFlowFileData {
       title: string;
       instruction: string;
       expectedOutcome: string;
-      routeHint?: string;
-      note?: string;
     }>;
   };
   environment: SavedFlowEnvironment;

@@ -32,21 +32,11 @@ const testPlanToSavedFlowFileData = (plan: TestPlan): SavedFlowFileData => ({
     userInstruction: plan.instruction,
     steps: plan.steps.map((step) => {
       const summaryText = Option.getOrElse(step.summary, () => "");
-      const routeHint = Option.getOrElse(step.routeHint, () => "");
-      const note =
-        summaryText.length > 0 &&
-        summaryText !== step.expectedOutcome &&
-        summaryText !== step.instruction
-          ? summaryText
-          : "";
-
       return {
         id: step.id,
         title: step.title,
         instruction: step.instruction !== step.title ? step.instruction : summaryText || step.title,
         expectedOutcome: step.expectedOutcome || summaryText,
-        ...(routeHint ? { routeHint } : {}),
-        ...(note ? { note } : {}),
       };
     }),
   },

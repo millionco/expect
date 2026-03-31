@@ -6,7 +6,7 @@ export class Reporter extends ServiceMap.Service<Reporter>()("@supervisor/Report
     const report = Effect.fn("Reporter.report")(function* (executed: ExecutedTestPlan) {
       const failedSteps = executed.events.filter((event) => event._tag === "StepFailed");
       const completedSteps = executed.events.filter((event) => event._tag === "StepCompleted");
-      const runFinished = executed.events.findLast((event) => event._tag === "RunFinished");
+      const runFinished = executed.events.find((event) => event._tag === "RunFinished");
 
       const summary = runFinished
         ? runFinished.summary

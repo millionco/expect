@@ -5,8 +5,6 @@ export interface SavedFlowStep {
   title: string;
   instruction: string;
   expectedOutcome: string;
-  routeHint?: string;
-  note?: string;
 }
 
 export interface SavedFlow {
