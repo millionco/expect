@@ -1,0 +1,33 @@
+packages/browser/src/mcp/mcp-session.ts
+  b49f8a70c36bf4bc 86,148-149,151-165,167-170,390,621,637
+packages/browser/src/mcp/server.ts
+  b49f8a70c36bf4bc 228,243,265,569-571
+packages/shared/src/models.ts
+  b49f8a70c36bf4bc 1173
+apps/cli/src/utils/ci-reporter.ts
+  b49f8a70c36bf4bc 97-102,106,109-114
+apps/cli/src/utils/extract-close-artifacts.ts
+  b49f8a70c36bf4bc 7,15,36,55-58,66
+apps/cli/src/utils/run-test.ts
+  b49f8a70c36bf4bc 274-278,393-395
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.23",
+  "base_commit_sha": "30bbb86373142b93fbc0eacf986dc7c3b8cbd66f",
+  "prompts": {
+    "b49f8a70c36bf4bc": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "54dc6527-05a6-43af-bc0e-30f589d83994",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 67,
+      "total_deletions": 5,
+      "accepted_lines": 61,
+      "overriden_lines": 2
+    }
+  }
+}
