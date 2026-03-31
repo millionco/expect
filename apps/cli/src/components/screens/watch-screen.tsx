@@ -6,7 +6,13 @@ import type { ChangesFor, ExecutedTestPlan, TestPlanStep } from "@expect/shared/
 import type { WatchEvent } from "@expect/supervisor";
 import { Watch } from "@expect/supervisor";
 import { useMountEffect } from "../../hooks/use-mount-effect";
-import { TESTING_TIMER_UPDATE_INTERVAL_MS, TESTING_TOOL_TEXT_CHAR_LIMIT } from "../../constants";
+import {
+  TESTING_TIMER_UPDATE_INTERVAL_MS,
+  TESTING_TOOL_TEXT_CHAR_LIMIT,
+  WATCH_IDLE_TICK_INTERVAL_MS,
+  WATCH_IDLE_SPINNER_DURATION_S,
+  WATCH_IDLE_CYCLE_DURATION_S,
+} from "../../constants";
 import { useColors, theme } from "../theme-context";
 import { Spinner } from "../ui/spinner";
 import { TextShimmer } from "../ui/text-shimmer";
@@ -48,6 +54,7 @@ export const WatchScreen = ({
   const [elapsedTimeMs, setElapsedTimeMs] = useState(0);
   const [lastError, setLastError] = useState<string | undefined>(undefined);
   const [showStopConfirmation, setShowStopConfirmation] = useState(false);
+  const [waitingTick, setWaitingTick] = useState(0);
   const fiberRef = useRef<Fiber.Fiber<void, unknown> | undefined>(undefined);
 
   useMountEffect(() => {
@@ -148,6 +155,22 @@ export const WatchScreen = ({
     return () => clearInterval(interval);
   }, [runStartedAt, phase]);
 
+  const isWaitingPhase = phase === "polling" || phase === "idle";
+
+  useEffect(() => {
+    if (!isWaitingPhase) {
+      setWaitingTick(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setWaitingTick((previous) => previous + 1);
+    }, WATCH_IDLE_TICK_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [isWaitingPhase]);
+
+  const showNoChangesHint =
+    isWaitingPhase && waitingTick % WATCH_IDLE_CYCLE_DURATION_S >= WATCH_IDLE_SPINNER_DURATION_S;
+
   const toggleNotifications = usePreferencesStore((state) => state.toggleNotifications);
 
   const goToMain = () => {
@@ -201,6 +224,7 @@ export const WatchScreen = ({
   })();
 
   const isActive = phase === "running" || phase === "assessing" || phase === "settling";
+  const isWaiting = isWaitingPhase && !showNoChangesHint;
 
   return (
     <Box flexDirection="column" width="100%" paddingY={1} paddingX={1}>
@@ -225,7 +249,16 @@ export const WatchScreen = ({
             />
           </Box>
         )}
-        {!isActive && (
+        {isWaiting && (
+          <Box>
+            <Spinner />
+            <Text color={COLORS.DIM}> {phaseLabel}</Text>
+          </Box>
+        )}
+        {isWaitingPhase && showNoChangesHint && (
+          <Text color={COLORS.DIM}>{figures.bullet} No testable changes detected</Text>
+        )}
+        {phase === "error" && (
           <Text color={COLORS.DIM}>
             {figures.bullet} {phaseLabel}
           </Text>

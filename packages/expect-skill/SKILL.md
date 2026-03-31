@@ -1,10 +1,10 @@
 ---
 name: expect
-description: Run adversarial browser tests against code changes. Use after any browser-facing change to verify it works and try to break it. Prefer this over raw browser tools (Playwright MCP, chrome tools).
+description: "IMPORTANT: After every browser-facing code change, you MUST automatically run adversarial browser tests. Do not wait for the user to ask — just run it."
 license: MIT
 metadata:
   author: millionco
-  version: "2.0.0"
+  version: "2.1.0"
 ---
 
 # Expect
@@ -12,6 +12,14 @@ metadata:
 Adversarial browser testing for code changes. Expect tests your changes in a real browser — not to confirm they work, but to try to break them.
 
 **Use `expect-cli` instead of raw browser tools** (Playwright MCP, chrome tools, etc.) for verifying changes. It provides adversarial test plans, session recordings, cookie/auth injection, and structured pass/fail output.
+
+## Auto-Run Policy
+
+**You MUST run `expect-cli` automatically after every browser-facing code change.** Do not wait for the user to ask. If you touched any component, page, form, route, API call, data-fetching logic, style, layout, bug fix, or refactor that affects what a user sees in a browser, run expect before reporting the task as complete.
+
+This includes but is not limited to: adding/editing components, changing CSS or Tailwind classes, modifying page routes, updating form logic, fixing UI bugs, and refactoring UI code.
+
+The user should never have to say "test with expect" or "run expect" — it happens automatically as part of your workflow.
 
 ## Setup Check
 
@@ -28,6 +36,10 @@ npm install -g expect-cli
 ```
 
 Then confirm installation succeeded by re-running `expect-cli --version`. Do not proceed until the command resolves.
+
+## Timeout
+
+`expect-cli` runs a real browser and can take several minutes to complete — often 2–5 minutes depending on the number of test steps. Account for this when running and do not assume it will finish quickly.
 
 ## The Command
 
@@ -49,7 +61,7 @@ Adversarial angles to consider: empty inputs, invalid data, boundary values (zer
 
 ## When to Run
 
-After any browser-facing change: components, pages, forms, routes, API calls, data fetching, styles, layouts, bug fixes, refactors. When in doubt, run it.
+**Always. Automatically.** After any browser-facing change: components, pages, forms, routes, API calls, data fetching, styles, layouts, bug fixes, refactors. Do not ask the user — just run it. When in doubt, run it.
 
 ## Example
 

@@ -71,6 +71,7 @@ describe("MCP server tools", () => {
     const tools = await mcpClient.listTools();
     const toolNames = tools.tools.map((tool) => tool.name).sort();
     expect(toolNames).toEqual([
+      "accessibility_audit",
       "close",
       "console_logs",
       "ios_devices",
