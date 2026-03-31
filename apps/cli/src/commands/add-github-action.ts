@@ -65,6 +65,12 @@ ${setupSteps}
       - name: Install dependencies
         run: ${install}
 
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
       # Expect runs against your dev server by default, not a production build or deployed preview.
       # To test a preview URL instead, set EXPECT_BASE_URL to that URL. You can use
       # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idneeds
