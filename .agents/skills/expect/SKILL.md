@@ -53,6 +53,20 @@ The failure output names the exact step and what broke. Fix the issue, then re-r
 EXPECT_BASE_URL=http://localhost:5173 expect-cli -m "Test the checkout flow end-to-end with valid data, then try to break it: empty cart submission, invalid card numbers, double-click place order, back button mid-payment. Verify error states and console errors." -y --cookies
 ```
 
+## Session Replay
+
+Every test run is recorded via rrweb. After execution completes, the output includes a replay URL you can open in a browser to watch exactly what happened. Replay data stays local — only the player assets are fetched from the replay host.
+
+Use `--replay-host <url>` to override the default replay host (default: `https://expect.dev`).
+
+## Telemetry
+
+`expect-cli` collects anonymous usage analytics via PostHog. Set `NO_TELEMETRY=1` to disable analytics events:
+
+```bash
+NO_TELEMETRY=1 expect-cli -m "test the homepage" -y --cookies
+```
+
 ## REQUIRED: When to Run
 
 Run `expect-cli` automatically after every browser-facing code change. Do not wait for the user to ask. If you touched any component, page, form, route, API call, style, layout, or bug fix that affects what a user sees in a browser, run expect before reporting the task as complete.
