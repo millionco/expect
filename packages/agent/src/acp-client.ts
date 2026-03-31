@@ -163,7 +163,11 @@ export class AcpAdapterNotFoundError extends Schema.ErrorClass<AcpAdapterNotFoun
   )}`;
 }
 
-type SessionQueueError = Cause.Done | AcpStreamError;
+type SessionQueueError =
+  | Cause.Done
+  | AcpStreamError
+  | AcpProviderUnauthenticatedError
+  | AcpProviderUsageLimitError;
 
 const makeRequire = () =>
   createRequire(typeof __filename !== "undefined" ? __filename : import.meta.url);
@@ -497,10 +501,33 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
     const streamFiberMap = yield* FiberMap.make<SessionId>();
 
     const writableQueue = yield* Queue.unbounded<Uint8Array>();
+    const adapterSessionErrorRef = yield* Ref.make<SessionQueueError | undefined>(undefined);
     const sessionUpdatesMap = new Map<
       SessionId,
       Queue.Queue<AcpSessionUpdate, SessionQueueError>
     >();
+
+    const getAdapterSessionError = (line: string): SessionQueueError | undefined => {
+      const normalizedLine = line.toLowerCase();
+
+      if (
+        normalizedLine.includes("invalid api key") ||
+        normalizedLine.includes("fix external api key") ||
+        normalizedLine.includes("authentication")
+      ) {
+        return new AcpProviderUnauthenticatedError({ provider: adapter.provider });
+      }
+
+      if (
+        normalizedLine.includes("out of usage") ||
+        normalizedLine.includes("limits exceeded") ||
+        normalizedLine.includes("usage exceeded")
+      ) {
+        return new AcpProviderUsageLimitError({ provider: adapter.provider });
+      }
+
+      return undefined;
+    };
 
     const client: acp.Client = {
       requestPermission: (params) =>
@@ -537,7 +564,27 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
     yield* childProcess.stderr.pipe(
       Stream.decodeText(),
       Stream.splitLines,
-      Stream.tap((line) => Effect.logDebug("ACP adapter stderr", { line })),
+      Stream.tap((line) =>
+        Effect.gen(function* () {
+          yield* Effect.logDebug("ACP adapter stderr", { line });
+          const adapterSessionError = getAdapterSessionError(line);
+          if (!adapterSessionError) return;
+
+          const currentAdapterSessionError = yield* Ref.get(adapterSessionErrorRef);
+          if (currentAdapterSessionError) return;
+
+          yield* Ref.set(adapterSessionErrorRef, adapterSessionError);
+          yield* Effect.logWarning("ACP adapter reported fatal error", {
+            provider: adapter.provider,
+            line,
+          });
+          yield* Effect.forEach(
+            Array.from(sessionUpdatesMap.values()),
+            (updatesQueue) => Queue.fail(updatesQueue, adapterSessionError),
+            { concurrency: "unbounded" },
+          );
+        }),
+      ),
       Stream.runDrain,
       Effect.forkScoped,
     );
