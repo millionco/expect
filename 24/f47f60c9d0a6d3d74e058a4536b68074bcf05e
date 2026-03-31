@@ -1,0 +1,31 @@
+packages/agent/src/acp-client.ts
+  0fbeeb618bd394d0 637,639,771,773-774,777-778,780-781,785,792-797,799-801
+packages/agent/src/build-session-meta.ts
+  0fbeeb618bd394d0 1-2,4,6-8,11-24,26-28
+packages/supervisor/src/executor.ts
+  0fbeeb618bd394d0 179-190,192-200,202-203,205-207
+packages/agent/tests/build-session-meta.test.ts
+  0fbeeb618bd394d0 5-9,14,16,18,24,26,28,33-65
+apps/cli/src/utils/run-test.ts
+  0fbeeb618bd394d0 6,176,410
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.23",
+  "base_commit_sha": "24f47f60c9d0a6d3d74e058a4536b68074bcf05e",
+  "prompts": {
+    "0fbeeb618bd394d0": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "91b335ef-2478-4b55-8fee-6e947326c476",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 117,
+      "total_deletions": 90,
+      "accepted_lines": 117,
+      "overriden_lines": 0
+    }
+  }
+}
