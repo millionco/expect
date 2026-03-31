@@ -1,0 +1,23 @@
+packages/browser/tests/mcp-server.test.ts
+  dba1330e499db3ea 74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.23",
+  "base_commit_sha": "a1abe001dd22c0f7f8b725b653053e4d30fde3bf",
+  "prompts": {
+    "dba1330e499db3ea": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b959fc4a-9914-458d-bf2e-9c46d2462a76",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 16,
+      "total_deletions": 2,
+      "accepted_lines": 16,
+      "overriden_lines": 0
+    }
+  }
+}
