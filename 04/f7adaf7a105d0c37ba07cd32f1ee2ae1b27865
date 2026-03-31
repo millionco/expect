@@ -1,0 +1,42 @@
+packages/shared/tests/prompts.test.ts
+  c745baba7da5f385 222-226
+packages/browser/tests/mcp-server.test.ts
+  c745baba7da5f385 162-203
+packages/browser/src/mcp/server.ts
+  c745baba7da5f385 131,134-139,142,154,163,165-168,171-184,187-192,195-200
+packages/shared/src/prompts.ts
+  c745baba7da5f385 142,191-192
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.23",
+  "base_commit_sha": "04f7adaf7a105d0c37ba07cd32f1ee2ae1b27865",
+  "prompts": {
+    "c745baba7da5f385": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a4f94408-14ef-4dc0-bd70-d31c00602e10",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 81,
+      "total_deletions": 11,
+      "accepted_lines": 90,
+      "overriden_lines": 4
+    },
+    "d98fab707eb772c0": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d8f84865-0627-4f83-9980-4dc17ec27d48",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
