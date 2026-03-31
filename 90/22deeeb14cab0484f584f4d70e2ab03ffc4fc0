@@ -1,0 +1,23 @@
+packages/agent/src/acp-client.ts
+  0fbeeb618bd394d0 39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.23",
+  "base_commit_sha": "9022deeeb14cab0484f584f4d70e2ab03ffc4fc0",
+  "prompts": {
+    "0fbeeb618bd394d0": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "91b335ef-2478-4b55-8fee-6e947326c476",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
