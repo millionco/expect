@@ -159,6 +159,48 @@ describe("MCP server tools", () => {
     expect(textContent(doubleClose)).toContain("No browser open");
   });
 
+  it("playwright snapshotAfter returns fresh snapshot alongside result", async () => {
+    await callTool("open", { url: testServerUrl });
+    await callTool("screenshot", { mode: "snapshot" });
+
+    const result = await callTool("playwright", {
+      code: `return await page.title();`,
+      snapshotAfter: true,
+    });
+    const data = JSON.parse(textContent(result));
+    expect(data).toHaveProperty("result");
+    expect(data).toHaveProperty("snapshot");
+    expect(data.snapshot).toHaveProperty("tree");
+    expect(data.snapshot).toHaveProperty("refs");
+    expect(data.snapshot).toHaveProperty("stats");
+    expect(data.snapshot.tree).toContain("Submit");
+    await callTool("close");
+  });
+
+  it("playwright snapshotAfter with no return value omits result key", async () => {
+    await callTool("open", { url: testServerUrl });
+    await callTool("screenshot", { mode: "snapshot" });
+
+    const result = await callTool("playwright", {
+      code: `await ref('e1').click();`,
+      snapshotAfter: true,
+    });
+    const data = JSON.parse(textContent(result));
+    expect(data).not.toHaveProperty("result");
+    expect(data).toHaveProperty("snapshot");
+    expect(data.snapshot).toHaveProperty("tree");
+    await callTool("close");
+  });
+
+  it("playwright without snapshotAfter returns plain result", async () => {
+    await callTool("open", { url: testServerUrl });
+    const result = await callTool("playwright", {
+      code: `return 42;`,
+    });
+    expect(textContent(result)).toBe("42");
+    await callTool("close");
+  });
+
   it("ref() throws when no snapshot has been taken", async () => {
     await callTool("open", { url: testServerUrl });
     const result = await callTool("playwright", {

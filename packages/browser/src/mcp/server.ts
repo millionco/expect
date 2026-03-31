@@ -128,12 +128,18 @@ export const createBrowserMcpServer = <E>(
     {
       title: "Execute Playwright",
       description:
-        "Execute Playwright code in the Node.js context. Available globals: page (Page), context (BrowserContext), browser (Browser), ref (function: ref ID from snapshot → Playwright Locator). Use `return` to send a value back as JSON. Supports await.",
+        "Execute Playwright code in the Node.js context. Available globals: page (Page), context (BrowserContext), browser (Browser), ref (function: ref ID from snapshot → Playwright Locator). Use `return` to send a value back as JSON. Supports await. Set snapshotAfter=true to automatically take a fresh ARIA snapshot after execution and get updated refs — useful after actions that change the DOM (opening dropdowns, dialogs, navigating).",
       inputSchema: {
         code: z.string().describe("Playwright code to execute"),
+        snapshotAfter: z
+          .boolean()
+          .optional()
+          .describe(
+            "Take a fresh ARIA snapshot after execution and return it alongside the result. Use after actions that change the DOM (dropdowns, dialogs, navigation).",
+          ),
       },
     },
-    ({ code }) =>
+    ({ code, snapshotAfter }) =>
       runMcp(
         Effect.gen(function* () {
           const session = yield* McpSession;
@@ -145,7 +151,7 @@ export const createBrowserMcpServer = <E>(
             return Effect.runSync(sessionData.lastSnapshot.locator(refId));
           };
 
-          return yield* Effect.promise(async () => {
+          const codeResult = yield* Effect.promise(async () => {
             try {
               const userFunction = new AsyncFunction("page", "context", "browser", "ref", code);
               const result = await userFunction(
@@ -154,12 +160,44 @@ export const createBrowserMcpServer = <E>(
                 sessionData.browser,
                 ref,
               );
-              if (result === undefined) return textResult("OK");
-              return jsonResult(result);
+              return { success: true as const, value: result };
             } catch (error) {
-              return textResult(`Error: ${error instanceof Error ? error.message : String(error)}`);
+              return {
+                success: false as const,
+                error: error instanceof Error ? error.message : String(error),
+              };
             }
           });
+
+          if (!codeResult.success) {
+            return textResult(`Error: ${codeResult.error}`);
+          }
+
+          if (snapshotAfter) {
+            const snapshotResult = yield* session.snapshot(sessionData.page);
+            yield* session.updateLastSnapshot(snapshotResult);
+            const resultPayload =
+              codeResult.value === undefined
+                ? {
+                    snapshot: {
+                      tree: snapshotResult.tree,
+                      refs: snapshotResult.refs,
+                      stats: snapshotResult.stats,
+                    },
+                  }
+                : {
+                    result: codeResult.value,
+                    snapshot: {
+                      tree: snapshotResult.tree,
+                      refs: snapshotResult.refs,
+                      stats: snapshotResult.stats,
+                    },
+                  };
+            return jsonResult(resultPayload);
+          }
+
+          if (codeResult.value === undefined) return textResult("OK");
+          return jsonResult(codeResult.value);
         }),
       ),
   );

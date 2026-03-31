@@ -219,6 +219,11 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("selectOption");
   });
 
+  it("mentions snapshotAfter in playwright tool description", () => {
+    const prompt = buildExecutionSystemPrompt();
+    expect(prompt).toContain("snapshotAfter=true");
+  });
+
   it("scopes batching to actions that do not change DOM structure", () => {
     const prompt = buildExecutionSystemPrompt();
     expect(prompt).toContain("Batch actions that do NOT change DOM structure");
