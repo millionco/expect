@@ -98,45 +98,38 @@ export class Analytics extends ServiceMap.Service<Analytics>()("@expect/Analytic
       }) ||
       githubActionsValue !== "";
 
-    const capture = telemetryDisabled
-      ? <K extends keyof EventMap>(
-          _eventName: K,
-          ..._properties: EventMap[K] extends undefined ? [] : [EventMap[K]]
-        ) => Effect.void
-      : yield* Effect.gen(function* () {
-          const distinctId = yield* Effect.tryPromise(() => machineId()).pipe(Effect.orDie);
-          const projectId = hash(process.cwd());
+    const projectId = hash(process.cwd());
 
-          return <K extends keyof EventMap>(
-            eventName: K,
-            ...[properties]: EventMap[K] extends undefined ? [] : [EventMap[K]]
-          ) =>
-            Effect.gen(function* () {
-              const commonProperties = {
-                timestamp: new Date().toISOString(),
-                projectId,
-              };
+    const capture = <K extends keyof EventMap>(
+      eventName: K,
+      ...[properties]: EventMap[K] extends undefined ? [] : [EventMap[K]]
+    ) =>
+      Effect.gen(function* () {
+        if (telemetryDisabled) return;
+        const commonProperties = {
+          timestamp: new Date().toISOString(),
+          projectId,
+        };
+        const distinctId = yield* Effect.tryPromise(() => machineId()).pipe(Effect.orDie);
 
-              yield* provider.capture({
-                eventName: eventName as string,
-                properties: { ...commonProperties, ...(properties ?? {}) },
-                distinctId,
-              });
-            }).pipe(
-              Effect.catchCause((cause) =>
-                Effect.logWarning("Analytics capture failed", {
-                  eventName,
-                  cause,
-                }).pipe(Effect.annotateLogs({ module: "Analytics" })),
-              ),
-            );
+        yield* provider.capture({
+          eventName: eventName as string,
+          properties: { ...commonProperties, ...(properties ?? {}) },
+          distinctId,
         });
+      }).pipe(
+        Effect.catchCause((cause) =>
+          Effect.logWarning("Analytics capture failed", {
+            eventName,
+            cause,
+          }).pipe(Effect.annotateLogs({ module: "Analytics" })),
+        ),
+      );
 
     const track: {
       <K extends keyof EventMap>(
         eventName: K & (EventMap[K] extends undefined ? K : never),
       ): <A, E, R>(self: Effect.Effect<A, E, R>) => Effect.Effect<A, E, R>;
-
       <K extends keyof EventMap, A>(
         eventName: K & (EventMap[K] extends undefined ? never : K),
         deriveProperties: (result: A) => EventMap[K],
