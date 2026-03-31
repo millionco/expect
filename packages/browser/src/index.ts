@@ -1,6 +1,6 @@
 export { Playwright, type OpenOptions } from "./playwright";
 export { Artifacts } from "./artifacts";
-export { layerArtifactsRpc } from "./artifacts-rpc";
+export { ArtifactStorage } from "./artifact-storage";
 export { layerMcpServer } from "./mcp-server";
 export { diffSnapshots } from "./diff";
 export { autoDiscoverCdp, discoverCdpUrl } from "./cdp-discovery";

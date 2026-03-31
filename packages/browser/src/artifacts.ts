@@ -1,24 +1,34 @@
-import { Effect, Layer, PubSub, ServiceMap, Stream } from "effect";
+import { Effect, Layer, ServiceMap } from "effect";
 import type { Artifact } from "@expect/shared/models";
+import { ArtifactStorage } from "./artifact-storage";
 
 export class Artifacts extends ServiceMap.Service<Artifacts>()("@browser/Artifacts", {
   make: Effect.gen(function* () {
+    const storage = yield* ArtifactStorage;
     const items: Artifact[] = [];
-    const pubsub = yield* PubSub.unbounded<Artifact>();
 
-    const push = Effect.fn("Artifacts.push")(function* (...artifacts: Artifact[]) {
+    const push = Effect.fn("Artifacts.push")(function* (artifacts: readonly Artifact[]) {
       for (const artifact of artifacts) {
         items.push(artifact);
-        yield* PubSub.publish(pubsub, artifact);
       }
+      yield* storage.push(artifacts);
     });
-
-    const stream = Stream.fromPubSub(pubsub);
 
     const all = () => items as readonly Artifact[];
 
-    return { push, stream, all } as const;
+    return { push, all } as const;
   }),
 }) {
-  static layer = Layer.effect(this)(this.make);
+  static layer = Layer.effect(this)(this.make).pipe(
+    Layer.provide(ArtifactStorage.layerRpc),
+  );
+
+  static layerTest = (onPush: (artifacts: readonly Artifact[]) => void) =>
+    Layer.effect(this)(this.make).pipe(
+      Layer.provide(
+        Layer.succeed(ArtifactStorage, {
+          push: (artifacts) => Effect.sync(() => onPush(artifacts)),
+        }),
+      ),
+    );
 }

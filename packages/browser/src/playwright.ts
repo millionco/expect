@@ -408,7 +408,8 @@ export class Playwright extends ServiceMap.Service<Playwright>()(
 
           // Merge both streams and push all artifacts until interrupted
           yield* Stream.merge(pageEvents, rrwebEvents).pipe(
-            Stream.tap((artifact) => artifacts.push(artifact)),
+            Stream.chunks,
+            Stream.tap((artifactBatch) => artifacts.push(artifactBatch)),
             Stream.runDrain
           );
         },

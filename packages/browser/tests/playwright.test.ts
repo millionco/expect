@@ -1,6 +1,6 @@
 import { Effect, Layer, Option } from "effect";
 import { Playwright } from "../src/playwright";
-import { layerArtifactsRpc } from "../src/artifacts-rpc";
+import { Artifacts } from "../src/artifacts";
 import { NodeRuntime } from "@effect/platform-node";
 import { describe, it, assert } from "@effect/vitest";
 import {
@@ -12,7 +12,7 @@ const layerPlaywright = Layer.mergeAll(
   Playwright.layer,
   layerLiveViewerRpcServer,
   layerLiveViewerStaticServer,
-).pipe(Layer.provide(layerArtifactsRpc));
+).pipe(Layer.provide(Artifacts.layer));
 
 describe("playwright e2e", () => {
   // Use `it.effect` to run Effect tests (provides Scope automatically)

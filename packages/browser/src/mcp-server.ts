@@ -15,7 +15,7 @@ import {
 } from "./errors";
 import { evaluateRuntime } from "./utils/evaluate-runtime";
 import type { SnapshotResult } from "./types";
-import { layerArtifactsRpc } from "./artifacts-rpc";
+import { Artifacts } from "./artifacts";
 import { autoDiscoverCdp } from "./cdp-discovery";
 
 const textResult = (text: string) => ({
@@ -360,4 +360,4 @@ export const layerMcpServer = Layer.effectDiscard(
         )
     );
   })
-).pipe(Layer.provide(Playwright.layer), Layer.provide(layerArtifactsRpc));
+).pipe(Layer.provide(Playwright.layer), Layer.provide(Artifacts.layer));
