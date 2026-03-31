@@ -782,7 +782,7 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
 )({
   events: Schema.Array(ExecutionEvent),
 }) {
-  addEvent(update: AcpSessionUpdate, receivedAt = DateTime.nowUnsafe()): ExecutedTestPlan {
+  addEvent(update: AcpSessionUpdate): ExecutedTestPlan {
     if (update.sessionUpdate === "agent_thought_chunk") {
       if (update.content.type !== "text" || update.content.text === undefined) return this;
       const lastEvent = this.events.at(-1);
@@ -795,7 +795,7 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
           ],
         });
       }
-      const base = this.finalizeTextBlock(receivedAt);
+      const base = this.finalizeTextBlock();
       return new ExecutedTestPlan({
         ...base,
         events: [...base.events, new AgentThinking({ text: update.content.text })],
@@ -812,17 +812,17 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
             ...this.events.slice(0, -1),
             new AgentText({ text: lastEvent.text + update.content.text }),
           ],
-        }).finalizeTextBlock(receivedAt, true);
+        });
       }
-      const base = this.finalizeTextBlock(receivedAt);
+      const base = this.finalizeTextBlock();
       return new ExecutedTestPlan({
         ...base,
         events: [...base.events, new AgentText({ text: update.content.text })],
-      }).finalizeTextBlock(receivedAt, true);
+      });
     }
 
     if (update.sessionUpdate === "tool_call") {
-      let result = this.finalizeTextBlock(receivedAt);
+      let result = this.finalizeTextBlock();
       return new ExecutedTestPlan({
         ...result,
         events: [
@@ -836,10 +836,10 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
     }
 
     if (update.sessionUpdate === "tool_call_update") {
-      let current = this.finalizeTextBlock(receivedAt);
+      let base: ExecutedTestPlan | undefined;
 
       if (update.rawInput !== undefined) {
-        const updatedEvents = [...current.events];
+        const updatedEvents = [...this.events];
         for (let index = updatedEvents.length - 1; index >= 0; index--) {
           const event = updatedEvents[index];
           if (event._tag === "ToolCall" && event.toolName === (update.title ?? "")) {
@@ -850,8 +850,10 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
             break;
           }
         }
-        current = new ExecutedTestPlan({ ...current, events: updatedEvents });
+        base = new ExecutedTestPlan({ ...this, events: updatedEvents });
       }
+
+      const current = base ?? this;
 
       if (update.status === "completed" || update.status === "failed") {
         return new ExecutedTestPlan({
@@ -888,36 +890,25 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
     return this;
   }
 
-  finalizeTextBlock(
-    receivedAt = DateTime.nowUnsafe(),
-    completeLinesOnly = false,
-  ): ExecutedTestPlan {
+  finalizeTextBlock(): ExecutedTestPlan {
     const lastEvent = this.events.at(-1);
     if (lastEvent?._tag !== "AgentText" && lastEvent?._tag !== "AgentThinking") return this;
-    const { remainingText, markers } = splitMarkerLines(lastEvent.text, completeLinesOnly);
-    if (markers.length === 0) return this;
-
-    const retainedEvents =
-      remainingText.length > 0
-        ? [
-            ...this.events.slice(0, -1),
-            lastEvent._tag === "AgentText"
-              ? new AgentText({ text: remainingText })
-              : new AgentThinking({ text: remainingText }),
-          ]
-        : this.events.slice(0, -1);
-
+    const foundMarkers = lastEvent.text
+      .split("\n")
+      .map(parseMarker)
+      .filter(Predicate.isNotUndefined);
+    if (foundMarkers.length === 0) return this;
     let result: ExecutedTestPlan = new ExecutedTestPlan({
       ...this,
-      events: [...retainedEvents, ...markers],
+      events: [...this.events, ...foundMarkers],
     });
-    for (const marker of markers) {
-      result = result.applyMarker(marker, receivedAt);
+    for (const marker of foundMarkers) {
+      result = result.applyMarker(marker);
     }
     return result;
   }
 
-  applyMarker(marker: ExecutionEvent, receivedAt = DateTime.nowUnsafe()): ExecutedTestPlan {
+  applyMarker(marker: ExecutionEvent): ExecutedTestPlan {
     if (marker._tag === "StepStarted") {
       const stepExists = this.steps.some((step) => step.id === marker.stepId);
       if (stepExists) {
@@ -928,7 +919,7 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
               ? step.update({
                   status: "active",
                   title: marker.title,
-                  startedAt: Option.some(receivedAt),
+                  startedAt: Option.some(DateTime.nowUnsafe()),
                 })
               : step,
           ),
@@ -946,7 +937,7 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
             routeHint: Option.none(),
             status: "active",
             summary: Option.none(),
-            startedAt: Option.some(receivedAt),
+            startedAt: Option.some(DateTime.nowUnsafe()),
             endedAt: Option.none(),
           }),
         ],
@@ -961,7 +952,7 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
                 status: "passed",
                 summary: Option.some(marker.summary),
                 expectedOutcome: marker.summary,
-                endedAt: Option.some(receivedAt),
+                endedAt: Option.some(DateTime.nowUnsafe()),
               })
             : step,
         ),
@@ -976,7 +967,7 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
                 status: "failed",
                 summary: Option.some(marker.message),
                 expectedOutcome: marker.message,
-                endedAt: Option.some(receivedAt),
+                endedAt: Option.some(DateTime.nowUnsafe()),
               })
             : step,
         ),
@@ -990,7 +981,7 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
             ? step.update({
                 status: "skipped",
                 summary: Option.some(marker.reason),
-                endedAt: Option.some(receivedAt),
+                endedAt: Option.some(DateTime.nowUnsafe()),
               })
             : step,
         ),

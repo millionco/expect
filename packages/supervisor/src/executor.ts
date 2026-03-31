@@ -7,7 +7,7 @@ import {
   Agent,
   AgentStreamOptions,
 } from "@expect/agent";
-import { DateTime, Effect, Layer, Option, Schema, ServiceMap, Stream } from "effect";
+import { Effect, Layer, Option, Schema, ServiceMap, Stream } from "effect";
 import {
   type AcpConfigOption,
   type ChangesFor,
@@ -190,8 +190,7 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
             allTerminalSince: undefined,
           }),
           (state, part) => {
-            const receivedAt = DateTime.nowUnsafe();
-            const updated = state.plan.addEvent(part, receivedAt);
+            const updated = state.plan.addEvent(part);
             const terminalTimestamp = resolveTerminalTimestamp(updated, state.allTerminalSince);
             const finalized =
               terminalTimestamp !== undefined &&
@@ -203,6 +202,7 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
             return [{ plan: finalized, allTerminalSince: terminalTimestamp }, [finalized]] as const;
           },
         ),
+        Stream.takeUntil((executed) => executed.hasRunFinished),
         Stream.mapError((reason) => new ExecutionError({ reason })),
       );
     }, Stream.unwrap);
