@@ -120,7 +120,7 @@ export const createBrowserMcpServer = <E>(
                 ? ` (${result.injectedCookieCount} cookies synced from local browser)`
                 : ""),
           );
-        }),
+        }).pipe(Effect.withSpan(`mcp.tool.open`)),
       ),
   );
 
@@ -199,7 +199,7 @@ export const createBrowserMcpServer = <E>(
 
           if (codeResult.value === undefined) return textResult("OK");
           return jsonResult(codeResult.value);
-        }),
+        }).pipe(Effect.withSpan(`mcp.tool.playwright`)),
       ),
   );
 
@@ -265,7 +265,7 @@ export const createBrowserMcpServer = <E>(
           const buffer = yield* Effect.tryPromise(() => page.screenshot({ fullPage }));
           yield* session.saveScreenshot(buffer);
           return imageResult(buffer.toString("base64"));
-        }),
+        }).pipe(Effect.withSpan(`mcp.tool.screenshot`)),
       ),
   );
 
@@ -303,7 +303,7 @@ export const createBrowserMcpServer = <E>(
               : "";
 
           return jsonResult({ summary: summary || undefined, messages: entries });
-        }),
+        }).pipe(Effect.withSpan(`mcp.tool.console_logs`)),
       ),
   );
 
@@ -390,7 +390,7 @@ export const createBrowserMcpServer = <E>(
             issues: hasIssues ? issues : undefined,
             requests: entries,
           });
-        }),
+        }).pipe(Effect.withSpan(`mcp.tool.network_requests`)),
       ),
   );
 
@@ -465,7 +465,7 @@ export const createBrowserMcpServer = <E>(
           summary.push(`\nFull trace: ${tracePath}`);
 
           return textResult(summary.join("\n"));
-        }),
+        }).pipe(Effect.withSpan(`mcp.tool.performance_metrics`)),
       ),
   );
 
@@ -499,7 +499,7 @@ export const createBrowserMcpServer = <E>(
             return textResult("No accessibility violations found.");
           }
           return jsonResult(result);
-        }),
+        }).pipe(Effect.withSpan(`mcp.tool.accessibility_audit`)),
       ),
   );
 
@@ -523,7 +523,7 @@ export const createBrowserMcpServer = <E>(
             );
           }
           return jsonResult(devices);
-        }),
+        }).pipe(Effect.withSpan(`mcp.tool.ios_devices`)),
       ),
   );
 
@@ -544,7 +544,7 @@ export const createBrowserMcpServer = <E>(
           const ios = yield* session.requireIosSession();
           yield* ios.tap(x, y);
           return textResult(`Tapped at (${x}, ${y})`);
-        }),
+        }).pipe(Effect.withSpan(`mcp.tool.tap`)),
       ),
   );
 
@@ -569,7 +569,7 @@ export const createBrowserMcpServer = <E>(
           const ios = yield* session.requireIosSession();
           yield* ios.swipe(startX, startY, endX, endY, duration ?? DEFAULT_SWIPE_DURATION_MS);
           return textResult(`Swiped from (${startX}, ${startY}) to (${endX}, ${endY})`);
-        }),
+        }).pipe(Effect.withSpan(`mcp.tool.swipe`)),
       ),
   );
 
@@ -591,7 +591,7 @@ export const createBrowserMcpServer = <E>(
           const result = yield* ios.client.executeScript(script);
           if (result === undefined) return textResult("OK");
           return jsonResult(result);
-        }),
+        }).pipe(Effect.withSpan(`mcp.tool.ios_execute`)),
       ),
   );
 
@@ -609,7 +609,7 @@ export const createBrowserMcpServer = <E>(
           const session = yield* McpSession;
           const ios = yield* session.requireIosSession();
           return textResult(yield* ios.client.getPageSource());
-        }),
+        }).pipe(Effect.withSpan(`mcp.tool.ios_source`)),
       ),
   );
 
@@ -643,7 +643,7 @@ export const createBrowserMcpServer = <E>(
             lines.push(`Screenshot: ${screenshotPath}`);
           }
           return textResult(lines.join("\n"));
-        }),
+        }).pipe(Effect.withSpan(`mcp.tool.close`)),
       ),
   );
 

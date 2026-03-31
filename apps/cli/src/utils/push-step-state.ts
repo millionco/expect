@@ -43,7 +43,7 @@ export const toViewerRunState = (executed: ExecutedTestPlan): ViewerRunState => 
   };
 };
 
-export const pushStepState = Effect.fn("pushStepState")(function* (
+export const pushStepState = Effect.fnUntraced(function* (
   liveViewUrl: string,
   state: ViewerRunState,
 ) {

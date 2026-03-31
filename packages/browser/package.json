@@ -23,6 +23,7 @@
     "@axe-core/playwright": "^4.11.1",
     "@effect/platform-node": "4.0.0-beta.35",
     "@expect/cookies": "workspace:*",
+    "@expect/shared": "workspace:*",
     "@medv/finder": "^4.0.2",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "accessibility-checker-engine": "^4.0.16",
