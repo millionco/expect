@@ -1,0 +1,25 @@
+packages/shared/src/prompts.ts
+  c745baba7da5f385 174,178-200
+packages/shared/tests/prompts.test.ts
+  c745baba7da5f385 214-233
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.23",
+  "base_commit_sha": "4058f3b08ba83c19ac1ae8951ca9bcad096757c4",
+  "prompts": {
+    "c745baba7da5f385": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a4f94408-14ef-4dc0-bd70-d31c00602e10",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 44,
+      "total_deletions": 1,
+      "accepted_lines": 44,
+      "overriden_lines": 0
+    }
+  }
+}
