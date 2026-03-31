@@ -3,7 +3,11 @@ import os from "node:os";
 import path from "node:path";
 import net from "node:net";
 import { Effect, Option } from "effect";
-import { CDP_DISCOVERY_TIMEOUT_MS, CDP_COMMON_PORTS, CDP_PORT_PROBE_TIMEOUT_MS } from "./constants";
+import {
+  CDP_DISCOVERY_TIMEOUT_MS,
+  CDP_COMMON_PORTS,
+  CDP_PORT_PROBE_TIMEOUT_MS,
+} from "./constants";
 import { CdpDiscoveryError } from "./errors";
 
 interface VersionInfo {
@@ -14,7 +18,10 @@ const fetchJson = <A>(url: string) =>
   Effect.tryPromise({
     try: async () => {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), CDP_DISCOVERY_TIMEOUT_MS);
+      const timer = setTimeout(
+        () => controller.abort(),
+        CDP_DISCOVERY_TIMEOUT_MS
+      );
       try {
         const response = await fetch(url, { signal: controller.signal });
         return (await response.json()) as A;
@@ -22,7 +29,8 @@ const fetchJson = <A>(url: string) =>
         clearTimeout(timer);
       }
     },
-    catch: (cause) => new CdpDiscoveryError({ cause: `Failed to fetch ${url}: ${cause}` }),
+    catch: (cause) =>
+      new CdpDiscoveryError({ cause: `Failed to fetch ${url}: ${cause}` }),
   });
 
 const rewriteWsHost = (wsUrl: string, host: string, port: number) => {
@@ -44,8 +52,10 @@ const discoverViaJsonVersion = (host: string, port: number) =>
           cause: `No webSocketDebuggerUrl in /json/version at ${host}:${port}`,
         }).asEffect();
       }
-      return Effect.succeed(rewriteWsHost(info.webSocketDebuggerUrl, host, port));
-    }),
+      return Effect.succeed(
+        rewriteWsHost(info.webSocketDebuggerUrl, host, port)
+      );
+    })
   );
 
 interface CdpTarget {
@@ -65,7 +75,7 @@ const discoverViaJsonList = (host: string, port: number) =>
         }).asEffect();
       }
       return Effect.succeed(rewriteWsHost(wsUrl, host, port));
-    }),
+    })
   );
 
 const isPortReachable = (host: string, port: number) =>
@@ -87,16 +97,19 @@ const isPortReachable = (host: string, port: number) =>
           resolve(false);
         });
         socket.connect(port, host);
-      }),
+      })
   );
 
 const tryDiscover = <A>(effect: Effect.Effect<A, CdpDiscoveryError>) =>
   effect.pipe(
     Effect.map((value) => Option.some(value)),
-    Effect.catchTag("CdpDiscoveryError", () => Effect.succeed(Option.none<A>())),
+    Effect.catchTag("CdpDiscoveryError", () => Effect.succeed(Option.none<A>()))
   );
 
-export const discoverCdpUrl = Effect.fn("discoverCdpUrl")(function* (host: string, port: number) {
+export const discoverCdpUrl = Effect.fn("discoverCdpUrl")(function* (
+  host: string,
+  port: number
+) {
   yield* Effect.annotateCurrentSpan({ host, port });
 
   const versionResult = yield* tryDiscover(discoverViaJsonVersion(host, port));
@@ -157,7 +170,8 @@ const getChromeUserDataDirs = () => {
 
 const readDevToolsActivePort = (userDataDir: string) =>
   Effect.tryPromise({
-    try: () => fs.readFile(path.join(userDataDir, "DevToolsActivePort"), "utf-8"),
+    try: () =>
+      fs.readFile(path.join(userDataDir, "DevToolsActivePort"), "utf-8"),
     catch: () =>
       new CdpDiscoveryError({
         cause: `No DevToolsActivePort file in ${userDataDir}`,
@@ -179,7 +193,7 @@ const readDevToolsActivePort = (userDataDir: string) =>
       }
       const wsPath = lines[1]?.trim() ?? "/devtools/browser";
       return Effect.succeed({ port, wsPath });
-    }),
+    })
   );
 
 const removeStaleFile = (filePath: string) =>

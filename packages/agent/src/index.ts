@@ -2,5 +2,8 @@ export { AgentStreamOptions } from "./types";
 export * from "./acp-client";
 export { Agent, type AgentBackend } from "./agent";
 
-export { PROVIDER_ID, EMPTY_USAGE, STOP_REASON } from "./schemas/index";
-export { detectAvailableAgents, toSkillsCliName, type SupportedAgent } from "./detect-agents";
+export {
+  detectAvailableAgents,
+  toSkillsCliName,
+  type SupportedAgent,
+} from "./detect-agents";
