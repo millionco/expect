@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import type { Page } from "playwright";
 import { Effect, Schema } from "effect";
-import type { Component, Repository } from "retire/lib/types";
+import type { Component, Repository, Vulnerability } from "retire/lib/types";
 import retireRepoRaw from "./retire-repo.json";
 
 export class SecurityAuditError extends Schema.ErrorClass<SecurityAuditError>(
@@ -22,18 +22,22 @@ interface SecurityFinding {
   readonly info: readonly string[];
 }
 
-const SEVERITY_ORDER: Record<string, number> = {
-  critical: 0,
-  high: 1,
-  medium: 2,
-  low: 3,
-};
+const SEVERITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 
 const sha1Hasher = {
   sha1: (data: string) => createHash("sha1").update(data).digest("hex"),
 };
 
+let cachedRetire: typeof import("retire/lib/retire.js") | undefined;
 let cachedRepo: Repository | undefined;
+
+const loadRetire = async () => {
+  if (!cachedRetire) {
+    const mod = await import("retire/lib/retire.js");
+    cachedRetire = mod.default ?? mod;
+  }
+  return cachedRetire;
+};
 
 const loadRepo = (replaceVersion: (text: string) => string) => {
   if (!cachedRepo) {
@@ -43,98 +47,100 @@ const loadRepo = (replaceVersion: (text: string) => string) => {
   return cachedRepo;
 };
 
+const toFinding = (component: Component, vulnerability: Vulnerability): SecurityFinding => ({
+  severity: (vulnerability.severity as SecurityFinding["severity"]) ?? "medium",
+  library: component.component,
+  version: component.version,
+  detail:
+    vulnerability.identifiers.summary ??
+    `${component.component}@${component.version} has a known vulnerability`,
+  cves: vulnerability.identifiers.CVE ?? [],
+  info: vulnerability.info,
+});
+
+const extractFindings = (results: Component[]): SecurityFinding[] =>
+  results.flatMap((component) =>
+    (component.vulnerabilities ?? []).map((vulnerability) => toFinding(component, vulnerability)),
+  );
+
+const fetchScriptContent = (page: Page, src: string) =>
+  Effect.tryPromise({
+    try: () => page.context().request.get(src).then((response) => response.text()),
+    catch: (cause) => new SecurityAuditError({ cause: `Failed to fetch ${src}: ${cause}` }),
+  }).pipe(
+    Effect.catchTag("SecurityAuditError", (error) =>
+      Effect.logDebug("Skipping script content scan", { src, cause: error.cause }).pipe(
+        Effect.as(undefined),
+      ),
+    ),
+  );
+
+const scanScript = (
+  page: Page,
+  retire: NonNullable<typeof cachedRetire>,
+  repo: Repository,
+) =>
+  Effect.fn("scanScript")(function* (script: { src: string; content: string }) {
+    if (script.src) {
+      const uriFindings = extractFindings(retire.scanUri(script.src, repo));
+      const content = yield* fetchScriptContent(page, script.src);
+      const contentFindings = content
+        ? extractFindings(retire.scanFileContent(content, repo, sha1Hasher))
+        : [];
+      return [...uriFindings, ...contentFindings];
+    }
+    if (script.content) {
+      return extractFindings(retire.scanFileContent(script.content, repo, sha1Hasher));
+    }
+    return [] as SecurityFinding[];
+  });
+
 export const runSecurityAudit = Effect.fn("runSecurityAudit")(function* (page: Page) {
   yield* Effect.annotateCurrentSpan({ url: page.url() });
 
   const retire = yield* Effect.tryPromise({
-    try: async () => {
-      const mod = await import("retire/lib/retire.js");
-      return mod.default ?? mod;
-    },
+    try: () => loadRetire(),
     catch: (cause) => new SecurityAuditError({ cause: `Failed to load retire.js: ${cause}` }),
   });
-
   const repo = loadRepo(retire.replaceVersion);
 
   const scriptSources = yield* Effect.tryPromise({
     try: () =>
-      page.evaluate(() => {
-        const scripts: Array<{ src: string; content: string }> = [];
-        for (const script of document.querySelectorAll<HTMLScriptElement>("script")) {
-          scripts.push({
-            src: script.src,
-            content: script.src ? "" : script.textContent ?? "",
-          });
-        }
-        return scripts;
-      }),
+      page.evaluate(() =>
+        Array.from(document.querySelectorAll<HTMLScriptElement>("script"), (script) => ({
+          src: script.src,
+          content: script.src ? "" : script.textContent ?? "",
+        })),
+      ),
     catch: (cause) => new SecurityAuditError({ cause: `Failed to extract scripts: ${cause}` }),
   });
 
-  const findings: SecurityFinding[] = [];
-  const seen = new Set<string>();
-
-  const addFindings = (results: Component[]) => {
-    for (const result of results) {
-      if (!retire.isVulnerable([result]) || !result.vulnerabilities) continue;
-      for (const vulnerability of result.vulnerabilities) {
-        const key = `${result.component}@${result.version}:${vulnerability.identifiers.summary ?? vulnerability.info[0] ?? ""}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        findings.push({
-          severity: (vulnerability.severity as SecurityFinding["severity"]) ?? "medium",
-          library: result.component,
-          version: result.version,
-          detail:
-            vulnerability.identifiers.summary ??
-            `${result.component}@${result.version} has a known vulnerability`,
-          cves: vulnerability.identifiers.CVE ?? [],
-          info: vulnerability.info,
-        });
-      }
-    }
-  };
-
-  for (const script of scriptSources) {
-    if (script.src) {
-      addFindings(retire.scanUri(script.src, repo));
-
-      const content = yield* Effect.tryPromise({
-        try: () => page.context().request.get(script.src).then((response) => response.text()),
-        catch: (cause) =>
-          new SecurityAuditError({ cause: `Failed to fetch script ${script.src}: ${cause}` }),
-      }).pipe(
-        Effect.catchTag("SecurityAuditError", (error) =>
-          Effect.logDebug("Skipping script content scan", {
-            src: script.src,
-            cause: error.cause,
-          }).pipe(Effect.as(undefined)),
-        ),
-      );
-      if (content) {
-        addFindings(retire.scanFileContent(content, repo, sha1Hasher));
-      }
-    } else if (script.content) {
-      addFindings(retire.scanFileContent(script.content, repo, sha1Hasher));
-    }
-  }
-
-  findings.sort(
-    (left, right) => (SEVERITY_ORDER[left.severity] ?? 3) - (SEVERITY_ORDER[right.severity] ?? 3),
-  );
+  const nested = yield* Effect.forEach(scriptSources, scanScript(page, retire, repo));
+  const findings = nested
+    .flat()
+    .filter(
+      ((seen) => (finding: SecurityFinding) => {
+        const key = `${finding.library}@${finding.version}:${finding.detail}`;
+        return seen.has(key) ? false : (seen.add(key), true);
+      })(new Set<string>()),
+    )
+    .sort(
+      (left, right) =>
+        (SEVERITY_ORDER[left.severity] ?? 3) - (SEVERITY_ORDER[right.severity] ?? 3),
+    );
 
   yield* Effect.logInfo("Security audit complete", {
     findingCount: findings.length,
     scriptsScanned: scriptSources.length,
   });
 
-  const summary = {
-    total: findings.length,
-    critical: findings.filter((finding) => finding.severity === "critical").length,
-    high: findings.filter((finding) => finding.severity === "high").length,
-    medium: findings.filter((finding) => finding.severity === "medium").length,
-    low: findings.filter((finding) => finding.severity === "low").length,
+  return {
+    findings,
+    summary: Object.fromEntries(
+      ["total", "critical", "high", "medium", "low"].map((level) => [
+        level,
+        level === "total" ? findings.length : findings.filter((finding) => finding.severity === level).length,
+      ]),
+    ),
   };
-
-  return { findings, summary };
 });
