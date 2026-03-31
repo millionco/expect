@@ -1,11 +1,9 @@
-import { existsSync, readFileSync } from "node:fs";
-import path from "node:path";
 import { Config, Effect, Option, Stream, Schema } from "effect";
 import { type ChangesFor, CiResultOutput, CiStepResult } from "@expect/shared/models";
 import { Executor, ExecutedTestPlan, Reporter, Github } from "@expect/supervisor";
 import { Analytics } from "@expect/shared/observability";
 import type { AgentBackend } from "@expect/agent";
-import { VERSION, CI_DEBUG_LOG_TAIL_LINE_COUNT, CI_HEARTBEAT_INTERVAL_MS } from "../constants";
+import { VERSION, CI_HEARTBEAT_INTERVAL_MS } from "../constants";
 import { layerCli } from "../layers";
 import { playSound } from "./play-sound";
 import { stripUndefinedRequirement } from "./strip-undefined-requirement";
@@ -70,33 +68,6 @@ export const runHeadless = (options: HeadlessRunOptions) =>
             ciReporter.header();
             ciReporter.groupOpen();
           }
-
-          const emitDebugLogTail = Effect.fn("runHeadless.emitDebugLogTail")(function* () {
-            if (isJsonOutput) return;
-            const logPath = path.join(process.cwd(), ".expect", "logs.md");
-            if (!existsSync(logPath)) return;
-            const logContent = yield* Effect.try({
-              try: () => readFileSync(logPath, "utf8"),
-              catch: () => undefined,
-            });
-            if (!logContent) return;
-            const trimmedLogTail = logContent
-              .split("\n")
-              .slice(-CI_DEBUG_LOG_TAIL_LINE_COUNT)
-              .join("\n")
-              .trim();
-            if (trimmedLogTail.length === 0) return;
-            yield* Effect.sync(() => {
-              if (isGitHubActions) {
-                process.stderr.write("::group::expect debug logs\n");
-              }
-              process.stderr.write("\nRecent debug logs:\n");
-              process.stderr.write(trimmedLogTail + "\n");
-              if (isGitHubActions) {
-                process.stderr.write("::endgroup::\n");
-              }
-            });
-          });
 
           const runStartedAt = Date.now();
           let lastOutputAt = Date.now();
@@ -202,9 +173,8 @@ export const runHeadless = (options: HeadlessRunOptions) =>
 
           const finalExecuted = yield* executeWithTimeout.pipe(
             Effect.tapError(() =>
-              Effect.gen(function* () {
+              Effect.sync(() => {
                 if (!isJsonOutput) ciReporter.groupClose();
-                yield* emitDebugLogTail();
               }),
             ),
             Effect.catchTag("ExecutionTimeoutError", (error) => {
@@ -437,9 +407,7 @@ export const runHeadless = (options: HeadlessRunOptions) =>
 
           yield* Effect.promise(() => playSound());
           return report.status;
-        }).pipe(
-          Effect.provide(layerCli({ verbose: options.verbose || options.ci, agent: options.agent })),
-        ),
+        }).pipe(Effect.provide(layerCli({ verbose: options.verbose, agent: options.agent }))),
       ),
     ),
   ).then((status) => {

@@ -36,7 +36,6 @@ export const SessionId = Schema.String.pipe(Schema.brand("SessionId"));
 export type SessionId = typeof SessionId.Type;
 
 const ACP_STREAM_INACTIVITY_TIMEOUT_MS = 3 * 60 * 1000;
-const ACP_STREAM_INACTIVITY_TIMEOUT_GITHUB_ACTIONS_MS = 60_000;
 const ACP_AUTH_CHECK_TIMEOUT = "3 seconds" as const;
 
 export class AcpStreamError extends Schema.ErrorClass<AcpStreamError>("AcpStreamError")({
@@ -494,9 +493,6 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
         onNone: () => false,
         onSome: (value) => value !== "",
       }) || Option.isSome(githubRunId);
-    const streamInactivityTimeoutMs = isGitHubActions
-      ? ACP_STREAM_INACTIVITY_TIMEOUT_GITHUB_ACTIONS_MS
-      : ACP_STREAM_INACTIVITY_TIMEOUT_MS;
     /** @note(rasmus): FiberMap that runs strems */
     const streamFiberMap = yield* FiberMap.make<SessionId>();
 
@@ -638,7 +634,9 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
       yield* Effect.annotateCurrentSpan({ cwd });
       const mcpServers = buildMcpServers(mcpEnv);
       const sessionMeta = buildSessionMeta({
+        provider: adapter.provider,
         systemPrompt: Option.getOrUndefined(systemPrompt),
+        metadata: { isGitHubActions },
       });
       return yield* Effect.tryPromise({
         try: () =>
@@ -770,36 +768,37 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
       );
 
       const checkInactivity = Effect.gen(function* () {
-        yield* Effect.sleep(Duration.millis(streamInactivityTimeoutMs));
+        yield* Effect.sleep(Duration.millis(ACP_STREAM_INACTIVITY_TIMEOUT_MS));
         const lastActivity = yield* Ref.get(lastActivityAt);
-        const elapsedMs = Date.now() - lastActivity;
-        return {
-          elapsedMs,
-          isStalled: elapsedMs >= streamInactivityTimeoutMs,
-        } as const;
+        const elapsed = Date.now() - lastActivity;
+        return elapsed >= ACP_STREAM_INACTIVITY_TIMEOUT_MS;
       });
       const inactivityWatchdog = Effect.gen(function* () {
-        const inactivityState = yield* Effect.repeat(checkInactivity, {
-          while: ({ isStalled }) => !isStalled,
+        const isStalled = yield* Effect.repeat(checkInactivity, {
+          while: (stalled) => !stalled,
         });
-        if (inactivityState.isStalled) {
-          yield* Effect.logWarning("ACP stream inactivity timeout", {
-            sessionId,
-            elapsedMs: inactivityState.elapsedMs,
-            timeoutMs: streamInactivityTimeoutMs,
-          });
+        if (isStalled) {
+          yield* Effect.logWarning("ACP stream inactivity timeout", { sessionId });
           yield* Queue.fail(
             updatesQueue,
             new AcpStreamError({
-              cause: `Agent produced no output for ${streamInactivityTimeoutMs / 1000}s — the agent may be stalled`,
+              cause: `Agent produced no output for ${ACP_STREAM_INACTIVITY_TIMEOUT_MS / 1000}s — the agent may be stalled`,
             }),
           );
         }
       });
       yield* inactivityWatchdog.pipe(Effect.forkScoped);
 
+      const isMeaningfulActivity = (update: AcpSessionUpdate): boolean =>
+        update.sessionUpdate === "agent_message_chunk" ||
+        update.sessionUpdate === "agent_thought_chunk" ||
+        update.sessionUpdate === "tool_call" ||
+        update.sessionUpdate === "tool_call_update";
+
       return Stream.fromQueue(updatesQueue).pipe(
-        Stream.tap((_update) => Ref.set(lastActivityAt, Date.now())),
+        Stream.tap((update) =>
+          isMeaningfulActivity(update) ? Ref.set(lastActivityAt, Date.now()) : Effect.void,
+        ),
       );
     }, Stream.unwrap);
 
