@@ -1,6 +1,6 @@
 ---
 name: expect
-description: "MUST run after editing .tsx/.jsx/.css/.html files, React components, Next.js pages/routes, Tailwind classes, forms, modals, API calls, data fetching, styles, layouts, or any browser-facing code. Also run when asked to test, verify, validate, QA, check, or try a UI change. Covers functional testing, accessibility (WCAG), and performance (Web Vitals)."
+description: "MUST run after editing .tsx/.jsx/.css/.html files, React components, Next.js pages/routes, Tailwind classes, forms, modals, API calls, data fetching, styles, layouts, or any browser-facing code. Also run when asked to test, verify, validate, QA, check, or try a UI change. Covers functional testing, accessibility (WCAG), and performance (Web Vitals). Use when about to claim work is complete, fixed, or passing, before committing or creating PRs - requires running verification commands and confirming output before making any success claims; evidence before assertions always"
 ---
 
 # Expect

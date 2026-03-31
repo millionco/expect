@@ -1,32 +1,10 @@
 import { spawn } from "node:child_process";
-import { unlinkSync } from "node:fs";
-import { join } from "node:path";
-import { type SupportedAgent, toSkillsCliName } from "@expect/agent";
 import { Effect } from "effect";
 import { GIT_REMOTE_TIMEOUT_MS } from "../constants";
 import { isRunningInAgent } from "../utils/is-running-in-agent";
 import { isHeadless } from "../utils/is-headless";
 
 export type PackageManager = "npm" | "pnpm" | "yarn" | "bun" | "vp";
-
-const SKILL_RUNNERS: Record<PackageManager, string> = {
-  npm: "npx -y skills",
-  pnpm: "pnpm dlx skills",
-  yarn: "npx -y skills",
-  bun: "bunx skills",
-  vp: "npx -y skills",
-};
-
-const SKILL_SOURCE = "https://github.com/millionco/expect";
-
-export const buildSkillCommand = (
-  packageManager: PackageManager,
-  agents: readonly SupportedAgent[],
-): string => {
-  const runner = SKILL_RUNNERS[packageManager];
-  const agentFlags = agents.map(toSkillsCliName).join(" ");
-  return `${runner} add ${SKILL_SOURCE} --skill expect --agent ${agentFlags} -y`;
-};
 
 export const detectPackageManager = (): PackageManager => {
   if (process.env.VITE_PLUS_CLI_BIN) return "vp";
@@ -81,9 +59,3 @@ export const tryRun = (command: string): Promise<boolean> =>
       resolve(false);
     });
   });
-
-export const removeSkillsLock = () => {
-  try {
-    unlinkSync(join(process.cwd(), "skills-lock.json"));
-  } catch {}
-};

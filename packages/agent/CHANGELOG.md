@@ -1,5 +1,14 @@
 # @expect/agent
 
+## 0.0.19
+
+### Patch Changes
+
+- fix
+- Updated dependencies
+  - @expect/browser@0.0.19
+  - @expect/shared@0.0.19
+
 ## 0.0.18
 
 ### Patch Changes

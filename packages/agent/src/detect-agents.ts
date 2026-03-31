@@ -11,17 +11,18 @@ export type SupportedAgent =
 
 interface AgentMeta {
   readonly binary: string;
-  readonly skillsCliName: string;
+  readonly displayName: string;
+  readonly skillDir: string;
 }
 
 const SUPPORTED_AGENTS: Record<SupportedAgent, AgentMeta> = {
-  claude: { binary: "claude", skillsCliName: "claude-code" },
-  codex: { binary: "codex", skillsCliName: "codex" },
-  copilot: { binary: "copilot", skillsCliName: "github-copilot" },
-  gemini: { binary: "gemini", skillsCliName: "gemini-cli" },
-  cursor: { binary: "agent", skillsCliName: "cursor" },
-  opencode: { binary: "opencode", skillsCliName: "opencode" },
-  droid: { binary: "droid", skillsCliName: "droid" },
+  claude: { binary: "claude", displayName: "Claude Code", skillDir: ".claude/skills" },
+  codex: { binary: "codex", displayName: "Codex", skillDir: ".codex/skills" },
+  copilot: { binary: "copilot", displayName: "GitHub Copilot", skillDir: ".github/copilot/skills" },
+  gemini: { binary: "gemini", displayName: "Gemini CLI", skillDir: ".gemini/skills" },
+  cursor: { binary: "agent", displayName: "Cursor", skillDir: ".cursor/skills" },
+  opencode: { binary: "opencode", displayName: "OpenCode", skillDir: ".opencode/skills" },
+  droid: { binary: "droid", displayName: "Factory Droid", skillDir: ".droid/skills" },
 };
 
 const WHICH_COMMAND = process.platform === "win32" ? "where" : "/usr/bin/which";
@@ -40,5 +41,6 @@ export const detectAvailableAgents = (): SupportedAgent[] =>
     isCommandAvailable(SUPPORTED_AGENTS[agent].binary),
   );
 
-export const toSkillsCliName = (agent: SupportedAgent): string =>
-  SUPPORTED_AGENTS[agent].skillsCliName;
+export const toDisplayName = (agent: SupportedAgent): string => SUPPORTED_AGENTS[agent].displayName;
+
+export const toSkillDir = (agent: SupportedAgent): string => SUPPORTED_AGENTS[agent].skillDir;

@@ -11,3 +11,4 @@ tsup.config.bundled_*
 .testie-agent-traces/
 packages/video/build
 .cursor/plans
+.repos
