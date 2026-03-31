@@ -11,6 +11,8 @@
     "./utils": "./src/utils.ts"
   },
   "scripts": {
+    "generate": "../../scripts/generate-evaluation-skills.sh",
+    "prebuild": "pnpm generate",
     "lint": "vp lint && tsc --noEmit",
     "format": "vp fmt",
     "format:check": "vp fmt --check",

@@ -5,6 +5,7 @@ import type {
   SavedFlow,
   TestCoverageReport,
 } from "./models";
+import { EVALUATION_SKILLS } from "./evaluation-skills.generated";
 
 const EXECUTION_CONTEXT_FILE_LIMIT = 12;
 const EXECUTION_RECENT_COMMIT_LIMIT = 5;
@@ -103,6 +104,23 @@ const formatTestCoverageSection = (testCoverage: TestCoverageReport | undefined)
 
   lines.push("");
   return lines;
+};
+
+const formatEvaluationSkills = (): string => {
+  if (EVALUATION_SKILLS.length === 0) return "";
+
+  const sections = EVALUATION_SKILLS.map(
+    (skill) => `### ${skill.name}\n\n${skill.content}`,
+  );
+
+  return [
+    "",
+    "Evaluation skills — apply these domain guidelines when assessing the UI during test execution.",
+    "Use them as additional evaluation criteria alongside your existing accessibility and performance checks.",
+    "When you find a violation, include it in the relevant step's evidence and mark it as a failure.",
+    "",
+    ...sections,
+  ].join("\n");
 };
 
 export const buildExecutionSystemPrompt = (browserMcpServerName?: string): string => {
@@ -258,6 +276,7 @@ export const buildExecutionSystemPrompt = (browserMcpServerName?: string): strin
     "- Do not get stuck in wait-action-wait loops. Every retry should be justified by something newly observed.",
     "",
     "Before emitting RUN_COMPLETED, call the close tool exactly once so the browser session flushes the video to disk.",
+    formatEvaluationSkills(),
   ].join("\n");
 };
 
