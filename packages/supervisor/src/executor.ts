@@ -7,8 +7,9 @@ import {
   Agent,
   AgentStreamOptions,
 } from "@expect/agent";
-import { Effect, Layer, Option, Schema, ServiceMap, Stream } from "effect";
+import { DateTime, Effect, Layer, Option, Schema, ServiceMap, Stream } from "effect";
 import {
+  type AcpConfigOption,
   type ChangesFor,
   type ChangedFile,
   type CommitSummary,
@@ -19,7 +20,7 @@ import {
   type TestCoverageReport,
   TestPlan,
 } from "@expect/shared/models";
-import { buildExecutionPrompt } from "@expect/shared/prompts";
+import { buildExecutionPrompt, buildExecutionSystemPrompt } from "@expect/shared/prompts";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Git } from "./git/git";
 import {
@@ -59,6 +60,8 @@ export interface ExecuteOptions {
   readonly learnings?: string;
   readonly liveViewUrl?: string;
   readonly testCoverage?: TestCoverageReport;
+  readonly onConfigOptions?: (configOptions: readonly AcpConfigOption[]) => void;
+  readonly modelPreference?: { configId: string; value: string };
 }
 
 interface ExecutorAccumState {
@@ -102,6 +105,8 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
 
     const execute = Effect.fn("Executor.execute")(function* (options: ExecuteOptions) {
       const context = yield* gatherContext(options.changesFor);
+
+      const systemPrompt = buildExecutionSystemPrompt();
 
       const prompt = buildExecutionPrompt({
         userInstruction: options.instruction,
@@ -166,18 +171,27 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
         cwd: process.cwd(),
         sessionId: Option.none(),
         prompt,
-        systemPrompt: Option.none(),
+        systemPrompt: Option.some(systemPrompt),
         mcpEnv,
+        modelPreference: options.modelPreference,
       });
 
       return agent.stream(streamOptions).pipe(
+        Stream.tap((update) => {
+          const callback = options.onConfigOptions;
+          if (update.sessionUpdate === "config_option_update" && callback) {
+            return Effect.sync(() => callback(update.configOptions));
+          }
+          return Effect.void;
+        }),
         Stream.mapAccum(
           (): ExecutorAccumState => ({
             plan: initial,
             allTerminalSince: undefined,
           }),
           (state, part) => {
-            const updated = state.plan.addEvent(part);
+            const receivedAt = DateTime.nowUnsafe();
+            const updated = state.plan.addEvent(part, receivedAt);
             const terminalTimestamp = resolveTerminalTimestamp(updated, state.allTerminalSince);
             const finalized =
               terminalTimestamp !== undefined &&
@@ -189,7 +203,6 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
             return [{ plan: finalized, allTerminalSince: terminalTimestamp }, [finalized]] as const;
           },
         ),
-        Stream.takeUntil((executed) => executed.hasRunFinished),
         Stream.mapError((reason) => new ExecutionError({ reason })),
       );
     }, Stream.unwrap);
