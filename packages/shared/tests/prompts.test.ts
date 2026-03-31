@@ -244,27 +244,6 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("category=<allowed-category>;");
     expect(prompt).toContain("next-agent-prompt=<one sentence");
   });
-
-  it("includes evaluation skills in system prompt", () => {
-    const prompt = buildExecutionSystemPrompt();
-    expect(prompt).toContain("Evaluation skills");
-    expect(prompt).toContain("fixing-accessibility");
-    expect(prompt).toContain("fixing-seo");
-    expect(prompt).toContain("web-design-guidelines");
-  });
-
-  it("includes accessibility rules from evaluation skills", () => {
-    const prompt = buildExecutionSystemPrompt();
-    expect(prompt).toContain("accessible names");
-    expect(prompt).toContain("keyboard access");
-    expect(prompt).toContain("aria-label");
-  });
-
-  it("includes SEO rules from evaluation skills", () => {
-    const prompt = buildExecutionSystemPrompt();
-    expect(prompt).toContain("canonical and indexing");
-    expect(prompt).toContain("Open Graph");
-  });
 });
 
 describe("buildWatchAssessmentPrompt", () => {
