@@ -100,6 +100,11 @@ export class Analytics extends ServiceMap.Service<Analytics>()("@expect/Analytic
 
     const projectId = hash(process.cwd());
 
+    const distinctId = yield* Effect.tryPromise(async () => {
+      if (telemetryDisabled) return "";
+      return machineId();
+    }).pipe(Effect.orDie);
+
     const capture = <K extends keyof EventMap>(
       eventName: K,
       ...[properties]: EventMap[K] extends undefined ? [] : [EventMap[K]]
@@ -110,7 +115,6 @@ export class Analytics extends ServiceMap.Service<Analytics>()("@expect/Analytic
           timestamp: new Date().toISOString(),
           projectId,
         };
-        const distinctId = yield* Effect.tryPromise(() => machineId()).pipe(Effect.orDie);
 
         yield* provider.capture({
           eventName: eventName as string,
