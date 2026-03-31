@@ -437,7 +437,9 @@ export const runHeadless = (options: HeadlessRunOptions) =>
 
           yield* Effect.promise(() => playSound());
           return report.status;
-        }).pipe(Effect.provide(layerCli({ verbose: options.verbose, agent: options.agent }))),
+        }).pipe(
+          Effect.provide(layerCli({ verbose: options.verbose || options.ci, agent: options.agent })),
+        ),
       ),
     ),
   ).then((status) => {
