@@ -18,7 +18,7 @@ import {
   UnknownError,
 } from "./errors";
 import { SqliteClient } from "./sqlite-client";
-import { Cookie, type ChromiumBrowser, type ChromiumBrowserKey } from "./types";
+import { Cookie, type ChromiumBrowser, type ChromiumBrowserKey } from "@expect/shared/models";
 
 const CHROMIUM_META_VERSION_HASH_PREFIX = 24;
 const PBKDF2_ITERATIONS_DARWIN = 1003;

@@ -1,19 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import { Box, Text, useInput } from "ink";
+import { Option } from "effect";
 import figures from "figures";
 import type { ChangesFor, SavedFlow } from "@expect/shared/models";
-import { trackEvent } from "../../utils/session-analytics";
-import { useColors } from "../theme-context";
+import { Clickable } from "../ui/clickable";
 import { Logo } from "../ui/logo";
 import { Spinner } from "../ui/spinner";
-import { Clickable } from "../ui/clickable";
+import { useColors } from "../theme-context";
+import { trackEvent } from "../../utils/session-analytics";
 import {
   useNavigationStore,
   Screen,
   screenForTestingOrPortPicker,
 } from "../../stores/use-navigation";
 import { useProjectPreferencesStore } from "../../stores/use-project-preferences";
-import { useInstalledBrowsers, type DetectedBrowser } from "../../hooks/use-installed-browsers";
+import { useInstalledBrowsers } from "../../hooks/use-installed-browsers";
+
 
 interface CookieSyncConfirmScreenProps {
   changesFor?: ChangesFor;
@@ -28,43 +30,44 @@ export const CookieSyncConfirmScreen = ({
 }: CookieSyncConfirmScreenProps) => {
   const COLORS = useColors();
   const setScreen = useNavigationStore((state) => state.setScreen);
-  const setCookieBrowserKeys = useProjectPreferencesStore((state) => state.setCookieBrowserKeys);
-  const { data: browsers, isLoading } = useInstalledBrowsers();
+  const setCookieImportProfiles = useProjectPreferencesStore(
+    (state) => state.setCookieImportProfiles,
+  );
+  const { data, isLoading } = useInstalledBrowsers();
 
   const [highlightedIndex, setHighlightedIndex] = useState(0);
-  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const defaultsInitialized = useRef(false);
 
-  const items: DetectedBrowser[] = browsers ?? [];
+  const items = data?.browsers ?? [];
   const itemCount = items.length;
 
   useEffect(() => {
-    if (defaultsInitialized.current || !browsers || browsers.length === 0) return;
+    if (defaultsInitialized.current || !data || data.browsers.length === 0) return;
     defaultsInitialized.current = true;
-    const defaultBrowser = browsers.find((browser) => browser.isDefault);
-    if (defaultBrowser) {
-      setSelectedKeys(new Set([defaultBrowser.key]));
+    if (Option.isSome(data.default)) {
+      setSelectedIds(new Set([data.default.value.id]));
     }
-  }, [browsers]);
+  }, [data]);
 
-  const toggleKey = (key: string) => {
-    setSelectedKeys((previous) => {
+  const toggleId = (id: string) => {
+    setSelectedIds((previous) => {
       const next = new Set(previous);
-      if (next.has(key)) {
-        next.delete(key);
+      if (next.has(id)) {
+        next.delete(id);
       } else {
-        next.add(key);
+        next.add(id);
       }
       return next;
     });
   };
 
   const confirm = () => {
-    const keys = [...selectedKeys];
-    setCookieBrowserKeys(keys);
+    const selectedProfiles = items.filter((browser) => selectedIds.has(browser.id));
+    setCookieImportProfiles(selectedProfiles);
     trackEvent("cookies:browser_selection", {
-      selected_count: keys.length,
-      browsers: keys.join(","),
+      selected_count: selectedProfiles.length,
+      browsers: selectedProfiles.map((browser) => browser.displayName).join(", "),
     });
     if (changesFor && instruction) {
       setScreen(
@@ -72,7 +75,7 @@ export const CookieSyncConfirmScreen = ({
           changesFor,
           instruction,
           savedFlow,
-          cookieBrowserKeys: keys,
+          cookieImportProfiles: selectedProfiles,
         }),
       );
     } else {
@@ -93,16 +96,15 @@ export const CookieSyncConfirmScreen = ({
 
     if (input === " " && itemCount > 0) {
       const item = items[highlightedIndex];
-      if (item) toggleKey(item.key);
+      if (item) toggleId(item.id);
     }
 
     if (input === "a") {
-      const allKeys = items.map((browser) => browser.key);
-      setSelectedKeys(new Set(allKeys));
+      setSelectedIds(new Set(items.map((browser) => browser.id)));
     }
 
     if (input === "n") {
-      setSelectedKeys(new Set());
+      setSelectedIds(new Set());
     }
 
     if (key.return) {
@@ -114,7 +116,7 @@ export const CookieSyncConfirmScreen = ({
     }
   });
 
-  const selectedCount = selectedKeys.size;
+  const selectedCount = selectedIds.size;
 
   return (
     <Box flexDirection="column" width="100%" paddingY={1} paddingX={1}>
@@ -150,15 +152,18 @@ export const CookieSyncConfirmScreen = ({
       {!isLoading && (
         <Box flexDirection="column" marginTop={1}>
           {items.map((browser, index) => {
+            const id = browser.id;
             const isHighlighted = index === highlightedIndex;
-            const isSelected = selectedKeys.has(browser.key);
+            const isSelected = selectedIds.has(id);
+            const isDefault =
+              Option.isSome(data!.default) && data!.default.value.id === id;
 
             return (
               <Clickable
-                key={browser.key}
+                key={id}
                 onClick={() => {
                   setHighlightedIndex(index);
-                  toggleKey(browser.key);
+                  toggleId(id);
                 }}
               >
                 <Box>
@@ -171,7 +176,7 @@ export const CookieSyncConfirmScreen = ({
                   <Text color={isHighlighted ? COLORS.PRIMARY : COLORS.TEXT} bold={isHighlighted}>
                     {browser.displayName}
                   </Text>
-                  {browser.isDefault && <Text color={COLORS.DIM}> (default)</Text>}
+                  {isDefault && <Text color={COLORS.DIM}> (default)</Text>}
                 </Box>
               </Clickable>
             );

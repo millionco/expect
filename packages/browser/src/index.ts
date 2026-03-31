@@ -3,7 +3,6 @@ export { Artifacts } from "./artifacts";
 export { layerArtifactsRpc } from "./artifacts-rpc";
 export { layerMcpServer } from "./mcp-server";
 export { diffSnapshots } from "./diff";
-export { collectEvents, collectAllEvents, loadSession } from "./recorder";
 export { autoDiscoverCdp, discoverCdpUrl } from "./cdp-discovery";
 export { RrVideo, RrVideoConvertError } from "./rrvideo";
 export type {

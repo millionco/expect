@@ -16,6 +16,7 @@
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
+    "@expect/shared": "workspace:*",
     "@effect/platform-node": "4.0.0-beta.35",
     "default-browser": "^5.5.0",
     "effect": "4.0.0-beta.35",

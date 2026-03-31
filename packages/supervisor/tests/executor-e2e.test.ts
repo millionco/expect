@@ -50,7 +50,7 @@ describe("Executor e2e (fixture replay)", () => {
           instruction:
             "Navigate to https://skosh.dev and verify the view counter increases on refresh",
           isHeadless: true,
-          requiresCookies: false,
+          cookieImportProfiles: [],
         })
         .pipe(
           Stream.tap((executed) =>
@@ -82,7 +82,7 @@ describe("Executor e2e (fixture replay)", () => {
           instruction:
             "Navigate to https://skosh.dev and verify the view counter increases on refresh",
           isHeadless: true,
-          requiresCookies: false,
+          cookieImportProfiles: [],
         })
         .pipe(
           Stream.tap((executed) =>
@@ -114,7 +114,7 @@ describe("Executor e2e (fixture replay)", () => {
           instruction:
             "Navigate to https://skosh.dev and verify the view counter increases on refresh",
           isHeadless: true,
-          requiresCookies: false,
+          cookieImportProfiles: [],
         })
         .pipe(Stream.runDrain);
 

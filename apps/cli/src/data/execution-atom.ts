@@ -51,6 +51,8 @@ export const executeAtomFn = cliAtomRuntime.fn(
 
     yield* analytics.capture("run:started", { plan_id: "direct" });
 
+    console.error("[executeAtomFn] cookieImportProfiles:", JSON.stringify(input.options.cookieImportProfiles?.map((p: any) => ({ _tag: p._tag, constructor: p.constructor?.name, isClass: p instanceof Object }))));
+
     const finalExecuted = yield* executor.execute(input.options).pipe(
       Stream.tap((executed) =>
         Effect.sync(() => {
@@ -71,7 +73,7 @@ export const executeAtomFn = cliAtomRuntime.fn(
               instruction: input.options.instruction,
               baseUrl: undefined as never,
               isHeadless: input.options.isHeadless,
-              cookieBrowserKeys: input.options.cookieBrowserKeys,
+              cookieImportProfiles: input.options.cookieImportProfiles,
               testCoverage: Option.none(),
               title: input.options.instruction,
               rationale: "Direct execution",

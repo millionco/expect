@@ -1,5 +1,6 @@
 import { Data, Effect, Layer, Option, Ref, Schedule, Schema, ServiceMap, Stream } from "effect";
 import { Agent, AgentStreamOptions } from "@expect/agent";
+import type { Browser } from "@expect/cookies";
 import {
   AcpAgentMessageChunk,
   type ChangedFile,
@@ -50,7 +51,7 @@ export interface WatchOptions {
   readonly changesFor: ChangesFor;
   readonly instruction: string;
   readonly isHeadless: boolean;
-  readonly cookieBrowserKeys: readonly string[];
+  readonly cookieImportProfiles: readonly Browser[];
   readonly baseUrl?: string;
   readonly onEvent: (event: WatchEvent) => void;
 }
@@ -205,7 +206,7 @@ export class Watch extends ServiceMap.Service<Watch>()("@supervisor/Watch", {
           changesFor: options.changesFor,
           instruction: options.instruction,
           isHeadless: options.isHeadless,
-          cookieBrowserKeys: options.cookieBrowserKeys,
+          cookieImportProfiles: options.cookieImportProfiles,
           baseUrl: options.baseUrl,
         };
 

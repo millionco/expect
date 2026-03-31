@@ -10,7 +10,7 @@ import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Cookies } from "../src/cookies";
 import { BROWSER_CONFIGS } from "../src/browser-config";
 import { parseBinaryCookies } from "../src/utils/binary-cookies";
-import { FirefoxBrowser, SafariBrowser } from "../src/types";
+import { FirefoxBrowser, SafariBrowser } from "@expect/shared/models";
 
 const CookiesTestRuntime = Layer.merge(Cookies.layerTest, NodeServices.layer);
 

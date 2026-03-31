@@ -32,10 +32,8 @@ import {
 import { buildExecutionPrompt } from "@expect/shared/prompts";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Git } from "./git/git";
-import {
-  EXPECT_LIVE_VIEW_URL_ENV_NAME,
-  EXPECT_COOKIE_BROWSERS_ENV_NAME,
-} from "@expect/browser/mcp";
+import { BrowserJson, type Browser } from "@expect/cookies";
+import { EXPECT_BROWSER_PROFILE_ENV_NAME } from "@expect/browser/mcp";
 import {
   ALL_STEPS_TERMINAL_GRACE_MS,
   EXECUTION_CONTEXT_FILE_LIMIT,
@@ -44,8 +42,10 @@ import {
 } from "./constants";
 
 const encodeSessionUpdate = Schema.encodeEffect(
-  Schema.fromJsonString(Schema.toCodecJson(AcpSessionUpdate))
+  Schema.fromJsonString(Schema.toCodecJson(AcpSessionUpdate)),
 );
+
+const encodeBrowserProfile = Schema.encodeEffect(BrowserJson);
 
 export class ExecutionError extends Schema.ErrorClass<ExecutionError>(
   "@supervisor/ExecutionError"
@@ -66,7 +66,7 @@ export interface ExecuteOptions {
   readonly changesFor: ChangesFor;
   readonly instruction: string;
   readonly isHeadless: boolean;
-  readonly cookieBrowserKeys: readonly string[];
+  readonly cookieImportProfiles: readonly Browser[];
   readonly baseUrl?: string;
   readonly savedFlow?: SavedFlow;
   readonly learnings?: string;
@@ -147,19 +147,13 @@ export class Executor extends ServiceMap.Service<Executor>()(
           diffPreview: context.diffPreview,
           baseUrl: options.baseUrl,
           isHeadless: options.isHeadless,
-          cookieBrowserKeys: options.cookieBrowserKeys,
+          cookieImportProfiles: options.cookieImportProfiles,
           savedFlow: options.savedFlow,
           learnings: options.learnings,
           testCoverage: options.testCoverage,
         });
 
         const planId = PlanId.makeUnsafe(crypto.randomUUID());
-        const replayOutputPath = path.join(
-          process.cwd(),
-          EXPECT_STATE_DIR,
-          "replays",
-          `${planId}.ndjson`
-        );
 
         const syntheticPlan = new TestPlan({
           id: planId,
@@ -172,7 +166,7 @@ export class Executor extends ServiceMap.Service<Executor>()(
             ? Option.some(options.baseUrl)
             : Option.none(),
           isHeadless: options.isHeadless,
-          cookieBrowserKeys: options.cookieBrowserKeys,
+          cookieImportProfiles: options.cookieImportProfiles,
           testCoverage: options.testCoverage
             ? Option.some(options.testCoverage)
             : Option.none(),
@@ -191,13 +185,19 @@ export class Executor extends ServiceMap.Service<Executor>()(
           plan: syntheticPlan,
         });
 
-        const mcpEnv = [{ name: EXPECT_PLAN_ID_ENV_NAME, value: planId }];
-        if (options.cookieBrowserKeys.length > 0) {
-          mcpEnv.push({
-            name: EXPECT_COOKIE_BROWSERS_ENV_NAME,
-            value: options.cookieBrowserKeys.join(","),
-          });
+        const mcpEnv = [
+          { name: EXPECT_PLAN_ID_ENV_NAME, value: planId as string },
+        ];
+        if (options.cookieImportProfiles.length > 0) {
+          const profileJson = yield* encodeBrowserProfile(
+            options.cookieImportProfiles[0],
+          ).pipe(Effect.orDie);
+          console.error("[Executor] Passing browser profile to MCP:", profileJson.slice(0, 200));
+          mcpEnv.push({ name: EXPECT_BROWSER_PROFILE_ENV_NAME, value: profileJson });
+        } else {
+          console.error("[Executor] No cookieImportProfiles, skipping browser profile env");
         }
+        console.error("[Executor] mcpEnv:", JSON.stringify(mcpEnv.map((e) => e.name)));
 
         const streamOptions = new AgentStreamOptions({
           cwd: process.cwd(),
@@ -238,6 +238,8 @@ export class Executor extends ServiceMap.Service<Executor>()(
   }
 ) {
   static layer = Layer.effect(this)(this.make).pipe(
-    Layer.provide(NodeServices.layer)
+    Layer.provide(LiveViewer.layer),
+    Layer.provide(NodeServices.layer),
+    Layer.provide(Git.layer)
   );
 }

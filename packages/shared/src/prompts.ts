@@ -1,3 +1,4 @@
+import type { Browser } from "@expect/cookies";
 import type {
   ChangedFile,
   ChangesFor,
@@ -21,7 +22,7 @@ export interface ExecutionPromptOptions {
   readonly diffPreview: string;
   readonly baseUrl: string | undefined;
   readonly isHeadless: boolean;
-  readonly cookieBrowserKeys: readonly string[];
+  readonly cookieImportProfiles: readonly Browser[];
   readonly browserMcpServerName?: string;
   readonly savedFlow?: SavedFlow;
   readonly learnings?: string;
@@ -226,7 +227,7 @@ export const buildExecutionPrompt = (options: ExecutionPromptOptions): string =>
     "Environment:",
     `- Base URL: ${options.baseUrl ?? "not provided"}`,
     `- Headed mode preference: ${options.isHeadless ? "headless" : "headed"}`,
-    `- Reuse browser cookies: ${options.cookieBrowserKeys.length > 0 ? `yes (${options.cookieBrowserKeys.join(", ")})` : "no"}`,
+    `- Reuse browser cookies: ${options.cookieImportProfiles.length > 0 ? `yes (${options.cookieImportProfiles.map((profile) => profile._tag).join(", ")})` : "no"}`,
     "",
     "Testing target context:",
     `- Scope: ${options.scope}`,

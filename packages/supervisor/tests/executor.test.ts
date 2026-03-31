@@ -35,7 +35,7 @@ const makeTestPlan = (): TestPlan =>
     instruction: "test",
     baseUrl: Option.none(),
     isHeadless: false,
-    cookieBrowserKeys: [],
+    cookieImportProfiles: [],
     testCoverage: Option.none(),
   } as any);
 

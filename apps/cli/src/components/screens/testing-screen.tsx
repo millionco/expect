@@ -29,7 +29,9 @@ import cliTruncate from "cli-truncate";
 import { formatElapsedTime } from "../../utils/format-elapsed-time";
 import { Image } from "../ui/image";
 import { ErrorMessage } from "../ui/error-message";
-import { executeFn, screenshotPathsAtom } from "../../data/execution-atom";
+import { LIVE_VIEWER_STATIC_URL } from "@expect/shared";
+import type { Browser } from "@expect/cookies";
+import { executeAtomFn, screenshotPathsAtom } from "../../data/execution-atom";
 import { agentConfigOptionsAtom } from "../../data/config-options";
 import { agentProviderAtom } from "../../data/runtime";
 import { trackEvent } from "../../utils/session-analytics";
@@ -44,7 +46,7 @@ interface TestingScreenProps {
   changesFor: ChangesFor;
   instruction: string;
   savedFlow?: SavedFlow;
-  cookieBrowserKeys?: readonly string[];
+  cookieImportProfiles?: readonly Browser[];
   baseUrls?: readonly string[];
 }
 
@@ -273,7 +275,7 @@ export const TestingScreen = ({
   changesFor,
   instruction,
   savedFlow,
-  cookieBrowserKeys = [],
+  cookieImportProfiles = [],
   baseUrls,
 }: TestingScreenProps) => {
   const setScreen = useNavigationStore((state) => state.setScreen);
@@ -295,11 +297,10 @@ export const TestingScreen = ({
   const toggleNotifications = usePreferencesStore(
     (state) => state.toggleNotifications
   );
-  const [executionResult, triggerExecute] = useAtom(executeFn, {
+  const [executionResult, triggerExecute] = useAtom(executeAtomFn, {
     mode: "promiseExit",
   });
   const screenshotPaths = useAtomValue(screenshotPathsAtom);
-  const [liveViewUrl, setLiveViewUrl] = useState<string | undefined>(undefined);
 
   const isExecuting = AsyncResult.isWaiting(executionResult);
   const isExecutionComplete = AsyncResult.isSuccess(executionResult);
@@ -465,12 +466,13 @@ export const TestingScreen = ({
       ? `${instruction} ${urlTags}`
       : instruction;
 
+    console.error("[TestingScreen] cookieImportProfiles:", JSON.stringify(cookieImportProfiles.map((p: any) => ({ _tag: p._tag, constructor: p.constructor?.name }))));
     triggerExecute({
       options: {
         changesFor,
         instruction: instructionWithUrls,
         isHeadless: !browserHeaded,
-        cookieBrowserKeys: [...cookieBrowserKeys],
+        cookieImportProfiles: [...cookieImportProfiles],
         savedFlow,
         baseUrl,
         modelPreference:
@@ -480,7 +482,6 @@ export const TestingScreen = ({
       },
       agentBackend,
       onUpdate: setExecutedPlan,
-      onReplayUrl: setLiveViewUrl,
       onConfigOptions: (configOptions) => {
         setConfigOptions((previous) => ({
           ...previous,
@@ -499,7 +500,7 @@ export const TestingScreen = ({
     changesFor,
     instruction,
     savedFlow,
-    cookieBrowserKeys,
+    cookieImportProfiles,
     baseUrls,
     modelPreferenceConfigId,
     modelPreferenceValue,
@@ -563,11 +564,11 @@ export const TestingScreen = ({
       return;
     }
 
-    if (normalizedInput === "o" && !key.ctrl && !key.meta && liveViewUrl) {
+    if (normalizedInput === "o" && !key.ctrl && !key.meta && executedPlan?.id) {
       const { exec } =
         require("node:child_process") as typeof import("node:child_process");
-      const escapedUrl = liveViewUrl.replace(/"/g, '\\"');
-      exec(`open "${escapedUrl}"`);
+      const url = `${LIVE_VIEWER_STATIC_URL}?testId=${executedPlan.id}`;
+      exec(`open "${url}"`);
       trackEvent("live_preview:opened");
       return;
     }
@@ -636,7 +637,7 @@ export const TestingScreen = ({
             </Text>
           </Box>
 
-          {liveViewUrl && isExecuting && (
+          {executedPlan?.id && isExecuting && (
             <Box marginTop={0}>
               <Text color={COLORS.PRIMARY} bold>
                 {"  "}Press{" "}

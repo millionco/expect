@@ -32,9 +32,7 @@ const selectFlow = (flow: SavedFlowFileData, mainBranch: string) => {
     userInstruction: flow.flow.userInstruction,
     steps,
   };
-  const storedKeys = useProjectPreferencesStore.getState().cookieBrowserKeys;
-  const cookieBrowserKeys =
-    flow.environment.cookies && storedKeys.length === 0 ? ["chrome"] : storedKeys;
+  const cookieImportProfiles = useProjectPreferencesStore.getState().cookieImportProfiles;
 
   trackEvent("flow:reused", { slug: flow.slug, step_count: steps.length });
 
@@ -43,7 +41,7 @@ const selectFlow = (flow: SavedFlowFileData, mainBranch: string) => {
       changesFor,
       instruction: flow.flow.userInstruction,
       savedFlow,
-      cookieBrowserKeys,
+      cookieImportProfiles,
     }),
   );
 };

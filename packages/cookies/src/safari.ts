@@ -2,7 +2,7 @@ import path from "node:path";
 import * as os from "node:os";
 import { Effect, Layer, Option, ServiceMap } from "effect";
 import * as FileSystem from "effect/FileSystem";
-import { SafariBrowser } from "./types";
+import { SafariBrowser } from "@expect/shared/models";
 import { SAFARI_CONFIG } from "./browser-config";
 import { ListBrowsersError } from "./errors";
 import { Browsers } from "./browser-detector";

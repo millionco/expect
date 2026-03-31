@@ -19,7 +19,7 @@ const makePlan = (id: string, title: string): TestPlan =>
     instruction: title,
     baseUrl: Option.none(),
     isHeadless: false,
-    requiresCookies: false,
+    cookieImportProfiles: [],
     testCoverage: Option.none(),
   });
 

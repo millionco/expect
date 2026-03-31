@@ -24,9 +24,9 @@ import { agentProviderAtom } from "../../data/runtime";
 const useHintSegments = (screen: Screen, gitState: GitState | undefined): HintSegment[] => {
   const COLORS = useColors();
   const setScreen = useNavigationStore((state) => state.setScreen);
-  const cookieBrowserKeys = useProjectPreferencesStore((state) => state.cookieBrowserKeys);
-  const clearCookieBrowserKeys = useProjectPreferencesStore(
-    (state) => state.clearCookieBrowserKeys,
+  const cookieImportProfiles = useProjectPreferencesStore((state) => state.cookieImportProfiles);
+  const clearCookieImportProfiles = useProjectPreferencesStore(
+    (state) => state.clearCookieImportProfiles,
   );
   const notifications = usePreferencesStore((state) => state.notifications);
   const toggleNotifications = usePreferencesStore((state) => state.toggleNotifications);
@@ -48,11 +48,11 @@ const useHintSegments = (screen: Screen, gitState: GitState | undefined): HintSe
         {
           key: "ctrl+k",
           label:
-            cookieBrowserKeys.length > 0 ? `cookies (${cookieBrowserKeys.length})` : "cookies off",
+            cookieImportProfiles.length > 0 ? `cookies (${cookieImportProfiles.length})` : "cookies off",
           cta: true,
           onClick:
-            cookieBrowserKeys.length > 0
-              ? clearCookieBrowserKeys
+            cookieImportProfiles.length > 0
+              ? clearCookieImportProfiles
               : () => setScreen(Screen.CookieSyncConfirm({})),
         },
         {

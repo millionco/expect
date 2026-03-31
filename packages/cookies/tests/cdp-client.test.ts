@@ -1,53 +1,75 @@
-import * as fs from "node:fs";
-import { assert, describe, it } from "vite-plus/test";
-import { Effect } from "effect";
-import { CdpClient } from "../src/cdp-client";
+import { describe, it, assert } from "@effect/vitest";
+import { Effect, Layer, Option } from "effect";
+import { Browsers } from "../src/browser-detector";
+import { Cookies } from "../src/cookies";
+import { layerLive } from "../src/layers";
 
-const CHROME_PROFILE_PATH = "/Users/rasmus/Library/Application Support/Google/Chrome/Default";
-const CHROME_EXECUTABLE_PATH = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+const FIVE_MINUTES_MS = 300_000;
 
-const CdpTestLayer = CdpClient.layer;
+const TestLayer = Layer.mergeAll(layerLive, Cookies.layer);
 
-const hasChrome = fs.existsSync(CHROME_PROFILE_PATH) && fs.existsSync(CHROME_EXECUTABLE_PATH);
-
-describe.skipIf(!hasChrome)("CdpClient", () => {
-  it("extracts cookies from a Chrome profile via CDP", { timeout: 30_000 }, () =>
-    Effect.gen(function* () {
-      const cdpClient = yield* CdpClient;
-      const cookies = yield* cdpClient.extractCookies({
-        key: "chrome",
-        profilePath: CHROME_PROFILE_PATH,
-        executablePath: CHROME_EXECUTABLE_PATH,
-      });
-
-      assert.isArray(cookies);
-      assert.isAbove(cookies.length, 0);
-
-      const first = cookies[0];
-      assert.isString(first.name);
-      assert.isString(first.value);
-      assert.isString(first.domain);
-      assert.isString(first.path);
-      assert.isBoolean(first.secure);
-      assert.isBoolean(first.httpOnly);
-    }).pipe(Effect.scoped, Effect.provide(CdpTestLayer), Effect.runPromise),
+describe("CdpClient", () => {
+  it.effect(
+    "default system browser is detected",
+    () =>
+      Effect.gen(function* () {
+        const browsers = yield* Browsers;
+        const defaultBrowser = yield* browsers.defaultBrowser();
+        assert.isTrue(Option.isSome(defaultBrowser));
+      }).pipe(Effect.scoped, Effect.provide(TestLayer)),
+    { timeout: FIVE_MINUTES_MS }
   );
 
-  it("returns cookies with stripped leading dots on domains", { timeout: 30_000 }, () =>
-    Effect.gen(function* () {
-      const cdpClient = yield* CdpClient;
-      const cookies = yield* cdpClient.extractCookies({
-        key: "chrome",
-        profilePath: CHROME_PROFILE_PATH,
-        executablePath: CHROME_EXECUTABLE_PATH,
-      });
+  it.effect(
+    "all profiles are listed",
+    () =>
+      Effect.gen(function* () {
+        const browsers = yield* Browsers;
+        const allBrowsers = yield* browsers.list;
+        assert.isAbove(allBrowsers.length, 0);
+      }).pipe(Effect.scoped, Effect.provide(TestLayer)),
+    { timeout: FIVE_MINUTES_MS }
+  );
 
-      for (const cookie of cookies) {
-        assert.isFalse(
-          cookie.domain.startsWith("."),
-          `domain should not start with dot: ${cookie.domain}`,
+  it.effect(
+    "no profile named System Profile",
+    () =>
+      Effect.gen(function* () {
+        const browsers = yield* Browsers;
+        const allBrowsers = yield* browsers.list;
+        const systemProfiles = allBrowsers.filter(
+          (browser) =>
+            browser._tag === "ChromiumBrowser" &&
+            browser.profileName === "System Profile",
         );
-      }
-    }).pipe(Effect.scoped, Effect.provide(CdpTestLayer), Effect.runPromise),
+        assert.strictEqual(systemProfiles.length, 0, "System Profile should be filtered out");
+      }).pipe(Effect.scoped, Effect.provide(TestLayer)),
+    { timeout: FIVE_MINUTES_MS }
+  );
+
+  it.live(
+    "each profile has at least 5 cookies",
+    () =>
+      Effect.gen(function* () {
+        const browsers = yield* Browsers;
+        const cookies = yield* Cookies;
+        const allBrowsers = yield* browsers.list;
+
+        for (const browser of allBrowsers) {
+          const label =
+            browser._tag === "ChromiumBrowser"
+              ? `${browser.key}/${browser.profileName}`
+              : browser._tag === "FirefoxBrowser"
+              ? `firefox/${browser.profileName}`
+              : "safari";
+          const result = yield* cookies.extract(browser);
+          assert.isAbove(
+            result.length,
+            4,
+            `${label}: expected > 4 cookies, got ${result.length}`
+          );
+        }
+      }).pipe(Effect.scoped, Effect.provide(TestLayer)),
+    { timeout: FIVE_MINUTES_MS }
   );
 });

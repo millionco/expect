@@ -130,7 +130,7 @@ export const runHeadless = (options: HeadlessRunOptions) =>
               changesFor: options.changesFor,
               instruction: options.instruction,
               isHeadless: !options.headed,
-              cookieBrowserKeys: [],
+              cookieImportProfiles: [],
             })
             .pipe(
               Stream.tap((executed) => Effect.sync(() => printNewEvents(executed))),
@@ -148,7 +148,7 @@ export const runHeadless = (options: HeadlessRunOptions) =>
                       instruction: options.instruction,
                       baseUrl: undefined as never,
                       isHeadless: !options.headed,
-                      cookieBrowserKeys: [],
+                      cookieImportProfiles: [],
                       testCoverage: Option.none(),
                       title: options.instruction,
                       rationale: "Direct execution",

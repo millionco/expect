@@ -7,7 +7,7 @@ import { SqliteClient } from "./sqlite-client";
 import { ChromiumSqliteFallback } from "./chromium-sqlite";
 import { ExtractionError, RequiresFullDiskAccess, UnknownError } from "./errors";
 import { parseBinaryCookies } from "./utils/binary-cookies";
-import { SameSitePolicy, Cookie, type Browser } from "./types";
+import { SameSitePolicy, Cookie, type Browser } from "@expect/shared/models";
 
 const SAME_SITE_NONE = 0;
 const SAME_SITE_LAX = 1;

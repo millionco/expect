@@ -1,12 +1,18 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod/v4";
-import { Effect, Layer, Option } from "effect";
+import { Config, Effect, Layer, Option, Schema } from "effect";
+import { BrowserJson } from "@expect/cookies";
 import type { ConsoleLog, NetworkRequest } from "@expect/shared/models";
+import { EXPECT_BROWSER_PROFILE_ENV_NAME } from "./mcp/constants";
 
 import { Playwright, PlaywrightSession } from "./playwright";
 import { Artifacts } from "./artifacts";
-import { McpServerStartError, NoSnapshotError, PlaywrightExecutionError } from "./errors";
+import {
+  McpServerStartError,
+  NoSnapshotError,
+  PlaywrightExecutionError,
+} from "./errors";
 import { evaluateRuntime } from "./utils/evaluate-runtime";
 import type { SnapshotResult } from "./types";
 import { layerArtifactsRpc } from "./artifacts-rpc";
@@ -26,7 +32,7 @@ const safeJsonStringify = (data: unknown): string => {
       }
       return value;
     },
-    2,
+    2
   );
 };
 
@@ -36,11 +42,29 @@ const imageResult = (base64: string) => ({
   content: [{ type: "image" as const, data: base64, mimeType: "image/png" }],
 });
 
+const decodeBrowserProfile = Schema.decodeEffect(BrowserJson);
+
 export const layerMcpServer = Layer.effectDiscard(
   Effect.gen(function* () {
-    yield* Effect.logInfo(`Constructing MCP server`);
+    console.error("[MCP] Constructing MCP server");
+    console.error("[MCP] EXPECT_BROWSER_PROFILE env:", process.env[EXPECT_BROWSER_PROFILE_ENV_NAME] ?? "(not set)");
+    console.error("[MCP] EXPECT_REPLAY_OUTPUT_PATH env:", process.env.EXPECT_REPLAY_OUTPUT_PATH ?? "(not set)");
+    console.error("[MCP] EXPECT_PLAN_ID env:", process.env.EXPECT_PLAN_ID ?? "(not set)");
+
     const services = yield* Effect.services<Playwright | Artifacts>();
     const run = Effect.runPromiseWith(services);
+
+    const browserProfileJson = yield* Config.string(
+      EXPECT_BROWSER_PROFILE_ENV_NAME
+    ).pipe(Config.option);
+    console.error("[MCP] browserProfileJson:", Option.isSome(browserProfileJson) ? browserProfileJson.value.slice(0, 200) : "(none)");
+
+    const browserProfile = yield* Option.match(browserProfileJson, {
+      onNone: () => Effect.succeedNone,
+      onSome: (json) =>
+        decodeBrowserProfile(json).pipe(Effect.map(Option.some), Effect.orDie),
+    });
+    console.error("[MCP] browserProfile:", Option.isSome(browserProfile) ? browserProfile.value._tag : "(none)");
 
     const server = new McpServer({ name: "expect", version: "0.0.1" });
 
@@ -58,7 +82,9 @@ export const layerMcpServer = Layer.effectDiscard(
           cookies: z
             .boolean()
             .optional()
-            .describe("Reuse local browser cookies for the target URL when available"),
+            .describe(
+              "Reuse local browser cookies for the target URL when available"
+            ),
           waitUntil: z
             .enum(["load", "domcontentloaded", "networkidle", "commit"])
             .optional()
@@ -74,14 +100,14 @@ export const layerMcpServer = Layer.effectDiscard(
           }
           yield* pw.open({
             headless: !headed,
-            browserProfile: Option.none(),
+            browserProfile,
             initialNavigation: Option.some({
               url,
               waitUntil,
             }),
           });
           return textResult(`Opened ${url}`);
-        }).pipe((effect) => run(effect, { signal })),
+        }).pipe((effect) => run(effect, { signal }))
     );
 
     // screenshot
@@ -97,7 +123,10 @@ export const layerMcpServer = Layer.effectDiscard(
             .enum(["screenshot", "snapshot", "annotated"])
             .optional()
             .describe("Capture mode (default: screenshot)"),
-          fullPage: z.boolean().optional().describe("Capture the full scrollable page"),
+          fullPage: z
+            .boolean()
+            .optional()
+            .describe("Capture the full scrollable page"),
         },
       },
       ({ mode, fullPage }, { signal }) =>
@@ -129,7 +158,7 @@ export const layerMcpServer = Layer.effectDiscard(
                   text: result.annotations
                     .map(
                       (annotation) =>
-                        `[${annotation.label}] @${annotation.ref} ${annotation.role} "${annotation.name}"`,
+                        `[${annotation.label}] @${annotation.ref} ${annotation.role} "${annotation.name}"`
                     )
                     .join("\n"),
                 },
@@ -138,10 +167,10 @@ export const layerMcpServer = Layer.effectDiscard(
           }
 
           const buffer = yield* PlaywrightSession.use(({ page }) =>
-            Effect.tryPromise(() => page.screenshot({ fullPage })),
+            Effect.tryPromise(() => page.screenshot({ fullPage }))
           ).pipe(pw.withCurrentSession);
           return imageResult(buffer.toString("base64"));
-        }).pipe((effect) => run(effect, { signal })),
+        }).pipe((effect) => run(effect, { signal }))
     );
 
     // playwright — raw code execution
@@ -161,7 +190,7 @@ export const layerMcpServer = Layer.effectDiscard(
           if (!lastSnapshot) return yield* new NoSnapshotError();
           const result = yield* pw.execute(code, lastSnapshot);
           return jsonResult(result);
-        }).pipe((effect) => run(effect, { signal })),
+        }).pipe((effect) => run(effect, { signal }))
     );
 
     // console_logs
@@ -176,18 +205,24 @@ export const layerMcpServer = Layer.effectDiscard(
           type: z
             .string()
             .optional()
-            .describe("Filter by console message type (e.g. 'error', 'warning', 'log')"),
+            .describe(
+              "Filter by console message type (e.g. 'error', 'warning', 'log')"
+            ),
         },
       },
       ({ type }, { signal }) =>
         Effect.gen(function* () {
           const art = yield* Artifacts;
-          const logs = art.all().filter((a): a is ConsoleLog => a._tag === "ConsoleLog");
-          const filtered = type ? logs.filter((entry) => entry.type === type) : logs;
+          const logs = art
+            .all()
+            .filter((a): a is ConsoleLog => a._tag === "ConsoleLog");
+          const filtered = type
+            ? logs.filter((entry) => entry.type === type)
+            : logs;
           return filtered.length === 0
             ? textResult("No console messages captured.")
             : jsonResult(filtered);
-        }).pipe((effect) => run(effect, { signal })),
+        }).pipe((effect) => run(effect, { signal }))
     );
 
     // network_requests
@@ -199,12 +234,17 @@ export const layerMcpServer = Layer.effectDiscard(
           "Get captured network requests. Optionally filter by HTTP method, URL substring, or resource type (document, script, stylesheet, image, xhr, fetch, etc.).",
         annotations: { readOnlyHint: true },
         inputSchema: {
-          method: z.string().optional().describe("Filter by HTTP method (e.g. 'GET', 'POST')"),
+          method: z
+            .string()
+            .optional()
+            .describe("Filter by HTTP method (e.g. 'GET', 'POST')"),
           url: z.string().optional().describe("Filter by URL substring match"),
           resourceType: z
             .string()
             .optional()
-            .describe("Filter by resource type (e.g. 'xhr', 'fetch', 'document', 'script')"),
+            .describe(
+              "Filter by resource type (e.g. 'xhr', 'fetch', 'document', 'script')"
+            ),
         },
       },
       ({ method, url, resourceType }, { signal }) =>
@@ -216,18 +256,22 @@ export const layerMcpServer = Layer.effectDiscard(
 
           const matchesMethod = (entry: NetworkRequest) =>
             !method || entry.method === method.toUpperCase();
-          const matchesUrl = (entry: NetworkRequest) => !url || entry.url.includes(url);
+          const matchesUrl = (entry: NetworkRequest) =>
+            !url || entry.url.includes(url);
           const matchesResourceType = (entry: NetworkRequest) =>
             !resourceType || entry.resourceType === resourceType.toLowerCase();
 
           const filtered = requests.filter(
-            (entry) => matchesMethod(entry) && matchesUrl(entry) && matchesResourceType(entry),
+            (entry) =>
+              matchesMethod(entry) &&
+              matchesUrl(entry) &&
+              matchesResourceType(entry)
           );
 
           return filtered.length === 0
             ? textResult("No network requests captured.")
             : jsonResult(filtered);
-        }).pipe((effect) => run(effect, { signal })),
+        }).pipe((effect) => run(effect, { signal }))
     );
 
     // performance_metrics
@@ -246,9 +290,10 @@ export const layerMcpServer = Layer.effectDiscard(
           const page = yield* pw.getPage;
           const metrics = yield* evaluateRuntime(page, "getPerformanceMetrics");
           const hasMetrics = metrics.fcp || metrics.lcp || metrics.inp;
-          if (!hasMetrics) return textResult("No performance metrics available yet.");
+          if (!hasMetrics)
+            return textResult("No performance metrics available yet.");
           return jsonResult(metrics);
-        }).pipe((effect) => run(effect, { signal })),
+        }).pipe((effect) => run(effect, { signal }))
     );
 
     // close
@@ -266,7 +311,7 @@ export const layerMcpServer = Layer.effectDiscard(
           yield* pw.close();
           lastSnapshot = undefined;
           return textResult("Browser closed.");
-        }).pipe((effect) => run(effect, { signal })),
+        }).pipe((effect) => run(effect, { signal }))
     );
 
     // Start stdio transport — acquireRelease ensures cleanup
@@ -282,8 +327,8 @@ export const layerMcpServer = Layer.effectDiscard(
       }),
       () =>
         Effect.tryPromise(() => server.close()).pipe(
-          Effect.ignore({ message: "Failed to close MCP server", log: "Warn" }),
-        ),
+          Effect.ignore({ message: "Failed to close MCP server", log: "Warn" })
+        )
     );
-  }),
+  })
 ).pipe(Layer.provide(Playwright.layer), Layer.provide(layerArtifactsRpc));

@@ -27,7 +27,7 @@ const program = Effect.gen(function* () {
       instruction:
         "Navigate to https://skosh.dev, note the view counter in the footer. Refresh the page and confirm the view counter increased by 1.",
       isHeadless: false,
-      requiresCookies: false,
+      cookieImportProfiles: [],
       captureFixturePath: FIXTURE_PATH,
     })
     .pipe(

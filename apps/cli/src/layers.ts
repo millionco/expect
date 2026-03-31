@@ -4,6 +4,7 @@ import {
   Executor,
   FlowStorage,
   Git,
+  LiveViewer,
   Reporter,
   Updates,
   Watch,
