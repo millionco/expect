@@ -1,13 +1,5 @@
-import {
-  existsSync,
-  lstatSync,
-  mkdirSync,
-  readlinkSync,
-  symlinkSync,
-  unlinkSync,
-  writeFileSync,
-} from "node:fs";
-import { dirname, join, relative } from "node:path";
+import * as fs from "node:fs";
+import path from "node:path";
 import { type SupportedAgent, toDisplayName, toSkillDir } from "@expect/agent";
 import { highlighter } from "../utils/highlighter";
 import { logger } from "../utils/logger";
@@ -25,24 +17,27 @@ interface AddSkillOptions {
 }
 
 const writeSkillFile = (projectRoot: string) => {
-  const skillDir = join(projectRoot, AGENTS_SKILLS_DIR, SKILL_NAME);
-  const skillPath = join(skillDir, "SKILL.md");
-  mkdirSync(skillDir, { recursive: true });
-  writeFileSync(skillPath, SKILL_CONTENT, "utf8");
+  const skillDir = path.join(projectRoot, AGENTS_SKILLS_DIR, SKILL_NAME);
+  const skillPath = path.join(skillDir, "SKILL.md");
+  fs.mkdirSync(skillDir, { recursive: true });
+  fs.writeFileSync(skillPath, SKILL_CONTENT, "utf8");
 };
 
 const ensureAgentSymlink = (projectRoot: string, agent: SupportedAgent): boolean => {
   const agentSkillDir = toSkillDir(agent);
-  const symlinkPath = join(projectRoot, agentSkillDir);
-  const targetPath = relative(dirname(symlinkPath), join(projectRoot, AGENTS_SKILLS_DIR));
+  const symlinkPath = path.join(projectRoot, agentSkillDir);
+  const targetPath = path.relative(
+    path.dirname(symlinkPath),
+    path.join(projectRoot, AGENTS_SKILLS_DIR),
+  );
 
-  if (existsSync(symlinkPath)) {
+  if (fs.existsSync(symlinkPath)) {
     try {
-      const stats = lstatSync(symlinkPath);
+      const stats = fs.lstatSync(symlinkPath);
       if (stats.isSymbolicLink()) {
-        const existing = readlinkSync(symlinkPath);
+        const existing = fs.readlinkSync(symlinkPath);
         if (existing === targetPath) return true;
-        unlinkSync(symlinkPath);
+        fs.unlinkSync(symlinkPath);
       } else {
         return false;
       }
@@ -51,8 +46,8 @@ const ensureAgentSymlink = (projectRoot: string, agent: SupportedAgent): boolean
     }
   }
 
-  mkdirSync(dirname(symlinkPath), { recursive: true });
-  symlinkSync(targetPath, symlinkPath);
+  fs.mkdirSync(path.dirname(symlinkPath), { recursive: true });
+  fs.symlinkSync(targetPath, symlinkPath);
   return true;
 };
 
