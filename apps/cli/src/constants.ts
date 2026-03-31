@@ -46,6 +46,7 @@ export const TLS_PROBE_TIMEOUT_MS = 300;
 
 export const CI_EXECUTION_TIMEOUT_MS = 30 * 60 * 1000;
 export const CI_HEARTBEAT_INTERVAL_MS = 60_000;
+export const CI_DEBUG_LOG_TAIL_LINE_COUNT = 80;
 
 export const NPM_PACKAGE_NAME = "expect-cli";
 export const UPDATE_CHECK_STALE_MS = 3_600_000;
