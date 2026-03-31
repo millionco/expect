@@ -13,7 +13,7 @@ import {
   detectPackageManager,
   generateClaudeToken,
   hasGhCli,
-  isGhAuthenticated,
+  isGithubCliAuthenticated,
   setGhSecret,
   setGhVariable,
 } from "./init-utils";
@@ -226,7 +226,7 @@ export const runAddGithubAction = async (options: AddGithubActionOptions = {}) =
   logger.break();
 
   const ghAvailable = await Effect.runPromise(hasGhCli);
-  const ghAuthed = ghAvailable && (await Effect.runPromise(isGhAuthenticated));
+  const ghAuthed = ghAvailable && (await Effect.runPromise(isGithubCliAuthenticated));
   const agents = options.agents ?? detectAvailableAgents();
   const hasClaude = agents.includes("claude");
 

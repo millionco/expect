@@ -51,7 +51,7 @@ export const hasGitHubRemote = Effect.tryPromise({
 
 export const hasGhCli = Effect.sync(() => isCommandAvailable("gh"));
 
-export const isGhAuthenticated = Effect.try({
+export const isGithubCliAuthenticated = Effect.try({
   try: () =>
     spawnSync("gh", ["auth", "status"], {
       stdio: "ignore",
