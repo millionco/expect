@@ -665,28 +665,6 @@ const parseMarker = (line: string): ExecutionEvent | undefined => {
   return undefined;
 };
 
-const splitMarkerLines = (text: string, completeLinesOnly: boolean) => {
-  const lines = text.split("\n");
-  const remainder = completeLinesOnly && !text.endsWith("\n") ? (lines.pop() ?? "") : "";
-  const remainingLines: string[] = [];
-  const markers: ExecutionEvent[] = [];
-
-  for (const line of lines) {
-    const marker = parseMarker(line);
-    if (marker) {
-      markers.push(marker);
-      continue;
-    }
-    remainingLines.push(line);
-  }
-
-  return {
-    remainingText:
-      remainder.length > 0 ? [...remainingLines, remainder].join("\n") : remainingLines.join("\n"),
-    markers,
-  };
-};
-
 export const ExecutionEvent = Schema.Union([
   RunStarted,
   StepStarted,

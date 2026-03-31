@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { DateTime, Option } from "effect";
+import { Option } from "effect";
 import {
   AcpAgentMessageChunk,
   ExecutedTestPlan,
