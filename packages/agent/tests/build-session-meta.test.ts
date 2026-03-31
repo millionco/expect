@@ -2,14 +2,23 @@ import { describe, expect, it } from "vite-plus/test";
 import { buildSessionMeta } from "../src/build-session-meta";
 
 describe("buildSessionMeta", () => {
-  it("returns undefined for non-claude providers", () => {
+  it("returns undefined for non-claude providers without a system prompt", () => {
+    const sessionMeta = buildSessionMeta({
+      provider: "codex",
+      metadata: { isGitHubActions: true },
+    });
+
+    expect(sessionMeta).toBeUndefined();
+  });
+
+  it("returns only systemPrompt for non-claude providers with a system prompt", () => {
     const sessionMeta = buildSessionMeta({
       provider: "codex",
       systemPrompt: "Test prompt",
       metadata: { isGitHubActions: true },
     });
 
-    expect(sessionMeta).toBeUndefined();
+    expect(sessionMeta).toEqual({ systemPrompt: "Test prompt" });
   });
 
   it("keeps the system prompt for claude outside GitHub Actions", () => {

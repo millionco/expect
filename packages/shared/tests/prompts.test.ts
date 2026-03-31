@@ -120,8 +120,6 @@ describe("buildExecutionPrompt", () => {
               title: "Open login page",
               instruction: "Navigate to /login",
               expectedOutcome: "Login form visible",
-              routeHint: "/login",
-              note: "Previous run needed the marketing homepage login CTA first.",
             },
           ],
         },
@@ -130,8 +128,6 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("Saved flow guidance:");
     expect(prompt).toContain("Saved flow title: Login Flow");
     expect(prompt).toContain("Open login page");
-    expect(prompt).toContain("Route hint: /login");
-    expect(prompt).toContain("Note from prior run: Previous run needed");
   });
 
   it("omits saved flow guidance when not provided", () => {

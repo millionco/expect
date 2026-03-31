@@ -8,12 +8,21 @@ interface BuildSessionMetaOptions {
   };
 }
 
-export const buildSessionMeta = ({ systemPrompt, metadata }: BuildSessionMetaOptions) => {
-  return {
-    /* we want github actions to have high effort. we are fine with waiting longer if it means we get a better answer. */
-    ...(metadata?.isGitHubActions
-      ? { effort: "high", thinking: { type: "adaptive" as const } }
-      : {}),
+export const buildSessionMeta = ({ provider, systemPrompt, metadata }: BuildSessionMetaOptions) => {
+  const meta = {
     ...(systemPrompt ? { systemPrompt } : {}),
+    ...(metadata?.isGitHubActions && provider === "claude"
+      ? {
+          claudeCode: {
+            options: {
+              effort: "high" as const,
+              thinking: { type: "adaptive" as const },
+            },
+          },
+        }
+      : {}),
   };
+
+  if (Object.keys(meta).length === 0) return undefined;
+  return meta;
 };
