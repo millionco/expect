@@ -63,14 +63,6 @@ Every test run is recorded via rrweb. After execution completes, the output incl
 
 Use \`--replay-host <url>\` to override the default replay host (default: \`https://expect.dev\`).
 
-## Telemetry
-
-\`expect-cli\` collects anonymous usage analytics via PostHog. Set \`NO_TELEMETRY=1\` to disable analytics events:
-
-\`\`\`bash
-NO_TELEMETRY=1 expect-cli -m "test the homepage" -y
-\`\`\`
-
 ## After Failures
 
 Read the failure output — it names the exact step and what broke. Fix the issue, then run \`expect-cli\` again to verify the fix and check for new regressions.
