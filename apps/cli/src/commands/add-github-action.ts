@@ -40,7 +40,7 @@ const generateWorkflow = (packageManager: PackageManager, devCommand: string, de
   const dlx = DLX_COMMANDS[packageManager];
   const install = INSTALL_COMMANDS[packageManager];
 
-  const setupSteps = buildSetupSteps(packageManager);
+  const setupSteps = buildSetupSteps(packageManager, install);
 
   return `name: Expect Browser Tests
 
@@ -62,8 +62,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 ${setupSteps}
-      - name: Install dependencies
-        run: ${install}
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
@@ -100,7 +98,17 @@ ${setupSteps}
 `;
 };
 
-const buildSetupSteps = (packageManager: PackageManager): string => {
+const PNPM_SETUP_COMMENT = `
+      # If you use pnpm, replace the setup and install steps below with:
+      # - uses: pnpm/action-setup@v4
+      # - uses: actions/setup-node@v4
+      #   with:
+      #     node-version: 22
+      #     cache: pnpm
+      # - name: Install dependencies
+      #   run: pnpm install`;
+
+const buildSetupSteps = (packageManager: PackageManager, install: string): string => {
   if (packageManager === "pnpm") {
     return `
       - uses: pnpm/action-setup@v4
@@ -108,27 +116,42 @@ const buildSetupSteps = (packageManager: PackageManager): string => {
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm`;
+          cache: pnpm
+
+      - name: Install dependencies
+        run: ${install}`;
   }
 
   if (packageManager === "bun") {
-    return `
-      - uses: oven-sh/setup-bun@v2`;
+    return `${PNPM_SETUP_COMMENT}
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: ${install}`;
   }
 
   if (packageManager === "yarn") {
-    return `
+    return `${PNPM_SETUP_COMMENT}
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: yarn`;
+          cache: yarn
+
+      - name: Install dependencies
+        run: ${install}`;
   }
 
-  return `
+  return `${PNPM_SETUP_COMMENT}
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm`;
+          cache: npm
+
+      - name: Install dependencies
+        run: ${install}`;
 };
 
 export const runAddGithubAction = async (options: AddGithubActionOptions = {}) => {
