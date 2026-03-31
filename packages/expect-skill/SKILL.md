@@ -47,7 +47,7 @@ expect-cli -m "[INSTRUCTION] on [URL]" -y --cookies
 
 ## Writing Instructions
 
-Try to break the feature, not confirm it renders.
+Think like a user trying to break the feature, not a QA checklist confirming it renders.
 
 **Bad:** `expect-cli -m "Check that the login form renders on http://localhost:5173" -y --cookies`
 
@@ -55,7 +55,7 @@ Try to break the feature, not confirm it renders.
 
 Adversarial angles: empty inputs, invalid data, boundary values (zero, max, special chars), double-click/rapid submit, regression in nearby features, navigation edge cases (back, refresh, direct URL).
 
-## REQUIRED: When to Run
+## After Failures
 
 The failure output names the exact step and what broke. Fix the issue, then re-run `expect-cli` to verify the fix. Accessibility violations and performance regressions are failures. Fix those too.
 
