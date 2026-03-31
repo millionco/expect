@@ -211,6 +211,26 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("pnpm-lock.yaml");
   });
 
+  it("includes layered interaction guidance for dropdowns and menus", () => {
+    const prompt = buildExecutionSystemPrompt();
+    expect(prompt).toContain("Layered interactions");
+    expect(prompt).toContain("clicking a trigger reveals new elements");
+    expect(prompt).toContain("Take a NEW snapshot");
+    expect(prompt).toContain("selectOption");
+  });
+
+  it("scopes batching to actions that do not change DOM structure", () => {
+    const prompt = buildExecutionSystemPrompt();
+    expect(prompt).toContain("Batch actions that do NOT change DOM structure");
+    expect(prompt).toContain("Do NOT batch across DOM-changing boundaries");
+  });
+
+  it("includes hover-to-reveal and nested menu guidance", () => {
+    const prompt = buildExecutionSystemPrompt();
+    expect(prompt).toContain("Hover-to-reveal");
+    expect(prompt).toContain("Nested menus");
+  });
+
   it("includes recovery and rabbit hole guidance in system prompt", () => {
     const prompt = buildExecutionSystemPrompt();
     expect(prompt).toContain("Recovery policy");
