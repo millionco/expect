@@ -1,0 +1,23 @@
+packages/supervisor/tests/executor.test.ts
+  b43380a54364ae42 2-12,14-47,49-51,53-55,57-62,64-69,72-108
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.23",
+  "base_commit_sha": "1376895da1dcb264e16033eeb64f43475e6179c0",
+  "prompts": {
+    "b43380a54364ae42": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "edaec5e3-9e58-46fb-872c-d9018fa0520c",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 121,
+      "total_deletions": 13,
+      "accepted_lines": 100,
+      "overriden_lines": 8
+    }
+  }
+}
