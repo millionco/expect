@@ -36,7 +36,7 @@ export const SessionId = Schema.String.pipe(Schema.brand("SessionId"));
 export type SessionId = typeof SessionId.Type;
 
 const ACP_STREAM_INACTIVITY_TIMEOUT_MS = 3 * 60 * 1000;
-const ACP_STREAM_INACTIVITY_TIMEOUT_GITHUB_ACTIONS_MS = 10 * 60 * 1000;
+const ACP_STREAM_INACTIVITY_TIMEOUT_GITHUB_ACTIONS_MS = 60_000;
 const ACP_AUTH_CHECK_TIMEOUT = "3 seconds" as const;
 
 export class AcpStreamError extends Schema.ErrorClass<AcpStreamError>("AcpStreamError")({
