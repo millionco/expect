@@ -1,0 +1,23 @@
+apps/cli/src/commands/add-github-action.ts
+  c23a9747ab73e303 43,101-111,119-122,126-131,135-136,140-143,146,151-154
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.23",
+  "base_commit_sha": "2582ad135df2b4c4585db044466b7ed45d49af50",
+  "prompts": {
+    "c23a9747ab73e303": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b15471cb-271f-4313-af50-61985e912179",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 50,
+      "total_deletions": 14,
+      "accepted_lines": 47,
+      "overriden_lines": 0
+    }
+  }
+}
