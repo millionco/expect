@@ -38,11 +38,50 @@ interface LayoutShiftEntry extends PerformanceEntry {
   value: number;
 }
 
+interface LoafScript {
+  invokerType: string;
+  invoker: string;
+  sourceURL: string;
+  sourceFunctionName: string;
+  sourceCharPosition: number;
+  duration: number;
+  forcedStyleAndLayoutDuration: number;
+}
+
+interface LoafEntry {
+  startTime: number;
+  duration: number;
+  blockingDuration: number;
+  renderStart: number;
+  styleAndLayoutStart: number;
+  firstUIEventTimestamp: number;
+  scripts: LoafScript[];
+}
+
+interface ResourceEntry {
+  name: string;
+  initiatorType: string;
+  transferSize: number;
+  duration: number;
+}
+
+interface NavigationEntry {
+  ttfb: number;
+  domContentLoaded: number;
+  loadComplete: number;
+  redirectDuration: number;
+  serverTiming: { name: string; duration: number; description: string }[];
+}
+
+const LOAF_BUFFER_LIMIT = 50;
+const RESOURCE_TOP_N = 10;
+
 const performanceState = {
   fcp: null as number | null,
   lcp: null as number | null,
   cls: 0,
   interactionDurations: new Map<number, number>(),
+  loafEntries: [] as LoafEntry[],
 };
 
 const THRESHOLDS: Record<string, [number, number]> = {
@@ -124,6 +163,39 @@ try {
   }).observe({ type: "layout-shift", buffered: true });
 } catch {}
 
+try {
+  if (
+    typeof PerformanceObserver !== "undefined" &&
+    PerformanceObserver.supportedEntryTypes.includes("long-animation-frame")
+  ) {
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        const loaf = entry as unknown as LoafEntry & { scripts: LoafScript[] };
+        performanceState.loafEntries.push({
+          startTime: loaf.startTime,
+          duration: loaf.duration,
+          blockingDuration: loaf.blockingDuration,
+          renderStart: loaf.renderStart,
+          styleAndLayoutStart: loaf.styleAndLayoutStart,
+          firstUIEventTimestamp: loaf.firstUIEventTimestamp,
+          scripts: loaf.scripts.map((script) => ({
+            invokerType: script.invokerType,
+            invoker: script.invoker,
+            sourceURL: script.sourceURL,
+            sourceFunctionName: script.sourceFunctionName,
+            sourceCharPosition: script.sourceCharPosition,
+            duration: script.duration,
+            forcedStyleAndLayoutDuration: script.forcedStyleAndLayoutDuration,
+          })),
+        });
+        if (performanceState.loafEntries.length > LOAF_BUFFER_LIMIT) {
+          performanceState.loafEntries.shift();
+        }
+      }
+    }).observe({ type: "long-animation-frame", buffered: true });
+  }
+} catch {}
+
 const buildMetric = (name: string, value: number | null): PerformanceMetricEntry | null => {
   if (value === null) return null;
   const rounded =
@@ -147,6 +219,83 @@ export const getPerformanceMetrics = (): PerformanceMetricsResult => {
     lcp: buildMetric("LCP", lcp),
     cls: buildMetric("CLS", cls),
     inp: buildMetric("INP", inp),
+  };
+};
+
+export interface PerformanceTrace {
+  webVitals: PerformanceMetricsResult;
+  navigation: NavigationEntry | null;
+  longAnimationFrames: LoafEntry[];
+  resources: {
+    totalCount: number;
+    totalTransferSizeBytes: number;
+    slowest: ResourceEntry[];
+    largest: ResourceEntry[];
+  };
+}
+
+export const getPerformanceTrace = (): PerformanceTrace => {
+  const webVitals = getPerformanceMetrics();
+
+  let navigation: NavigationEntry | null = null;
+  try {
+    const navEntries = performance.getEntriesByType("navigation");
+    if (navEntries.length > 0) {
+      const nav = navEntries[0] as PerformanceNavigationTiming;
+      navigation = {
+        ttfb: Math.round(nav.responseStart - nav.requestStart),
+        domContentLoaded: Math.round(nav.domContentLoadedEventEnd - nav.startTime),
+        loadComplete: Math.round(nav.loadEventEnd - nav.startTime),
+        redirectDuration: Math.round(nav.redirectEnd - nav.redirectStart),
+        serverTiming: (nav.serverTiming ?? []).map((entry) => ({
+          name: entry.name,
+          duration: entry.duration,
+          description: entry.description,
+        })),
+      };
+    }
+  } catch {}
+
+  let resources: PerformanceTrace["resources"] = {
+    totalCount: 0,
+    totalTransferSizeBytes: 0,
+    slowest: [],
+    largest: [],
+  };
+  try {
+    const resourceEntries = performance.getEntriesByType("resource") as PerformanceResourceTiming[];
+    const mapped: ResourceEntry[] = resourceEntries.map((entry) => ({
+      name: entry.name,
+      initiatorType: entry.initiatorType,
+      transferSize: entry.transferSize,
+      duration: Math.round(entry.duration),
+    }));
+
+    const totalTransferSizeBytes = mapped.reduce(
+      (sum, entry) => sum + entry.transferSize,
+      0,
+    );
+
+    const slowest = [...mapped]
+      .sort((left, right) => right.duration - left.duration)
+      .slice(0, RESOURCE_TOP_N);
+    const largest = [...mapped]
+      .sort((left, right) => right.transferSize - left.transferSize)
+      .slice(0, RESOURCE_TOP_N);
+
+    resources = {
+      totalCount: mapped.length,
+      totalTransferSizeBytes,
+      slowest,
+      largest,
+    };
+  } catch {}
+
+  return {
+    webVitals,
+    navigation,
+    longAnimationFrames: [...performanceState.loafEntries],
+    resources,
   };
 };
 

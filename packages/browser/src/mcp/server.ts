@@ -1,9 +1,12 @@
+import { mkdirSync, writeFileSync } from "node:fs";
+import path from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod/v4";
 import { Effect, type ManagedRuntime } from "effect";
 import { evaluateRuntime } from "../utils/evaluate-runtime";
 import { runAccessibilityAudit } from "../accessibility";
+import { formatPerformanceTrace } from "../performance-trace";
 import { McpSession } from "./mcp-session";
 import { DEFAULT_SWIPE_DURATION_MS } from "../ios/constants";
 import { autoDiscoverCdp } from "../cdp-discovery";
@@ -298,7 +301,7 @@ export const createBrowserMcpServer = <E>(
     {
       title: "Performance Metrics",
       description:
-        "Get Core Web Vitals performance metrics (FCP, LCP, CLS, INP) for the current page. Each metric includes a value (milliseconds for FCP/LCP/INP, unitless score for CLS) and a rating (good, needs-improvement, poor). Metrics are collected automatically from page load and user interactions.",
+        "Collect a full performance trace: Core Web Vitals (FCP, LCP, CLS, INP), navigation timing (TTFB, server timing), Long Animation Frames (LoAF) with script attribution, and resource breakdown (slowest/largest). Writes the full trace to a file and returns the path plus a summary. Read the file for detailed LoAF script attribution and resource analysis.",
       annotations: { readOnlyHint: true },
       inputSchema: {},
     },
@@ -307,10 +310,46 @@ export const createBrowserMcpServer = <E>(
         Effect.gen(function* () {
           const session = yield* McpSession;
           const page = yield* session.requirePage();
-          const metrics = yield* evaluateRuntime(page, "getPerformanceMetrics");
-          const hasMetrics = metrics.fcp || metrics.lcp || metrics.inp;
-          if (!hasMetrics) return textResult("No performance metrics available yet.");
-          return jsonResult(metrics);
+          const trace = yield* evaluateRuntime(page, "getPerformanceTrace");
+
+          const hasMetrics =
+            trace.webVitals.fcp || trace.webVitals.lcp || trace.webVitals.inp;
+          if (!hasMetrics && trace.longAnimationFrames.length === 0) {
+            return textResult("No performance metrics available yet.");
+          }
+
+          const traceDocument = formatPerformanceTrace(trace);
+          const traceDir = "/tmp/expect-replays";
+          const tracePath = path.join(traceDir, `performance-trace-${Date.now()}.md`);
+          yield* Effect.sync(() => {
+            mkdirSync(traceDir, { recursive: true });
+            writeFileSync(tracePath, traceDocument);
+          });
+
+          const summary = [
+            `Performance trace written to: ${tracePath}`,
+            "",
+            "Web Vitals:",
+          ];
+          const { webVitals } = trace;
+          if (webVitals.fcp) summary.push(`  FCP: ${webVitals.fcp.value}ms (${webVitals.fcp.rating})`);
+          if (webVitals.lcp) summary.push(`  LCP: ${webVitals.lcp.value}ms (${webVitals.lcp.rating})`);
+          if (webVitals.cls) summary.push(`  CLS: ${webVitals.cls.value} (${webVitals.cls.rating})`);
+          if (webVitals.inp) summary.push(`  INP: ${webVitals.inp.value}ms (${webVitals.inp.rating})`);
+          if (trace.navigation) {
+            summary.push(`  TTFB: ${trace.navigation.ttfb}ms`);
+          }
+          if (trace.longAnimationFrames.length > 0) {
+            summary.push(`\nLong Animation Frames: ${trace.longAnimationFrames.length} detected`);
+            const worstBlocking = Math.max(
+              ...trace.longAnimationFrames.map((frame) => frame.blockingDuration),
+            );
+            summary.push(`  Worst blocking duration: ${Math.round(worstBlocking)}ms`);
+          }
+          summary.push(`\nResources: ${trace.resources.totalCount} loaded (${Math.round(trace.resources.totalTransferSizeBytes / 1024)}KB total)`);
+          summary.push(`\nFull trace: ${tracePath}`);
+
+          return textResult(summary.join("\n"));
         }),
       ),
   );
