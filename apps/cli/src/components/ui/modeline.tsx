@@ -48,7 +48,9 @@ const useHintSegments = (screen: Screen, gitState: GitState | undefined): HintSe
         {
           key: "ctrl+k",
           label:
-            cookieImportProfiles.length > 0 ? `cookies (${cookieImportProfiles.length})` : "cookies off",
+            cookieImportProfiles.length > 0
+              ? `cookies (${cookieImportProfiles.length})`
+              : "cookies off",
           cta: true,
           onClick:
             cookieImportProfiles.length > 0

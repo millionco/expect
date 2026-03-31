@@ -17,7 +17,7 @@ describe("CdpClient", () => {
         const defaultBrowser = yield* browsers.defaultBrowser();
         assert.isTrue(Option.isSome(defaultBrowser));
       }).pipe(Effect.scoped, Effect.provide(TestLayer)),
-    { timeout: FIVE_MINUTES_MS }
+    { timeout: FIVE_MINUTES_MS },
   );
 
   it.effect(
@@ -28,7 +28,7 @@ describe("CdpClient", () => {
         const allBrowsers = yield* browsers.list;
         assert.isAbove(allBrowsers.length, 0);
       }).pipe(Effect.scoped, Effect.provide(TestLayer)),
-    { timeout: FIVE_MINUTES_MS }
+    { timeout: FIVE_MINUTES_MS },
   );
 
   it.effect(
@@ -39,12 +39,11 @@ describe("CdpClient", () => {
         const allBrowsers = yield* browsers.list;
         const systemProfiles = allBrowsers.filter(
           (browser) =>
-            browser._tag === "ChromiumBrowser" &&
-            browser.profileName === "System Profile",
+            browser._tag === "ChromiumBrowser" && browser.profileName === "System Profile",
         );
         assert.strictEqual(systemProfiles.length, 0, "System Profile should be filtered out");
       }).pipe(Effect.scoped, Effect.provide(TestLayer)),
-    { timeout: FIVE_MINUTES_MS }
+    { timeout: FIVE_MINUTES_MS },
   );
 
   it.live(
@@ -60,16 +59,12 @@ describe("CdpClient", () => {
             browser._tag === "ChromiumBrowser"
               ? `${browser.key}/${browser.profileName}`
               : browser._tag === "FirefoxBrowser"
-              ? `firefox/${browser.profileName}`
-              : "safari";
+                ? `firefox/${browser.profileName}`
+                : "safari";
           const result = yield* cookies.extract(browser);
-          assert.isAbove(
-            result.length,
-            4,
-            `${label}: expected > 4 cookies, got ${result.length}`
-          );
+          assert.isAbove(result.length, 4, `${label}: expected > 4 cookies, got ${result.length}`);
         }
       }).pipe(Effect.scoped, Effect.provide(TestLayer)),
-    { timeout: FIVE_MINUTES_MS }
+    { timeout: FIVE_MINUTES_MS },
   );
 });

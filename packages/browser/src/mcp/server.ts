@@ -21,7 +21,7 @@ const safeJsonStringify = (data: unknown): string => {
       }
       return value;
     },
-    2
+    2,
   );
 };
 
@@ -36,10 +36,9 @@ const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
 // Tool annotations (readOnlyHint, destructiveHint) enable parallel execution in the Claude Agent SDK.
 // See: https://platform.claude.com/docs/en/agent-sdk/agent-loop#parallel-tool-execution
 export const createBrowserMcpServer = <E>(
-  runtime: ManagedRuntime.ManagedRuntime<McpSession, E>
+  runtime: ManagedRuntime.ManagedRuntime<McpSession, E>,
 ) => {
-  const runMcp = <A>(effect: Effect.Effect<A, unknown, McpSession>) =>
-    runtime.runPromise(effect);
+  const runMcp = <A>(effect: Effect.Effect<A, unknown, McpSession>) => runtime.runPromise(effect);
 
   const server = new McpServer({
     name: "expect",
@@ -58,9 +57,7 @@ export const createBrowserMcpServer = <E>(
         cookies: z
           .boolean()
           .optional()
-          .describe(
-            "Reuse local browser cookies for the target URL when available"
-          ),
+          .describe("Reuse local browser cookies for the target URL when available"),
         waitUntil: z
           .enum(["load", "domcontentloaded", "networkidle", "commit"])
           .optional()
@@ -69,13 +66,13 @@ export const createBrowserMcpServer = <E>(
           .string()
           .optional()
           .describe(
-            "iOS simulator device name (e.g. 'iPhone 16 Pro'). Opens Safari on iOS Simulator instead of desktop Chromium. Requires Xcode and Appium."
+            "iOS simulator device name (e.g. 'iPhone 16 Pro'). Opens Safari on iOS Simulator instead of desktop Chromium. Requires Xcode and Appium.",
           ),
         cdp: z
           .string()
           .optional()
           .describe(
-            "CDP WebSocket endpoint URL to connect to an existing Chrome instance (e.g. 'ws://localhost:9222/devtools/browser/...'). Use 'auto' to auto-discover a running Chrome."
+            "CDP WebSocket endpoint URL to connect to an existing Chrome instance (e.g. 'ws://localhost:9222/devtools/browser/...'). Use 'auto' to auto-discover a running Chrome.",
           ),
       },
     },
@@ -92,7 +89,7 @@ export const createBrowserMcpServer = <E>(
             }
             const result = yield* session.openIos(url, device);
             return textResult(
-              `Opened ${url} on iOS Simulator (${result.device}, UDID: ${result.udid})`
+              `Opened ${url} on iOS Simulator (${result.device}, UDID: ${result.udid})`,
             );
           }
 
@@ -120,10 +117,10 @@ export const createBrowserMcpServer = <E>(
             `Opened ${url}${cdpSuffix}` +
               (result.injectedCookieCount > 0
                 ? ` (${result.injectedCookieCount} cookies synced from local browser)`
-                : "")
+                : ""),
           );
-        })
-      )
+        }),
+      ),
   );
 
   server.registerTool(
@@ -144,39 +141,27 @@ export const createBrowserMcpServer = <E>(
 
           const ref = (refId: string) => {
             if (!sessionData.lastSnapshot)
-              throw new Error(
-                "No snapshot taken yet. Call screenshot with mode 'snapshot' first."
-              );
+              throw new Error("No snapshot taken yet. Call screenshot with mode 'snapshot' first.");
             return Effect.runSync(sessionData.lastSnapshot.locator(refId));
           };
 
           return yield* Effect.promise(async () => {
             try {
-              const userFunction = new AsyncFunction(
-                "page",
-                "context",
-                "browser",
-                "ref",
-                code
-              );
+              const userFunction = new AsyncFunction("page", "context", "browser", "ref", code);
               const result = await userFunction(
                 sessionData.page,
                 sessionData.context,
                 sessionData.browser,
-                ref
+                ref,
               );
               if (result === undefined) return textResult("OK");
               return jsonResult(result);
             } catch (error) {
-              return textResult(
-                `Error: ${
-                  error instanceof Error ? error.message : String(error)
-                }`
-              );
+              return textResult(`Error: ${error instanceof Error ? error.message : String(error)}`);
             }
           });
-        })
-      )
+        }),
+      ),
   );
 
   server.registerTool(
@@ -191,10 +176,7 @@ export const createBrowserMcpServer = <E>(
           .enum(["screenshot", "snapshot", "annotated"])
           .optional()
           .describe("Capture mode (default: screenshot)"),
-        fullPage: z
-          .boolean()
-          .optional()
-          .describe("Capture the full scrollable page"),
+        fullPage: z.boolean().optional().describe("Capture the full scrollable page"),
       },
     },
     ({ mode, fullPage }) =>
@@ -237,7 +219,7 @@ export const createBrowserMcpServer = <E>(
                   text: result.annotations
                     .map(
                       (annotation) =>
-                        `[${annotation.label}] @${annotation.ref} ${annotation.role} "${annotation.name}"`
+                        `[${annotation.label}] @${annotation.ref} ${annotation.role} "${annotation.name}"`,
                     )
                     .join("\n"),
                 },
@@ -245,12 +227,10 @@ export const createBrowserMcpServer = <E>(
             };
           }
 
-          const buffer = yield* Effect.tryPromise(() =>
-            page.screenshot({ fullPage })
-          );
+          const buffer = yield* Effect.tryPromise(() => page.screenshot({ fullPage }));
           return imageResult(buffer.toString("base64"));
-        })
-      )
+        }),
+      ),
   );
 
   server.registerTool(
@@ -264,13 +244,8 @@ export const createBrowserMcpServer = <E>(
         type: z
           .string()
           .optional()
-          .describe(
-            "Filter by console message type (e.g. 'error', 'warning', 'log')"
-          ),
-        clear: z
-          .boolean()
-          .optional()
-          .describe("Clear the collected messages after reading"),
+          .describe("Filter by console message type (e.g. 'error', 'warning', 'log')"),
+        clear: z.boolean().optional().describe("Clear the collected messages after reading"),
       },
     },
     ({ type, clear }) =>
@@ -285,8 +260,8 @@ export const createBrowserMcpServer = <E>(
           return entries.length === 0
             ? textResult("No console messages captured.")
             : jsonResult(entries);
-        })
-      )
+        }),
+      ),
   );
 
   server.registerTool(
@@ -297,21 +272,13 @@ export const createBrowserMcpServer = <E>(
         "Get captured network requests. Optionally filter by HTTP method, URL substring, or resource type (document, script, stylesheet, image, xhr, fetch, etc.).",
       annotations: { readOnlyHint: true },
       inputSchema: {
-        method: z
-          .string()
-          .optional()
-          .describe("Filter by HTTP method (e.g. 'GET', 'POST')"),
+        method: z.string().optional().describe("Filter by HTTP method (e.g. 'GET', 'POST')"),
         url: z.string().optional().describe("Filter by URL substring match"),
         resourceType: z
           .string()
           .optional()
-          .describe(
-            "Filter by resource type (e.g. 'xhr', 'fetch', 'document', 'script')"
-          ),
-        clear: z
-          .boolean()
-          .optional()
-          .describe("Clear the collected requests after reading"),
+          .describe("Filter by resource type (e.g. 'xhr', 'fetch', 'document', 'script')"),
+        clear: z.boolean().optional().describe("Clear the collected requests after reading"),
       },
     },
     ({ method, url, resourceType, clear }) =>
@@ -325,15 +292,14 @@ export const createBrowserMcpServer = <E>(
             (entry) =>
               (!normalizedMethod || entry.method === normalizedMethod) &&
               (!url || entry.url.includes(url)) &&
-              (!normalizedResourceType ||
-                entry.resourceType === normalizedResourceType)
+              (!normalizedResourceType || entry.resourceType === normalizedResourceType),
           );
           if (clear) sessionData.networkRequests.length = 0;
           return entries.length === 0
             ? textResult("No network requests captured.")
             : jsonResult(entries);
-        })
-      )
+        }),
+      ),
   );
 
   server.registerTool(
@@ -352,11 +318,10 @@ export const createBrowserMcpServer = <E>(
           const page = yield* session.requirePage();
           const metrics = yield* evaluateRuntime(page, "getPerformanceMetrics");
           const hasMetrics = metrics.fcp || metrics.lcp || metrics.inp;
-          if (!hasMetrics)
-            return textResult("No performance metrics available yet.");
+          if (!hasMetrics) return textResult("No performance metrics available yet.");
           return jsonResult(metrics);
-        })
-      )
+        }),
+      ),
   );
 
   server.registerTool(
@@ -375,20 +340,19 @@ export const createBrowserMcpServer = <E>(
           const devices = yield* session.listIosDevices();
           if (devices.length === 0) {
             return textResult(
-              "No iOS devices found. Make sure Xcode is installed with iOS simulators."
+              "No iOS devices found. Make sure Xcode is installed with iOS simulators.",
             );
           }
           return jsonResult(devices);
-        })
-      )
+        }),
+      ),
   );
 
   server.registerTool(
     "tap",
     {
       title: "Tap (iOS)",
-      description:
-        "Perform a touch tap at the given coordinates on the iOS Simulator.",
+      description: "Perform a touch tap at the given coordinates on the iOS Simulator.",
       inputSchema: {
         x: z.number().describe("X coordinate to tap"),
         y: z.number().describe("Y coordinate to tap"),
@@ -401,8 +365,8 @@ export const createBrowserMcpServer = <E>(
           const ios = yield* session.requireIosSession();
           yield* ios.tap(x, y);
           return textResult(`Tapped at (${x}, ${y})`);
-        })
-      )
+        }),
+      ),
   );
 
   server.registerTool(
@@ -416,10 +380,7 @@ export const createBrowserMcpServer = <E>(
         startY: z.number().describe("Starting Y coordinate"),
         endX: z.number().describe("Ending X coordinate"),
         endY: z.number().describe("Ending Y coordinate"),
-        duration: z
-          .number()
-          .optional()
-          .describe("Swipe duration in milliseconds (default: 300)"),
+        duration: z.number().optional().describe("Swipe duration in milliseconds (default: 300)"),
       },
     },
     ({ startX, startY, endX, endY, duration }) =>
@@ -427,18 +388,10 @@ export const createBrowserMcpServer = <E>(
         Effect.gen(function* () {
           const session = yield* McpSession;
           const ios = yield* session.requireIosSession();
-          yield* ios.swipe(
-            startX,
-            startY,
-            endX,
-            endY,
-            duration ?? DEFAULT_SWIPE_DURATION_MS
-          );
-          return textResult(
-            `Swiped from (${startX}, ${startY}) to (${endX}, ${endY})`
-          );
-        })
-      )
+          yield* ios.swipe(startX, startY, endX, endY, duration ?? DEFAULT_SWIPE_DURATION_MS);
+          return textResult(`Swiped from (${startX}, ${startY}) to (${endX}, ${endY})`);
+        }),
+      ),
   );
 
   server.registerTool(
@@ -459,8 +412,8 @@ export const createBrowserMcpServer = <E>(
           const result = yield* ios.client.executeScript(script);
           if (result === undefined) return textResult("OK");
           return jsonResult(result);
-        })
-      )
+        }),
+      ),
   );
 
   server.registerTool(
@@ -477,8 +430,8 @@ export const createBrowserMcpServer = <E>(
           const session = yield* McpSession;
           const ios = yield* session.requireIosSession();
           return textResult(yield* ios.client.getPageSource());
-        })
-      )
+        }),
+      ),
   );
 
   server.registerTool(
@@ -508,15 +461,15 @@ export const createBrowserMcpServer = <E>(
             lines.push(`Playwright video: ${result.videoPath}`);
           }
           return textResult(lines.join("\n"));
-        })
-      )
+        }),
+      ),
   );
 
   return server;
 };
 
 export const startBrowserMcpServer = async <E>(
-  runtime: ManagedRuntime.ManagedRuntime<McpSession, E>
+  runtime: ManagedRuntime.ManagedRuntime<McpSession, E>,
 ) => {
   const server = createBrowserMcpServer(runtime);
   const transport = new StdioServerTransport();

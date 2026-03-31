@@ -25,25 +25,20 @@ const IDLE_SPEED_TIERS = [
   { afterMs: 40000, speed: 16 },
 ] as const;
 const SPEEDS = [1, 2, 4, 8] as const;
-const VIEWER_SHELL_SHADOW =
-  "color(display-p3 0.788 0.788 0.788 / 20%) 0px 2px 3px";
+const VIEWER_SHELL_SHADOW = "color(display-p3 0.788 0.788 0.788 / 20%) 0px 2px 3px";
 const CONTROL_FONT_FAMILY =
   '"SF Pro Display", "SFProDisplay-Medium", "Inter Variable", system-ui, sans-serif';
 const PLAYBACK_BAR_SURFACE_COLOR = "color(display-p3 0.938 0.938 0.938)";
-const PLAYBACK_BAR_SHADOW =
-  "color(display-p3 0.281 0.281 0.281 / 22%) 0px 0px 0px 1px";
-const PLAYBACK_BAR_BUTTON_SHADOW =
-  "color(display-p3 0.847 0.847 0.847) 0px 0px 0px 0.5px";
-const PLAYBACK_PROGRESS_SHADOW =
-  "color(display-p3 0.615 0.615 0.615 / 20%) 0px 0px 3px";
+const PLAYBACK_BAR_SHADOW = "color(display-p3 0.281 0.281 0.281 / 22%) 0px 0px 0px 1px";
+const PLAYBACK_BAR_BUTTON_SHADOW = "color(display-p3 0.847 0.847 0.847) 0px 0px 0px 0.5px";
+const PLAYBACK_PROGRESS_SHADOW = "color(display-p3 0.615 0.615 0.615 / 20%) 0px 0px 3px";
 const PLAYBACK_PROGRESS_RIGHT_EDGE_SHADOW =
   "inset -1px 0px 0px color(display-p3 0.725 0.725 0.725 / 80%)";
 const PLAYBACK_PROGRESS_RIGHT_EDGE_HIDE_PERCENT = 99;
 const PLAYBACK_PROGRESS_BACKGROUND_IMAGE =
   "linear-gradient(in oklab 180deg, oklab(100% 0 0) 0%, oklab(100% 0 0 / 61%) 100%)";
 const PLAYBACK_BAR_MARKER_INTERVAL_MS = 10_000;
-const PASSED_STEP_MARKER_OUTLINE =
-  "2px solid color(display-p3 0.249 0.701 0.193 / 30%)";
+const PASSED_STEP_MARKER_OUTLINE = "2px solid color(display-p3 0.249 0.701 0.193 / 30%)";
 const PASSED_STEP_MARKER_BG =
   "linear-gradient(in oklab 180deg, oklab(66.4% -0.197 0.139) 0%, oklab(72.7% -0.252 0.178) 100%)";
 const FAILED_STEP_MARKER_OUTLINE = "2px solid #FC272F4D";
@@ -91,10 +86,7 @@ const extractReplayActions = (events: eventWithTime[]): ReplayAction[] => {
     if (event.type === RRWEB_EVENT_META && typeof data.href === "string") {
       try {
         const url = new URL(data.href);
-        const displayPath =
-          url.pathname === "/"
-            ? url.hostname
-            : `${url.hostname}${url.pathname}`;
+        const displayPath = url.pathname === "/" ? url.hostname : `${url.hostname}${url.pathname}`;
         actions.push({
           id: `nav-${event.timestamp}`,
           label: `Navigated to ${displayPath}`,
@@ -123,12 +115,10 @@ const extractReplayActions = (events: eventWithTime[]): ReplayAction[] => {
     if (data.source === RRWEB_SOURCE_INPUT) {
       if (event.timestamp - lastInputTs > INPUT_DEBOUNCE_MS) {
         const rawText = typeof data.text === "string" ? data.text : "";
-        const displayText =
-          rawText.length > 30 ? `${rawText.slice(0, 30)}…` : rawText;
+        const displayText = rawText.length > 30 ? `${rawText.slice(0, 30)}…` : rawText;
         actions.push({
           id: `input-${event.timestamp}`,
-          label:
-            displayText.length > 0 ? `Typed "${displayText}"` : "Typed input",
+          label: displayText.length > 0 ? `Typed "${displayText}"` : "Typed input",
           relativeMs,
         });
       }
@@ -183,9 +173,7 @@ const deriveState = (payloads: readonly LiveUpdatePayload[]) => {
   return { rrwebEvents, executedPlan };
 };
 
-const deriveViewerSteps = (
-  plan: ExecutedTestPlan | undefined
-): ViewerStepEvent[] => {
+const deriveViewerSteps = (plan: ExecutedTestPlan | undefined): ViewerStepEvent[] => {
   if (!plan) return [];
   return plan.steps.map((step) => ({
     stepId: step.id,
@@ -196,18 +184,13 @@ const deriveViewerSteps = (
         ? Number(DateTime.toEpochMillis(step.startedAt.value))
         : undefined,
     endedAtMs:
-      step.endedAt._tag === "Some"
-        ? Number(DateTime.toEpochMillis(step.endedAt.value))
-        : undefined,
+      step.endedAt._tag === "Some" ? Number(DateTime.toEpochMillis(step.endedAt.value)) : undefined,
   }));
 };
 
 const getReplayDuration = (replayEvents: eventWithTime[]) => {
   if (replayEvents.length < 2) return 0;
-  return Math.max(
-    replayEvents[replayEvents.length - 1].timestamp - replayEvents[0].timestamp,
-    0
-  );
+  return Math.max(replayEvents[replayEvents.length - 1].timestamp - replayEvents[0].timestamp, 0);
 };
 
 const isTransparentBackground = (backgroundColor: string) =>
@@ -215,7 +198,7 @@ const isTransparentBackground = (backgroundColor: string) =>
 
 const getElementBackground = (
   element: Element | null | undefined,
-  frameWindow: Window
+  frameWindow: Window,
 ): string | undefined => {
   if (!element || element.nodeType !== Node.ELEMENT_NODE) return undefined;
   const computedStyle = frameWindow.getComputedStyle(element);
@@ -228,9 +211,7 @@ const getElementBackground = (
   return computedStyle.background;
 };
 
-const getReplayFrameBackground = (
-  replayer: { iframe: HTMLIFrameElement } | undefined
-) => {
+const getReplayFrameBackground = (replayer: { iframe: HTMLIFrameElement } | undefined) => {
   const iframe = replayer?.iframe;
   if (!iframe?.contentDocument || !iframe.contentWindow) return undefined;
   const frameDocument = iframe.contentDocument;
@@ -240,42 +221,31 @@ const getReplayFrameBackground = (
     { x: 20, y: Math.max(20, frameDocument.documentElement.clientHeight - 20) },
   ];
   for (const samplePoint of samplePoints) {
-    const sampleElement = frameDocument.elementFromPoint(
-      samplePoint.x,
-      samplePoint.y
-    );
+    const sampleElement = frameDocument.elementFromPoint(samplePoint.x, samplePoint.y);
     const background = getElementBackground(sampleElement, frameWindow);
     if (background) return background;
   }
   return getElementBackground(frameDocument.body, frameWindow);
 };
 
-const formatPaperTime = (timeMs: number) =>
-  formatTime(timeMs).padStart(PAPER_TIME_LENGTH, "0");
+const formatPaperTime = (timeMs: number) => formatTime(timeMs).padStart(PAPER_TIME_LENGTH, "0");
 
 const getStepRelativeTime = (step: ViewerStepEvent, replayStartMs: number) => {
   const startMs =
-    step.startedAtMs !== undefined
-      ? Math.max(0, step.startedAtMs - replayStartMs)
-      : undefined;
+    step.startedAtMs !== undefined ? Math.max(0, step.startedAtMs - replayStartMs) : undefined;
   const endMs =
-    step.endedAtMs !== undefined
-      ? Math.max(0, step.endedAtMs - replayStartMs)
-      : undefined;
+    step.endedAtMs !== undefined ? Math.max(0, step.endedAtMs - replayStartMs) : undefined;
   return { startMs, endMs };
 };
 
 const getPlaybackStepIndex = (
   stepEvents: readonly ViewerStepEvent[] | undefined,
   replayStartMs: number,
-  currentTime: number
+  currentTime: number,
 ) => {
   if (!stepEvents || stepEvents.length === 0) return -1;
   for (let index = stepEvents.length - 1; index >= 0; index--) {
-    const { startMs, endMs } = getStepRelativeTime(
-      stepEvents[index],
-      replayStartMs
-    );
+    const { startMs, endMs } = getStepRelativeTime(stepEvents[index], replayStartMs);
     const stepTimeMs = startMs ?? endMs;
     if (stepTimeMs === undefined) continue;
     if (stepTimeMs <= currentTime) return index;
@@ -284,12 +254,7 @@ const getPlaybackStepIndex = (
 };
 
 const PlayIcon = ({ className }: { className?: string }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    className={className}
-  >
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" className={className}>
     <path
       fillRule="evenodd"
       clipRule="evenodd"
@@ -316,12 +281,7 @@ const PauseIcon = ({ className }: { className?: string }) => (
 );
 
 const FullscreenIcon = ({ className }: { className?: string }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    className={className}
-  >
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" className={className}>
     <path
       d="M2 19V17C2 16.448 2.448 16 3 16C3.552 16 4 16.448 4 17V19C4 19.552 4.448 20 5 20H7C7.552 20 8 20.448 8 21C8 21.552 7.552 22 7 22H5C3.343 22 2 20.657 2 19ZM20 19V17C20 16.448 20.448 16 21 16C21.552 16 22 16.448 22 17V19C22 20.657 20.657 22 19 22H17C16.448 22 16 21.552 16 21C16 20.448 16.448 20 17 20H19C19.552 20 20 19.552 20 19ZM2 7V5C2 3.343 3.343 2 5 2H7C7.552 2 8 2.448 8 3C8 3.552 7.552 4 7 4H5C4.448 4 4 4.448 4 5V7C4 7.552 3.552 8 3 8C2.448 8 2 7.552 2 7ZM20 7V5C20 4.448 19.552 4 19 4H17C16.448 4 16 3.552 16 3C16 2.448 16.448 2 17 2H19C20.657 2 22 3.343 22 5V7C22 7.552 21.552 8 21 8C20.448 8 20 7.552 20 7Z"
       fill="currentColor"
@@ -344,9 +304,9 @@ const ReplayViewer = ({
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(1);
-  const [browserFrameBackground, setBrowserFrameBackground] = useState<
-    string | undefined
-  >(undefined);
+  const [browserFrameBackground, setBrowserFrameBackground] = useState<string | undefined>(
+    undefined,
+  );
   const playbackBarRef = useRef<HTMLDivElement>(null);
   const replayRef = useRef<HTMLDivElement>(null);
   const viewerShellRef = useRef<HTMLDivElement>(null);
@@ -357,12 +317,8 @@ const ReplayViewer = ({
   const liveRef = useRef(live);
   liveRef.current = live;
   const playPauseRef = useRef<(() => Promise<void>) | undefined>(undefined);
-  const stepNavigationRef = useRef<
-    ((direction: "up" | "down") => void) | undefined
-  >(undefined);
-  const stepJumpRef = useRef<((stepNumber: number) => void) | undefined>(
-    undefined
-  );
+  const stepNavigationRef = useRef<((direction: "up" | "down") => void) | undefined>(undefined);
+  const stepJumpRef = useRef<((stepNumber: number) => void) | undefined>(undefined);
   const isIdleSpeedRef = useRef(false);
   const userSpeedRef = useRef<(typeof SPEEDS)[number]>(1);
   const lastCursorPosRef = useRef("");
@@ -405,7 +361,7 @@ const ReplayViewer = ({
           "[timer] getCurrentTime:",
           time,
           "replayerEvents:",
-          replayer.service.state.context.events.length
+          replayer.service.state.context.events.length,
         );
       syncBrowserFrameBackground();
       setCurrentTime(time);
@@ -496,8 +452,7 @@ const ReplayViewer = ({
         return;
       }
 
-      const targetElement =
-        event.target instanceof HTMLElement ? event.target : null;
+      const targetElement = event.target instanceof HTMLElement ? event.target : null;
       const targetUsesArrowKeys =
         targetElement?.isContentEditable ||
         targetElement?.tagName === "INPUT" ||
@@ -538,17 +493,13 @@ const ReplayViewer = ({
   useEffect(() => {
     const replayer = replayerRef.current;
     if (!replayer) return;
-    for (const event of events.slice(
-      replayer.service.state.context.events.length
-    )) {
+    for (const event of events.slice(replayer.service.state.context.events.length)) {
       replayer.addEvent(event);
     }
   }, [events]);
 
   // Auto-play when live — debounce to let replayed events settle on refresh
-  const autoPlayTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined
-  );
+  const autoPlayTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
     if (autoPlayTriggeredRef.current || events.length < 2) return;
     if (!live) return;
@@ -564,9 +515,7 @@ const ReplayViewer = ({
   const setupReplayScaling = () => {
     if (!replayRef.current) return undefined;
     const replayContainer = replayRef.current;
-    const wrapper = replayContainer.querySelector(".replayer-wrapper") as
-      | HTMLElement
-      | undefined;
+    const wrapper = replayContainer.querySelector(".replayer-wrapper") as HTMLElement | undefined;
     if (!wrapper) return undefined;
     const iframe = wrapper.querySelector("iframe");
     if (!iframe) return undefined;
@@ -576,18 +525,9 @@ const ReplayViewer = ({
       const recordedHeight = Number(iframe.getAttribute("height")) || 0;
       const containerWidth = replayContainer.clientWidth;
       const containerHeight = replayContainer.clientHeight;
-      if (
-        !recordedWidth ||
-        !recordedHeight ||
-        !containerWidth ||
-        !containerHeight
-      )
-        return;
+      if (!recordedWidth || !recordedHeight || !containerWidth || !containerHeight) return;
 
-      const fitScale = Math.min(
-        containerWidth / recordedWidth,
-        containerHeight / recordedHeight
-      );
+      const fitScale = Math.min(containerWidth / recordedWidth, containerHeight / recordedHeight);
       const scaledWidth = recordedWidth * fitScale;
       const scaledHeight = recordedHeight * fitScale;
       const centerX = (containerWidth - scaledWidth) / 2;
@@ -611,9 +551,7 @@ const ReplayViewer = ({
       attributeFilter: ["width", "height"],
     });
 
-    const cursorEl = wrapper.querySelector(".replayer-mouse") as
-      | HTMLElement
-      | undefined;
+    const cursorEl = wrapper.querySelector(".replayer-mouse") as HTMLElement | undefined;
     if (cursorEl) {
       cleanupIdleObserverRef.current = setupIdleSpeedObserver(cursorEl);
     }
@@ -637,8 +575,7 @@ const ReplayViewer = ({
       live: liveRef.current,
       firstEventTs: events[0]?.timestamp,
       lastEventTs: events[events.length - 1]?.timestamp,
-      replayerEventsCount:
-        replayerRef.current?.service.state.context.events.length,
+      replayerEventsCount: replayerRef.current?.service.state.context.events.length,
     });
 
     if (replayerRef.current) {
@@ -647,8 +584,7 @@ const ReplayViewer = ({
         clearInterval(timerRef.current);
         setPlaying(false);
       } else {
-        const resumeTime =
-          !liveRef.current && currentTime >= replayDuration ? 0 : currentTime;
+        const resumeTime = !liveRef.current && currentTime >= replayDuration ? 0 : currentTime;
         console.log("[handlePlay] resuming existing replayer at", resumeTime);
         replayerRef.current.play(resumeTime);
         setCurrentTime(resumeTime);
@@ -666,7 +602,7 @@ const ReplayViewer = ({
       "[handlePlay] creating new replayer with",
       events.length,
       "events, duration:",
-      replayDuration
+      replayDuration,
     );
 
     const replayer = new RRReplayer(events, {
@@ -677,15 +613,8 @@ const ReplayViewer = ({
     });
     replayerRef.current = replayer;
 
-    const startTime = liveRef.current
-      ? replayDuration
-      : Math.min(currentTime, replayDuration);
-    console.log(
-      "[handlePlay] starting at",
-      startTime,
-      "live:",
-      liveRef.current
-    );
+    const startTime = liveRef.current ? replayDuration : Math.min(currentTime, replayDuration);
+    console.log("[handlePlay] starting at", startTime, "live:", liveRef.current);
     setCurrentTime(startTime);
     replayer.play(startTime);
     syncBrowserFrameBackground();
@@ -748,11 +677,7 @@ const ReplayViewer = ({
     })
     .slice(-NOTIFICATION_MAX_VISIBLE);
 
-  const activeStepIndex = getPlaybackStepIndex(
-    steps,
-    replayStartMs,
-    currentTime
-  );
+  const activeStepIndex = getPlaybackStepIndex(steps, replayStartMs, currentTime);
   const currentStep = activeStepIndex >= 0 ? steps[activeStepIndex] : undefined;
   const currentStepLabel = currentStep ? `Step ${activeStepIndex + 1}` : "";
   const currentStepTitle = currentStep?.title ?? "";
@@ -771,19 +696,19 @@ const ReplayViewer = ({
         step.status === "failed"
           ? "bg-[color(display-p3_0.988_0.153_0.184)]"
           : step.status === "passed"
-          ? "bg-[color(display-p3_0.249_0.701_0.193)]"
-          : "bg-[color(display-p3_0.787_0.787_0.787)]",
+            ? "bg-[color(display-p3_0.249_0.701_0.193)]"
+            : "bg-[color(display-p3_0.787_0.787_0.787)]",
     };
   });
 
   stepNavigationRef.current = (direction) => {
     if (!hasEvents) return;
     const navigableStepIndices = stepList.flatMap((step, index) =>
-      step.timeMs !== undefined ? [index] : []
+      step.timeMs !== undefined ? [index] : [],
     );
     if (navigableStepIndices.length === 0) return;
     const currentNavigablePosition = navigableStepIndices.findIndex(
-      (index) => index === activeStepIndex
+      (index) => index === activeStepIndex,
     );
     if (currentNavigablePosition === -1) {
       if (direction === "down") {
@@ -795,7 +720,7 @@ const ReplayViewer = ({
     const stepOffset = direction === "down" ? 1 : -1;
     const nextPosition = Math.min(
       Math.max(currentNavigablePosition + stepOffset, 0),
-      navigableStepIndices.length - 1
+      navigableStepIndices.length - 1,
     );
     const nextStepIndex = navigableStepIndices[nextPosition];
     if (nextStepIndex === activeStepIndex) return;
@@ -822,12 +747,11 @@ const ReplayViewer = ({
     playbackBarValue >= playbackBarMax ? "rounded-full" : "rounded-l-full";
   const playbackBarMarkerCount = Math.max(
     0,
-    Math.floor((playbackBarMax - 1) / PLAYBACK_BAR_MARKER_INTERVAL_MS)
+    Math.floor((playbackBarMax - 1) / PLAYBACK_BAR_MARKER_INTERVAL_MS),
   );
   const playbackBarMarkerPositions = Array.from(
     { length: playbackBarMarkerCount },
-    (_, index) =>
-      `${(((index + 1) / (playbackBarMarkerCount + 1)) * 100).toFixed(2)}%`
+    (_, index) => `${(((index + 1) / (playbackBarMarkerCount + 1)) * 100).toFixed(2)}%`,
   );
   const visiblePlaybackBarMarkerPositions = playbackBarMarkerPositions.slice(1);
 
@@ -840,7 +764,7 @@ const ReplayViewer = ({
           if (markerTimeMs === undefined) return [];
           const markerPercent = Math.min(
             Math.max((markerTimeMs / playbackBarMax) * 100, 0),
-            100
+            100,
           ).toFixed(2);
           return [
             {
@@ -858,14 +782,11 @@ const ReplayViewer = ({
   const showFirstStepLabel = steps.length > 0;
   const firstPlaybackStep = stepList[0];
   const firstPlaybackStepTimeMs = firstPlaybackStep?.timeMs;
-  const firstPlaybackStepLabelDisabled =
-    !hasEvents || firstPlaybackStepTimeMs === undefined;
+  const firstPlaybackStepLabelDisabled = !hasEvents || firstPlaybackStepTimeMs === undefined;
   const playbackStepLabelClassName =
     "pointer-events-auto absolute top-full -mt-[17px] h-4.5 appearance-none bg-transparent p-0 [letter-spacing:0em] font-['SFProDisplay-Semibold','SF_Pro_Display',system-ui,sans-serif] text-[11.5px]/4.5 font-semibold text-[color(display-p3_0.553_0.553_0.553)] transition-opacity duration-150 ease-out hover:opacity-70 focus-visible:opacity-70 disabled:cursor-default disabled:opacity-50";
   const browserFrameSurfaceStyle =
-    browserFrameBackground !== undefined
-      ? { background: browserFrameBackground }
-      : undefined;
+    browserFrameBackground !== undefined ? { background: browserFrameBackground } : undefined;
 
   const playbackBar = (
     <input
@@ -941,10 +862,7 @@ const ReplayViewer = ({
         <div className="relative min-w-0 flex-1">
           <div className="absolute inset-0 p-6">
             <MacWindow surfaceStyle={browserFrameSurfaceStyle}>
-              <div
-                ref={replayRef}
-                className="relative h-full w-full overflow-hidden"
-              />
+              <div ref={replayRef} className="relative h-full w-full overflow-hidden" />
             </MacWindow>
           </div>
           {visibleActions.length > 0 && (
@@ -973,9 +891,7 @@ const ReplayViewer = ({
                 </span>
               )}
               {!live && (
-                <span className="text-sm font-medium text-white/90 drop-shadow-sm">
-                  No events
-                </span>
+                <span className="text-sm font-medium text-white/90 drop-shadow-sm">No events</span>
               )}
             </div>
           )}
@@ -1011,9 +927,7 @@ const ReplayViewer = ({
               <span className="tabular-nums">{timeLabel}</span>
               {(!live || !isAtLiveEdge) && (
                 <>
-                  <span className="text-[color(display-p3_0.727_0.727_0.727)]">
-                    /
-                  </span>
+                  <span className="text-[color(display-p3_0.727_0.727_0.727)]">/</span>
                   <span>{totalTimeLabel}</span>
                 </>
               )}
@@ -1061,10 +975,7 @@ const ReplayViewer = ({
           </div>
         </div>
 
-        <div
-          ref={playbackBarRef}
-          className="relative pb-6 will-change-transform"
-        >
+        <div ref={playbackBarRef} className="relative pb-6 will-change-transform">
           <div
             className="group/playback-bar relative h-9.75 overflow-hidden rounded-full"
             style={{
@@ -1105,9 +1016,7 @@ const ReplayViewer = ({
                         ? PASSED_STEP_MARKER_OUTLINE
                         : FAILED_STEP_MARKER_OUTLINE,
                     backgroundImage:
-                      marker.status === "passed"
-                        ? PASSED_STEP_MARKER_BG
-                        : FAILED_STEP_MARKER_BG,
+                      marker.status === "passed" ? PASSED_STEP_MARKER_BG : FAILED_STEP_MARKER_BG,
                   }}
                 />
               ))}
@@ -1146,9 +1055,7 @@ const ReplayViewer = ({
                 seekTo(firstPlaybackStepTimeMs);
               }}
               disabled={firstPlaybackStepLabelDisabled}
-              aria-label={`Jump to step 1: ${
-                firstPlaybackStep?.title ?? "Step 1"
-              }`}
+              aria-label={`Jump to step 1: ${firstPlaybackStep?.title ?? "Step 1"}`}
               className={`${playbackStepLabelClassName} left-0`}
             >
               1
@@ -1188,8 +1095,7 @@ const TestSelector = () => {
         className="flex items-center justify-center p-4 text-sm font-medium text-red-500"
         style={{ fontFamily: CONTROL_FONT_FAMILY }}
       >
-        Failed to load tests:{" "}
-        {defect instanceof Error ? defect.message : String(defect)}
+        Failed to load tests: {defect instanceof Error ? defect.message : String(defect)}
       </div>
     ))
     .onSuccess((tests) => {
@@ -1203,10 +1109,7 @@ const TestSelector = () => {
               No test runs yet
             </span>
             <span className="text-sm text-[color(display-p3_0.587_0.587_0.587)]">
-              Run{" "}
-              <code className="rounded bg-black/5 px-1.5 py-0.5 font-mono text-xs">
-                expect
-              </code>{" "}
+              Run <code className="rounded bg-black/5 px-1.5 py-0.5 font-mono text-xs">expect</code>{" "}
               to create your first test.
             </span>
           </div>
@@ -1221,9 +1124,7 @@ const TestSelector = () => {
             value={Option.getOrElse(selectedId, () => "")}
             onChange={(event) => {
               const value = event.target.value;
-              setSelectedId(
-                value ? Option.some(PlanId.makeUnsafe(value)) : Option.none()
-              );
+              setSelectedId(value ? Option.some(PlanId.makeUnsafe(value)) : Option.none());
             }}
             className="min-w-0 flex-1 cursor-pointer appearance-none rounded-xl border border-[color(display-p3_0.882_0.882_0.882)] bg-white px-3 py-2 text-sm font-medium text-[color(display-p3_0.188_0.188_0.188)] outline-none"
           >
@@ -1250,18 +1151,15 @@ const TestViewer = () => {
   }, [output, pull]);
 
   const { rrwebEvents, executedPlan } = deriveState(
-    AsyncResult.isSuccess(output) ? output.value.items : []
+    AsyncResult.isSuccess(output) ? output.value.items : [],
   );
 
   const viewerSteps = deriveViewerSteps(executedPlan);
-  const runFinished =
-    executedPlan?.events.some((event) => event._tag === "RunFinished") ?? false;
+  const runFinished = executedPlan?.events.some((event) => event._tag === "RunFinished") ?? false;
   const streamDone = AsyncResult.isSuccess(output) && output.value.done;
   const isLive = !streamDone && !runFinished;
 
-  return (
-    <ReplayViewer events={rrwebEvents} steps={viewerSteps} live={isLive} />
-  );
+  return <ReplayViewer events={rrwebEvents} steps={viewerSteps} live={isLive} />;
 };
 
 export const App = () => {

@@ -12,42 +12,20 @@ import {
 
 import { Agent, AgentBackend } from "@expect/agent";
 import { RrVideo } from "@expect/browser";
-import {
-  Analytics,
-  DebugFileLoggerLayer,
-  Tracing,
-} from "@expect/shared/observability";
+import { Analytics, DebugFileLoggerLayer, Tracing } from "@expect/shared/observability";
 import { CurrentPlanId, PlanId } from "@expect/shared/models";
-import {
-  layerLiveViewerRpcServer,
-  layerLiveViewerStaticServer,
-} from "./live-viewer-server";
+import { layerLiveViewerRpcServer, layerLiveViewerStaticServer } from "./live-viewer-server";
 
-export const layerCli = ({
-  verbose,
-  agent,
-}: {
-  verbose: boolean;
-  agent: AgentBackend;
-}) => {
+export const layerCli = ({ verbose, agent }: { verbose: boolean; agent: AgentBackend }) => {
   const gitLayer = Git.withRepoRoot(process.cwd());
-  const currentPlanId = Layer.succeed(
-    CurrentPlanId,
-    PlanId.makeUnsafe(crypto.randomUUID())
-  );
+  const currentPlanId = Layer.succeed(CurrentPlanId, PlanId.makeUnsafe(crypto.randomUUID()));
   const liveViewerLayer = LiveViewer.layer.pipe(Layer.provide(gitLayer));
 
   const executorLayer = Executor.layer.pipe(Layer.provide(gitLayer));
-  const watchLayer = Watch.layer.pipe(
-    Layer.provide(executorLayer),
-    Layer.provide(gitLayer)
-  );
+  const watchLayer = Watch.layer.pipe(Layer.provide(executorLayer), Layer.provide(gitLayer));
 
   return Layer.mergeAll(
-    Executor.layer.pipe(
-      Layer.provide(gitLayer),
-      Layer.provide(liveViewerLayer)
-    ),
+    Executor.layer.pipe(Layer.provide(gitLayer), Layer.provide(liveViewerLayer)),
     Reporter.layer,
     Updates.layer,
     FlowStorage.layer,
@@ -57,14 +35,12 @@ export const layerCli = ({
     RrVideo.layer,
     watchLayer,
     layerLiveViewerRpcServer.pipe(Layer.provide(liveViewerLayer)),
-    layerLiveViewerStaticServer
+    layerLiveViewerStaticServer,
   ).pipe(
     Layer.provide(currentPlanId),
     Layer.provide(Agent.layerFor(agent ?? "claude")),
     Layer.provide(DebugFileLoggerLayer),
     Layer.provide(Tracing.layerAxiom),
-    Layer.provideMerge(
-      Layer.succeed(References.MinimumLogLevel, verbose ? "All" : "Error")
-    )
+    Layer.provideMerge(Layer.succeed(References.MinimumLogLevel, verbose ? "All" : "Error")),
   );
 };

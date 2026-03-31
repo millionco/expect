@@ -12,9 +12,5 @@ export const useInstalledBrowsers = () =>
         const browsers = yield* browsersService.list;
         const defaultBrowser = yield* browsersService.defaultBrowser();
         return { default: defaultBrowser, browsers };
-      }).pipe(
-        Effect.provide(layerLive),
-        Effect.provide(NodeServices.layer),
-        Effect.runPromise,
-      ),
+      }).pipe(Effect.provide(layerLive), Effect.provide(NodeServices.layer), Effect.runPromise),
   });

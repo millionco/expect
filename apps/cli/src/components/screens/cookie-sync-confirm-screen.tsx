@@ -16,7 +16,6 @@ import {
 import { useProjectPreferencesStore } from "../../stores/use-project-preferences";
 import { useInstalledBrowsers } from "../../hooks/use-installed-browsers";
 
-
 interface CookieSyncConfirmScreenProps {
   changesFor?: ChangesFor;
   instruction?: string;
@@ -155,8 +154,7 @@ export const CookieSyncConfirmScreen = ({
             const id = browser.id;
             const isHighlighted = index === highlightedIndex;
             const isSelected = selectedIds.has(id);
-            const isDefault =
-              Option.isSome(data!.default) && data!.default.value.id === id;
+            const isDefault = Option.isSome(data!.default) && data!.default.value.id === id;
 
             return (
               <Clickable
