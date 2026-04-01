@@ -24,8 +24,7 @@ const makeOptions = (prompt: string): AgentStreamOptions =>
 const collectText = (parts: readonly AcpSessionUpdate[]): string =>
   parts
     .filter(
-      (update) =>
-        update.sessionUpdate === "agent_message_chunk" && update.content.type === "text",
+      (update) => update.sessionUpdate === "agent_message_chunk" && update.content.type === "text",
     )
     .map((update) =>
       update.sessionUpdate === "agent_message_chunk" && update.content.type === "text"
