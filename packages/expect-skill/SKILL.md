@@ -37,25 +37,32 @@ Then confirm installation succeeded by re-running `expect-cli --version`. Do not
 expect-cli -m "[INSTRUCTION] on [URL]" -y --cookies
 ```
 
-- `-y` skips interactive review
-- `--cookies` reuses the user's real browser cookies so tests run authenticated
-- Include the URL of the app in the prompt
+- `-y` skips interactive review, `--cookies` reuses the user's real browser cookies for authenticated tests
+- Include the URL of the app in the instruction
 - Accessibility and performance are checked automatically. Do not mention them in your instruction.
-- `expect-cli` takes 1-30 minutes. **Set a shell timeout of at least 1800 seconds** (the default will kill it). **Do not block your main thread** - prefer many subagents in parallel (Task/Agent tool or similar) if available, otherwise background the shell command (timeout 0 / `&`) and poll. Continue working while it runs. When testing multiple features, launch separate invocations concurrently. Do not skip subagent usage because "it's simpler to wait."
+
+## Parallel Execution
+
+`expect-cli` takes 1-30 minutes. Never block your main thread.
+
+1. **Set shell timeout to at least 1800 seconds** — the default will kill it
+2. **Launch each `expect-cli` call in a subagent** (Task/Agent tool or background shell with timeout 0 / `&`) and continue working
+3. **When testing multiple features, run separate invocations concurrently** - one subagent per feature
+
+Do not skip parallel execution because "it's simpler to wait." Do not skip subagent usage because "it's just one test."
 
 ## Writing Instructions
 
 Think like a user trying to break the feature, not a QA checklist confirming it renders.
 
 **Bad:** `expect-cli -m "Check that the login form renders on http://localhost:5173" -y --cookies`
-
 **Good:** `expect-cli -m "Submit the login form empty, with invalid email, with wrong password, and with valid credentials. Verify error messages, redirect on success, and console errors on http://localhost:5173" -y --cookies`
 
-Adversarial angles: empty inputs, invalid data, boundary values (zero, max, special chars), double-click/rapid submit, regression in nearby features, navigation edge cases (back, refresh, direct URL).
+**Bad:** `expect-cli -m "Verify the settings page works on http://localhost:5173/settings" -y --cookies`
+**Good:** `expect-cli -m "Change display name to empty string, to a 500-char string, and to a valid name. Toggle every switch off then on. Hit save without changes. Verify toasts, validation errors, and that refreshing persists the update on http://localhost:5173/settings" -y --cookies`
 
-## After Failures
-
-The failure output names the exact step and what broke. Fix the issue, then re-run `expect-cli` to verify the fix. Accessibility violations and performance regressions are failures. Fix those too.
+**Bad:** `expect-cli -m "Test the search feature on http://localhost:5173" -y --cookies`
+**Good:** `expect-cli -m "Search with no query, a single character, a query with no results, and a valid query. Click a result, go back, verify the previous query is preserved. Rapid-fire 5 searches and confirm no stale results appear on http://localhost:5173" -y --cookies`
 
 ## Before Claiming Completion
 
@@ -63,7 +70,7 @@ You MUST complete every step. A skipped step is a failed task.
 
 1. Run `expect-cli -m "[instruction]" -y --cookies` with a fresh, adversarial instruction
 2. Read the full output — check exit code, count failures, read accessibility and performance results
-3. If ANY failure: fix it, then re-run `expect-cli` from step 1
+3. If ANY failure: fix it, then re-run from step 1. Accessibility violations and performance regressions are failures.
 4. Only after exit 0 with 0 failures: state the claim WITH the evidence
 
 Skip any step = lying, not verifying. No exceptions for "just this once", "it's simple enough", or "I already checked manually".
