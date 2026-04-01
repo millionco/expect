@@ -177,10 +177,10 @@ describe("buildExecutionPrompt", () => {
     );
   });
 
-  it("includes assertion depth guidance in system prompt", () => {
+  it("includes assertion depth guidance in execution strategy", () => {
     const prompt = buildExecutionSystemPrompt();
-    expect(prompt).toContain("Assertion depth");
-    expect(prompt).toContain("two independent signals per step");
+    expect(prompt).toContain("two independent signals");
+    expect(prompt).toContain("Verify absence when relevant");
   });
 
   it("includes change-analysis guidance in system prompt", () => {
