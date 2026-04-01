@@ -15,7 +15,7 @@ import { AGENT_PROVIDER_DISPLAY_NAMES } from "@expect/shared/models";
 import { useAtomValue } from "@effect/atom-react";
 import { agentProviderAtom } from "../../data/runtime";
 
-const useHintSegments = (screen: Screen, _gitState: GitState | undefined): HintSegment[] => {
+const useHintSegments = (screen: Screen, gitState: GitState | undefined): HintSegment[] => {
   const COLORS = useColors();
   const cookieBrowserKeys = useProjectPreferencesStore((state) => state.cookieBrowserKeys);
   const notifications = usePreferencesStore((state) => state.notifications);
@@ -37,7 +37,7 @@ const useHintSegments = (screen: Screen, _gitState: GitState | undefined): HintS
         },
         { key: "ctrl+r", label: "saved flows", cta: true },
       ];
-      if (_gitState?.isGitRepo) {
+      if (gitState?.isGitRepo) {
         segments.push({ key: "ctrl+w", label: "watch", cta: true });
         segments.push({ key: "ctrl+p", label: "pick pr", cta: true });
       }
