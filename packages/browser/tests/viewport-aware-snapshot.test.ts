@@ -44,9 +44,7 @@ describe("viewport-aware snapshot", () => {
       await page.setContent(SCROLLABLE_PAGE);
       const result = await run(snapshotPage(page, { viewportAware: true }));
 
-      const itemLines = result.tree
-        .split("\n")
-        .filter((line) => line.includes("Item "));
+      const itemLines = result.tree.split("\n").filter((line) => line.includes("Item "));
       expect(itemLines.length).toBeLessThan(30);
     });
 
@@ -62,9 +60,7 @@ describe("viewport-aware snapshot", () => {
       await page.setContent(SCROLLABLE_PAGE);
       const result = await run(snapshotPage(page, { viewportAware: false }));
 
-      const itemLines = result.tree
-        .split("\n")
-        .filter((line) => line.includes("Item "));
+      const itemLines = result.tree.split("\n").filter((line) => line.includes("Item "));
       expect(itemLines.length).toBe(30);
       expect(result.tree).not.toContain("items hidden");
     });

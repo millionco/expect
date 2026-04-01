@@ -77,11 +77,11 @@ export const MainMenu = ({ gitState }: MainMenuProps) => {
   );
   const { data: testCoverage } = useTestCoverage(gitState);
 
-  const [cliBaseUrls] = useState(() => {
-    const urls = usePreferencesStore.getState().cliBaseUrls;
-    if (urls) usePreferencesStore.setState({ cliBaseUrls: undefined });
-    return urls;
-  });
+  const cliBaseUrlsRef = useRef(usePreferencesStore.getState().cliBaseUrls);
+  useEffect(() => {
+    usePreferencesStore.setState({ cliBaseUrls: undefined });
+  }, []);
+  const cliBaseUrls = cliBaseUrlsRef.current;
 
   const navigateHistoryBack = () => {
     if (instructionHistory.length === 0) return;

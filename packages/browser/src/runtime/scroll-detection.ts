@@ -69,7 +69,11 @@ export const prepareViewportSnapshot = (): ScrollContainerResult[] => {
       insertMarker(element, `${hiddenAbove} items hidden above`, firstVisibleChild);
     }
     if (hiddenBelow > 0 && lastVisibleChild) {
-      insertMarker(element, `${hiddenBelow} items hidden below`, lastVisibleChild.nextSibling as Element | null);
+      insertMarker(
+        element,
+        `${hiddenBelow} items hidden below`,
+        lastVisibleChild.nextSibling as Element | null,
+      );
     }
 
     results.push({ totalChildren: children.length, hiddenAbove, hiddenBelow });

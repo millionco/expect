@@ -318,15 +318,22 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
 
       const scrollContainers: ScrollContainerResult[] = useViewportAware
         ? yield* evaluateRuntime(page, "prepareViewportSnapshot").pipe(
-            Effect.catchCause(() => Effect.succeed(NO_SCROLL_CONTAINERS)),
+            Effect.catchCause((cause) =>
+              Effect.logDebug("Viewport snapshot preparation failed, falling back to full tree", {
+                cause,
+              }).pipe(Effect.as(NO_SCROLL_CONTAINERS)),
+            ),
           )
         : NO_SCROLL_CONTAINERS;
 
-      const restore = scrollContainers.length > 0
-        ? evaluateRuntime(page, "restoreViewportSnapshot").pipe(
-            Effect.catchCause(() => Effect.void),
-          )
-        : Effect.void;
+      const restore =
+        scrollContainers.length > 0
+          ? evaluateRuntime(page, "restoreViewportSnapshot").pipe(
+              Effect.catchCause((cause) =>
+                Effect.logDebug("Viewport snapshot restoration failed", { cause }),
+              ),
+            )
+          : Effect.void;
 
       const rawTree = yield* Effect.ensuring(
         Effect.tryPromise({
