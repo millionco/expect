@@ -82,7 +82,6 @@ describe("MCP server tools", () => {
       "performance_metrics",
       "playwright",
       "screenshot",
-      "security_audit",
       "swipe",
       "tap",
     ]);
