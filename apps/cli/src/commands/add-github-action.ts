@@ -79,13 +79,12 @@ ${setupSteps}
         run: npx playwright install --with-deps chromium
 
       # Expect runs against your dev server by default, not a production build or deployed preview.
-      # To test a preview URL instead, set EXPECT_BASE_URL to that URL. You can use
-      # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idneeds
-      # to pass preview URLs from other jobs.
+      # To test a preview URL instead, set the EXPECT_BASE_URL repository variable to skip
+      # local dev server startup entirely.
       - name: Start dev server
+        if: \${{ !vars.EXPECT_BASE_URL }}
         run: ${devCommand} &
 
-      # Wait until the local app is reachable before handing control to the browser agent.
       - name: Wait for dev server
         run: npx wait-on $EXPECT_BASE_URL --timeout 60000
 
