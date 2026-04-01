@@ -3,7 +3,7 @@ import { detectAvailableAgents } from "@expect/agent";
 import { Effect } from "effect";
 import figures from "figures";
 import pc from "picocolors";
-import { VERSION } from "../constants";
+import { PLAYWRIGHT_INSTALL_TIMEOUT_MS, VERSION } from "../constants";
 import { highlighter } from "../utils/highlighter";
 import { logger } from "../utils/logger";
 import { prompts, setOnCancel } from "../utils/prompts";
@@ -121,7 +121,6 @@ export const runInit = async (options: InitOptions = {}) => {
   logger.log(
     `  ${highlighter.dim("Installing Playwright browsers (Chromium, WebKit, Firefox)...")}`,
   );
-  const PLAYWRIGHT_INSTALL_TIMEOUT_MS = 300_000;
   const playwrightSuccess = await new Promise<boolean>((resolve) => {
     const child = spawn(
       "npx",

@@ -43,16 +43,9 @@ import type {
 } from "./types";
 import type { ScrollContainerResult } from "./runtime/scroll-detection";
 
-const resolveBrowserType = (engine: BrowserEngine) => {
-  switch (engine) {
-    case "webkit":
-      return webkit;
-    case "firefox":
-      return firefox;
-    default:
-      return chromium;
-  }
-};
+const BROWSER_ENGINES = { chromium, webkit, firefox } as const;
+
+const resolveBrowserType = (engine: BrowserEngine) => BROWSER_ENGINES[engine];
 
 const shouldAssignRef = (role: string, name: string, interactive?: boolean): boolean => {
   if (INTERACTIVE_ROLES.has(role)) return true;

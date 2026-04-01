@@ -10,7 +10,12 @@ import { collectAllEvents } from "../recorder";
 import { evaluateRuntime } from "../utils/evaluate-runtime";
 import { EVENT_COLLECT_INTERVAL_MS } from "../constants";
 import { buildReplayViewerHtml } from "../replay-viewer";
-import type { AnnotatedScreenshotOptions, SnapshotOptions, SnapshotResult } from "../types";
+import type {
+  AnnotatedScreenshotOptions,
+  BrowserEngine,
+  SnapshotOptions,
+  SnapshotResult,
+} from "../types";
 import {
   EXPECT_LIVE_VIEW_URL_ENV_NAME,
   EXPECT_COOKIE_BROWSERS_ENV_NAME,
@@ -52,7 +57,7 @@ export interface OpenOptions {
   cookies?: boolean;
   waitUntil?: "load" | "domcontentloaded" | "networkidle" | "commit";
   cdpUrl?: string;
-  browserType?: "chromium" | "webkit" | "firefox";
+  browserType?: BrowserEngine;
 }
 
 export interface OpenResult {
