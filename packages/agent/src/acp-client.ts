@@ -557,22 +557,19 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
     yield* Effect.logDebug("ACP adapter subprocess spawned");
     /** @note(rasmus): we run all the writable queue entries into the process stdin */
     yield* Stream.fromQueue(writableQueue).pipe(Stream.run(childProcess.stdin), Effect.forkScoped);
+
     yield* childProcess.stderr.pipe(
       Stream.decodeText(),
       Stream.splitLines,
-      Stream.tap((line) =>
+      Stream.tap((line) => Effect.logDebug("ACP adapter stderr", { line })),
+      Stream.map(getAdapterSessionError),
+      Stream.filter((error): error is SessionQueueError => error !== undefined),
+      Stream.filter(() => !Ref.getUnsafe(adapterSessionErrorRef)),
+      Stream.tap((adapterSessionError) =>
         Effect.gen(function* () {
-          yield* Effect.logDebug("ACP adapter stderr", { line });
-          const adapterSessionError = getAdapterSessionError(line);
-          if (!adapterSessionError) return;
-
-          const currentAdapterSessionError = yield* Ref.get(adapterSessionErrorRef);
-          if (currentAdapterSessionError) return;
-
           yield* Ref.set(adapterSessionErrorRef, adapterSessionError);
           yield* Effect.logWarning("ACP adapter reported fatal error", {
             provider: adapter.provider,
-            line,
           });
           yield* Effect.forEach(
             Array.from(sessionUpdatesMap.values()),

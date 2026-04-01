@@ -257,6 +257,7 @@ export const runAddGithubAction = async (options: AddGithubActionOptions = {}) =
               Effect.as({ status: "secret-set" as const }),
             ),
           ),
+          Effect.provide(NodeServices.layer),
           Effect.catchTag("ClaudeTokenGenerateError", () =>
             Effect.succeed({ status: "token-failed" as const }),
           ),
@@ -307,6 +308,7 @@ export const runAddGithubAction = async (options: AddGithubActionOptions = {}) =
     if (response.setBaseUrl) {
       const variableResult = await Effect.runPromise(
         setGhVariable("EXPECT_BASE_URL", devUrl).pipe(
+          Effect.provide(NodeServices.layer),
           Effect.as(true),
           Effect.catchTag("GhVariableSetError", (error) => {
             logger.warn("Failed to set EXPECT_BASE_URL variable.");

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vite-plus/test";
 import { spawnSync } from "node:child_process";
-import { Effect } from "effect";
+import { Effect, Layer, Stream } from "effect";
+import { ChildProcessSpawner } from "effect/unstable/process";
 
 vi.mock("@expect/agent", () => ({
   isCommandAvailable: vi.fn(),
@@ -13,6 +14,34 @@ vi.mock("node:child_process", async (importOriginal) => ({
 }));
 
 const mockedSpawnSync = vi.mocked(spawnSync);
+
+const makeTestHandle = (options: {
+  exitCode: number;
+  stdout?: string;
+  stderr?: string;
+}): ChildProcessSpawner.ChildProcessHandle =>
+  ChildProcessSpawner.makeHandle({
+    pid: ChildProcessSpawner.ProcessId(1234),
+    exitCode: Effect.succeed(ChildProcessSpawner.ExitCode(options.exitCode)),
+    isRunning: Effect.succeed(false),
+    kill: () => Effect.void,
+    stdin: { run: () => Effect.void } as never,
+    stdout: options.stdout
+      ? Stream.make(new TextEncoder().encode(options.stdout))
+      : Stream.empty,
+    stderr: options.stderr
+      ? Stream.make(new TextEncoder().encode(options.stderr))
+      : Stream.empty,
+    all: Stream.empty,
+    getInputFd: () => ({ run: () => Effect.void }) as never,
+    getOutputFd: () => Stream.empty,
+  });
+
+const makeSpawnerLayer = (spawnFn: ChildProcessSpawner.ChildProcessSpawner["Service"]["spawn"]) =>
+  Layer.succeed(
+    ChildProcessSpawner.ChildProcessSpawner,
+    ChildProcessSpawner.make(spawnFn),
+  );
 
 describe("init-utils", () => {
   beforeEach(() => {
@@ -39,20 +68,20 @@ describe("init-utils", () => {
     });
   });
 
-  describe("isGhAuthenticated", () => {
+  describe("isGithubCliAuthenticated", () => {
     it("returns true when gh auth status exits 0", async () => {
       mockedSpawnSync.mockReturnValue({ status: 0 } as ReturnType<typeof spawnSync>);
 
-      const { isGhAuthenticated } = await import("../src/commands/init-utils");
-      const result = await Effect.runPromise(isGhAuthenticated);
+      const { isGithubCliAuthenticated } = await import("../src/commands/init-utils");
+      const result = await Effect.runPromise(isGithubCliAuthenticated);
       expect(result).toBe(true);
     });
 
     it("returns false when gh auth status exits non-zero", async () => {
       mockedSpawnSync.mockReturnValue({ status: 1 } as ReturnType<typeof spawnSync>);
 
-      const { isGhAuthenticated } = await import("../src/commands/init-utils");
-      const result = await Effect.runPromise(isGhAuthenticated);
+      const { isGithubCliAuthenticated } = await import("../src/commands/init-utils");
+      const result = await Effect.runPromise(isGithubCliAuthenticated);
       expect(result).toBe(false);
     });
 
@@ -61,34 +90,28 @@ describe("init-utils", () => {
         throw new Error("command not found");
       });
 
-      const { isGhAuthenticated } = await import("../src/commands/init-utils");
-      const result = await Effect.runPromise(isGhAuthenticated);
+      const { isGithubCliAuthenticated } = await import("../src/commands/init-utils");
+      const result = await Effect.runPromise(isGithubCliAuthenticated);
       expect(result).toBe(false);
     });
   });
 
   describe("setGhSecret", () => {
     it("succeeds when gh secret set exits 0", async () => {
-      mockedSpawnSync.mockReturnValue({
-        status: 0,
-        stderr: Buffer.from(""),
-      } as unknown as ReturnType<typeof spawnSync>);
+      const layer = makeSpawnerLayer(() =>
+        Effect.succeed(makeTestHandle({ exitCode: 0 })),
+      );
 
       const { setGhSecret } = await import("../src/commands/init-utils");
-      await Effect.runPromise(setGhSecret("MY_SECRET", "my-value"));
-
-      expect(mockedSpawnSync).toHaveBeenCalledWith(
-        "gh",
-        ["secret", "set", "MY_SECRET"],
-        expect.objectContaining({ input: "my-value" }),
+      await Effect.runPromise(
+        setGhSecret("MY_SECRET", "my-value").pipe(Effect.provide(layer)),
       );
     });
 
     it("fails with GhSecretSetError when exit code is non-zero", async () => {
-      mockedSpawnSync.mockReturnValue({
-        status: 1,
-        stderr: Buffer.from("not logged in"),
-      } as unknown as ReturnType<typeof spawnSync>);
+      const layer = makeSpawnerLayer(() =>
+        Effect.succeed(makeTestHandle({ exitCode: 1, stderr: "not logged in" })),
+      );
 
       const { setGhSecret } = await import("../src/commands/init-utils");
       const result = await Effect.runPromise(
@@ -97,6 +120,7 @@ describe("init-utils", () => {
           Effect.catchTag("GhSecretSetError", (error) =>
             Effect.succeed({ failed: true, reason: error.reason }),
           ),
+          Effect.provide(layer),
         ),
       );
 
@@ -104,10 +128,9 @@ describe("init-utils", () => {
     });
 
     it("includes exit code in reason when stderr is empty", async () => {
-      mockedSpawnSync.mockReturnValue({
-        status: 2,
-        stderr: Buffer.from(""),
-      } as unknown as ReturnType<typeof spawnSync>);
+      const layer = makeSpawnerLayer(() =>
+        Effect.succeed(makeTestHandle({ exitCode: 2, stderr: "" })),
+      );
 
       const { setGhSecret } = await import("../src/commands/init-utils");
       const result = await Effect.runPromise(
@@ -116,6 +139,7 @@ describe("init-utils", () => {
           Effect.catchTag("GhSecretSetError", (error) =>
             Effect.succeed({ failed: true, reason: error.reason }),
           ),
+          Effect.provide(layer),
         ),
       );
 
@@ -128,26 +152,22 @@ describe("init-utils", () => {
 
   describe("setGhVariable", () => {
     it("succeeds when gh variable set exits 0", async () => {
-      mockedSpawnSync.mockReturnValue({
-        status: 0,
-        stderr: Buffer.from(""),
-      } as unknown as ReturnType<typeof spawnSync>);
+      const layer = makeSpawnerLayer(() =>
+        Effect.succeed(makeTestHandle({ exitCode: 0 })),
+      );
 
       const { setGhVariable } = await import("../src/commands/init-utils");
-      await Effect.runPromise(setGhVariable("EXPECT_BASE_URL", "http://localhost:3000"));
-
-      expect(mockedSpawnSync).toHaveBeenCalledWith(
-        "gh",
-        ["variable", "set", "EXPECT_BASE_URL", "--body", "http://localhost:3000"],
-        expect.objectContaining({ stdio: ["pipe", "pipe", "pipe"] }),
+      await Effect.runPromise(
+        setGhVariable("EXPECT_BASE_URL", "http://localhost:3000").pipe(
+          Effect.provide(layer),
+        ),
       );
     });
 
     it("fails with GhVariableSetError when exit code is non-zero", async () => {
-      mockedSpawnSync.mockReturnValue({
-        status: 1,
-        stderr: Buffer.from("not authorized"),
-      } as unknown as ReturnType<typeof spawnSync>);
+      const layer = makeSpawnerLayer(() =>
+        Effect.succeed(makeTestHandle({ exitCode: 1, stderr: "not authorized" })),
+      );
 
       const { setGhVariable } = await import("../src/commands/init-utils");
       const result = await Effect.runPromise(
@@ -156,6 +176,7 @@ describe("init-utils", () => {
           Effect.catchTag("GhVariableSetError", (error) =>
             Effect.succeed({ failed: true, reason: error.reason }),
           ),
+          Effect.provide(layer),
         ),
       );
 

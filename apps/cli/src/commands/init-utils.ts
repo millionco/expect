@@ -1,5 +1,6 @@
 import { spawn, spawnSync } from "node:child_process";
-import { Effect } from "effect";
+import { Effect, Stream } from "effect";
+import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import { isCommandAvailable } from "@expect/agent";
 import {
   CLAUDE_SETUP_TOKEN_TIMEOUT_MS,
@@ -83,77 +84,99 @@ const ANSI_ESCAPE_PATTERN = new RegExp(`${ESC}\\[[0-9;]*[a-zA-Z]`, "g");
 
 const stripAnsi = (text: string): string => text.replace(ANSI_ESCAPE_PATTERN, "");
 
-export const generateClaudeToken = Effect.tryPromise({
-  try: () =>
-    new Promise<string>((resolve, reject) => {
-      const child = spawn("claude", ["setup-token"], {
-        stdio: ["inherit", "pipe", "inherit"],
-      });
-      let stdout = "";
-      const timeout = setTimeout(() => {
-        child.kill();
-        reject(new Error("claude setup-token timed out"));
-      }, CLAUDE_SETUP_TOKEN_TIMEOUT_MS);
+const encoder = new TextEncoder();
 
-      child.stdout.on("data", (chunk: Buffer) => {
-        const text = chunk.toString();
+export const generateClaudeToken = Effect.gen(function* () {
+  const handle = yield* ChildProcess.make("claude", ["setup-token"], {
+    stdin: "inherit",
+    stdout: "pipe",
+    stderr: "inherit",
+  });
+
+  let stdout = "";
+  yield* handle.stdout.pipe(
+    Stream.decodeText(),
+    Stream.runForEach((text) =>
+      Effect.sync(() => {
         stdout += text;
         process.stdout.write(text);
-      });
-      child.on("close", (code) => {
-        clearTimeout(timeout);
-        if (code !== 0) {
-          reject(new Error(`claude setup-token exited with code ${code}`));
-          return;
-        }
-        const match = stripAnsi(stdout).match(CLAUDE_TOKEN_PATTERN);
-        if (match) {
-          resolve(match[1]);
-        } else {
-          reject(new Error("Could not extract token from output"));
-        }
-      });
-      child.on("error", (error) => {
-        clearTimeout(timeout);
-        reject(error);
-      });
-    }),
-  catch: () => ({ _tag: "ClaudeTokenGenerateError" as const }),
-});
+      })
+    ),
+  );
+
+  const exitCode = yield* handle.exitCode;
+  if (exitCode !== ChildProcessSpawner.ExitCode(0)) {
+    return yield* Effect.fail({ _tag: "ClaudeTokenGenerateError" as const });
+  }
+
+  const match = stripAnsi(stdout).match(CLAUDE_TOKEN_PATTERN);
+  if (!match) {
+    return yield* Effect.fail({ _tag: "ClaudeTokenGenerateError" as const });
+  }
+
+  return match[1];
+}).pipe(
+  Effect.scoped,
+  Effect.catchTag("PlatformError", () =>
+    Effect.fail({ _tag: "ClaudeTokenGenerateError" as const }),
+  ),
+  Effect.timeout(CLAUDE_SETUP_TOKEN_TIMEOUT_MS),
+  Effect.catchTag("TimeoutError", () =>
+    Effect.fail({ _tag: "ClaudeTokenGenerateError" as const }),
+  ),
+);
 
 export const setGhSecret = (name: string, value: string) =>
-  Effect.try({
-    try: () => {
-      const result = spawnSync("gh", ["secret", "set", name], {
-        input: value,
-        stdio: ["pipe", "pipe", "pipe"],
-        timeout: GH_SECRET_SET_TIMEOUT_MS,
-      });
-      if (result.status !== 0) {
-        const stderr = result.stderr ? result.stderr.toString().trim() : "";
-        throw new Error(stderr || `gh secret set exited with code ${result.status}`);
-      }
-    },
-    catch: (error) => ({
-      _tag: "GhSecretSetError" as const,
-      reason: error instanceof Error ? error.message : String(error),
-    }),
-  });
+  Effect.gen(function* () {
+    const handle = yield* ChildProcess.make("gh", ["secret", "set", name], {
+      stdin: Stream.make(encoder.encode(value)),
+      stdout: "ignore",
+      stderr: "pipe",
+    });
+
+    const [exitCode, stderrOutput] = yield* Effect.all([
+      handle.exitCode,
+      Stream.mkString(Stream.decodeText(handle.stderr)),
+    ], { concurrency: 2 });
+
+    if (exitCode !== ChildProcessSpawner.ExitCode(0)) {
+      const reason = stderrOutput.trim() || `gh secret set exited with code ${exitCode}`;
+      return yield* Effect.fail({ _tag: "GhSecretSetError" as const, reason });
+    }
+  }).pipe(
+    Effect.scoped,
+    Effect.catchTag("PlatformError", (platformError) =>
+      Effect.fail({ _tag: "GhSecretSetError" as const, reason: platformError.message }),
+    ),
+    Effect.timeout(GH_SECRET_SET_TIMEOUT_MS),
+    Effect.catchTag("TimeoutError", () =>
+      Effect.fail({ _tag: "GhSecretSetError" as const, reason: "gh secret set timed out" }),
+    ),
+  );
 
 export const setGhVariable = (name: string, value: string) =>
-  Effect.try({
-    try: () => {
-      const result = spawnSync("gh", ["variable", "set", name, "--body", value], {
-        stdio: ["pipe", "pipe", "pipe"],
-        timeout: GH_SECRET_SET_TIMEOUT_MS,
-      });
-      if (result.status !== 0) {
-        const stderr = result.stderr ? result.stderr.toString().trim() : "";
-        throw new Error(stderr || `gh variable set exited with code ${result.status}`);
-      }
-    },
-    catch: (error) => ({
-      _tag: "GhVariableSetError" as const,
-      reason: error instanceof Error ? error.message : String(error),
-    }),
-  });
+  Effect.gen(function* () {
+    const handle = yield* ChildProcess.make("gh", ["variable", "set", name, "--body", value], {
+      stdout: "ignore",
+      stderr: "pipe",
+    });
+
+    const [exitCode, stderrOutput] = yield* Effect.all([
+      handle.exitCode,
+      Stream.mkString(Stream.decodeText(handle.stderr)),
+    ], { concurrency: 2 });
+
+    if (exitCode !== ChildProcessSpawner.ExitCode(0)) {
+      const reason = stderrOutput.trim() || `gh variable set exited with code ${exitCode}`;
+      return yield* Effect.fail({ _tag: "GhVariableSetError" as const, reason });
+    }
+  }).pipe(
+    Effect.scoped,
+    Effect.catchTag("PlatformError", (platformError) =>
+      Effect.fail({ _tag: "GhVariableSetError" as const, reason: platformError.message }),
+    ),
+    Effect.timeout(GH_SECRET_SET_TIMEOUT_MS),
+    Effect.catchTag("TimeoutError", () =>
+      Effect.fail({ _tag: "GhVariableSetError" as const, reason: "gh variable set timed out" }),
+    ),
+  );
