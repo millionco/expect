@@ -109,7 +109,6 @@ const ANSI_ESCAPE_PATTERN = new RegExp(`${ESC}\\[[0-9;]*[a-zA-Z]`, "g");
 const stripAnsi = (text: string): string => text.replace(ANSI_ESCAPE_PATTERN, "");
 
 export const generateClaudeToken = Effect.gen(function* () {
-  const encoder = new TextEncoder();
   const handle = yield* ChildProcess.make("claude", ["setup-token"], {
     stdin: "inherit",
     stdout: "pipe",

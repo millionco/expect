@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { Effect } from "effect";
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
+import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { detectProject } from "../src/detect-project";

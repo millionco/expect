@@ -1,6 +1,5 @@
 import { existsSync, lstatSync, mkdirSync, readlinkSync, symlinkSync, unlinkSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
-import { Effect } from "effect";
 import { type SupportedAgent, toDisplayName, toSkillDir } from "@expect/agent";
 import { highlighter } from "../utils/highlighter";
 import { logger } from "../utils/logger";
