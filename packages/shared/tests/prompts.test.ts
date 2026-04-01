@@ -236,11 +236,11 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("Nested menus");
   });
 
-  it("includes recovery and rabbit hole guidance in system prompt", () => {
+  it("includes stability and recovery guidance in system prompt", () => {
     const prompt = buildExecutionSystemPrompt();
-    expect(prompt).toContain("Recovery policy");
-    expect(prompt).toContain("Avoid rabbit holes");
+    expect(prompt).toContain("Stability and recovery:");
     expect(prompt).toContain("four attempts fail");
+    expect(prompt).toContain("stop and report");
   });
 
   it("requires rich copy-pasteable failure reports", () => {
