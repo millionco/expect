@@ -145,10 +145,11 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
     const pollingFiberRef = yield* Ref.make<Fiber.Fiber<unknown> | undefined>(undefined);
     const latestRunStateRef = yield* Ref.make<ViewerRunState | undefined>(undefined);
     const preExtractedCookiesRef = yield* Ref.make<Cookie[] | undefined>(undefined);
-    const savedScreenshotPaths: string[] = [];
+    const savedScreenshotPathsRef = yield* Ref.make<string[]>([]);
 
     const saveScreenshot = Effect.fn("McpSession.saveScreenshot")(function* (buffer: Buffer) {
-      const screenshotIndex = savedScreenshotPaths.length;
+      const currentPaths = yield* Ref.get(savedScreenshotPathsRef);
+      const screenshotIndex = currentPaths.length;
       const screenshotPath = path.join(
         TMP_ARTIFACT_OUTPUT_DIRECTORY,
         `screenshot-${screenshotIndex}.png`,
@@ -165,7 +166,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         .pipe(
           Effect.catchCause((cause) => Effect.logDebug("Failed to save screenshot", { cause })),
         );
-      savedScreenshotPaths.push(screenshotPath);
+      yield* Ref.update(savedScreenshotPathsRef, (paths) => [...paths, screenshotPath]);
       yield* Effect.logDebug("Screenshot saved", { path: screenshotPath, index: screenshotIndex });
     });
 
@@ -387,7 +388,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
           tmpReplaySessionPath: undefined,
           tmpReportPath: undefined,
           tmpVideoPath: undefined,
-          screenshotPaths: [...savedScreenshotPaths],
+          screenshotPaths: yield* Ref.get(savedScreenshotPathsRef),
         } satisfies CloseResult;
       }
 
@@ -618,7 +619,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         tmpReplaySessionPath,
         tmpReportPath,
         tmpVideoPath,
-        screenshotPaths: [...savedScreenshotPaths],
+        screenshotPaths: yield* Ref.get(savedScreenshotPathsRef),
       } satisfies CloseResult;
     });
 
