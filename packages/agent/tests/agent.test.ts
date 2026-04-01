@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { Effect, Layer, Option, Stream } from "effect";
+import { Effect, Option, Stream } from "effect";
 import { Agent, type AgentBackend } from "../src/agent";
 import { AgentStreamOptions } from "../src/types";
 import { type AcpSessionUpdate } from "@expect/shared/models";
@@ -116,12 +116,26 @@ describe("Agent", () => {
         const parts = await Effect.gen(function* () {
           const agent = yield* Agent;
           return yield* agent
-            .stream(makeOptions("list all your tool names"))
+            .stream(makeOptions("what MCP tools do you have? list every tool name"))
             .pipe(Stream.runCollect);
         }).pipe(Effect.provide(layer), Effect.runPromise);
 
         const fullText = collectText(parts).toLowerCase();
         expect(fullText.length).toBeGreaterThan(0);
+
+        const expectedTools = [
+          "open",
+          "close",
+          "playwright",
+          "screenshot",
+          "console_logs",
+          "network_requests",
+          "accessibility_audit",
+          "performance_metrics",
+        ];
+        for (const tool of expectedTools) {
+          expect(fullText).toContain(tool);
+        }
       }, 60_000);
     });
   });

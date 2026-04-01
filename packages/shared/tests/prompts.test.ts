@@ -89,8 +89,8 @@ describe("buildExecutionPrompt", () => {
   it("includes environment context", () => {
     const prompt = buildExecutionPrompt(makeDefaultOptions());
     expect(prompt).toContain("Base URL: http://localhost:3000");
-    expect(prompt).toContain("Headed mode preference: headed");
-    expect(prompt).toContain("Reuse browser cookies: no");
+    expect(prompt).toContain("Browser is headless: no");
+    expect(prompt).toContain("Uses existing browser cookies: no");
   });
 
   it("includes branch context", () => {
@@ -154,9 +154,9 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("Auth requires a redirect to /callback");
   });
 
-  it("shows no learnings placeholder when not provided", () => {
+  it("omits learnings section when not provided", () => {
     const prompt = buildExecutionPrompt(makeDefaultOptions());
-    expect(prompt).toContain("No learnings yet.");
+    expect(prompt).not.toContain("<project_learnings>");
   });
 
   it("truncates long diff previews", () => {
@@ -216,7 +216,7 @@ describe("buildExecutionPrompt", () => {
   it("includes change-analysis guidance in system prompt", () => {
     const prompt = buildExecutionSystemPrompt();
     expect(prompt).toContain("<change_analysis>");
-    expect(prompt).toContain("Analyze EVERY changed file listed");
+    expect(prompt).toContain("Scan the provided changed files list and diff preview");
     expect(prompt).toContain("developer request is a starting point");
   });
 
@@ -280,7 +280,7 @@ describe("buildExecutionPrompt", () => {
   it("includes UI quality rules section in system prompt", () => {
     const prompt = buildExecutionSystemPrompt();
     expect(prompt).toContain("<ui_quality_rules>");
-    expect(prompt).toContain("mandatory, not optional");
+    expect(prompt).toContain("these checks are mandatory");
   });
 
   it("includes design system conformance rules", () => {
@@ -380,11 +380,11 @@ describe("buildWatchAssessmentPrompt", () => {
 
   it("handles empty changed files", () => {
     const prompt = buildWatchAssessmentPrompt(makeWatchOptions({ changedFiles: [] }));
-    expect(prompt).toContain("No changed files detected");
+    expect(prompt).not.toContain("Changed files:");
   });
 
   it("handles empty diff", () => {
     const prompt = buildWatchAssessmentPrompt(makeWatchOptions({ diffPreview: "" }));
-    expect(prompt).toContain("No diff preview available");
+    expect(prompt).not.toContain("Diff preview:");
   });
 });

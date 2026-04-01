@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -594,7 +594,11 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
 
     const connection = new acp.ClientSideConnection((_agent) => client, ndJsonStream);
 
-    const browserMcpBinPath = fileURLToPath(new URL("./browser-mcp.js", import.meta.url));
+    const browserMcpBinPath = (() => {
+      const colocated = fileURLToPath(new URL("./browser-mcp.js", import.meta.url));
+      if (existsSync(colocated)) return colocated;
+      return fileURLToPath(new URL("../../../apps/cli/dist/browser-mcp.js", import.meta.url));
+    })();
 
     const buildMcpServers = (
       env: ReadonlyArray<{ name: string; value: string }>,
