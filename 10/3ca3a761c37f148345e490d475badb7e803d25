@@ -1,0 +1,23 @@
+packages/browser/src/mcp/mcp-session.ts
+  dff8d2c78aa3b0fa 148,151-152,169,391,622
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.23",
+  "base_commit_sha": "103ca3a761c37f148345e490d475badb7e803d25",
+  "prompts": {
+    "dff8d2c78aa3b0fa": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "80f914f1-c299-4b40-938e-dd9e461e3bf7",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 6,
+      "total_deletions": 5,
+      "accepted_lines": 6,
+      "overriden_lines": 0
+    }
+  }
+}
