@@ -1,10 +1,10 @@
 ---
 name: expect
-description: "Use when editing .tsx/.jsx/.css/.html, React components, pages, routes, forms, styles, or layouts. Also when asked to test, verify, validate, QA, find bugs, or check for issues. Covers functional testing, accessibility (WCAG), and performance (Web Vitals)."
+description: "Use when editing .tsx/.jsx/.css/.html, React components, pages, routes, forms, styles, or layouts. Also when asked to test, verify, validate, QA, find bugs, check for issues, or fix expect-cli failures."
 license: MIT
 metadata:
   author: millionco
-  version: "2.1.0"
+  version: "2.2.0"
 ---
 
 # Expect
@@ -77,29 +77,31 @@ Skip any step = lying, not verifying. No exceptions for "just this once", "it's 
 
 ## Reference Skills
 
-When `expect-cli` reports failures in a specific domain (animation, accessibility, SEO, etc.), read the matching sub-skill below before attempting a fix. Each contains targeted rules and patterns for that area.
+`expect-cli` runs built-in quality checks during every test. Each failure includes a `domain=` tag (e.g. `domain=responsive`, `domain=accessibility`, `domain=animation`).
 
-<important if="fixing or reviewing CSS animations, transitions, hover effects, tooltips, or motion performance">
+When a matching domain is relevant to your current task, read the sub-skill before writing code or re-running tests. When `expect-cli` reports a failure with a `domain=` tag, read the matching sub-skill before attempting a fix.
+
+<important if="domain=animation, or fixing/reviewing CSS animations, transitions, hover effects, tooltips, or motion performance">
 Read `fixing-animation/SKILL.md` for animation rules and performance patterns.
 </important>
 
-<important if="fixing or reviewing accessibility, ARIA attributes, keyboard navigation, focus management, or screen reader support">
+<important if="domain=accessibility, or fixing/reviewing accessibility, ARIA attributes, keyboard navigation, focus management, or screen reader support">
 Read `fixing-accessibility/SKILL.md` for accessibility rules and common fixes.
 </important>
 
-<important if="fixing or reviewing SEO metadata, Open Graph tags, canonical URLs, or structured data">
+<important if="domain=seo, or fixing/reviewing SEO metadata, Open Graph tags, canonical URLs, or structured data">
 Read `fixing-seo/SKILL.md` for SEO metadata rules.
 </important>
 
-<important if="writing or reviewing React components, Next.js pages, data fetching, or optimizing bundle size and render performance">
+<important if="domain=performance, or writing/reviewing React components, Next.js pages, data fetching, or optimizing bundle size and render performance">
 Read `react-best-practices/SKILL.md` for React performance optimization rules.
 </important>
 
-<important if="reviewing UI design, UX patterns, or auditing web interface quality">
+<important if="domain=design-system or domain=responsive or domain=touch or domain=cross-browser or domain=dark-mode or domain=layout-stability or domain=font-loading, or reviewing UI design, UX patterns, or auditing web interface quality">
 Read `web-design-guidelines/SKILL.md` for web interface design review guidelines.
 </important>
 
-<important if="reviewing code for security issues, XSS, CSRF, open redirects, postMessage, cookie security, CSP, CORS, prototype pollution, or client-side storage vulnerabilities">
+<important if="domain=security, or reviewing code for security issues, XSS, CSRF, open redirects, postMessage, cookie security, CSP, CORS, prototype pollution, or client-side storage vulnerabilities">
 Read `security-review/SKILL.md` for browser security review guidelines.
 </important>
 
