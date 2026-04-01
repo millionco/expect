@@ -1,0 +1,55 @@
+apps/cli/src/commands/init-utils.ts
+  43599fae43973958 2-3,87,89-100,103-126,130-155,158-182
+packages/agent/src/acp-client.ts
+  f6ba99993d448870 564-568
+apps/cli/src/commands/add-github-action.ts
+  43599fae43973958 260,311
+apps/cli/tests/init-utils.test.ts
+  43599fae43973958 3-4,18-45,101-103,106-107,112-114,123,131-133,142,155-157,160-163,168-170,179
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.23",
+  "base_commit_sha": "c3df11ed58412263ff7ba4f8a8f8e2a6fadc562f",
+  "prompts": {
+    "30670e1d99e20cab": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "34cf1f51-c77d-4958-a0ee-8a8806f4bed3",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 12,
+      "total_deletions": 9,
+      "accepted_lines": 7,
+      "overriden_lines": 0
+    },
+    "43599fae43973958": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d6d277e0-6cfc-4b85-8814-47258220b2d6",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 163,
+      "total_deletions": 117,
+      "accepted_lines": 147,
+      "overriden_lines": 0
+    },
+    "f6ba99993d448870": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ede277ba-cc17-458e-b2dd-26c37f172f2d",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel <awesomenisarg@gmail.com>",
+      "messages": [],
+      "total_additions": 12,
+      "total_deletions": 16,
+      "accepted_lines": 5,
+      "overriden_lines": 0
+    }
+  }
+}
