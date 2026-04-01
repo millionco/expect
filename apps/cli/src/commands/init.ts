@@ -130,7 +130,7 @@ export const runInit = async (options: InitOptions = {}) => {
       const response = await prompts({
         type: "confirm",
         name: "setupGithubAction",
-        message: `Set up ${highlighter.info("GitHub Actions")} for CI testing?`,
+        message: `Set up ${highlighter.info("GitHub Actions")} to continuously test every PR in CI?`,
         initial: true,
       });
       setupGithubAction = response.setupGithubAction;

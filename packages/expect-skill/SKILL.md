@@ -94,6 +94,10 @@ Read `web-design-guidelines/SKILL.md` for web interface design review guidelines
 Read `security-review/SKILL.md` for browser security review guidelines.
 </important>
 
+<important if="domain=design or domain=animation or domain=motion or domain=audio or domain=typography or domain=shadows or domain=ux-psychology, or implementing animations, choosing between springs and easing, adding sound feedback, applying UX laws, fixing typography, styling shadows/borders, or animating container bounds">
+Read `design/SKILL.md` for UI/UX design principles and patterns.
+</important>
+
 ## When Expect Itself Fails
 
 If `expect-cli` itself crashes, hangs, or errors (not a test failure — a tool bug):

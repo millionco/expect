@@ -15,7 +15,6 @@ import {
   hasGhCli,
   isGithubCliAuthenticated,
   setGhSecret,
-  setGhVariable,
 } from "./init-utils";
 
 interface AddGithubActionOptions {
@@ -53,7 +52,9 @@ const generateWorkflow = (packageManager: PackageManager, devCommand: string, de
 
   const setupSteps = buildSetupSteps(packageManager, install);
 
-  return `name: Expect Browser Tests
+  return `# Runs Expect browser tests in CI on every pull request.
+# Expect reads the PR diff, generates a test plan, and validates changes in a real browser.
+name: Expect CI
 
 on:
   pull_request:
@@ -74,7 +75,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # we need the history for Agent to compare against main
+          fetch-depth: 0
 ${setupSteps}
 
       - name: Install Playwright Chromium
@@ -92,11 +93,9 @@ ${setupSteps}
 
       - name: Run expect
         env:
-          # Expect uses the GitHub token to comment on the pull request.
           GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
         run: ${dlx} expect-cli@latest --ci
 
-      # Upload browser recordings and traces from .expect so failures are debuggable after the run.
       - name: Upload test artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -207,6 +206,7 @@ export const runAddGithubAction = async (options: AddGithubActionOptions = {}) =
 
   logger.break();
   logger.success("Created .github/workflows/expect.yml");
+  logger.dim("  Expect will automatically test every pull request in CI.");
   logger.break();
 
   const ghAvailable = await Effect.runPromise(hasGhCli);
@@ -278,36 +278,6 @@ export const runAddGithubAction = async (options: AddGithubActionOptions = {}) =
 
   if (!secretSet) {
     logManualInstructions(ghAvailable, "ANTHROPIC_API_KEY", "secret");
-  }
-
-  if (ghAuthed && !nonInteractive) {
-    logger.break();
-    const response = await prompts({
-      type: "confirm",
-      name: "setBaseUrl",
-      message: `Set ${highlighter.info("EXPECT_BASE_URL")} repository variable to ${highlighter.info(devUrl)}?`,
-      initial: true,
-    });
-
-    if (response.setBaseUrl) {
-      const variableResult = await Effect.runPromise(
-        setGhVariable("EXPECT_BASE_URL", devUrl).pipe(
-          Effect.provide(NodeServices.layer),
-          Effect.as(true),
-          Effect.catchTag("GhVariableSetError", (error) => {
-            logger.warn("Failed to set EXPECT_BASE_URL variable.");
-            if (error.reason) {
-              logger.dim(`  ${error.reason}`);
-            }
-            return Effect.succeed(false);
-          }),
-        ),
-      );
-
-      if (variableResult) {
-        logger.success(`EXPECT_BASE_URL set to ${devUrl}.`);
-      }
-    }
   }
 };
 

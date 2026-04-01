@@ -174,7 +174,7 @@ const addCommand = program.command("add").description("add integrations to your 
 
 addCommand
   .command("github-action")
-  .description("generate a GitHub Actions workflow for CI testing")
+  .description("add a GitHub Actions workflow that tests every PR in CI")
   .option("-y, --yes", "use defaults without prompting")
   .action(async (opts: { yes?: boolean }) => {
     await runAddGithubAction(opts);
