@@ -74,16 +74,11 @@ describe("MCP server tools", () => {
       "accessibility_audit",
       "close",
       "console_logs",
-      "ios_devices",
-      "ios_execute",
-      "ios_source",
       "network_requests",
       "open",
       "performance_metrics",
       "playwright",
       "screenshot",
-      "swipe",
-      "tap",
     ]);
   });
 

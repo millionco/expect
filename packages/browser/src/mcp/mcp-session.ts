@@ -1,18 +1,7 @@
 import path from "node:path";
 import type { Browser as PlaywrightBrowser, BrowserContext, Page } from "playwright";
 import type { eventWithTime } from "@rrweb/types";
-import {
-  Config,
-  Effect,
-  Exit,
-  Fiber,
-  Layer,
-  Option,
-  Ref,
-  Schedule,
-  Scope,
-  ServiceMap,
-} from "effect";
+import { Config, Effect, Fiber, Layer, Option, Ref, Schedule, ServiceMap } from "effect";
 import type { Cookie } from "@expect/cookies";
 import { FileSystem } from "effect/FileSystem";
 import { Browser } from "../browser";
@@ -31,13 +20,6 @@ import {
 import { McpSessionNotOpenError } from "./errors";
 import { startLiveViewServer, type LiveViewHandle } from "./live-view-server";
 import type { ViewerRunState } from "./viewer-events";
-import { createIosSession } from "../ios/appium";
-import {
-  selectDevice,
-  bootSimulator,
-  listAllDevices,
-  extractPlatformVersion,
-} from "../ios/ios-simulator";
 
 interface ConsoleEntry {
   readonly type: string;
@@ -85,8 +67,6 @@ export interface CloseResult {
   readonly tmpVideoPath: string | undefined;
   readonly screenshotPaths: readonly string[];
 }
-
-type IosSessionData = Effect.Success<ReturnType<typeof createIosSession>>;
 
 const TMP_ARTIFACT_OUTPUT_DIRECTORY = "/tmp/expect-replays";
 const PLAYWRIGHT_VIDEO_SUBDIRECTORY = "playwright";
@@ -139,8 +119,6 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
     const cookiesDisabled = cookieBrowserKeys.length === 0;
 
     const sessionRef = yield* Ref.make<BrowserSessionData | undefined>(undefined);
-    const iosSessionRef = yield* Ref.make<IosSessionData | undefined>(undefined);
-    const iosScopeRef = yield* Ref.make<Scope.Closeable | undefined>(undefined);
     const liveViewRef = yield* Ref.make<LiveViewHandle | undefined>(undefined);
     const pollingFiberRef = yield* Ref.make<Fiber.Fiber<unknown> | undefined>(undefined);
     const latestRunStateRef = yield* Ref.make<ViewerRunState | undefined>(undefined);
@@ -189,12 +167,6 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
 
     const requirePage = Effect.fn("McpSession.requirePage")(function* () {
       return (yield* requireSession()).page;
-    });
-
-    const requireIosSession = Effect.fn("McpSession.requireIosSession")(function* () {
-      const iosSession = yield* Ref.get(iosSessionRef);
-      if (!iosSession) return yield* new McpSessionNotOpenError();
-      return iosSession;
     });
 
     const navigate = Effect.fn("McpSession.navigate")(function* (
@@ -325,36 +297,6 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       return { injectedCookieCount } satisfies OpenResult;
     });
 
-    const openIos = Effect.fn("McpSession.openIos")(function* (url: string, deviceName?: string) {
-      yield* Effect.annotateCurrentSpan({ url, deviceName });
-
-      const device = yield* selectDevice(deviceName);
-
-      if (!device.isReal && device.state !== "Booted") {
-        yield* bootSimulator(device.udid);
-      }
-
-      const platformVersion = extractPlatformVersion(device.runtime);
-
-      const scope = yield* Scope.make();
-      const iosSession = yield* createIosSession(device.udid, device.name, platformVersion).pipe(
-        Effect.provideService(Scope.Scope, scope),
-      );
-
-      yield* Ref.set(iosSessionRef, iosSession);
-      yield* Ref.set(iosScopeRef, scope);
-
-      yield* iosSession.client.navigate(url);
-
-      yield* Effect.logInfo("iOS session opened", {
-        device: device.name,
-        udid: device.udid,
-        url,
-      });
-
-      return { device: device.name, udid: device.udid };
-    });
-
     const snapshot = Effect.fn("McpSession.snapshot")(function* (
       page: Page,
       options?: SnapshotOptions,
@@ -377,24 +319,6 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
     });
 
     const close = Effect.fn("McpSession.close")(function* () {
-      const iosScope = yield* Ref.get(iosScopeRef);
-      if (iosScope) {
-        yield* Scope.close(iosScope, Exit.void).pipe(
-          Effect.catchCause((cause) => Effect.logDebug("Failed to close iOS session", { cause })),
-        );
-        yield* Ref.set(iosSessionRef, undefined);
-        yield* Ref.set(iosScopeRef, undefined);
-        return {
-          replaySessionPath: undefined,
-          reportPath: undefined,
-          videoPath: undefined,
-          tmpReplaySessionPath: undefined,
-          tmpReportPath: undefined,
-          tmpVideoPath: undefined,
-          screenshotPaths: yield* Ref.get(savedScreenshotPathsRef),
-        } satisfies CloseResult;
-      }
-
       const activeSession = yield* Ref.get(sessionRef);
       if (!activeSession) return undefined;
 
@@ -630,17 +554,13 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       open,
       navigate,
       hasSession: () => Boolean(Ref.getUnsafe(sessionRef)),
-      hasIosSession: () => Boolean(Ref.getUnsafe(iosSessionRef)),
       requirePage,
       requireSession,
-      requireIosSession,
       snapshot,
       annotatedScreenshot,
       updateLastSnapshot,
       pushStepEvent,
       saveScreenshot,
-      openIos,
-      listIosDevices: listAllDevices,
       close,
     } as const;
   }),
