@@ -142,7 +142,7 @@ export const PortPickerScreen = ({
           {
             url: portEntryToUrl(entry),
             projectPath: project.path,
-            devCommand: `${project.packageManager} run dev`,
+            devCommand: project.devCommand,
           },
         ];
       });

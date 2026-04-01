@@ -124,7 +124,7 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
         isHeadless: options.isHeadless,
       });
       yield* Effect.logInfo("Execution started", {
-        instruction: options.instruction,
+        instructionLength: options.instruction.length,
         changesFor: options.changesFor._tag,
         isHeadless: options.isHeadless,
         cookieBrowserCount: options.cookieBrowserKeys.length,

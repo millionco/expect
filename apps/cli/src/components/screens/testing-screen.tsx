@@ -454,6 +454,7 @@ export const TestingScreen = ({
     savedFlow,
     cookieBrowserKeys,
     baseUrls,
+    devServerHints,
     replayHost,
     modelPreferenceConfigId,
     modelPreferenceValue,

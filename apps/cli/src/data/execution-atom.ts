@@ -75,7 +75,7 @@ const executeCore = (input: ExecuteInput) =>
     yield* Effect.logInfo("Execution starting", {
       agentBackend: input.agentBackend,
       hasReplayHost: Boolean(input.replayHost),
-      instruction: input.options.instruction,
+      instructionLength: input.options.instruction.length,
       changesFor: input.options.changesFor._tag,
     });
 
