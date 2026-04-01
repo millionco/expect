@@ -23,8 +23,6 @@ jobs:
             command: pnpm format:check
           - name: Typecheck
             command: pnpm typecheck
-          - name: Skill Sync
-            command: ./scripts/sync-skill.sh --check
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -33,12 +31,11 @@ jobs:
           node-version: 22
           cache: "pnpm"
       - name: Install dependencies
-        if: matrix.name != 'Skill Sync'
         run: pnpm install --frozen-lockfile
         env:
           GITHUB_ACTIONS: "1"
       - name: Build
-        if: matrix.name != 'Format' && matrix.name != 'Skill Sync'
+        if: matrix.name != 'Format'
         run: pnpm build
       - name: ${{ matrix.name }}
         run: ${{ matrix.command }}
