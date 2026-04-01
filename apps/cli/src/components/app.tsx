@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Box, useApp, useInput } from "ink";
 import { spawnSync } from "node:child_process";
-import { MouseProvider } from "../hooks/mouse-context";
 import { PrPickerScreen } from "./screens/pr-picker-screen";
 import { CookieSyncConfirmScreen } from "./screens/cookie-sync-confirm-screen";
 import { PortPickerScreen } from "./screens/port-picker-screen";
@@ -165,11 +164,9 @@ export const App = ({ agent }: { agent: AgentBackend }) => {
   };
 
   return (
-    <MouseProvider>
-      <Box flexDirection="column" width="100%" height={rows}>
-        <Box flexGrow={1}>{renderScreen()}</Box>
-        <Modeline />
-      </Box>
-    </MouseProvider>
+    <Box flexDirection="column" width="100%" height={rows}>
+      <Box flexGrow={1}>{renderScreen()}</Box>
+      <Modeline />
+    </Box>
   );
 };

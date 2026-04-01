@@ -11,7 +11,6 @@ import {
   screenForTestingOrPortPicker,
 } from "../../stores/use-navigation";
 import { useColors, COLORS } from "../theme-context";
-import { Clickable } from "../ui/clickable";
 import { Input } from "../ui/input";
 import { InlineError } from "../ui/error-message";
 import { RuledBox } from "../ui/ruled-box";
@@ -332,54 +331,40 @@ export const MainMenu = ({ gitState }: MainMenuProps) => {
         <Box paddingX={1}>
           {!gitState && <Spinner message="loading context" />}
           {gitState && gitState.isGitRepo && activeContext && (
-            <Clickable
-              fullWidth={false}
-              onClick={() => {
-                if (picker.pickerOpen) picker.closePicker();
-                else picker.openPicker();
-              }}
-            >
-              <Text color={COLORS.DIM}>
-                {figures.bullet}{" "}
-                <Text color={COLORS.PRIMARY}>
-                  @{getContextDisplayLabel(activeContext, gitState)}
-                </Text>
-                {getContextDescription(activeContext, gitState) &&
-                  ` (${getContextDescription(activeContext, gitState)})`}
-              </Text>
-            </Clickable>
+            <Text color={COLORS.DIM}>
+              {figures.bullet}{" "}
+              <Text color={COLORS.PRIMARY}>@{getContextDisplayLabel(activeContext, gitState)}</Text>
+              {getContextDescription(activeContext, gitState) &&
+                ` (${getContextDescription(activeContext, gitState)})`}
+            </Text>
           )}
         </Box>
-        <Clickable>
-          <Box
-            flexDirection="column"
-            marginTop={1}
-            backgroundColor={COLORS.INPUT_BG}
-            width="100%"
-            paddingX={1}
-            paddingY={1}
-          >
-            <Box>
-              <Text color={COLORS.PRIMARY}>{"❯ "}</Text>
-              <Box flexGrow={1}>
-                <Input
-                  key={inputKey}
-                  focus={!picker.pickerOpen}
-                  multiline
-                  placeholder={currentSuggestion ? `${currentSuggestion}  [tab]` : ""}
-                  value={value}
-                  onSubmit={submit}
-                  onUpArrowAtTop={isSingleLine ? undefined : navigateHistoryBack}
-                  onDownArrowAtBottom={isSingleLine ? undefined : navigateHistoryForward}
-                  onChange={handleInputChange}
-                />
-              </Box>
-              {showCycleHint ? (
-                <Text color={COLORS.DIM}>{"  ←→ cycle test suggestions"}</Text>
-              ) : null}
+        <Box
+          flexDirection="column"
+          marginTop={1}
+          backgroundColor={COLORS.INPUT_BG}
+          width="100%"
+          paddingX={1}
+          paddingY={1}
+        >
+          <Box>
+            <Text color={COLORS.PRIMARY}>{`${figures.pointer} `}</Text>
+            <Box flexGrow={1}>
+              <Input
+                key={inputKey}
+                focus={!picker.pickerOpen}
+                multiline
+                placeholder={currentSuggestion ? `${currentSuggestion}  [tab]` : ""}
+                value={value}
+                onSubmit={submit}
+                onUpArrowAtTop={isSingleLine ? undefined : navigateHistoryBack}
+                onDownArrowAtBottom={isSingleLine ? undefined : navigateHistoryForward}
+                onChange={handleInputChange}
+              />
             </Box>
+            {showCycleHint ? <Text color={COLORS.DIM}>{"  ←→ cycle test suggestions"}</Text> : null}
           </Box>
-        </Clickable>
+        </Box>
         {gitState?.isGitRepo && picker.pickerOpen && (
           <RuledBox color={COLORS.BORDER}>
             <Box marginBottom={0}>

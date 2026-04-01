@@ -97,7 +97,9 @@ export const runAddSkill = async (options: AddSkillOptions) => {
     result: ensureAgentSymlink(projectRoot, agent),
   }));
 
-  const linked = results.filter((entry) => entry.result === true).map((entry) => toDisplayName(entry.agent));
+  const linked = results
+    .filter((entry) => entry.result === true)
+    .map((entry) => toDisplayName(entry.agent));
   const failed = results.filter((entry) => typeof entry.result === "string");
 
   for (const { agent, result } of failed) {

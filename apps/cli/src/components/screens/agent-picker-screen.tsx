@@ -12,7 +12,6 @@ import { useColors } from "../theme-context";
 import { agentProviderAtom } from "../../data/runtime";
 import { agentConfigOptionsAtom } from "../../data/config-options";
 import { ScreenHeading } from "../ui/screen-heading";
-import { Clickable } from "../ui/clickable";
 import { Spinner } from "../ui/spinner";
 import type { AgentBackend } from "@expect/agent";
 import type { AcpConfigOption, AcpConfigSelectOption } from "@expect/shared/models";
@@ -226,20 +225,17 @@ export const AgentPickerScreen = () => {
                 : COLORS.TEXT;
 
             return (
-              <Clickable
+              <Text
                 key={item.key}
-                onClick={() => {
-                  setHighlightedIndex(actualIndex);
-                  selectItem(item);
-                }}
+                color={itemColor}
+                bold={isHighlighted}
+                dimColor={item.isDisabled}
               >
-                <Text color={itemColor} bold={isHighlighted} dimColor={item.isDisabled}>
-                  {pointer}
-                  {item.label}
-                  {item.isCurrent && <Text color={COLORS.GREEN}> {figures.tick}</Text>}
-                  {item.sublabel && <Text color={COLORS.DIM}> {item.sublabel}</Text>}
-                </Text>
-              </Clickable>
+                {pointer}
+                {item.label}
+                {item.isCurrent && <Text color={COLORS.GREEN}> {figures.tick}</Text>}
+                {item.sublabel && <Text color={COLORS.DIM}> {item.sublabel}</Text>}
+              </Text>
             );
           })}
         </Box>

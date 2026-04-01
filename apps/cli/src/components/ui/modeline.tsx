@@ -4,32 +4,21 @@ import stringWidth from "string-width";
 import { useColors, theme } from "../theme-context";
 import { HintBar, HINT_SEPARATOR, type HintSegment } from "./hint-bar";
 import { Option } from "effect";
-import {
-  useNavigationStore,
-  Screen,
-  screenForTestingOrPortPicker,
-} from "../../stores/use-navigation";
+import { useNavigationStore, Screen } from "../../stores/use-navigation";
 import { usePlanExecutionStore } from "../../stores/use-plan-execution-store";
 import { useGitState, type GitState } from "../../hooks/use-git-state";
 import { useProjectPreferencesStore } from "../../stores/use-project-preferences";
 import { usePreferencesStore } from "../../stores/use-preferences";
 import { useUpdateCheck } from "../../hooks/use-update-check";
-import { Clickable } from "./clickable";
 import { TextShimmer } from "./text-shimmer";
 import { AGENT_PROVIDER_DISPLAY_NAMES } from "@expect/shared/models";
-import { ChangesFor } from "@expect/supervisor";
 import { useAtomValue } from "@effect/atom-react";
 import { agentProviderAtom } from "../../data/runtime";
 
-const useHintSegments = (screen: Screen, gitState: GitState | undefined): HintSegment[] => {
+const useHintSegments = (screen: Screen, _gitState: GitState | undefined): HintSegment[] => {
   const COLORS = useColors();
-  const setScreen = useNavigationStore((state) => state.setScreen);
   const cookieBrowserKeys = useProjectPreferencesStore((state) => state.cookieBrowserKeys);
-  const clearCookieBrowserKeys = useProjectPreferencesStore(
-    (state) => state.clearCookieBrowserKeys,
-  );
   const notifications = usePreferencesStore((state) => state.notifications);
-  const toggleNotifications = usePreferencesStore((state) => state.toggleNotifications);
   const expanded = usePlanExecutionStore((state) => state.expanded);
   const agentProviderValue = useAtomValue(agentProviderAtom);
 
@@ -39,51 +28,18 @@ const useHintSegments = (screen: Screen, gitState: GitState | undefined): HintSe
         ? AGENT_PROVIDER_DISPLAY_NAMES[agentProviderValue.value]
         : "Agent";
       const segments: HintSegment[] = [
-        {
-          key: "ctrl+a",
-          label: agentLabel,
-          cta: true,
-          onClick: () => setScreen(Screen.AgentPicker()),
-        },
+        { key: "ctrl+a", label: agentLabel, cta: true },
         {
           key: "ctrl+k",
           label:
             cookieBrowserKeys.length > 0 ? `cookies (${cookieBrowserKeys.length})` : "cookies off",
           cta: true,
-          onClick:
-            cookieBrowserKeys.length > 0
-              ? clearCookieBrowserKeys
-              : () => setScreen(Screen.CookieSyncConfirm({})),
         },
-        {
-          key: "ctrl+r",
-          label: "saved flows",
-          cta: true,
-          onClick: () => setScreen(Screen.SavedFlowPicker()),
-        },
+        { key: "ctrl+r", label: "saved flows", cta: true },
       ];
-      if (gitState?.isGitRepo) {
-        segments.push({
-          key: "ctrl+w",
-          label: "watch",
-          cta: true,
-          onClick: () => {
-            const mainBranch = gitState?.mainBranch ?? "main";
-            setScreen(
-              Screen.Watch({
-                changesFor: ChangesFor.makeUnsafe({ _tag: "Changes", mainBranch }),
-                instruction:
-                  "Test all changes from main in the browser and verify they work correctly.",
-              }),
-            );
-          },
-        });
-        segments.push({
-          key: "ctrl+p",
-          label: "pick pr",
-          cta: true,
-          onClick: () => setScreen(Screen.SelectPr()),
-        });
+      if (_gitState?.isGitRepo) {
+        segments.push({ key: "ctrl+w", label: "watch", cta: true });
+        segments.push({ key: "ctrl+p", label: "pick pr", cta: true });
       }
       return segments;
     }
@@ -92,19 +48,19 @@ const useHintSegments = (screen: Screen, gitState: GitState | undefined): HintSe
         { key: "↑↓", label: "nav" },
         { key: "←→", label: "filter" },
         { key: "/", label: "search" },
-        { key: "esc", label: "back", cta: true, onClick: () => setScreen(Screen.Main()) },
+        { key: "esc", label: "back", cta: true },
         { key: "enter", label: "select", color: COLORS.PRIMARY, cta: true },
       ];
     case "SavedFlowPicker":
       return [
         { key: "↑↓", label: "nav" },
-        { key: "esc", label: "back", cta: true, onClick: () => setScreen(Screen.Main()) },
+        { key: "esc", label: "back", cta: true },
         { key: "enter", label: "select", color: COLORS.PRIMARY, cta: true },
       ];
     case "AgentPicker":
       return [
         { key: "↑↓", label: "nav" },
-        { key: "esc", label: "back", cta: true, onClick: () => setScreen(Screen.Main()) },
+        { key: "esc", label: "back", cta: true },
         { key: "enter", label: "select", color: COLORS.PRIMARY, cta: true },
       ];
     case "CookieSyncConfirm":
@@ -112,7 +68,7 @@ const useHintSegments = (screen: Screen, gitState: GitState | undefined): HintSe
         { key: "↑↓", label: "nav" },
         { key: "space", label: "toggle" },
         { key: "a", label: "select all", cta: true },
-        { key: "esc", label: "back", cta: true, onClick: () => setScreen(Screen.Main()) },
+        { key: "esc", label: "back", cta: true },
         { key: "enter", label: "confirm", color: COLORS.PRIMARY, cta: true },
       ];
     case "PortPicker":
@@ -120,19 +76,14 @@ const useHintSegments = (screen: Screen, gitState: GitState | undefined): HintSe
         { key: "↑↓", label: "nav" },
         { key: "space", label: "toggle" },
         { key: "/", label: "custom port" },
-        { key: "esc", label: "back", cta: true, onClick: () => setScreen(Screen.Main()) },
+        { key: "esc", label: "back", cta: true },
         { key: "enter", label: "confirm", color: COLORS.PRIMARY, cta: true },
       ];
     case "Testing": {
       const notifyLabel = notifications === true ? "notify on" : "notify off";
       const expandLabel = expanded ? "collapse" : "expand";
       return [
-        {
-          key: "ctrl+n",
-          label: notifyLabel,
-          cta: true,
-          onClick: toggleNotifications,
-        },
+        { key: "ctrl+n", label: notifyLabel, cta: true },
         { key: "ctrl+o", label: expandLabel, cta: true },
         { key: "esc", label: expanded ? "collapse" : "cancel" },
       ];
@@ -140,12 +91,7 @@ const useHintSegments = (screen: Screen, gitState: GitState | undefined): HintSe
     case "Watch": {
       const watchNotifyLabel = notifications === true ? "notify on" : "notify off";
       return [
-        {
-          key: "ctrl+n",
-          label: watchNotifyLabel,
-          cta: true,
-          onClick: toggleNotifications,
-        },
+        { key: "ctrl+n", label: watchNotifyLabel, cta: true },
         { key: "esc", label: "stop" },
       ];
     }
@@ -155,29 +101,8 @@ const useHintSegments = (screen: Screen, gitState: GitState | undefined): HintSe
         hints.push({ key: "p", label: "post to PR", cta: true });
       }
       hints.push({ key: "s", label: "save flow", cta: true });
-      hints.push({
-        key: "r",
-        label: "restart",
-        cta: true,
-        onClick: () => {
-          usePlanExecutionStore.getState().setExecutedPlan(undefined);
-          setScreen(
-            screenForTestingOrPortPicker({
-              changesFor: screen.report.changesFor,
-              instruction: screen.report.instruction,
-            }),
-          );
-        },
-      });
-      hints.push({
-        key: "esc",
-        label: "main menu",
-        cta: true,
-        onClick: () => {
-          usePlanExecutionStore.getState().setExecutedPlan(undefined);
-          setScreen(Screen.Main());
-        },
-      });
+      hints.push({ key: "r", label: "restart", cta: true });
+      hints.push({ key: "esc", label: "main menu", cta: true });
       return hints;
     }
     default:
@@ -245,32 +170,23 @@ export const Modeline = () => {
         <Text color={theme.border}>{"─".repeat(columns)}</Text>
       )}
       <Box paddingX={1}>
-        {actions.map((action, index) => {
-          const pill = (
-            <Text key={action.key + action.label}>
-              {index > 0 ? "   " : ""}
-              {action.color ? (
-                <Text backgroundColor={action.color} color="black">
-                  {" "}
-                  <Text bold>{action.label}</Text> <Text>[{action.key}]</Text>{" "}
-                </Text>
-              ) : (
-                <Text>
-                  <Text color={theme.textMuted}>{action.label} </Text>
-                  <Text color={theme.textMuted}>[{action.key}]</Text>
-                </Text>
-              )}
-            </Text>
-          );
-
-          return action.onClick ? (
-            <Clickable key={action.key + action.label} onClick={action.onClick} fullWidth={false}>
-              {pill}
-            </Clickable>
-          ) : (
-            pill
-          );
-        })}
+        {actions.map((action, index) => (
+          <Text key={action.key + action.label}>
+            {index > 0 ? "   " : ""}
+            {action.color && (
+              <Text backgroundColor={action.color} color="black">
+                {" "}
+                <Text bold>{action.label}</Text> <Text>[{action.key}]</Text>{" "}
+              </Text>
+            )}
+            {!action.color && (
+              <Text>
+                <Text color={theme.textMuted}>{action.label} </Text>
+                <Text color={theme.textMuted}>[{action.key}]</Text>
+              </Text>
+            )}
+          </Text>
+        ))}
         <Text>{" ".repeat(gap)}</Text>
         {keybinds.length > 0 ? (
           <HintBar segments={keybinds} color={theme.primary} mutedColor={theme.textMuted} />

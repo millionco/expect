@@ -11,8 +11,6 @@ import {
 } from "../../constants";
 import { useColors } from "../theme-context";
 import { RuledBox } from "../ui/ruled-box";
-import { stripMouseSequences } from "../../hooks/mouse-context";
-import { Clickable } from "../ui/clickable";
 import { SearchBar } from "../ui/search-bar";
 import { BRANCH_FILTERS, RemoteBranch, type BranchFilter } from "@expect/shared/models";
 import { useRemoteBranches } from "../../hooks/use-remote-branches";
@@ -54,7 +52,7 @@ export const PrPickerScreen = () => {
   const visibleItems = filteredBranches.slice(scrollOffset, scrollOffset + BRANCH_VISIBLE_COUNT);
 
   const handleSearchChange = (value: string) => {
-    setSearchQuery(stripMouseSequences(value));
+    setSearchQuery(value);
     setHighlightedIndex(0);
   };
 
@@ -142,17 +140,9 @@ export const PrPickerScreen = () => {
           };
           return (
             <Box key={filter}>
-              <Clickable
-                fullWidth={false}
-                onClick={() => {
-                  setActiveFilter(filter);
-                  setHighlightedIndex(0);
-                }}
-              >
-                <Text color={isActive ? filterColors[filter] : COLORS.DIM}>
-                  {isActive ? `[${filter}]` : filter}
-                </Text>
-              </Clickable>
+              <Text color={isActive ? filterColors[filter] : COLORS.DIM}>
+                {isActive ? `[${filter}]` : filter}
+              </Text>
               <Text color={COLORS.DIM}>{separator}</Text>
             </Box>
           );
@@ -176,13 +166,7 @@ export const PrPickerScreen = () => {
             const isSelected = actualIndex === highlightedIndex;
 
             return (
-              <Clickable
-                key={branch.name}
-                onClick={() => {
-                  setHighlightedIndex(actualIndex);
-                  doSwitchBranch(branch.name);
-                }}
-              >
+              <Box key={branch.name}>
                 <Text color={isSelected ? COLORS.PRIMARY : COLORS.DIM}>
                   {isSelected ? `${figures.pointer} ` : "  "}
                 </Text>
@@ -198,7 +182,7 @@ export const PrPickerScreen = () => {
                     BRANCH_AUTHOR_COLUMN_WIDTH,
                   )}
                 </Text>
-                {branch.prNumber && branch.prStatus ? (
+                {branch.prNumber && branch.prStatus && (
                   <Text
                     color={
                       branch.prStatus === "open"
@@ -210,10 +194,9 @@ export const PrPickerScreen = () => {
                   >
                     {cliTruncate(`#${branch.prNumber} ${branch.prStatus}`, prColumnWidth)}
                   </Text>
-                ) : (
-                  <Text color={COLORS.DIM}>—</Text>
                 )}
-              </Clickable>
+                {!(branch.prNumber && branch.prStatus) && <Text color={COLORS.DIM}>—</Text>}
+              </Box>
             );
           })}
           {filteredBranches.length === 0 && <Text color={COLORS.DIM}>No matching branches</Text>}

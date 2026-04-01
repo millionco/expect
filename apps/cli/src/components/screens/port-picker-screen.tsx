@@ -11,7 +11,6 @@ import { useScrollableList } from "../../hooks/use-scrollable-list";
 import { trackEvent } from "../../utils/session-analytics";
 import { SearchBar } from "../ui/search-bar";
 import { Input } from "../ui/input";
-import { Clickable } from "../ui/clickable";
 import { Logo } from "../ui/logo";
 
 interface PortPickerScreenProps {
@@ -192,14 +191,6 @@ export const PortPickerScreen = ({
     setIsEnteringCustomUrl(false);
   };
 
-  const removeCustomUrl = (url: string) => {
-    setCustomUrls((previous) => {
-      const next = new Set(previous);
-      next.delete(url);
-      return next;
-    });
-  };
-
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
     setHighlightedIndex(0);
@@ -318,93 +309,65 @@ export const PortPickerScreen = ({
           const isSelected = selectedPorts.has(entry.port);
 
           return (
-            <Clickable
-              key={entry.port}
-              onClick={() => {
-                setHighlightedIndex(actualIndex);
-                togglePort(entry.port);
-              }}
-            >
-              <Box>
-                <Text color={isHighlighted ? COLORS.PRIMARY : COLORS.DIM}>
-                  {isHighlighted ? `${figures.pointer} ` : "  "}
-                </Text>
-                <Text color={isSelected ? COLORS.PRIMARY : COLORS.DIM}>
-                  {isSelected ? figures.checkboxOn : figures.checkboxOff}{" "}
-                </Text>
-                <Text color={isHighlighted ? COLORS.PRIMARY : COLORS.TEXT} bold={isHighlighted}>
-                  :{entry.port}
-                </Text>
-                {entry.processName && <Text color={COLORS.DIM}> {entry.processName}</Text>}
-                {entry.cwd && <Text color={COLORS.DIM}> {entry.cwd}</Text>}
-              </Box>
-            </Clickable>
+            <Box key={entry.port}>
+              <Text color={isHighlighted ? COLORS.PRIMARY : COLORS.DIM}>
+                {isHighlighted ? `${figures.pointer} ` : "  "}
+              </Text>
+              <Text color={isSelected ? COLORS.PRIMARY : COLORS.DIM}>
+                {isSelected ? figures.checkboxOn : figures.checkboxOff}{" "}
+              </Text>
+              <Text color={isHighlighted ? COLORS.PRIMARY : COLORS.TEXT} bold={isHighlighted}>
+                :{entry.port}
+              </Text>
+              {entry.processName && <Text color={COLORS.DIM}> {entry.processName}</Text>}
+              {entry.cwd && <Text color={COLORS.DIM}> {entry.cwd}</Text>}
+            </Box>
           );
         })}
         {customUrlVisible && (
-          <Clickable
-            onClick={() => {
-              setHighlightedIndex(customUrlIndex);
-              setIsEnteringCustomUrl(true);
-            }}
-          >
-            <Box>
-              <Text color={isCustomUrlHighlighted ? COLORS.PRIMARY : COLORS.DIM}>
-                {isCustomUrlHighlighted ? `${figures.pointer} ` : "  "}
+          <Box>
+            <Text color={isCustomUrlHighlighted ? COLORS.PRIMARY : COLORS.DIM}>
+              {isCustomUrlHighlighted ? `${figures.pointer} ` : "  "}
+            </Text>
+            {isEnteringCustomUrl && (
+              <Box>
+                <Text color={COLORS.PRIMARY}>URL: </Text>
+                <Input
+                  focus
+                  value={customUrlValue}
+                  placeholder="https://localhost:4000 or staging.example.com"
+                  onChange={setCustomUrlValue}
+                  onSubmit={handleCustomUrlSubmit}
+                />
+              </Box>
+            )}
+            {!isEnteringCustomUrl && (
+              <Text
+                color={isCustomUrlHighlighted ? COLORS.PRIMARY : COLORS.TEXT}
+                bold={isCustomUrlHighlighted}
+              >
+                Enter a custom URL{figures.ellipsis}
               </Text>
-              {isEnteringCustomUrl && (
-                <Box>
-                  <Text color={COLORS.PRIMARY}>URL: </Text>
-                  <Input
-                    focus
-                    value={customUrlValue}
-                    placeholder="https://localhost:4000 or staging.example.com"
-                    onChange={setCustomUrlValue}
-                    onSubmit={handleCustomUrlSubmit}
-                  />
-                </Box>
-              )}
-              {!isEnteringCustomUrl && (
-                <Text
-                  color={isCustomUrlHighlighted ? COLORS.PRIMARY : COLORS.TEXT}
-                  bold={isCustomUrlHighlighted}
-                >
-                  Enter a custom URL{figures.ellipsis}
-                </Text>
-              )}
-            </Box>
-          </Clickable>
+            )}
+          </Box>
         )}
         {customUrlVisible &&
           [...customUrls].map((url) => (
-            <Clickable key={url} onClick={() => removeCustomUrl(url)}>
-              <Box>
-                <Text> </Text>
-                <Text color={COLORS.PRIMARY}>{figures.checkboxOn} </Text>
-                <Text color={COLORS.TEXT}>{url}</Text>
-                <Text color={COLORS.DIM}> (click to remove)</Text>
-              </Box>
-            </Clickable>
+            <Box key={url}>
+              <Text> </Text>
+              <Text color={COLORS.PRIMARY}>{figures.checkboxOn} </Text>
+              <Text color={COLORS.TEXT}>{url}</Text>
+            </Box>
           ))}
         {skipVisible && (
-          <Clickable
-            onClick={() => {
-              setHighlightedIndex(skipIndex);
-              navigateToTesting([]);
-            }}
-          >
-            <Box>
-              <Text color={isSkipHighlighted ? COLORS.PRIMARY : COLORS.DIM}>
-                {isSkipHighlighted ? `${figures.pointer} ` : "  "}
-              </Text>
-              <Text
-                color={isSkipHighlighted ? COLORS.PRIMARY : COLORS.DIM}
-                bold={isSkipHighlighted}
-              >
-                Skip {figures.arrowRight} no base URL
-              </Text>
-            </Box>
-          </Clickable>
+          <Box>
+            <Text color={isSkipHighlighted ? COLORS.PRIMARY : COLORS.DIM}>
+              {isSkipHighlighted ? `${figures.pointer} ` : "  "}
+            </Text>
+            <Text color={isSkipHighlighted ? COLORS.PRIMARY : COLORS.DIM} bold={isSkipHighlighted}>
+              Skip {figures.arrowRight} no base URL
+            </Text>
+          </Box>
         )}
         {filteredEntries.length === 0 && !skipVisible && (
           <Text color={COLORS.DIM}>No matching ports</Text>

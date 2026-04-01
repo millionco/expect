@@ -352,7 +352,7 @@ export const createBrowserMcpServer = <E>(
             const previous = lastTimestamp.get(key);
             if (
               previous !== undefined &&
-              entry.timestamp - previous < DUPLICATE_REQUEST_WINDOW_MS
+              Math.abs(entry.timestamp - previous) < DUPLICATE_REQUEST_WINDOW_MS
             ) {
               const existing = duplicateMap.get(key);
               if (existing) {

@@ -11,14 +11,10 @@ export const BRANCH_NAME_COLUMN_WIDTH = 32;
 export const BRANCH_AUTHOR_COLUMN_WIDTH = 16;
 export const BRANCH_VISIBLE_COUNT = 15;
 export const TABLE_COLUMN_GAP = 2;
-export const LAYOUT_ORIGIN_OFFSET = 1;
 export const ALT_SCREEN_ON = "\u001b[?1049h\u001b[2J\u001b[H";
 export const ALT_SCREEN_OFF = "\u001b[?1049l";
 export const FALLBACK_TERMINAL_COLUMNS = 80;
 export const FALLBACK_TERMINAL_ROWS = 24;
-export const CLICK_SUPPORT_ENABLED =
-  process.env.SUPPORT_CLICK === "true" || process.env.SUPPORT_CLICK === "1";
-
 export const CONTEXT_PICKER_VISIBLE_COUNT = 8;
 
 export const TEST_FILE_CONTENT_SIZE_LIMIT_BYTES = 256 * 1024;

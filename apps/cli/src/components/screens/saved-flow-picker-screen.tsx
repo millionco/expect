@@ -16,7 +16,6 @@ import { useGitState } from "../../hooks/use-git-state";
 import { trackEvent } from "../../utils/session-analytics";
 import { ScreenHeading } from "../ui/screen-heading";
 import { Spinner } from "../ui/spinner";
-import { Clickable } from "../ui/clickable";
 import { visualPadEnd } from "../../utils/visual-pad-end";
 
 const SAVED_FLOW_VISIBLE_COUNT = 15;
@@ -55,11 +54,10 @@ export const SavedFlowPickerScreen = () => {
   const { data: gitState } = useGitState();
   const { data: savedFlows = [], isLoading } = useSavedFlows();
 
-  const { highlightedIndex, setHighlightedIndex, scrollOffset, handleNavigation } =
-    useScrollableList({
-      itemCount: savedFlows.length,
-      visibleCount: SAVED_FLOW_VISIBLE_COUNT,
-    });
+  const { highlightedIndex, scrollOffset, handleNavigation } = useScrollableList({
+    itemCount: savedFlows.length,
+    visibleCount: SAVED_FLOW_VISIBLE_COUNT,
+  });
 
   const titleColumnWidth = Math.min(40, Math.floor(columns * 0.35));
   const descriptionColumnWidth = Math.max(20, columns - titleColumnWidth - 8);
@@ -120,14 +118,7 @@ export const SavedFlowPickerScreen = () => {
             const stepCount = getSavedFlowSteps(flow).length;
 
             return (
-              <Clickable
-                key={flow.slug}
-                onClick={() => {
-                  setHighlightedIndex(actualIndex);
-                  const mainBranch = gitState?.mainBranch ?? "main";
-                  selectFlow(flow, mainBranch);
-                }}
-              >
+              <Box key={flow.slug}>
                 <Text color={isSelected ? COLORS.PRIMARY : COLORS.DIM}>
                   {isSelected ? `${figures.pointer} ` : "  "}
                 </Text>
@@ -140,7 +131,7 @@ export const SavedFlowPickerScreen = () => {
                 <Text color={COLORS.DIM}>
                   {cliTruncate(flow.description, descriptionColumnWidth)}
                 </Text>
-              </Clickable>
+              </Box>
             );
           })}
         </Box>

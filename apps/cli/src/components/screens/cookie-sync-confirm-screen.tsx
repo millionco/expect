@@ -6,7 +6,6 @@ import { trackEvent } from "../../utils/session-analytics";
 import { useColors } from "../theme-context";
 import { Logo } from "../ui/logo";
 import { Spinner } from "../ui/spinner";
-import { Clickable } from "../ui/clickable";
 import {
   useNavigationStore,
   Screen,
@@ -154,26 +153,18 @@ export const CookieSyncConfirmScreen = ({
             const isSelected = selectedKeys.has(browser.key);
 
             return (
-              <Clickable
-                key={browser.key}
-                onClick={() => {
-                  setHighlightedIndex(index);
-                  toggleKey(browser.key);
-                }}
-              >
-                <Box>
-                  <Text color={isHighlighted ? COLORS.PRIMARY : COLORS.DIM}>
-                    {isHighlighted ? `${figures.pointer} ` : "  "}
-                  </Text>
-                  <Text color={isSelected ? COLORS.PRIMARY : COLORS.DIM}>
-                    {isSelected ? figures.checkboxOn : figures.checkboxOff}{" "}
-                  </Text>
-                  <Text color={isHighlighted ? COLORS.PRIMARY : COLORS.TEXT} bold={isHighlighted}>
-                    {browser.displayName}
-                  </Text>
-                  {browser.isDefault && <Text color={COLORS.DIM}> (default)</Text>}
-                </Box>
-              </Clickable>
+              <Box key={browser.key}>
+                <Text color={isHighlighted ? COLORS.PRIMARY : COLORS.DIM}>
+                  {isHighlighted ? `${figures.pointer} ` : "  "}
+                </Text>
+                <Text color={isSelected ? COLORS.PRIMARY : COLORS.DIM}>
+                  {isSelected ? figures.checkboxOn : figures.checkboxOff}{" "}
+                </Text>
+                <Text color={isHighlighted ? COLORS.PRIMARY : COLORS.TEXT} bold={isHighlighted}>
+                  {browser.displayName}
+                </Text>
+                {browser.isDefault && <Text color={COLORS.DIM}> (default)</Text>}
+              </Box>
             );
           })}
         </Box>

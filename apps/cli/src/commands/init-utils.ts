@@ -28,12 +28,12 @@ export class GhSecretSetError extends Schema.ErrorClass<GhSecretSetError>("GhSec
   message = `Failed to set GitHub secret: ${this.reason}`;
 }
 
-export class GhVariableSetError extends Schema.ErrorClass<GhVariableSetError>(
-  "GhVariableSetError",
-)({
-  _tag: Schema.tag("GhVariableSetError"),
-  reason: Schema.String,
-}) {
+export class GhVariableSetError extends Schema.ErrorClass<GhVariableSetError>("GhVariableSetError")(
+  {
+    _tag: Schema.tag("GhVariableSetError"),
+    reason: Schema.String,
+  },
+) {
   message = `Failed to set GitHub variable: ${this.reason}`;
 }
 

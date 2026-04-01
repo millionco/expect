@@ -168,9 +168,7 @@ const executeCore = (input: ExecuteInput) =>
   });
 
 export const executeFn = cliAtomRuntime.fn<ExecuteInput>()((input) =>
-  stripUndefinedRequirement(
-    executeCore(input).pipe(Effect.annotateLogs({ fn: "executeFn" })),
-  ).pipe(
+  stripUndefinedRequirement(executeCore(input).pipe(Effect.annotateLogs({ fn: "executeFn" }))).pipe(
     Effect.tapError((error) =>
       Effect.gen(function* () {
         const analytics = yield* Analytics;
