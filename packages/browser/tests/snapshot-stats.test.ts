@@ -51,4 +51,48 @@ describe("computeSnapshotStats", () => {
     expect(stats.totalRefs).toBe(4);
     expect(stats.interactiveRefs).toBe(2);
   });
+
+  it("sets totalNodes and visibleNodes when scroll containers have hidden content", () => {
+    const tree = '- button "Visible 1" [ref=e1]\n- note "20 items hidden below"';
+    const refs: RefMap = { e1: { role: "button", name: "Visible 1" } };
+    const scrollContainers = [{ totalChildren: 25, hiddenAbove: 0, hiddenBelow: 20 }];
+    const stats = computeSnapshotStats(tree, refs, scrollContainers);
+
+    expect(stats.visibleNodes).toBe(2);
+    expect(stats.totalNodes).toBe(22);
+  });
+
+  it("sums hidden counts across multiple scroll containers", () => {
+    const tree = "- button [ref=e1]\n- button [ref=e2]";
+    const refs: RefMap = {
+      e1: { role: "button", name: "" },
+      e2: { role: "button", name: "" },
+    };
+    const scrollContainers = [
+      { totalChildren: 50, hiddenAbove: 10, hiddenBelow: 30 },
+      { totalChildren: 20, hiddenAbove: 5, hiddenBelow: 5 },
+    ];
+    const stats = computeSnapshotStats(tree, refs, scrollContainers);
+
+    expect(stats.totalNodes).toBe(2 + 10 + 30 + 5 + 5);
+    expect(stats.visibleNodes).toBe(2);
+  });
+
+  it("does not set totalNodes/visibleNodes when no scroll containers are provided", () => {
+    const stats = computeSnapshotStats("- button [ref=e1]", { e1: { role: "button", name: "" } });
+
+    expect(stats.totalNodes).toBeUndefined();
+    expect(stats.visibleNodes).toBeUndefined();
+  });
+
+  it("does not set totalNodes/visibleNodes when scroll containers array is empty", () => {
+    const stats = computeSnapshotStats(
+      "- button [ref=e1]",
+      { e1: { role: "button", name: "" } },
+      [],
+    );
+
+    expect(stats.totalNodes).toBeUndefined();
+    expect(stats.visibleNodes).toBeUndefined();
+  });
 });

@@ -196,7 +196,12 @@ export const createBrowserMcpServer = <E>(
           .enum(["screenshot", "snapshot", "annotated"])
           .optional()
           .describe("Capture mode (default: screenshot)"),
-        fullPage: z.boolean().optional().describe("Capture the full scrollable page"),
+        fullPage: z
+          .boolean()
+          .optional()
+          .describe(
+            "Capture the full page. For screenshot/annotated: captures full scrollable page. For snapshot: includes all elements in scroll containers instead of only visible ones.",
+          ),
       },
     },
     ({ mode, fullPage }) =>
@@ -207,7 +212,9 @@ export const createBrowserMcpServer = <E>(
           const resolvedMode = mode ?? "screenshot";
 
           if (resolvedMode === "snapshot") {
-            const result = yield* session.snapshot(page);
+            const result = yield* session.snapshot(page, {
+              viewportAware: !fullPage,
+            });
             yield* session.updateLastSnapshot(result);
             return jsonResult({ tree: result.tree, refs: result.refs, stats: result.stats });
           }

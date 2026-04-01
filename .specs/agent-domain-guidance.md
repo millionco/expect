@@ -23,24 +23,28 @@ Domain expertise lives in sub-skill markdown files under `packages/expect-skill/
 Add a tool to the browser MCP server (`packages/browser/src/mcp/server.ts`) that serves sub-skill content on demand.
 
 ```ts
-server.registerTool("load_guidance", {
-  title: "Load Domain Guidance",
-  description:
-    "Load detailed testing guidance for a specific domain. Call when you encounter a domain-specific failure or need domain expertise before testing.",
-  annotations: { readOnlyHint: true },
-  inputSchema: {
-    domain: z.enum([
-      "animation",
-      "accessibility",
-      "performance",
-      "design",
-      "security",
-      "seo",
-      "responsive",
-      "react",
-    ]),
+server.registerTool(
+  "load_guidance",
+  {
+    title: "Load Domain Guidance",
+    description:
+      "Load detailed testing guidance for a specific domain. Call when you encounter a domain-specific failure or need domain expertise before testing.",
+    annotations: { readOnlyHint: true },
+    inputSchema: {
+      domain: z.enum([
+        "animation",
+        "accessibility",
+        "performance",
+        "design",
+        "security",
+        "seo",
+        "responsive",
+        "react",
+      ]),
+    },
   },
-}, ({ domain }) => textResult(getGuidanceContent(domain)));
+  ({ domain }) => textResult(getGuidanceContent(domain)),
+);
 ```
 
 The agent's existing tools are read-only queries (screenshot, console_logs, network_requests, performance_metrics, accessibility_audit) plus action tools (open, playwright, close). `load_guidance` fits naturally in the read-only query category — it's the same pattern as `accessibility_audit` but for domain knowledge instead of WCAG violations.
@@ -110,16 +114,16 @@ This keeps the sub-skill files accessible to the outer coding agent as a fallbac
 
 ## Domain → sub-skill mapping
 
-| Domain enum value | Sub-skill directory | Content |
-|---|---|---|
-| `animation` | `fixing-animation/` | CSS animations, hover effects, springs, easing, Framer Motion, GPU perf |
-| `accessibility` | `fixing-accessibility/` | ARIA patterns, keyboard nav, focus management, audit rule mapping |
-| `performance` | `performance/` | Core Web Vitals, bundles, streaming, prefetching, resource budgets |
-| `design` | `design/` | Typography, shadows, spacing, UX laws, container animation, audio |
-| `security` | `security-review/` | XSS, CSRF, CORS, CSP, cookies, client storage, prototype pollution |
-| `seo` | `fixing-seo/` | Open Graph, canonical URLs, structured data |
-| `responsive` | `web-design-guidelines/` | Viewports, touch, cross-browser, dark mode, font loading |
-| `react` | `react-best-practices/` | Rerenders, server components, suspense, dynamic imports |
+| Domain enum value | Sub-skill directory      | Content                                                                 |
+| ----------------- | ------------------------ | ----------------------------------------------------------------------- |
+| `animation`       | `fixing-animation/`      | CSS animations, hover effects, springs, easing, Framer Motion, GPU perf |
+| `accessibility`   | `fixing-accessibility/`  | ARIA patterns, keyboard nav, focus management, audit rule mapping       |
+| `performance`     | `performance/`           | Core Web Vitals, bundles, streaming, prefetching, resource budgets      |
+| `design`          | `design/`                | Typography, shadows, spacing, UX laws, container animation, audio       |
+| `security`        | `security-review/`       | XSS, CSRF, CORS, CSP, cookies, client storage, prototype pollution      |
+| `seo`             | `fixing-seo/`            | Open Graph, canonical URLs, structured data                             |
+| `responsive`      | `web-design-guidelines/` | Viewports, touch, cross-browser, dark mode, font loading                |
+| `react`           | `react-best-practices/`  | Rerenders, server components, suspense, dynamic imports                 |
 
 ### Sub-skill `rules/` directories
 
@@ -143,25 +147,25 @@ The guidance stays in the agent's conversation context for the rest of the sessi
 
 ## Files to change
 
-| File | Change |
-|---|---|
-| `packages/browser/src/mcp/server.ts` | Register `load_guidance` tool |
-| `packages/shared/src/prompts.ts` | Add `<domain_guidance>` TOC section to system prompt |
-| `packages/expect-skill/SKILL.md` | Remove `<important if>` blocks, add fallback note |
-| `packages/browser/src/mcp/generated/guidance-content.ts` | New generated module (build-time codegen) |
-| `packages/expect-skill/build-guidance.ts` | New build script for codegen |
-| `packages/browser/tests/mcp-server.test.ts` | Add `load_guidance` to tool list assertion, add test |
-| `packages/shared/tests/prompts.test.ts` | Update snapshot for new `<domain_guidance>` section |
+| File                                                     | Change                                               |
+| -------------------------------------------------------- | ---------------------------------------------------- |
+| `packages/browser/src/mcp/server.ts`                     | Register `load_guidance` tool                        |
+| `packages/shared/src/prompts.ts`                         | Add `<domain_guidance>` TOC section to system prompt |
+| `packages/expect-skill/SKILL.md`                         | Remove `<important if>` blocks, add fallback note    |
+| `packages/browser/src/mcp/generated/guidance-content.ts` | New generated module (build-time codegen)            |
+| `packages/expect-skill/build-guidance.ts`                | New build script for codegen                         |
+| `packages/browser/tests/mcp-server.test.ts`              | Add `load_guidance` to tool list assertion, add test |
+| `packages/shared/tests/prompts.test.ts`                  | Update snapshot for new `<domain_guidance>` section  |
 
 ---
 
 ## Design decisions
 
-| Decision | Rationale |
-|---|---|
-| MCP tool over prompt injection | Agent loads only what it needs (0-3 domains per run vs. all 8). Saves ~2000 tokens per run on average. Demand-driven > heuristic-driven. |
-| Compact TOC in system prompt | Costs ~10 lines of instruction budget. Without it, the agent doesn't know the tool exists or what domains are available. The TOC is the routing table. |
+| Decision                              | Rationale                                                                                                                                                                  |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| MCP tool over prompt injection        | Agent loads only what it needs (0-3 domains per run vs. all 8). Saves ~2000 tokens per run on average. Demand-driven > heuristic-driven.                                   |
+| Compact TOC in system prompt          | Costs ~10 lines of instruction budget. Without it, the agent doesn't know the tool exists or what domains are available. The TOC is the routing table.                     |
 | Build-time codegen over runtime reads | MCP server runs as a subprocess (`browser-mcp.js`). Runtime file resolution is fragile across npm installs, bundled binaries, and CI. A generated module is deterministic. |
-| Top-level SKILL.md only (no rules) | Keep initial scope small. Each SKILL.md is 100-280 lines — enough for most failures. Rules are a future expansion if testing shows gaps. |
-| Keep sub-skill files in expect-skill | They remain accessible to the outer coding agent as a fallback. The outer skill just stops force-loading them. |
-| `readOnlyHint` annotation | Enables parallel tool execution in Claude Agent SDK. `load_guidance` can be called alongside `screenshot` or `console_logs` without blocking. |
+| Top-level SKILL.md only (no rules)    | Keep initial scope small. Each SKILL.md is 100-280 lines — enough for most failures. Rules are a future expansion if testing shows gaps.                                   |
+| Keep sub-skill files in expect-skill  | They remain accessible to the outer coding agent as a fallback. The outer skill just stops force-loading them.                                                             |
+| `readOnlyHint` annotation             | Enables parallel tool execution in Claude Agent SDK. `load_guidance` can be called alongside `screenshot` or `console_logs` without blocking.                              |

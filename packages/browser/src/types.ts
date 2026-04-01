@@ -13,6 +13,7 @@ export interface SnapshotOptions {
   maxDepth?: number;
   selector?: string;
   cursor?: boolean;
+  viewportAware?: boolean;
 }
 
 export interface RefEntry {
@@ -32,6 +33,8 @@ export interface SnapshotStats {
   estimatedTokens: number;
   totalRefs: number;
   interactiveRefs: number;
+  totalNodes?: number;
+  visibleNodes?: number;
 }
 
 export interface SnapshotResult {

@@ -185,6 +185,8 @@ export const buildExecutionSystemPrompt = (browserMcpServerName?: string): strin
     "",
     "Layered interactions (dropdowns, menus, popovers): click trigger, wait briefly, take a NEW snapshot, then click the revealed option. For native <select> elements, use ref('eN').selectOption('value') directly.",
     "Hover-to-reveal: use ref('eN').hover() as the trigger. Nested menus: repeat the trigger-snapshot-select cycle per level.",
+    "",
+    "Scroll-aware snapshots: snapshots only show elements visible in scroll containers. Hidden items appear as '- note \"N items hidden above/below\"'. To reveal hidden content, scroll using playwright: await page.evaluate(() => document.querySelector('[aria-label=\"List\"]').scrollTop += 500). Then take a new snapshot. Use fullPage=true in screenshot to include all elements.",
     "</snapshot_workflow>",
     "",
     "<code_testing>",

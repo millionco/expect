@@ -40,6 +40,7 @@ import type {
   RefMap,
   SnapshotOptions,
 } from "./types";
+import type { ScrollContainerResult } from "./runtime/scroll-detection";
 
 const shouldAssignRef = (role: string, name: string, interactive?: boolean): boolean => {
   if (INTERACTIVE_ROLES.has(role)) return true;
@@ -305,23 +306,51 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
       );
     });
 
+    const takeAriaSnapshot = Effect.fn("Browser.takeAriaSnapshot")(function* (
+      page: Page,
+      options: SnapshotOptions,
+    ) {
+      const timeout = options.timeout ?? SNAPSHOT_TIMEOUT_MS;
+      const selector = options.selector ?? "body";
+      const useViewportAware = options.viewportAware ?? true;
+
+      let scrollContainers: ScrollContainerResult[] = [];
+
+      if (useViewportAware) {
+        scrollContainers = yield* evaluateRuntime(page, "prepareViewportSnapshot").pipe(
+          Effect.catchCause(() => Effect.succeed([] as typeof scrollContainers)),
+        );
+      }
+
+      const restore = useViewportAware && scrollContainers.length > 0
+        ? evaluateRuntime(page, "restoreViewportSnapshot").pipe(
+            Effect.catchCause(() => Effect.void),
+          )
+        : Effect.void;
+
+      const rawTree = yield* Effect.ensuring(
+        Effect.tryPromise({
+          try: () => page.locator(selector).ariaSnapshot({ timeout }),
+          catch: (cause) =>
+            new SnapshotTimeoutError({
+              selector,
+              timeoutMs: timeout,
+              cause: cause instanceof Error ? cause.message : String(cause),
+            }),
+        }),
+        restore,
+      );
+
+      return { rawTree, scrollContainers };
+    });
+
     const snapshot = Effect.fn("Browser.snapshot")(function* (
       page: Page,
       options: SnapshotOptions = {},
     ) {
-      const timeout = options.timeout ?? SNAPSHOT_TIMEOUT_MS;
-      const selector = options.selector ?? "body";
-      yield* Effect.annotateCurrentSpan({ selector });
+      yield* Effect.annotateCurrentSpan({ selector: options.selector ?? "body" });
 
-      const rawTree = yield* Effect.tryPromise({
-        try: () => page.locator(selector).ariaSnapshot({ timeout }),
-        catch: (cause) =>
-          new SnapshotTimeoutError({
-            selector,
-            timeoutMs: timeout,
-            cause: cause instanceof Error ? cause.message : String(cause),
-          }),
-      });
+      const { rawTree, scrollContainers } = yield* takeAriaSnapshot(page, options);
 
       const refs: RefMap = {};
       const filteredLines: string[] = [];
@@ -364,7 +393,7 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
       if (options.interactive && refCount === 0) tree = "(no interactive elements)";
       if (options.compact) tree = compactTree(tree);
 
-      const stats = computeSnapshotStats(tree, refs);
+      const stats = computeSnapshotStats(tree, refs, scrollContainers);
 
       return { tree, refs, stats, locator: createLocator(page, refs) };
     });
