@@ -1,6 +1,7 @@
 {
   "name": "expect",
   "private": true,
+  "type": "module",
   "license": "FSL-1.1-MIT",
   "scripts": {
     "everything": "pnpm run build && pnpm run lint && pnpm run typecheck && pnpm run format && pnpm run check && pnpm run test",
