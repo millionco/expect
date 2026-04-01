@@ -6,12 +6,23 @@ const watchMode = process.argv.includes("--watch");
 const RUNTIME_ENTRY = "src/runtime/index.ts";
 
 const extractExportedFunctionNames = (source) => {
-  const regex = /export\s+const\s+(\w+)\s*=/g;
   const names = [];
+
+  const constRegex = /export\s+const\s+(\w+)\s*=/g;
   let match;
-  while ((match = regex.exec(source)) !== null) {
+  while ((match = constRegex.exec(source)) !== null) {
     names.push(match[1]);
   }
+
+  const reExportRegex = /export\s*\{([^}]+)\}/g;
+  while ((match = reExportRegex.exec(source)) !== null) {
+    for (const token of match[1].split(",")) {
+      const trimmed = token.trim();
+      if (!trimmed || trimmed.startsWith("type ")) continue;
+      names.push(trimmed);
+    }
+  }
+
   return names;
 };
 
