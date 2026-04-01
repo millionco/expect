@@ -176,4 +176,3 @@ export const setGhSecret = (name: string, value: string) =>
       new GhSecretSetError({ reason: "gh secret set timed out" }).asEffect(),
     ),
   );
-
