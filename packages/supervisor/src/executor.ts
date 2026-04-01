@@ -20,7 +20,11 @@ import {
   type TestCoverageReport,
   TestPlan,
 } from "@expect/shared/models";
-import { buildExecutionPrompt, buildExecutionSystemPrompt } from "@expect/shared/prompts";
+import {
+  buildExecutionPrompt,
+  buildExecutionSystemPrompt,
+  type DevServerHint,
+} from "@expect/shared/prompts";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Git } from "./git/git";
 import {
@@ -62,6 +66,7 @@ export interface ExecuteOptions {
   readonly testCoverage?: TestCoverageReport;
   readonly onConfigOptions?: (configOptions: readonly AcpConfigOption[]) => void;
   readonly modelPreference?: { configId: string; value: string };
+  readonly devServerHints?: readonly DevServerHint[];
 }
 
 interface ExecutorAccumState {
@@ -80,6 +85,8 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
     const git = yield* Git;
 
     const gatherContext = Effect.fn("Executor.gatherContext")(function* (changesFor: ChangesFor) {
+      yield* Effect.annotateCurrentSpan({ changesFor: changesFor._tag });
+
       const currentBranch = yield* git.getCurrentBranch;
       const mainBranch = yield* git.getMainBranch;
       const changedFiles = yield* git.getChangedFiles(changesFor);
@@ -94,6 +101,14 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
 
       const recentCommits = yield* git.getRecentCommits(commitRange);
 
+      yield* Effect.logDebug("Execution context gathered", {
+        currentBranch,
+        mainBranch,
+        changedFileCount: changedFiles.length,
+        commitCount: recentCommits.length,
+        diffPreviewLength: diffPreview.length,
+      });
+
       return {
         currentBranch,
         mainBranch,
@@ -104,6 +119,17 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
     });
 
     const execute = Effect.fn("Executor.execute")(function* (options: ExecuteOptions) {
+      yield* Effect.annotateCurrentSpan({
+        changesFor: options.changesFor._tag,
+        isHeadless: options.isHeadless,
+      });
+      yield* Effect.logInfo("Execution started", {
+        instruction: options.instruction,
+        changesFor: options.changesFor._tag,
+        isHeadless: options.isHeadless,
+        cookieBrowserCount: options.cookieBrowserKeys.length,
+      });
+
       const context = yield* gatherContext(options.changesFor);
 
       const systemPrompt = buildExecutionSystemPrompt();
@@ -122,6 +148,7 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
         savedFlow: options.savedFlow,
         learnings: options.learnings,
         testCoverage: options.testCoverage,
+        devServerHints: options.devServerHints,
       });
 
       const planId = PlanId.makeUnsafe(crypto.randomUUID());
@@ -166,6 +193,12 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
           value: options.cookieBrowserKeys.join(","),
         });
       }
+
+      yield* Effect.logInfo("Agent stream starting", {
+        planId,
+        promptLength: prompt.length,
+        mcpEnvCount: mcpEnv.length,
+      });
 
       const streamOptions = new AgentStreamOptions({
         cwd: process.cwd(),

@@ -67,24 +67,18 @@ const IGNORED_DIRECTORIES = new Set([
   ".expect",
 ]);
 
-const readPackageJson = (
-  projectPath: string,
-): Record<string, unknown> | undefined => {
+const readPackageJson = (projectPath: string): Record<string, unknown> | undefined => {
   const packageJsonPath = join(projectPath, "package.json");
   if (!existsSync(packageJsonPath)) return undefined;
   try {
     const parsed: unknown = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
-    return Predicate.isObject(parsed)
-      ? (parsed as Record<string, unknown>)
-      : undefined;
+    return Predicate.isObject(parsed) ? (parsed as Record<string, unknown>) : undefined;
   } catch {
     return undefined;
   }
 };
 
-const getAllDeps = (
-  packageJson: Record<string, unknown>,
-): Record<string, unknown> => ({
+const getAllDeps = (packageJson: Record<string, unknown>): Record<string, unknown> => ({
   ...(Predicate.isObject(packageJson["dependencies"])
     ? (packageJson["dependencies"] as Record<string, unknown>)
     : {}),
@@ -93,9 +87,7 @@ const getAllDeps = (
     : {}),
 });
 
-const detectFramework = (
-  packageJson: Record<string, unknown>,
-): WebFramework | undefined => {
+const detectFramework = (packageJson: Record<string, unknown>): WebFramework | undefined => {
   const allDeps = getAllDeps(packageJson);
   for (const [depName, framework] of FRAMEWORK_DEPS) {
     if (allDeps[depName]) return framework;
@@ -103,9 +95,7 @@ const detectFramework = (
   return undefined;
 };
 
-const getDevCommand = (
-  packageJson: Record<string, unknown>,
-): string | undefined => {
+const getDevCommand = (packageJson: Record<string, unknown>): string | undefined => {
   const scripts = packageJson["scripts"];
   if (!Predicate.isObject(scripts)) return undefined;
 
@@ -158,13 +148,9 @@ const buildProject = (projectPath: string): DetectedProject | undefined => {
   if (!framework) return undefined;
 
   const devCommand = getDevCommand(packageJson);
-  const commandPort = devCommand
-    ? extractPortFromCommand(devCommand)
-    : undefined;
+  const commandPort = devCommand ? extractPortFromCommand(devCommand) : undefined;
   const name =
-    typeof packageJson["name"] === "string"
-      ? packageJson["name"]
-      : basename(projectPath);
+    typeof packageJson["name"] === "string" ? packageJson["name"] : basename(projectPath);
 
   return {
     name,
@@ -226,10 +212,7 @@ const getWorkspacePatterns = (projectRoot: string): string[] => {
   return [...new Set(patterns)];
 };
 
-const expandPattern = (
-  projectRoot: string,
-  pattern: string,
-): string[] => {
+const expandPattern = (projectRoot: string, pattern: string): string[] => {
   const isGlob = pattern.endsWith("/*");
   const cleanPattern = pattern.replace(/\/\*$/, "");
   const basePath = join(projectRoot, cleanPattern);
@@ -243,9 +226,7 @@ const expandPattern = (
   try {
     return readdirSync(basePath, { withFileTypes: true })
       .filter(
-        (entry) =>
-          entry.isDirectory() &&
-          existsSync(join(basePath, entry.name, "package.json")),
+        (entry) => entry.isDirectory() && existsSync(join(basePath, entry.name, "package.json")),
       )
       .map((entry) => join(basePath, entry.name));
   } catch {
@@ -261,9 +242,7 @@ const hasMonorepoMarkers = (projectRoot: string): boolean => {
   return Boolean(packageJson?.["workspaces"]);
 };
 
-const findWorkspaceProjects = (
-  projectRoot: string,
-): DetectedProject[] => {
+const findWorkspaceProjects = (projectRoot: string): DetectedProject[] => {
   const patterns = getWorkspacePatterns(projectRoot);
   const projects: DetectedProject[] = [];
 
@@ -299,9 +278,7 @@ const scanDirectory = (
         continue;
       }
 
-      projects.push(
-        ...scanDirectory(entryPath, maxDepth, currentDepth + 1),
-      );
+      projects.push(...scanDirectory(entryPath, maxDepth, currentDepth + 1));
     }
   } catch {
     return projects;
@@ -310,9 +287,7 @@ const scanDirectory = (
   return projects;
 };
 
-const scanSiblingProjects = (
-  rootPath: string,
-): DetectedProject[] => {
+const scanSiblingProjects = (rootPath: string): DetectedProject[] => {
   const parentDir = join(rootPath, "..");
   const resolvedParent = resolve(parentDir);
   if (resolvedParent === rootPath) return [];
@@ -345,9 +320,7 @@ const scanSiblingProjects = (
   return projects;
 };
 
-export const detectNearbyProjects = (
-  rootPath: string = process.cwd(),
-): DetectedProject[] => {
+export const detectNearbyProjects = (rootPath: string = process.cwd()): DetectedProject[] => {
   const resolvedRoot = resolve(rootPath);
   const projects: DetectedProject[] = [];
   const seenPaths = new Set<string>();

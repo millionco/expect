@@ -82,6 +82,7 @@ Examples:
 
 const seedStores = (opts: CommanderOpts, changesFor: ChangesFor) => {
   usePreferencesStore.setState({
+    verbose: opts.verbose ?? false,
     browserHeaded: opts.headed ?? false,
     replayHost: opts.replayHost ?? "https://expect.dev",
   });
@@ -231,6 +232,7 @@ program.action(async () => {
     await runInteractiveForTarget(target, opts);
   } else {
     usePreferencesStore.setState({
+      verbose: opts.verbose ?? false,
       browserHeaded: opts.headed ?? false,
       replayHost: opts.replayHost ?? "https://expect.dev",
     });

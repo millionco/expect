@@ -105,10 +105,7 @@ export const PortPickerScreen = ({
   const runningPorts = new Set(runningEntries.map((entry) => entry.port));
   const detectedEntries: PortEntry[] = deduplicateByPort(
     detectedProjects
-      .filter(
-        (project) =>
-          !runningCwds.has(project.path) && !runningPorts.has(project.defaultPort),
-      )
+      .filter((project) => !runningCwds.has(project.path) && !runningPorts.has(project.defaultPort))
       .map((project) => ({
         key: `detected-${project.path}`,
         port: project.defaultPort,
@@ -146,12 +143,14 @@ export const PortPickerScreen = ({
             url: portEntryToUrl(entry),
             projectPath: project.path,
             devCommand: `${project.packageManager} run dev`,
-            packageManager: project.packageManager,
           },
         ];
       });
 
-  const navigateToTesting = (baseUrls: readonly string[], selectedEntries: readonly PortEntry[]) => {
+  const navigateToTesting = (
+    baseUrls: readonly string[],
+    selectedEntries: readonly PortEntry[],
+  ) => {
     const allUrls = [...baseUrls, ...customUrls];
     const lastUrl = allUrls.length > 0 ? allUrls[0] : undefined;
     setLastBaseUrl(lastUrl);

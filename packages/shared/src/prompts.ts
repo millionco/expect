@@ -11,6 +11,12 @@ const EXECUTION_RECENT_COMMIT_LIMIT = 5;
 const DIFF_PREVIEW_CHAR_LIMIT = 12_000;
 const DEFAULT_BROWSER_MCP_SERVER_NAME = "browser";
 
+export interface DevServerHint {
+  readonly url: string;
+  readonly projectPath: string;
+  readonly devCommand: string;
+}
+
 export interface ExecutionPromptOptions {
   readonly userInstruction: string;
   readonly scope: ChangesFor["_tag"];
@@ -26,6 +32,7 @@ export interface ExecutionPromptOptions {
   readonly savedFlow?: SavedFlow;
   readonly learnings?: string;
   readonly testCoverage?: TestCoverageReport;
+  readonly devServerHints?: readonly DevServerHint[];
 }
 
 const formatSavedFlowGuidance = (savedFlow: SavedFlow | undefined): string[] => {
@@ -261,9 +268,20 @@ export const buildExecutionPrompt = (options: ExecutionPromptOptions): string =>
       ? rawDiff.slice(0, DIFF_PREVIEW_CHAR_LIMIT) + "\n... (truncated)"
       : rawDiff;
 
+  const devServerLines =
+    options.devServerHints && options.devServerHints.length > 0
+      ? [
+          "Dev servers (not running — start before testing):",
+          ...options.devServerHints.map(
+            (hint) => `  cd ${hint.projectPath} && ${hint.devCommand}  →  ${hint.url}`,
+          ),
+        ]
+      : [];
+
   return [
     "<environment>",
     ...(options.baseUrl ? [`Base URL: ${options.baseUrl}`] : []),
+    ...devServerLines,
     `Browser is headless: ${options.isHeadless ? "yes" : "no"}`,
     `Uses existing browser cookies: ${options.cookieBrowserKeys.length > 0 ? `yes (${options.cookieBrowserKeys.length})` : "no"}`,
     `Scope: ${options.scope}`,
@@ -288,9 +306,7 @@ export const buildExecutionPrompt = (options: ExecutionPromptOptions): string =>
           "",
         ]
       : []),
-    ...(diffPreview
-      ? ["<diff_preview>", diffPreview, "</diff_preview>", ""]
-      : []),
+    ...(diffPreview ? ["<diff_preview>", diffPreview, "</diff_preview>", ""] : []),
     ...formatSavedFlowGuidance(options.savedFlow),
     ...(options.learnings?.trim()
       ? ["<project_learnings>", options.learnings.trim(), "</project_learnings>", ""]
@@ -335,7 +351,5 @@ export const buildWatchAssessmentPrompt = (options: WatchAssessmentPromptOptions
           "",
         ]
       : []),
-    ...(options.diffPreview
-      ? ["Diff preview:", options.diffPreview]
-      : []),
+    ...(options.diffPreview ? ["Diff preview:", options.diffPreview] : []),
   ].join("\n");

@@ -338,7 +338,9 @@ describe("buildExecutionPrompt", () => {
 
   it("includes self-check before RUN_COMPLETED", () => {
     const prompt = buildExecutionSystemPrompt();
-    expect(prompt).toContain("Review the changed files list and confirm every file is accounted for");
+    expect(prompt).toContain(
+      "Review the changed files list and confirm every file is accounted for",
+    );
   });
 });
 

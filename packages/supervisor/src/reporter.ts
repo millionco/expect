@@ -24,13 +24,23 @@ export class Reporter extends ServiceMap.Service<Reporter>()("@supervisor/Report
         .map((event) => (event._tag === "ToolResult" ? event.result : ""))
         .filter(Boolean);
 
-      return new TestReport({
+      const report = new TestReport({
         ...executed,
         summary,
         screenshotPaths,
         pullRequest: Option.none(),
         testCoverageReport: executed.testCoverage,
       });
+
+      yield* Effect.logInfo("Report generated", {
+        status: report.status,
+        stepCount: executed.steps.length,
+        passedCount: completedSteps.length,
+        failedCount: failedSteps.length,
+        screenshotCount: screenshotPaths.length,
+      });
+
+      return report;
     });
 
     return { report } as const;

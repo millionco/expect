@@ -153,7 +153,7 @@ export class Git extends ServiceMap.Service<Git>()("@supervisor/Git", {
 
     const getChangedFiles = Effect.fn("Git.getChangedFiles")(function* (changesFor: ChangesFor) {
       if (changesFor._tag === "WorkingTree") {
-        return yield* raw({
+        const files = yield* raw({
           args: ["status", "--porcelain"],
           operation: "getting working tree changes",
         }).pipe(
@@ -168,6 +168,11 @@ export class Git extends ServiceMap.Service<Git>()("@supervisor/Git", {
           ),
           Effect.catchTag("GitError", () => Effect.succeed([] as ChangedFile[])),
         );
+        yield* Effect.logDebug("Changed files resolved", {
+          scope: "WorkingTree",
+          count: files.length,
+        });
+        return files;
       }
 
       const diffRange =
@@ -175,7 +180,7 @@ export class Git extends ServiceMap.Service<Git>()("@supervisor/Git", {
           ? `${changesFor.mainBranch}..HEAD`
           : `${changesFor.hash}^..${changesFor.hash}`;
 
-      return yield* raw({
+      const files = yield* raw({
         args: ["diff", "--name-status", diffRange],
         operation: "getting changed files",
         trim: true,
@@ -194,17 +199,27 @@ export class Git extends ServiceMap.Service<Git>()("@supervisor/Git", {
         ),
         Effect.catchTag("GitError", () => Effect.succeed([] as ChangedFile[])),
       );
+      yield* Effect.logDebug("Changed files resolved", {
+        scope: changesFor._tag,
+        count: files.length,
+      });
+      return files;
     });
 
     // ── Diff preview ─────────────────────────────────────────
 
     const getDiffPreview = Effect.fn("Git.getDiffPreview")(function* (changesFor: ChangesFor) {
       if (changesFor._tag === "WorkingTree") {
-        return yield* raw({
+        const diff = yield* raw({
           args: ["diff", "HEAD"],
           operation: "getting diff preview",
           trim: true,
         }).pipe(Effect.catchTag("GitError", () => Effect.succeed("")));
+        yield* Effect.logDebug("Git diff computed", {
+          scope: "WorkingTree",
+          diffLength: diff.length,
+        });
+        return diff;
       }
 
       const diffRange =
@@ -212,17 +227,22 @@ export class Git extends ServiceMap.Service<Git>()("@supervisor/Git", {
           ? `${changesFor.mainBranch}..HEAD`
           : `${changesFor.hash}^..${changesFor.hash}`;
 
-      return yield* raw({
+      const diff = yield* raw({
         args: ["diff", diffRange],
         operation: "getting diff preview",
         trim: true,
       }).pipe(Effect.catchTag("GitError", () => Effect.succeed("")));
+      yield* Effect.logDebug("Git diff computed", {
+        scope: changesFor._tag,
+        diffLength: diff.length,
+      });
+      return diff;
     });
 
     // ── Recent commits ───────────────────────────────────────
 
     const getRecentCommits = Effect.fn("Git.getRecentCommits")(function* (range: string) {
-      return yield* raw({
+      const commits = yield* raw({
         args: ["log", "--format=%H\t%h\t%s", range],
         operation: "getting recent commits",
         trim: true,
@@ -242,6 +262,8 @@ export class Git extends ServiceMap.Service<Git>()("@supervisor/Git", {
         ),
         Effect.catchTag("GitError", () => Effect.succeed([] as CommitSummary[])),
       );
+      yield* Effect.logDebug("Recent commits fetched", { range, count: commits.length });
+      return commits;
     });
 
     const getCommitSummary = Effect.fn("Git.getCommitSummary")(function* (hash: string) {

@@ -1,14 +1,10 @@
 import { create } from "zustand";
 import * as Data from "effect/Data";
 import type { ChangesFor, SavedFlow, TestReport } from "@expect/shared/models";
+import type { DevServerHint } from "@expect/shared/prompts";
 import { containsUrl } from "../utils/detect-url";
 
-export interface DevServerHint {
-  readonly url: string;
-  readonly projectPath: string;
-  readonly devCommand: string;
-  readonly packageManager: string;
-}
+export type { DevServerHint } from "@expect/shared/prompts";
 
 export type Screen = Data.TaggedEnum<{
   Main: {};

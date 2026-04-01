@@ -26,6 +26,7 @@ export const runWatchCommand = async (opts: WatchCommandOpts) => {
 
   usePreferencesStore.setState({
     ...(opts.agent ? { agentBackend: opts.agent } : {}),
+    verbose: opts.verbose ?? false,
     browserHeaded: opts.headed ?? false,
     replayHost: opts.replayHost ?? "https://expect.dev",
   });

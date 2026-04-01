@@ -6,6 +6,7 @@ import { FLOW_INPUT_HISTORY_LIMIT } from "../constants";
 
 interface PreferencesStore {
   agentBackend: AgentBackend;
+  verbose: boolean;
   browserHeaded: boolean;
   replayHost: string;
   autoSaveFlows: boolean;
@@ -24,6 +25,7 @@ export const usePreferencesStore = create<PreferencesStore>()(
   persist(
     (set) => ({
       agentBackend: "claude",
+      verbose: false,
       browserHeaded: false,
       replayHost: "https://expect.dev",
       autoSaveFlows: true,

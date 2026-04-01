@@ -72,6 +72,13 @@ const executeCore = (input: ExecuteInput) =>
     const analytics = yield* Analytics;
     const git = yield* Git;
 
+    yield* Effect.logInfo("Execution starting", {
+      agentBackend: input.agentBackend,
+      hasReplayHost: Boolean(input.replayHost),
+      instruction: input.options.instruction,
+      changesFor: input.options.changesFor._tag,
+    });
+
     const runStartedAt = Date.now();
 
     const liveViewPort = pickRandomPort();
@@ -145,13 +152,23 @@ const executeCore = (input: ExecuteInput) =>
       (step) => report.stepStatuses.get(step.id)?.status === "failed",
     ).length;
 
+    const durationMs = Date.now() - runStartedAt;
+
+    yield* Effect.logInfo("Execution completed", {
+      status: report.status,
+      passedCount,
+      failedCount,
+      stepCount: finalExecuted.steps.length,
+      durationMs,
+    });
+
     yield* analytics.capture("run:completed", {
       plan_id: finalExecuted.id ?? "direct",
       passed: passedCount,
       failed: failedCount,
       step_count: finalExecuted.steps.length,
       file_count: 0,
-      duration_ms: Date.now() - runStartedAt,
+      duration_ms: durationMs,
     });
 
     if (report.status === "passed") {

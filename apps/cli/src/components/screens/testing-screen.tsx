@@ -415,27 +415,16 @@ export const TestingScreen = ({
     setRunStartedAt(Date.now());
 
     const baseUrl = baseUrls && baseUrls.length > 0 ? baseUrls.join(", ") : undefined;
-    const urlTags = baseUrls ? baseUrls.map((url) => `[url: ${url}]`).join(" ") : undefined;
-    const devServerLines =
-      devServerHints && devServerHints.length > 0
-        ? [
-            "\n\nBefore testing, start the dev server(s) in the background:",
-            ...devServerHints.map(
-              (hint) => `- cd ${hint.projectPath} && ${hint.devCommand}`,
-            ),
-            `Then wait for ${devServerHints.map((hint) => hint.url).join(", ")} to be ready before navigating.`,
-          ].join("\n")
-        : "";
-    const instructionWithUrls = (urlTags ? `${instruction} ${urlTags}` : instruction) + devServerLines;
 
     triggerExecute({
       options: {
         changesFor,
-        instruction: instructionWithUrls,
+        instruction,
         isHeadless: !browserHeaded,
         cookieBrowserKeys: [...cookieBrowserKeys],
         savedFlow,
         baseUrl,
+        devServerHints: devServerHints ? [...devServerHints] : undefined,
         modelPreference:
           modelPreferenceConfigId && modelPreferenceValue
             ? { configId: modelPreferenceConfigId, value: modelPreferenceValue }

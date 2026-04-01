@@ -43,6 +43,7 @@ export const WatchScreen = ({
   const COLORS = useColors();
   const setScreen = useNavigationStore((state) => state.setScreen);
   const agentBackend = usePreferencesStore((state) => state.agentBackend);
+  const verbose = usePreferencesStore((state) => state.verbose);
   const browserHeaded = usePreferencesStore((state) => state.browserHeaded);
   const notifications = usePreferencesStore((state) => state.notifications);
 
@@ -124,7 +125,7 @@ export const WatchScreen = ({
         onEvent: handleEvent,
       });
       yield* loop;
-    }).pipe(Effect.provide(layerCli({ verbose: false, agent: agentBackend })));
+    }).pipe(Effect.provide(layerCli({ verbose, agent: agentBackend })));
 
     const fiber = Effect.runFork(
       stripUndefinedRequirement(program).pipe(
