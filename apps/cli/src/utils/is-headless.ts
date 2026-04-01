@@ -1,1 +1,1 @@
-export const isHeadless = (): boolean => !process.stdin.isTTY;
+export const isHeadless = (): boolean => true;

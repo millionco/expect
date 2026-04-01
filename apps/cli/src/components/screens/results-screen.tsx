@@ -16,7 +16,6 @@ import { useNavigationStore, screenForTestingOrPortPicker } from "../../stores/u
 import { usePlanExecutionStore } from "../../stores/use-plan-execution-store";
 import { saveFlowFn } from "../../data/flow-storage-atom";
 import { formatElapsedTime } from "../../utils/format-elapsed-time";
-import { getStepElapsedMs, getTotalElapsedMs } from "../../utils/step-elapsed";
 
 interface ResultsScreenProps {
   report: TestReport;
@@ -99,7 +98,7 @@ export const ResultsScreen = ({
   const statusColor = isPassed ? COLORS.GREEN : COLORS.RED;
   const statusIcon = isPassed ? figures.tick : figures.cross;
   const statusLabel = isPassed ? "Passed" : "Failed";
-  const totalElapsedMs = getTotalElapsedMs(report.steps);
+  const totalElapsedMs = report.totalDurationMs;
   const displayedReplayUrl = replayUrl ?? localReplayUrl;
   const showLocalReplayLine =
     Boolean(replayUrl) &&
@@ -135,7 +134,7 @@ export const ResultsScreen = ({
 
       <Box flexDirection="column" marginTop={1}>
         {report.steps.map((step: TestPlanStep, stepIndex: number) => {
-          const stepElapsedMs = getStepElapsedMs(step);
+          const stepElapsedMs = step.elapsedMs;
           const stepElapsedLabel =
             stepElapsedMs !== undefined ? formatElapsedTime(stepElapsedMs) : undefined;
           const stepStatus = report.stepStatuses.get(step.id);

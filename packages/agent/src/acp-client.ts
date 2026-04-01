@@ -616,6 +616,7 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
             const updatesQueue = yield* Queue.unbounded<AcpSessionUpdate, SessionQueueError>();
             sessionUpdatesMap.set(sessionId, updatesQueue);
             yield* Effect.logInfo("ACP session created", { sessionId });
+            yield* Effect.logInfo(`Resume this session: claude --resume ${sessionId}`);
 
             if (response.configOptions && response.configOptions.length > 0) {
               const decoded = yield* decodeConfigOptions(response.configOptions);

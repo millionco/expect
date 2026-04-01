@@ -8,12 +8,14 @@ import {
 } from "@expect/agent";
 import { Effect, FileSystem, Layer, Option, Schema, ServiceMap, Stream } from "effect";
 import { LiveViewer } from "./live-viewer";
+import { OutputReporter } from "./output-reporter";
 import {
   type AcpConfigOption,
   AcpSessionUpdate,
   type ChangesFor,
   type ChangedFile,
   type CommitSummary,
+  CurrentPlanId,
   ExecutedTestPlan,
   PlanId,
   RunStarted,
@@ -83,7 +85,9 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
     const agent = yield* Agent;
     const git = yield* Git;
     const liveViewer = yield* LiveViewer;
+    const outputReporter = yield* OutputReporter;
     const fileSystem = yield* FileSystem.FileSystem;
+    const planId = yield* CurrentPlanId;
 
     const gatherContext = Effect.fn("Executor.gatherContext")(function* (changesFor: ChangesFor) {
       const currentBranch = yield* git.getCurrentBranch;
@@ -127,8 +131,6 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
         learnings: options.learnings,
         testCoverage: options.testCoverage,
       });
-
-      const planId = PlanId.makeUnsafe(crypto.randomUUID());
 
       const syntheticPlan = new TestPlan({
         id: planId,
@@ -178,6 +180,9 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
 
       return agent.stream(streamOptions).pipe(
         Stream.tap((update) => {
+          if (update.sessionUpdate === "tool_call") {
+            return Effect.logDebug(`Tool call: ${update.title}`);
+          }
           const callback = options.onConfigOptions;
           if (update.sessionUpdate === "config_option_update" && callback) {
             return Effect.sync(() => callback(update.configOptions));
@@ -192,6 +197,7 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
             return [next, [next]] as const;
           },
         ),
+        Stream.tap((executed) => outputReporter.onExecutedPlan(executed)),
         Stream.takeUntil((executed) => executed.hasRunFinished),
         Stream.mapError((reason) => new ExecutionError({ reason })),
         Stream.ensuring(liveViewer.push(planId, { _tag: "Done" })),

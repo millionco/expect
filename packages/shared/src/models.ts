@@ -651,6 +651,13 @@ export class TestPlanStep extends Schema.Class<TestPlanStep>("@supervisor/TestPl
   ): TestPlanStep {
     return new TestPlanStep({ ...this, ...fields });
   }
+
+  get elapsedMs(): number | undefined {
+    if (Option.isNone(this.startedAt) || Option.isNone(this.endedAt)) return undefined;
+    return Number(
+      DateTime.toEpochMillis(this.endedAt.value) - DateTime.toEpochMillis(this.startedAt.value),
+    );
+  }
 }
 
 export class TestCoverageEntry extends Schema.Class<TestCoverageEntry>(
@@ -1281,12 +1288,24 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
   }
 }
 
+export class TestFailedError extends Schema.ErrorClass<TestFailedError>("TestFailedError")({
+  _tag: Schema.tag("TestFailedError"),
+  report: Schema.suspend(() => TestReport),
+}) {
+  message = `Test "${this.report.title}" failed: ${this.report.summary}`;
+}
+
 export class TestReport extends ExecutedTestPlan.extend<TestReport>("@supervisor/TestReport")({
   summary: Schema.String,
   screenshotPaths: Schema.Array(Schema.String),
   pullRequest: Schema.Option(Schema.suspend(() => PullRequest)),
   testCoverageReport: Schema.Option(TestCoverageReport),
 }) {
+  assertSuccess = () => {
+    if (this.status === "passed") return Effect.void;
+    return Effect.fail(new TestFailedError({ report: this }));
+  };
+
   /** @todo(rasmus): UNUSED */
   get stepStatuses(): ReadonlyMap<
     StepId,
@@ -1326,17 +1345,102 @@ export class TestReport extends ExecutedTestPlan.extend<TestReport>("@supervisor
     return "passed";
   }
 
+  get passedStepCount(): number {
+    return this.steps.filter((step) => this.stepStatuses.get(step.id)?.status === "passed").length;
+  }
+
+  get failedStepCount(): number {
+    return this.steps.filter((step) => this.stepStatuses.get(step.id)?.status === "failed").length;
+  }
+
+  get skippedStepCount(): number {
+    return this.steps.filter((step) => this.stepStatuses.get(step.id)?.status === "skipped").length;
+  }
+
+  get totalDurationMs(): number {
+    let totalMs = 0;
+    for (const step of this.steps) {
+      if (Option.isNone(step.startedAt) || Option.isNone(step.endedAt)) continue;
+      totalMs += Number(
+        DateTime.toEpochMillis(step.endedAt.value) - DateTime.toEpochMillis(step.startedAt.value),
+      );
+    }
+    return totalMs;
+  }
+
+  get toGithubComment(): string {
+    const statusEmoji = this.status === "passed" ? "\u2705" : "\u274c";
+    const statusLabel = this.status === "passed" ? "Passed" : "Failed";
+    const escapeTableCell = (text: string) => text.replace(/\|/g, "\\|").replace(/\n/g, " ");
+    const statuses = this.stepStatuses;
+
+    const stepRows = this.steps
+      .map((step) => {
+        const entry = statuses.get(step.id);
+        const stepStatus = entry?.status ?? "not-run";
+        const stepIcon =
+          stepStatus === "passed"
+            ? "\u2713"
+            : stepStatus === "failed"
+              ? "\u2717"
+              : stepStatus === "skipped"
+                ? "\u2192"
+                : "\u2013";
+        const stepSummary = entry?.summary ?? "";
+        const stepStartedAt = step.startedAt._tag === "Some" ? step.startedAt.value : undefined;
+        const stepEndedAt = step.endedAt._tag === "Some" ? step.endedAt.value : undefined;
+        const stepTime =
+          stepStartedAt && stepEndedAt
+            ? Number(DateTime.toEpochMillis(stepEndedAt) - DateTime.toEpochMillis(stepStartedAt))
+            : undefined;
+        const timeLabel = stepTime !== undefined ? `${Math.round(stepTime / 1000)}s` : "-";
+        const statusCell =
+          stepStatus === "failed" ? `${stepIcon} ${escapeTableCell(stepSummary)}` : stepIcon;
+        return `| ${escapeTableCell(step.title)} | ${statusCell} | ${timeLabel} |`;
+      })
+      .join("\n");
+
+    const maxBacktickRun = (this.toPlainText.match(/`+/g) ?? []).reduce(
+      (max, run) => Math.max(max, run.length),
+      2,
+    );
+    const fence = "`".repeat(maxBacktickRun + 1);
+
+    return [
+      "<!-- expect-ci-result -->",
+      `## expect test results`,
+      "",
+      `**${statusEmoji} ${statusLabel}** \u2014 ${this.steps.length} step${this.steps.length === 1 ? "" : "s"} in ${Math.round(this.totalDurationMs / 1000)}s`,
+      "",
+      "| Step | Status | Time |",
+      "|------|--------|------|",
+      stepRows,
+      "",
+      "<details><summary>Full output</summary>",
+      "",
+      fence,
+      this.toPlainText,
+      fence,
+      "",
+      "</details>",
+    ].join("\n");
+  }
+
+  get toGithubStepSummary(): string {
+    const maxBacktickRun = (this.toPlainText.match(/`+/g) ?? []).reduce(
+      (max, run) => Math.max(max, run.length),
+      2,
+    );
+    const fence = "`".repeat(maxBacktickRun + 1);
+    const badge = this.status === "passed" ? "**Result: PASSED**" : "**Result: FAILED**";
+    return `## expect test results\n\n${badge}\n\n${fence}\n${this.toPlainText}\n${fence}\n`;
+  }
+
   get toPlainText(): string {
     const statuses = this.stepStatuses;
-    const passedCount = this.steps.filter(
-      (step) => statuses.get(step.id)?.status === "passed",
-    ).length;
-    const failedCount = this.steps.filter(
-      (step) => statuses.get(step.id)?.status === "failed",
-    ).length;
-    const skippedCount = this.steps.filter(
-      (step) => statuses.get(step.id)?.status === "skipped",
-    ).length;
+    const passedCount = this.passedStepCount;
+    const failedCount = this.failedStepCount;
+    const skippedCount = this.skippedStepCount;
 
     const icon = this.status === "passed" ? "\u2705" : "\u274C";
     const summaryParts = [`${passedCount} passed`, `${failedCount} failed`];

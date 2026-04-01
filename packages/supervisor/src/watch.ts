@@ -25,7 +25,10 @@ export type WatchEvent = Data.TaggedEnum<{
   Assessing: {};
   RunStarting: { readonly fingerprint: string };
   RunUpdate: { readonly executedPlan: ExecutedTestPlan };
-  RunCompleted: { readonly executedPlan: ExecutedTestPlan; readonly fingerprint: string };
+  RunCompleted: {
+    readonly executedPlan: ExecutedTestPlan;
+    readonly fingerprint: string;
+  };
   Skipped: { readonly fingerprint: string };
   Error: { readonly error: unknown };
   Stopped: {};
@@ -85,7 +88,11 @@ export class Watch extends ServiceMap.Service<Watch>()("@supervisor/Watch", {
       instruction: string,
     ) {
       const repoRoot = yield* GitRepoRoot;
-      const prompt = buildWatchAssessmentPrompt({ diffPreview, changedFiles, instruction });
+      const prompt = buildWatchAssessmentPrompt({
+        diffPreview,
+        changedFiles,
+        instruction,
+      });
 
       const streamOptions = new AgentStreamOptions({
         cwd: repoRoot,
@@ -256,5 +263,8 @@ export class Watch extends ServiceMap.Service<Watch>()("@supervisor/Watch", {
     return { assess, run } as const;
   }),
 }) {
-  static layer = Layer.effect(this)(this.make);
+  static layer = Layer.effect(this)(this.make).pipe(
+    Layer.provide(Git.layer),
+    Layer.provide(Executor.layer),
+  );
 }
