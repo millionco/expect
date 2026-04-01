@@ -1,7 +1,8 @@
 import { Browsers, Cookies, layerLive, browserKeyOf, Cookie } from "@expect/cookies";
 import type { Browser as BrowserProfile } from "@expect/cookies";
-import { chromium } from "playwright";
+import { chromium, webkit, firefox } from "playwright";
 import type { Locator, Page } from "playwright";
+import type { BrowserEngine } from "./types";
 import { Array as Arr, Effect, Layer, Option, ServiceMap } from "effect";
 
 const cookiesLayer = Layer.mergeAll(layerLive, Cookies.layer);
@@ -41,6 +42,17 @@ import type {
   SnapshotOptions,
 } from "./types";
 import type { ScrollContainerResult } from "./runtime/scroll-detection";
+
+const resolveBrowserType = (engine: BrowserEngine) => {
+  switch (engine) {
+    case "webkit":
+      return webkit;
+    case "firefox":
+      return firefox;
+    default:
+      return chromium;
+  }
+};
 
 const shouldAssignRef = (role: string, name: string, interactive?: boolean): boolean => {
   if (INTERACTIVE_ROLES.has(role)) return true;
@@ -188,12 +200,15 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
       url: string | undefined,
       options: CreatePageOptions = {},
     ) {
+      const engine = options.browserType ?? "chromium";
       yield* Effect.annotateCurrentSpan({
         url: url ?? "about:blank",
         cdp: Boolean(options.cdpUrl),
+        browserType: engine,
       });
 
-      const cdpEndpoint = options.cdpUrl;
+      const cdpEndpoint = engine === "chromium" ? options.cdpUrl : undefined;
+      const browserType = resolveBrowserType(engine);
       const browser = cdpEndpoint
         ? yield* Effect.tryPromise({
             try: () => chromium.connectOverCDP(cdpEndpoint),
@@ -205,10 +220,10 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
           })
         : yield* Effect.tryPromise({
             try: () =>
-              chromium.launch({
+              browserType.launch({
                 headless: !options.headed,
                 executablePath: options.executablePath,
-                args: options.headed ? [] : HEADLESS_CHROMIUM_ARGS,
+                args: engine === "chromium" && !options.headed ? HEADLESS_CHROMIUM_ARGS : [],
               }),
             catch: toBrowserLaunchError,
           });

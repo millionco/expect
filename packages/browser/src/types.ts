@@ -44,6 +44,8 @@ export interface SnapshotResult {
   locator: (ref: string) => Effect.Effect<Locator, RefNotFoundError>;
 }
 
+export type BrowserEngine = "chromium" | "webkit" | "firefox";
+
 export interface CreatePageOptions {
   headed?: boolean;
   executablePath?: string;
@@ -51,6 +53,7 @@ export interface CreatePageOptions {
   waitUntil?: "load" | "domcontentloaded" | "networkidle" | "commit";
   videoOutputDir?: string;
   cdpUrl?: string;
+  browserType?: BrowserEngine;
 }
 
 export interface AnnotatedScreenshotOptions extends SnapshotOptions {

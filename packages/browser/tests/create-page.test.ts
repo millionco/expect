@@ -52,9 +52,18 @@ vi.mock("@expect/cookies", async () => {
   };
 });
 
+const webkitLaunchMock = vi.hoisted(() => vi.fn());
+const firefoxLaunchMock = vi.hoisted(() => vi.fn());
+
 vi.mock("playwright", () => ({
   chromium: {
     launch: launchMock,
+  },
+  webkit: {
+    launch: webkitLaunchMock,
+  },
+  firefox: {
+    launch: firefoxLaunchMock,
   },
 }));
 
@@ -232,5 +241,71 @@ describe("Browser.createPage cookie reuse", () => {
     expect(addCookiesMock).toHaveBeenCalledWith(
       fallbackCookies.map((cookie) => cookie.playwrightFormat),
     );
+  });
+});
+
+describe("Browser.createPage browserType", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    gotoMock.mockResolvedValue(undefined);
+    newPageMock.mockResolvedValue({ goto: gotoMock });
+    addCookiesMock.mockResolvedValue(undefined);
+    addInitScriptMock.mockResolvedValue(undefined);
+    pagesMock.mockReturnValue([]);
+    newContextMock.mockResolvedValue({
+      newPage: newPageMock,
+      addCookies: addCookiesMock,
+      addInitScript: addInitScriptMock,
+      pages: pagesMock,
+    });
+    closeMock.mockResolvedValue(undefined);
+
+    const mockBrowser = {
+      newContext: newContextMock,
+      close: closeMock,
+    };
+    launchMock.mockResolvedValue(mockBrowser);
+    webkitLaunchMock.mockResolvedValue(mockBrowser);
+    firefoxLaunchMock.mockResolvedValue(mockBrowser);
+
+    defaultBrowserMock.mockReturnValue(Effect.succeed(Option.none()));
+    browserListMock.mockReturnValue(Effect.succeed([]));
+  });
+
+  it("defaults to chromium when browserType is not specified", async () => {
+    await runBrowser((browser) => browser.createPage("https://example.com"));
+
+    expect(launchMock).toHaveBeenCalledOnce();
+    expect(webkitLaunchMock).not.toHaveBeenCalled();
+    expect(firefoxLaunchMock).not.toHaveBeenCalled();
+  });
+
+  it("launches webkit when browserType is webkit", async () => {
+    await runBrowser((browser) =>
+      browser.createPage("https://example.com", { browserType: "webkit" }),
+    );
+
+    expect(webkitLaunchMock).toHaveBeenCalledOnce();
+    expect(launchMock).not.toHaveBeenCalled();
+    expect(firefoxLaunchMock).not.toHaveBeenCalled();
+  });
+
+  it("launches firefox when browserType is firefox", async () => {
+    await runBrowser((browser) =>
+      browser.createPage("https://example.com", { browserType: "firefox" }),
+    );
+
+    expect(firefoxLaunchMock).toHaveBeenCalledOnce();
+    expect(launchMock).not.toHaveBeenCalled();
+    expect(webkitLaunchMock).not.toHaveBeenCalled();
+  });
+
+  it("does not pass chromium-specific args for non-chromium engines", async () => {
+    await runBrowser((browser) =>
+      browser.createPage("https://example.com", { browserType: "webkit" }),
+    );
+
+    expect(webkitLaunchMock).toHaveBeenCalledWith(expect.objectContaining({ args: [] }));
   });
 });

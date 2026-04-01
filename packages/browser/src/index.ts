@@ -31,6 +31,7 @@ export type {
   AnnotatedScreenshotOptions,
   AnnotatedScreenshotResult,
   AriaRole,
+  BrowserEngine,
   CollectResult,
   CreatePageOptions,
   RefEntry,

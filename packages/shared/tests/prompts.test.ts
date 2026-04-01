@@ -52,6 +52,13 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("close: close the browser");
   });
 
+  it("documents browser engine switching in open tool description", () => {
+    const prompt = buildExecutionSystemPrompt();
+    expect(prompt).toContain("browser='webkit'");
+    expect(prompt).toContain("browser='firefox'");
+    expect(prompt).toContain("Close the current session first before switching engines");
+  });
+
   it("includes step marker protocol in system prompt", () => {
     const prompt = buildExecutionSystemPrompt();
     expect(prompt).toContain("STEP_START|<step-id>|<step-title>");

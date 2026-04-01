@@ -204,4 +204,87 @@ describe("MCP server tools", () => {
     expect(textContent(result)).toContain("No snapshot taken yet");
     await callTool("close");
   });
+
+  it("open tool accepts browser parameter in schema", async () => {
+    const tools = await mcpClient.listTools();
+    const openTool = tools.tools.find((tool) => tool.name === "open");
+    expect(openTool).toBeDefined();
+    const schema = openTool!.inputSchema as { properties?: Record<string, unknown> };
+    expect(schema.properties).toHaveProperty("browser");
+  });
+
+  it("open with browser=webkit launches a webkit session", async () => {
+    const openResult = await callTool("open", { url: testServerUrl, browser: "webkit" });
+    const text = textContent(openResult);
+
+    if (text.includes("Executable doesn't exist")) {
+      await callTool("close").catch(() => {});
+      return;
+    }
+
+    expect(text).toContain("Opened");
+    expect(text).toContain("[webkit]");
+
+    const snapshotResult = await callTool("screenshot", { mode: "snapshot" });
+    const snapshotData = JSON.parse(textContent(snapshotResult));
+    expect(snapshotData.tree).toContain("Test Page");
+
+    await callTool("close");
+  });
+
+  it("switches from chromium to webkit via close → open", async () => {
+    const chromiumResult = await callTool("open", { url: testServerUrl });
+    expect(textContent(chromiumResult)).toContain("Opened");
+    expect(textContent(chromiumResult)).not.toContain("[webkit]");
+
+    const chromiumSnapshot = await callTool("screenshot", { mode: "snapshot" });
+    expect(JSON.parse(textContent(chromiumSnapshot)).tree).toContain("Test Page");
+
+    await callTool("close");
+
+    const webkitResult = await callTool("open", { url: testServerUrl, browser: "webkit" });
+    const webkitText = textContent(webkitResult);
+
+    if (webkitText.includes("Executable doesn't exist")) {
+      await callTool("close").catch(() => {});
+      return;
+    }
+
+    expect(webkitText).toContain("Opened");
+    expect(webkitText).toContain("[webkit]");
+
+    const webkitSnapshot = await callTool("screenshot", { mode: "snapshot" });
+    expect(JSON.parse(textContent(webkitSnapshot)).tree).toContain("Test Page");
+
+    await callTool("close");
+  });
+
+  it("open with browser=firefox launches a firefox session", async () => {
+    const openResult = await callTool("open", { url: testServerUrl, browser: "firefox" });
+    const text = textContent(openResult);
+
+    if (text.includes("Executable doesn't exist")) {
+      await callTool("close").catch(() => {});
+      return;
+    }
+
+    expect(text).toContain("Opened");
+    expect(text).toContain("[firefox]");
+
+    const snapshotResult = await callTool("screenshot", { mode: "snapshot" });
+    const snapshotData = JSON.parse(textContent(snapshotResult));
+    expect(snapshotData.tree).toContain("Test Page");
+
+    await callTool("close");
+  });
+
+  it("navigates within an existing session instead of relaunching", async () => {
+    await callTool("open", { url: testServerUrl });
+
+    const navResult = await callTool("open", { url: testServerUrl, browser: "webkit" });
+    expect(textContent(navResult)).toContain("Navigated");
+    expect(textContent(navResult)).not.toContain("[webkit]");
+
+    await callTool("close");
+  });
 });

@@ -162,7 +162,7 @@ export const buildExecutionSystemPrompt = (browserMcpServerName?: string): strin
     "</ui_quality_rules>",
     "",
     `<tools server="${mcpName}">`,
-    "1. open: launch a browser and navigate to a URL.",
+    "1. open: launch a browser and navigate to a URL. Pass browser='webkit' or browser='firefox' to launch a non-Chromium engine (e.g. for cross-browser testing). Close the current session first before switching engines.",
     "2. playwright: execute Playwright code. Globals: page, context, browser, ref(id). Set snapshotAfter=true to auto-snapshot after execution.",
     "3. screenshot: capture page state. Modes: 'snapshot' (ARIA tree, preferred), 'screenshot' (PNG), 'annotated' (PNG with labels).",
     "4. console_logs: get browser console messages. Filter by type ('error', 'warning', 'log').",

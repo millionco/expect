@@ -36,8 +36,8 @@ jobs:
       - name: Build all packages
         run: pnpm build
 
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit firefox
 
       - name: Install Claude Code
         run: pnpm add -g @anthropic-ai/claude-code
@@ -113,6 +113,8 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
+          fuser -k 7681/tcp 2>/dev/null || true
+          sleep 1
           ttyd -p 7681 --writable node apps/cli/dist/index.js > /tmp/ttyd.log 2>&1 &
           TTYD_PID=$!
           sleep 3

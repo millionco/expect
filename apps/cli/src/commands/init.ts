@@ -117,6 +117,20 @@ export const runInit = async (options: InitOptions = {}) => {
     logger.dim(`  Run manually: ${highlighter.info(installCommand)}`);
   }
 
+  const playwrightSpinner = spinner("Installing Playwright browsers...").start();
+  const playwrightSuccess = await tryRun(
+    "npx playwright install --with-deps chromium webkit firefox",
+  );
+
+  if (playwrightSuccess) {
+    playwrightSpinner.succeed("Playwright browsers installed (Chromium, WebKit, Firefox).");
+  } else {
+    playwrightSpinner.fail("Failed to install Playwright browsers.");
+    logger.dim(
+      `  Run manually: ${highlighter.info("npx playwright install --with-deps chromium webkit firefox")}`,
+    );
+  }
+
   logger.break();
 
   await runAddSkill({ yes: options.yes, agents: availableAgents });

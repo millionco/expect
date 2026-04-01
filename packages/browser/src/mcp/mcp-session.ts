@@ -52,6 +52,7 @@ export interface OpenOptions {
   cookies?: boolean;
   waitUntil?: "load" | "domcontentloaded" | "networkidle" | "commit";
   cdpUrl?: string;
+  browserType?: "chromium" | "webkit" | "firefox";
 }
 
 export interface OpenResult {
@@ -218,6 +219,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         waitUntil: options.waitUntil,
         videoOutputDir,
         cdpUrl: options.cdpUrl ?? defaultCdpUrl,
+        browserType: options.browserType,
       });
 
       const sessionData: BrowserSessionData = {

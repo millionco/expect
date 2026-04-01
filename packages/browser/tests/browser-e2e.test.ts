@@ -2,6 +2,7 @@ import { Effect } from "effect";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import * as http from "node:http";
 import { runBrowser } from "../src/browser";
+import type { BrowserEngine } from "../src/types";
 
 interface RecordedRequest {
   method: string;
@@ -285,6 +286,110 @@ describe("browser e2e", () => {
       expect(snapshot.tree).toContain(`heading "Setup complete"`);
     } finally {
       await session.browser.close();
+    }
+  });
+});
+
+const tryLaunchEngine = async (engineName: BrowserEngine, testOrigin: string) => {
+  try {
+    const session = await runBrowser((browser) =>
+      browser.createPage(testOrigin, { browserType: engineName, waitUntil: "domcontentloaded" }),
+    );
+    return session;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes("Executable doesn't exist")) return undefined;
+    throw error;
+  }
+};
+
+describe("cross-browser engine support", () => {
+  let server: http.Server;
+  let origin: string;
+
+  beforeAll(async () => {
+    const app = await startBrowserApp();
+    server = app.server;
+    origin = app.origin;
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((resolve) => {
+      server.close(() => resolve());
+    });
+  });
+
+  it("launches webkit and snapshots the page", async () => {
+    const session = await tryLaunchEngine("webkit", origin);
+    if (!session) return;
+
+    try {
+      expect(session.page.url()).toBe(`${origin}/`);
+
+      const snapshot = await runBrowser((browser) => browser.snapshot(session.page));
+      expect(snapshot.tree).toContain(`heading "Workspace setup"`);
+      expect(snapshot.tree).toContain(`button "Save settings"`);
+    } finally {
+      await session.browser.close();
+    }
+  });
+
+  it("launches firefox and snapshots the page", async () => {
+    const session = await tryLaunchEngine("firefox", origin);
+    if (!session) return;
+
+    try {
+      expect(session.page.url()).toBe(`${origin}/`);
+
+      const snapshot = await runBrowser((browser) => browser.snapshot(session.page));
+      expect(snapshot.tree).toContain(`heading "Workspace setup"`);
+      expect(snapshot.tree).toContain(`button "Save settings"`);
+    } finally {
+      await session.browser.close();
+    }
+  });
+
+  it("webkit session supports interaction via act", async () => {
+    const session = await tryLaunchEngine("webkit", origin);
+    if (!session) return;
+
+    try {
+      const snapshot = await runBrowser((browser) =>
+        browser.snapshot(session.page, { interactive: true }),
+      );
+      const nameRef = Object.keys(snapshot.refs).find(
+        (key) =>
+          snapshot.refs[key].role === "textbox" && snapshot.refs[key].name === "Workspace name",
+      );
+      expect(nameRef).toBeDefined();
+
+      const after = await runBrowser((browser) =>
+        browser.act(session.page, nameRef!, (locator) => locator.fill("WebKit test"), {
+          interactive: true,
+        }),
+      );
+      expect(after.tree).toContain("WebKit test");
+    } finally {
+      await session.browser.close();
+    }
+  });
+
+  it("can switch between chromium and webkit sessions", async () => {
+    const chromiumSession = await runBrowser((browser) =>
+      browser.createPage(origin, { waitUntil: "domcontentloaded" }),
+    );
+    const chromiumSnapshot = await runBrowser((browser) => browser.snapshot(chromiumSession.page));
+    expect(chromiumSnapshot.tree).toContain(`heading "Workspace setup"`);
+    await chromiumSession.browser.close();
+
+    const webkitSession = await tryLaunchEngine("webkit", origin);
+    if (!webkitSession) return;
+
+    try {
+      const webkitSnapshot = await runBrowser((browser) => browser.snapshot(webkitSession.page));
+      expect(webkitSnapshot.tree).toContain(`heading "Workspace setup"`);
+    } finally {
+      await webkitSession.browser.close();
     }
   });
 });

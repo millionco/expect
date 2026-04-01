@@ -33,7 +33,7 @@ jobs:
           GITHUB_ACTIONS: "1"
       - name: Build browser runtime
         run: pnpm --filter @expect/browser run build
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit firefox
       - name: Run E2E tests
         run: pnpm --filter @expect/browser test

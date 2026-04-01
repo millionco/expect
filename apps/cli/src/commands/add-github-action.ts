@@ -78,8 +78,8 @@ jobs:
           fetch-depth: 0
 ${setupSteps}
 
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit firefox
 
       # Expect runs against your dev server by default, not a production build or deployed preview.
       # To test a preview URL instead, set the EXPECT_BASE_URL repository variable to skip

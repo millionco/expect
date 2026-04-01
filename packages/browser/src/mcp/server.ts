@@ -73,9 +73,15 @@ export const createBrowserMcpServer = <E>(
           .describe(
             "CDP WebSocket endpoint URL to connect to an existing Chrome instance (e.g. 'ws://localhost:9222/devtools/browser/...'). Use 'auto' to auto-discover a running Chrome.",
           ),
+        browser: z
+          .enum(["chromium", "webkit", "firefox"])
+          .optional()
+          .describe(
+            "Browser engine to launch (default: chromium). Use 'webkit' for Safari-like testing or 'firefox' for Firefox testing. CDP connections are only supported with chromium.",
+          ),
       },
     },
-    ({ url, headed, cookies, waitUntil, cdp }) =>
+    ({ url, headed, cookies, waitUntil, cdp, browser: browserType }) =>
       runMcp(
         Effect.gen(function* () {
           const session = yield* McpSession;
@@ -93,10 +99,17 @@ export const createBrowserMcpServer = <E>(
             cdpUrl = cdp;
           }
 
-          const result = yield* session.open(url, { headed, cookies, waitUntil, cdpUrl });
+          const result = yield* session.open(url, {
+            headed,
+            cookies,
+            waitUntil,
+            cdpUrl,
+            browserType,
+          });
+          const engineSuffix = browserType && browserType !== "chromium" ? ` [${browserType}]` : "";
           const cdpSuffix = cdpUrl ? ` (connected via CDP: ${cdpUrl})` : "";
           return textResult(
-            `Opened ${url}${cdpSuffix}` +
+            `Opened ${url}${engineSuffix}${cdpSuffix}` +
               (result.injectedCookieCount > 0
                 ? ` (${result.injectedCookieCount} cookies synced from local browser)`
                 : ""),
