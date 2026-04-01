@@ -259,7 +259,7 @@ export class AcpAdapter extends ServiceMap.Service<
       return yield* Effect.try({
         try: () => {
           const require = makeRequire();
-          const binPath = require.resolve("@zed-industries/claude-agent-acp/dist/index.js");
+          const binPath = require.resolve("@agentclientprotocol/claude-agent-acp/dist/index.js");
           return AcpAdapter.of({
             provider: "claude",
             bin: process.execPath,
@@ -269,7 +269,7 @@ export class AcpAdapter extends ServiceMap.Service<
         },
         catch: (cause) =>
           new AcpAdapterNotFoundError({
-            packageName: "@zed-industries/claude-agent-acp",
+            packageName: "@agentclientprotocol/claude-agent-acp",
             cause,
           }),
       });

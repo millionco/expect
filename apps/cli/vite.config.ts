@@ -98,7 +98,7 @@ export default defineConfig({
       alwaysBundle: [/^@expect\//],
       neverBundle: [
         "playwright",
-        "@zed-industries/claude-agent-acp",
+        "@agentclientprotocol/claude-agent-acp",
         "@zed-industries/codex-acp",
         "oxc-resolver",
       ],
