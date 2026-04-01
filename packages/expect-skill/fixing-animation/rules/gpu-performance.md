@@ -75,6 +75,9 @@ Reference these rules when:
 /* after */
 .card {
   transition: transform 200ms ease-out;
+}
+.card:hover,
+.card:active {
   will-change: transform;
 }
 
@@ -114,7 +117,7 @@ Reference these rules when:
 ## review guidance
 
 - if animations drop frames, verify only transform/opacity are being animated
-- if 1px shift occurs at start/end, add `will-change: transform`
+- if 1px shift occurs at start/end, add `will-change: transform` scoped to the active state (hover/active) — never permanently
 - if `will-change` is applied globally or permanently, scope it to active animations only
 - if blur or backdrop-filter is animated, verify the surface is small and the effect is one-shot
 - profile with Chrome DevTools Performance panel to identify paint and layout triggers

@@ -46,7 +46,7 @@ Reference these rules when:
 - define animation values as shared constants, not inline values
 - standard token set: duration (fast, normal, slow), easing (enter, exit, move), scale (press feedback)
 - example token values:
-  - `duration-fast: 100ms` (hover, tooltip)
+  - `duration-fast: 125ms` (hover, tooltip)
   - `duration-normal: 200ms` (dropdown, popover)
   - `duration-slow: 350ms` (modal, drawer)
   - `ease-enter: cubic-bezier(0.32, 0.72, 0, 1)`

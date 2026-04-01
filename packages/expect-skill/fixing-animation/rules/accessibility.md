@@ -93,7 +93,7 @@ Reference these rules when:
 
 ```jsx
 // Framer Motion: respect reduced motion
-import { useReducedMotion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 
 const shouldReduce = useReducedMotion();
 <motion.div animate={{ x: 0 }} transition={shouldReduce ? { duration: 0 } : { type: "spring" }} />;

@@ -58,7 +58,7 @@ function TodoList() {
 
 1. **Stable callback references** - Callbacks don't need to be recreated when state changes
 2. **No stale closures** - Always operates on the latest state value
-3. **Fewer dependencies** - Simplifies dependency arrays and reduces memory leaks
+3. **Fewer dependencies** - Simplifies dependency arrays, reducing the chance of stale closures
 4. **Prevents bugs** - Eliminates the most common source of React closure bugs
 
 **When to use functional updates:**

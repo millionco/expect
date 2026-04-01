@@ -21,7 +21,7 @@ const cache = new LRUCache<string, any>({
 
 export async function getUser(id: string) {
   const cached = cache.get(id);
-  if (cached) return cached;
+  if (cached !== undefined) return cached;
 
   const user = await db.user.findUnique({ where: { id } });
   cache.set(id, user);

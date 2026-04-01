@@ -161,13 +161,15 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
             Effect.logDebug("Failed to create screenshot directory", { cause }),
           ),
         );
-      yield* fileSystem
-        .writeFile(screenshotPath, new Uint8Array(buffer))
-        .pipe(
-          Effect.catchCause((cause) => Effect.logDebug("Failed to save screenshot", { cause })),
-        );
-      yield* Ref.update(savedScreenshotPathsRef, (paths) => [...paths, screenshotPath]);
-      yield* Effect.logDebug("Screenshot saved", { path: screenshotPath, index: screenshotIndex });
+      yield* fileSystem.writeFile(screenshotPath, new Uint8Array(buffer)).pipe(
+        Effect.tap(() =>
+          Ref.update(savedScreenshotPathsRef, (paths) => [...paths, screenshotPath]),
+        ),
+        Effect.tap(() =>
+          Effect.logDebug("Screenshot saved", { path: screenshotPath, index: screenshotIndex }),
+        ),
+        Effect.catchCause((cause) => Effect.logDebug("Failed to save screenshot", { cause })),
+      );
     });
 
     if (!cookiesDisabled) {
@@ -220,6 +222,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
 
     const open = Effect.fn("McpSession.open")(function* (url: string, options: OpenOptions = {}) {
       yield* Effect.annotateCurrentSpan({ url });
+      yield* Ref.set(savedScreenshotPathsRef, []);
 
       const preExtracted = options.cookies ? yield* Ref.get(preExtractedCookiesRef) : undefined;
       const cookiesOption =

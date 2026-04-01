@@ -188,7 +188,7 @@ export function FeatureComponent({ featureId }: ComponentProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   // Computed values (NOT useEffect + setState)
-  const displayName = user?.name ?? 'Unknown';
+  const displayName = data?.name ?? 'Unknown';
 
   // Event handlers
   const handleClick = () => { setIsOpen(true); };

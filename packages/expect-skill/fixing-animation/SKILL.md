@@ -41,12 +41,13 @@ Elements may shift by 1px at the start/end of CSS transform animations due to GP
 **Fix:**
 
 ```css
-.element {
+.element:hover,
+.element:active {
   will-change: transform;
 }
 ```
 
-This tells the browser to keep the element on the GPU throughout the animation.
+This tells the browser to promote the element to a GPU layer during interaction, avoiding the CPU/GPU handoff shift. Only apply `will-change` during active animation — permanent use wastes VRAM.
 
 ## Button & Click Feedback
 

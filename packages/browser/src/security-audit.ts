@@ -92,7 +92,7 @@ const scanScript = (page: Page, retire: NonNullable<typeof cachedRetire>, repo: 
     if (script.content) {
       return extractFindings(retire.scanFileContent(script.content, repo, sha1Hasher));
     }
-    return [] as SecurityFinding[];
+    return [];
   });
 
 export const runSecurityAudit = Effect.fn("runSecurityAudit")(function* (page: Page) {
@@ -120,7 +120,7 @@ export const runSecurityAudit = Effect.fn("runSecurityAudit")(function* (page: P
     .flat()
     .filter(
       ((seen) => (finding: SecurityFinding) => {
-        const key = `${finding.library}@${finding.version}:${finding.detail}`;
+        const key = `${finding.library}@${finding.version}:${finding.detail}:${finding.cves.join(",")}`;
         return seen.has(key) ? false : (seen.add(key), true);
       })(new Set<string>()),
     )

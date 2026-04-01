@@ -45,7 +45,7 @@ function StaticContent() {
 **For mutations:**
 
 ```tsx
-import { useSWRMutation } from "swr/mutation";
+import useSWRMutation from "swr/mutation";
 
 function UpdateButton() {
   const { trigger } = useSWRMutation("/api/user", updateUser);

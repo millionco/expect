@@ -9,7 +9,7 @@ metadata:
 
 # React Best Practices
 
-Performance optimization guide for React and Next.js applications. Contains 58 rules across 8 categories, prioritized by impact to guide automated refactoring and code generation.
+Performance optimization guide for React and Next.js applications. Contains 59 rules across 9 categories, prioritized by impact to guide automated refactoring and code generation.
 
 ## When to Apply
 

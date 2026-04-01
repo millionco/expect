@@ -49,7 +49,17 @@ describe("detectAvailableAgents", () => {
     expect(agents).toEqual(["claude", "codex"]);
   });
 
-  it("detects cursor as a supported agent via agent binary", () => {
+  it("detects cursor via cursor binary", () => {
+    mockedWhichSync.mockImplementation((command: string) => {
+      if (command === "cursor") return "/usr/local/bin/cursor";
+      throw new Error("not found");
+    });
+
+    const agents = detectAvailableAgents();
+    expect(agents).toEqual(["cursor"]);
+  });
+
+  it("detects cursor via agent binary fallback", () => {
     mockedWhichSync.mockImplementation((command: string) => {
       if (command === "agent") return "/usr/local/bin/agent";
       throw new Error("not found");

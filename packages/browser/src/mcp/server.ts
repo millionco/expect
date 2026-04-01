@@ -366,8 +366,8 @@ export const createBrowserMcpServer = <E>(
             seen.set(key, entry.timestamp);
           }
 
-          const isHttps = sessionData.networkRequests.some(
-            (request) => request.resourceType === "document" && request.url.startsWith("https://"),
+          const isHttps = entries.some(
+            (entry) => entry.resourceType === "document" && entry.url.startsWith("https://"),
           );
           const mixedContent = isHttps
             ? entries.filter(
@@ -447,21 +447,6 @@ export const createBrowserMcpServer = <E>(
           summary.push(
             `\nResources: ${trace.resources.totalCount} loaded (${Math.round(trace.resources.totalTransferSizeBytes / 1024)}KB total)`,
           );
-
-          const { pageHealth } = trace;
-          summary.push(
-            `\nPage Health: ${pageHealth.domNodeCount} DOM nodes${pageHealth.domNodeWarning ? " (warning: >1500)" : ""}`,
-          );
-          if (pageHealth.viewportOverflow) {
-            summary.push("  Viewport overflow detected (horizontal scroll)");
-          }
-          if (pageHealth.issues.length > 0) {
-            const errors = pageHealth.issues.filter((issue) => issue.severity === "error").length;
-            const warnings = pageHealth.issues.filter(
-              (issue) => issue.severity === "warning",
-            ).length;
-            summary.push(`  ${errors} error(s), ${warnings} warning(s)`);
-          }
 
           summary.push(`\nFull trace: ${tracePath}`);
 

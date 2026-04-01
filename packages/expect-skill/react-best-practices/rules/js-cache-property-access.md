@@ -26,3 +26,5 @@ for (let i = 0; i < len; i++) {
   process(value);
 }
 ```
+
+> **Note:** This assumes `arr.length` and `obj.config.settings.value` do not change during the loop. If the loop body mutates the array or the accessed property, cache the values inside the loop or use the original uncached form.

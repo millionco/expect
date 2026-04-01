@@ -37,6 +37,7 @@ function cachedSlugify(text: string): string {
     return slugifyCache.get(text)!
   }
   const result = slugify(text)
+  if (slugifyCache.size >= 1000) slugifyCache.delete(slugifyCache.keys().next().value!)
   slugifyCache.set(text, result)
   return result
 }

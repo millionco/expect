@@ -24,7 +24,7 @@ You are fixing accessibility issues against WCAG 2.1 AA. Use native HTML before 
 - Buttons must activate with Enter and Space
 - Lists and menus must navigate with Arrow keys
 - Escape must close dialogs, dropdowns, and overlays
-- Touch targets must be >= 44x44 CSS pixels
+- Touch targets should be at least 44x44 CSS pixels (recommended)
 - Never use `<div>` or `<span>` as buttons — use `<button>`
 - Never use `tabindex` > 0
 - Never use `outline: none` without a visible replacement

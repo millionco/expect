@@ -506,11 +506,7 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
     const getAdapterSessionError = (line: string): SessionQueueError | undefined => {
       const normalizedLine = line.toLowerCase();
 
-      if (
-        normalizedLine.includes("invalid api key") ||
-        normalizedLine.includes("fix external api key") ||
-        normalizedLine.includes("authentication")
-      ) {
+      if (normalizedLine.includes("invalid api key") || normalizedLine.includes("authentication")) {
         return new AcpProviderUnauthenticatedError({ provider: adapter.provider });
       }
 
