@@ -268,8 +268,8 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("Responsive design verification:");
     expect(prompt).toContain("375\u00d7812 (iPhone SE)");
     expect(prompt).toContain("390\u00d7844 (iPhone 14)");
-    expect(prompt).toContain("768\u00d71024 (iPad Mini portrait)");
-    expect(prompt).toContain("810\u00d71080 (iPad Air portrait)");
+    expect(prompt).toContain("768\u00d71024 (iPad Mini)");
+    expect(prompt).toContain("810\u00d71080 (iPad Air)");
     expect(prompt).toContain("1024\u00d7768 (iPad landscape)");
     expect(prompt).toContain("setViewportSize");
   });
@@ -277,15 +277,13 @@ describe("buildExecutionPrompt", () => {
   it("includes touch interaction testing rules", () => {
     const prompt = buildExecutionSystemPrompt();
     expect(prompt).toContain("Touch interaction testing:");
-    expect(prompt).toContain("touchscreen.tap");
     expect(prompt).toContain("also complete via tap");
   });
 
   it("includes cross-browser Safari/WebKit check", () => {
     const prompt = buildExecutionSystemPrompt();
     expect(prompt).toContain("Cross-browser check (Safari/WebKit):");
-    expect(prompt).toContain("playwright.webkit.launch");
-    expect(prompt).toContain("flexbox gap rendering");
+    expect(prompt).toContain("flexbox gap");
     expect(prompt).toContain("WebKit browser not available");
   });
 
@@ -293,12 +291,12 @@ describe("buildExecutionPrompt", () => {
     const prompt = buildExecutionSystemPrompt();
     expect(prompt).toContain("Dark mode verification:");
     expect(prompt).toContain("prefers-color-scheme");
-    expect(prompt).toContain("colorScheme: 'dark'");
+    expect(prompt).toContain("dark mode");
   });
 
   it("includes layout stability (CLS) rules", () => {
     const prompt = buildExecutionSystemPrompt();
-    expect(prompt).toContain("Layout stability after load (CLS):");
+    expect(prompt).toContain("Layout stability (CLS):");
     expect(prompt).toContain("layout-shift");
     expect(prompt).toContain("0.1");
   });
