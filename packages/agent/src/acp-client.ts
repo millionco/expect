@@ -559,6 +559,11 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
     /** @note(rasmus): we run all the writable queue entries into the process stdin */
     yield* Stream.fromQueue(writableQueue).pipe(Stream.run(childProcess.stdin), Effect.forkScoped);
 
+    // HACK: ACP adapters report fatal errors (invalid API key, usage limits) via stderr
+    // rather than through the protocol. We scan stderr lines for known patterns and, on the
+    // first match, fail all active session queues so consumers surface the error immediately.
+    // Stream.take(1) ensures we only act on the first fatal error and stop scanning.
+    // If we don't immediately fail the session queues, consumers will hang indefinitely.
     yield* childProcess.stderr.pipe(
       Stream.decodeText(),
       Stream.splitLines,
