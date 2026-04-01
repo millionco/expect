@@ -16,10 +16,14 @@ import { useNavigationStore, Screen } from "./stores/use-navigation";
 import { usePreferencesStore } from "./stores/use-preferences";
 import { resolveChangesFor } from "./utils/resolve-changes-for";
 import { renderApp } from "./program";
-import { CI_EXECUTION_TIMEOUT_MS, VERSION } from "./constants";
+import { CI_EXECUTION_TIMEOUT_MS, VERSION, VERSION_API_URL } from "./constants";
 import { prompts } from "./utils/prompts";
 import { highlighter } from "./utils/highlighter";
 import { logger } from "./utils/logger";
+
+try {
+  fetch(`${VERSION_API_URL}?source=cli&t=${Date.now()}`).catch(() => {});
+} catch {}
 
 const DEFAULT_INSTRUCTION =
   "Test all changes from main in the browser and verify they work correctly.";

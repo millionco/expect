@@ -1,15 +1,11 @@
-import { Effect, Exit, Schema } from "effect";
+import { Effect, Exit } from "effect";
 import { useQuery } from "@tanstack/react-query";
 import {
-  NPM_PACKAGE_NAME,
   UPDATE_CHECK_STALE_MS,
   UPDATE_CHECK_TIMEOUT_MS,
   VERSION,
+  VERSION_API_URL,
 } from "../constants";
-
-const NpmLatestResponse = Schema.Struct({
-  version: Schema.String,
-});
 
 const isNewerVersion = (latest: string, current: string): boolean => {
   const latestParts = latest.split(".").map(Number);
@@ -21,20 +17,14 @@ const isNewerVersion = (latest: string, current: string): boolean => {
   return false;
 };
 
-const fetchLatestVersion = Effect.gen(function* () {
-  const json = yield* Effect.tryPromise({
-    try: () =>
-      fetch(`https://registry.npmjs.org/${NPM_PACKAGE_NAME}/latest`).then((response) =>
-        response.json(),
-      ),
-    catch: (cause) => new Error(`npm registry fetch failed: ${cause}`),
-  });
-  const response = yield* Effect.try({
-    try: () => Schema.decodeUnknownSync(NpmLatestResponse)(json),
-    catch: (cause) => new Error(`npm response decode failed: ${cause}`),
-  });
-  return response.version;
+const fetchLatestVersion = Effect.tryPromise({
+  try: () =>
+    fetch(`${VERSION_API_URL}?source=update-check&t=${Date.now()}`, {
+      cache: "no-store",
+    }).then((response) => response.text()),
+  catch: (cause) => new Error(`Version API fetch failed: ${cause}`),
 }).pipe(
+  Effect.map((version) => version.trim()),
   Effect.timeoutOrElse({
     duration: UPDATE_CHECK_TIMEOUT_MS,
     onTimeout: () => Effect.succeed(undefined),
