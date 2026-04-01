@@ -1065,17 +1065,17 @@ export class TestReport extends ExecutedTestPlan.extend<TestReport>("@supervisor
     >(this.steps.map((step) => [step.id, { status: "not-run", summary: "" }]));
 
     for (const event of this.events) {
-      if (event._tag === "StepCompleted") {
+      if (event._tag === "StepCompleted" && statuses.has(event.stepId)) {
         statuses.set(event.stepId, {
           status: "passed",
           summary: event.summary,
         });
-      } else if (event._tag === "StepFailed") {
+      } else if (event._tag === "StepFailed" && statuses.has(event.stepId)) {
         statuses.set(event.stepId, {
           status: "failed",
           summary: event.message,
         });
-      } else if (event._tag === "StepSkipped") {
+      } else if (event._tag === "StepSkipped" && statuses.has(event.stepId)) {
         statuses.set(event.stepId, {
           status: "skipped",
           summary: event.reason,
