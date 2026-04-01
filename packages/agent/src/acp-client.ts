@@ -497,7 +497,6 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
     const streamFiberMap = yield* FiberMap.make<SessionId>();
 
     const writableQueue = yield* Queue.unbounded<Uint8Array>();
-    const adapterSessionErrorRef = yield* Ref.make<SessionQueueError | undefined>(undefined);
     const sessionUpdatesMap = new Map<
       SessionId,
       Queue.Queue<AcpSessionUpdate, SessionQueueError>
@@ -566,12 +565,9 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
       Stream.tap((line) => Effect.logDebug("ACP adapter stderr", { line })),
       Stream.map(getAdapterSessionError),
       Stream.filter((error): error is SessionQueueError => error !== undefined),
-      Stream.filterEffect(() =>
-        Ref.get(adapterSessionErrorRef).pipe(Effect.map((existing) => !existing)),
-      ),
+      Stream.take(1),
       Stream.tap((adapterSessionError) =>
         Effect.gen(function* () {
-          yield* Ref.set(adapterSessionErrorRef, adapterSessionError);
           yield* Effect.logWarning("ACP adapter reported fatal error", {
             provider: adapter.provider,
           });
