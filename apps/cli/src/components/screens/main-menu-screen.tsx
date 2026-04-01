@@ -77,6 +77,12 @@ export const MainMenu = ({ gitState }: MainMenuProps) => {
   );
   const { data: testCoverage } = useTestCoverage(gitState);
 
+  const [cliBaseUrls] = useState(() => {
+    const urls = usePreferencesStore.getState().cliBaseUrls;
+    if (urls) usePreferencesStore.setState({ cliBaseUrls: undefined });
+    return urls;
+  });
+
   const navigateHistoryBack = () => {
     if (instructionHistory.length === 0) return;
     const nextIndex = historyIndex + 1;
@@ -151,9 +157,6 @@ export const MainMenu = ({ gitState }: MainMenuProps) => {
     }
 
     usePreferencesStore.getState().rememberInstruction(trimmed);
-
-    const cliBaseUrls = usePreferencesStore.getState().cliBaseUrls;
-    if (cliBaseUrls) usePreferencesStore.setState({ cliBaseUrls: undefined });
 
     if (cookieBrowserKeys.length > 0 || containsUrl(trimmed) || cliBaseUrls) {
       setScreen(
