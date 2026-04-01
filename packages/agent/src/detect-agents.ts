@@ -1,4 +1,4 @@
-import whichSync from "which";
+import { isCommandAvailable } from "@expect/shared/is-command-available";
 
 export type SupportedAgent =
   | "claude"
@@ -27,14 +27,6 @@ const SUPPORTED_AGENTS: Record<SupportedAgent, AgentMeta> = {
   cursor: { binaries: ["cursor", "agent"], displayName: "Cursor", skillDir: ".cursor/skills" },
   opencode: { binaries: ["opencode"], displayName: "OpenCode", skillDir: ".opencode/skills" },
   droid: { binaries: ["droid"], displayName: "Factory Droid", skillDir: ".droid/skills" },
-};
-
-export const isCommandAvailable = (command: string): boolean => {
-  try {
-    return Boolean(whichSync.sync(command));
-  } catch {
-    return false;
-  }
 };
 
 export const detectAvailableAgents = (): SupportedAgent[] =>

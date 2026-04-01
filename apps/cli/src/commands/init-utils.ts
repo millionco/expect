@@ -1,7 +1,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import { Effect, Schema, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
-import { isCommandAvailable } from "@expect/agent";
+import { isCommandAvailable } from "@expect/shared/is-command-available";
 import {
   CLAUDE_SETUP_TOKEN_TIMEOUT_MS,
   GH_CLI_DETECT_TIMEOUT_MS,

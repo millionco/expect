@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vite-plus/test";
-import { detectAvailableAgents, isCommandAvailable } from "../src/detect-agents";
+import { detectAvailableAgents } from "../src/detect-agents";
+import { isCommandAvailable } from "@expect/shared/is-command-available";
 
 vi.mock("which", () => ({
   default: {

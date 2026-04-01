@@ -8,7 +8,8 @@
     "./models": "./src/models.ts",
     "./prompts": "./src/prompts.ts",
     "./observability": "./src/observability/exports.ts",
-    "./utils": "./src/utils.ts"
+    "./utils": "./src/utils.ts",
+    "./is-command-available": "./src/is-command-available.ts"
   },
   "scripts": {
     "lint": "vp lint && tsc --noEmit",
@@ -24,7 +25,8 @@
     "effect": "4.0.0-beta.35",
     "node-machine-id": "^1.1.12",
     "ohash": "^2.0.11",
-    "posthog-node": "^5.28.5"
+    "posthog-node": "^5.28.5",
+    "which": "^6.0.1"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

@@ -3,8 +3,11 @@ import { spawnSync } from "node:child_process";
 import { Effect, Layer, Stream } from "effect";
 import { ChildProcessSpawner } from "effect/unstable/process";
 
-vi.mock("@expect/agent", () => ({
+vi.mock("@expect/shared/is-command-available", () => ({
   isCommandAvailable: vi.fn(),
+}));
+
+vi.mock("@expect/agent", () => ({
   detectAvailableAgents: vi.fn().mockReturnValue([]),
 }));
 
@@ -43,7 +46,7 @@ describe("init-utils", () => {
 
   describe("hasGhCli", () => {
     it("returns true when gh is on PATH", async () => {
-      const { isCommandAvailable } = await import("@expect/agent");
+      const { isCommandAvailable } = await import("@expect/shared/is-command-available");
       vi.mocked(isCommandAvailable).mockReturnValue(true);
 
       const { hasGhCli } = await import("../src/commands/init-utils");
@@ -52,7 +55,7 @@ describe("init-utils", () => {
     });
 
     it("returns false when gh is not on PATH", async () => {
-      const { isCommandAvailable } = await import("@expect/agent");
+      const { isCommandAvailable } = await import("@expect/shared/is-command-available");
       vi.mocked(isCommandAvailable).mockReturnValue(false);
 
       const { hasGhCli } = await import("../src/commands/init-utils");

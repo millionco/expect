@@ -3,7 +3,7 @@ import { Effect, Option, Stream } from "effect";
 import { Agent, type AgentBackend } from "../src/agent";
 import { AgentStreamOptions } from "../src/types";
 import { type AcpSessionUpdate } from "@expect/shared/models";
-import { isCommandAvailable } from "../src/detect-agents";
+import { isCommandAvailable } from "@expect/shared/is-command-available";
 
 const hasCodex = isCommandAvailable("codex");
 const hasClaude = isCommandAvailable("claude");
