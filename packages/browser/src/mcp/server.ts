@@ -6,7 +6,6 @@ import { z } from "zod/v4";
 import { Effect, type ManagedRuntime } from "effect";
 import { evaluateRuntime } from "../utils/evaluate-runtime";
 import { runAccessibilityAudit } from "../accessibility";
-import { runSecurityAudit } from "../security-audit";
 import { formatPerformanceTrace } from "../performance-trace";
 import { McpSession } from "./mcp-session";
 import { DEFAULT_SWIPE_DURATION_MS } from "../ios/constants";
@@ -485,29 +484,6 @@ export const createBrowserMcpServer = <E>(
           }
           return jsonResult(result);
         }).pipe(Effect.withSpan(`mcp.tool.accessibility_audit`)),
-      ),
-  );
-
-  server.registerTool(
-    "security_audit",
-    {
-      title: "Security Audit",
-      description:
-        "Scan the current page for JavaScript libraries with known vulnerabilities (CVEs) using the retire.js vulnerability database. Returns findings sorted by severity with CVE identifiers and remediation links.",
-      annotations: { readOnlyHint: true },
-      inputSchema: {},
-    },
-    () =>
-      runMcp(
-        Effect.gen(function* () {
-          const session = yield* McpSession;
-          const page = yield* session.requirePage();
-          const result = yield* runSecurityAudit(page);
-          if (result.findings.length === 0) {
-            return textResult("No vulnerable JavaScript libraries detected.");
-          }
-          return jsonResult(result);
-        }).pipe(Effect.withSpan(`mcp.tool.security_audit`)),
       ),
   );
 

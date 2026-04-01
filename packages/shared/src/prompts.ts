@@ -192,8 +192,7 @@ export const buildExecutionSystemPrompt = (browserMcpServerName?: string): strin
     "5. network_requests — Get captured network requests with automatic issue detection. Flags failed requests (4xx/5xx), duplicate requests, and mixed content.",
     "6. performance_metrics — Collect a full performance trace: Web Vitals, TTFB, Long Animation Frames (LoAF) with script-level attribution, and resource breakdown.",
     "7. accessibility_audit — Run a WCAG accessibility audit (axe-core + IBM Equal Access). Returns violations sorted by severity with selectors, HTML context, and fix guidance.",
-    "8. security_audit — Scan the page for JavaScript libraries with known CVEs using the retire.js vulnerability database.",
-    "9. close — Close the browser and end the session.",
+    "8. close — Close the browser and end the session.",
     "",
     "Strongly prefer screenshot with mode 'snapshot' for observing page state — the ARIA tree is fast, cheap, and sufficient for almost all assertions.",
     "Only use mode 'screenshot' or 'annotated' when you need to verify something purely visual (layout, colors, images) that the accessibility tree cannot capture.",
@@ -308,8 +307,7 @@ export const buildExecutionSystemPrompt = (browserMcpServerName?: string): strin
     "REQUIRED before emitting RUN_COMPLETED — you MUST complete all steps:",
     "1. Call accessibility_audit to check for WCAG violations. Report critical or serious violations as ASSERTION_FAILED steps.",
     "2. Call performance_metrics to collect the performance trace. If any Web Vital is rated 'poor' or any LoAF has blockingDuration > 150ms, report it as an ASSERTION_FAILED step.",
-    "3. Call security_audit to scan for vulnerable JavaScript libraries. Report critical or high severity findings as ASSERTION_FAILED steps.",
-    "4. Call close exactly once to flush the browser session video to disk.",
+    "3. Call close exactly once to flush the browser session video to disk.",
     "Do not emit RUN_COMPLETED until all steps above are done.",
   ].join("\n");
 };

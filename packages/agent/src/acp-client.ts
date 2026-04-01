@@ -566,7 +566,9 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
       Stream.tap((line) => Effect.logDebug("ACP adapter stderr", { line })),
       Stream.map(getAdapterSessionError),
       Stream.filter((error): error is SessionQueueError => error !== undefined),
-      Stream.filterEffect(() => Ref.get(adapterSessionErrorRef).pipe(Effect.map((existing) => !existing))),
+      Stream.filterEffect(() =>
+        Ref.get(adapterSessionErrorRef).pipe(Effect.map((existing) => !existing)),
+      ),
       Stream.tap((adapterSessionError) =>
         Effect.gen(function* () {
           yield* Ref.set(adapterSessionErrorRef, adapterSessionError);
