@@ -64,17 +64,6 @@ Think like a user trying to break the feature, not a QA checklist confirming it 
 **Bad:** `expect-cli -m "Test the search feature on http://localhost:5173" -y --cookies`
 **Good:** `expect-cli -m "Search with no query, a single character, a query with no results, and a valid query. Click a result, go back, verify the previous query is preserved. Rapid-fire 5 searches and confirm no stale results appear on http://localhost:5173" -y --cookies`
 
-## Before Claiming Completion
-
-You MUST complete every step. A skipped step is a failed task.
-
-1. Run `expect-cli -m "[instruction]" -y --cookies` with a fresh, adversarial instruction
-2. Read the full output — check exit code, count failures, read accessibility and performance results
-3. If ANY failure: fix it, then re-run from step 1. Accessibility violations and performance regressions are failures.
-4. Only after exit 0 with 0 failures: state the claim WITH the evidence
-
-Skip any step = lying, not verifying. No exceptions for "just this once", "it's simple enough", or "I already checked manually".
-
 ## Reference Skills
 
 `expect-cli` runs built-in quality checks during every test. Each failure includes a `domain=` tag (e.g. `domain=responsive`, `domain=accessibility`, `domain=animation`).
@@ -114,3 +103,14 @@ If `expect-cli` itself crashes, hangs, or errors (not a test failure — a tool 
 3. If confirmed as a tool bug, give the user a pre-filled issue link: `https://github.com/millionco/expect/issues/new?title=Bug:+[description]&body=[error+summary]` — include the command, error output, and `expect-cli --version`
 
 Do not guess at workarounds for tool bugs. Diagnose with `--verbose`, report with a link.
+
+## Before Claiming Completion
+
+You MUST complete every step. A skipped step is a failed task.
+
+1. Run `expect-cli -m "[instruction]" -y --cookies` with a fresh, adversarial instruction
+2. Read the full output — check exit code, count failures, read accessibility and performance results
+3. If ANY failure: fix it, then re-run from step 1. Accessibility violations and performance regressions are failures.
+4. Only after exit 0 with 0 failures: state the claim WITH the evidence
+
+Skip any step = lying, not verifying. No exceptions for "just this once", "it's simple enough", or "I already checked manually".
