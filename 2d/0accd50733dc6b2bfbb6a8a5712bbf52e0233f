@@ -1,0 +1,23 @@
+packages/agent/src/acp-client.ts
+  b138ecffd6d4c328 562-565
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.3",
+  "base_commit_sha": "2d0accd50733dc6b2bfbb6a8a5712bbf52e0233f",
+  "prompts": {
+    "b138ecffd6d4c328": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ab1a1214-f118-4d5d-a443-a3a4bda209ad",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 4,
+      "total_deletions": 4,
+      "accepted_lines": 4,
+      "overriden_lines": 0
+    }
+  }
+}
