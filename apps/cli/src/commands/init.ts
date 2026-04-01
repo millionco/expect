@@ -1,3 +1,4 @@
+import { spawn } from "node:child_process";
 import { detectAvailableAgents } from "@expect/agent";
 import { Effect } from "effect";
 import figures from "figures";
@@ -117,15 +118,28 @@ export const runInit = async (options: InitOptions = {}) => {
     logger.dim(`  Run manually: ${highlighter.info(installCommand)}`);
   }
 
-  const playwrightSpinner = spinner("Installing Playwright browsers...").start();
-  const playwrightSuccess = await tryRun(
-    "npx playwright install --with-deps chromium webkit firefox",
+  logger.log(
+    `  ${highlighter.dim("Installing Playwright browsers (Chromium, WebKit, Firefox)...")}`,
   );
+  const PLAYWRIGHT_INSTALL_TIMEOUT_MS = 300_000;
+  const playwrightSuccess = await new Promise<boolean>((resolve) => {
+    const child = spawn(
+      "npx",
+      ["playwright", "install", "--with-deps", "chromium", "webkit", "firefox"],
+      {
+        shell: true,
+        stdio: "inherit",
+        timeout: PLAYWRIGHT_INSTALL_TIMEOUT_MS,
+      },
+    );
+    child.on("close", (code) => resolve(code === 0));
+    child.on("error", () => resolve(false));
+  });
 
   if (playwrightSuccess) {
-    playwrightSpinner.succeed("Playwright browsers installed (Chromium, WebKit, Firefox).");
+    logger.success("Playwright browsers installed.");
   } else {
-    playwrightSpinner.fail("Failed to install Playwright browsers.");
+    logger.error("Failed to install Playwright browsers.");
     logger.dim(
       `  Run manually: ${highlighter.info("npx playwright install --with-deps chromium webkit firefox")}`,
     );
