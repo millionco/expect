@@ -27,6 +27,7 @@ const DEV_COMMAND_DEFAULTS: Record<PackageManager, string> = {
   pnpm: "pnpm dev",
   yarn: "yarn dev",
   bun: "bun dev",
+  deno: "deno task dev",
   vp: "vp dev",
 };
 
@@ -35,6 +36,7 @@ const DLX_COMMANDS: Record<PackageManager, string> = {
   pnpm: "pnpm dlx",
   yarn: "npx",
   bun: "bunx",
+  deno: "deno run -A npm:",
   vp: "npx",
 };
 
@@ -43,6 +45,7 @@ const INSTALL_COMMANDS: Record<PackageManager, string> = {
   pnpm: "pnpm install",
   yarn: "yarn install --frozen-lockfile",
   bun: "bun install",
+  deno: "deno install",
   vp: "npm ci",
 };
 

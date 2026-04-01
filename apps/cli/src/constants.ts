@@ -54,7 +54,7 @@ export const UPDATE_CHECK_STALE_MS = 3_600_000;
 export const UPDATE_CHECK_TIMEOUT_MS = 5_000;
 export const PLAYWRIGHT_INSTALL_TIMEOUT_MS = 300_000;
 
-export type PackageManager = "npm" | "pnpm" | "yarn" | "bun" | "deno";
+export type PackageManager = "npm" | "pnpm" | "yarn" | "bun" | "deno" | "vp";
 
 export const LOCK_FILE_TO_AGENT: Record<string, PackageManager> = {
   "pnpm-lock.yaml": "pnpm",

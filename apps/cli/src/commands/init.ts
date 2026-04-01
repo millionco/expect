@@ -25,6 +25,7 @@ const GLOBAL_INSTALL_COMMANDS: Record<PackageManager, string> = {
   pnpm: "pnpm add -g expect-cli@latest",
   yarn: "yarn global add expect-cli@latest",
   bun: "bun add -g expect-cli@latest",
+  deno: "deno install -g npm:expect-cli@latest",
   vp: "vp install -g expect-cli@latest",
 };
 

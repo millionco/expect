@@ -7,11 +7,12 @@ import {
   GH_CLI_DETECT_TIMEOUT_MS,
   GH_SECRET_SET_TIMEOUT_MS,
   GIT_REMOTE_TIMEOUT_MS,
+  type PackageManager,
 } from "../constants";
+
+export type { PackageManager } from "../constants";
 import { isRunningInAgent } from "../utils/is-running-in-agent";
 import { isHeadless } from "../utils/is-headless";
-
-export type PackageManager = "npm" | "pnpm" | "yarn" | "bun" | "vp";
 
 export class ClaudeTokenGenerateError extends Schema.ErrorClass<ClaudeTokenGenerateError>(
   "ClaudeTokenGenerateError",
