@@ -182,13 +182,3 @@ export const executeFn = cliAtomRuntime.fn<ExecuteInput>()((input) =>
     Effect.provide(NodeServices.layer),
   ),
 );
-
-export const executeAtomFn = cliAtomRuntime.fn(
-  Effect.fnUntraced(
-    function* (input: ExecuteInput, _ctx: Atom.FnContext) {
-      return yield* executeCore(input);
-    },
-    Effect.annotateLogs({ fn: "executeAtomFn" }),
-    Effect.provide(NodeServices.layer),
-  ),
-);
