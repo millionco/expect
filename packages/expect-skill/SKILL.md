@@ -42,7 +42,7 @@ expect-cli -m "[INSTRUCTION] on [URL]" -y --cookies
 - `-y` skips interactive review
 - `--cookies` reuses the user's real browser cookies so tests run authenticated
 - Include the URL of the app in the prompt
-- `expect-cli` takes 1-5 minutes. Run it in the background if possible. Set a long timeout. Continue other work while waiting.
+- `expect-cli` typically takes 1-5 minutes but can take up to 30 minutes. **You MUST set a shell/command timeout of at least 1800 seconds (30 minutes).** The default shell timeout (often 120-180s) WILL kill the process prematurely. If Bash/Terminal tool supports running commands in the background, prefer that.
 - Accessibility and performance are checked automatically. Do not mention them in your instruction.
 
 ## Writing Instructions
