@@ -13,18 +13,16 @@ import { LIVE_VIEWER_STATIC_PORT } from "@expect/shared";
 
 const planId = PlanId.makeUnsafe(crypto.randomUUID());
 
-const configLayer = ConfigProvider.layerAdd(
-  ConfigProvider.fromUnknown({ EXPECT_PLAN_ID: planId })
-);
+const configLayer = ConfigProvider.layerAdd(ConfigProvider.fromUnknown({ EXPECT_PLAN_ID: planId }));
 
 const layerPlaywright = Layer.mergeAll(
   Playwright.layer,
   layerLiveViewerRpcServer,
-  layerLiveViewerStaticServer
+  layerLiveViewerStaticServer,
 ).pipe(
   Layer.provide(Artifacts.layer),
   Layer.provide(configLayer),
-  Layer.provide(Git.withRepoRoot(process.cwd()))
+  Layer.provide(Git.withRepoRoot(process.cwd())),
 );
 
 describe("playwright e2e", () => {
@@ -37,11 +35,8 @@ describe("playwright e2e", () => {
         assert.notStrictEqual(response.status, 404);
         const html = yield* response.text;
         assert.include(html, "<!DOCTYPE html>");
-      }).pipe(
-        Effect.provide(layerPlaywright),
-        Effect.provide(FetchHttpClient.layer)
-      ),
-    { timeout: 60_000 }
+      }).pipe(Effect.provide(layerPlaywright), Effect.provide(FetchHttpClient.layer)),
+    { timeout: 60_000 },
   );
 
   it.live(
@@ -50,7 +45,7 @@ describe("playwright e2e", () => {
       Effect.gen(function* () {
         const playwright = yield* Playwright;
         console.log(
-          `Live viewer: http://localhost:${LIVE_VIEWER_STATIC_PORT}/replay/?testId=${planId}`
+          `Live viewer: http://localhost:${LIVE_VIEWER_STATIC_PORT}/replay/?testId=${planId}`,
         );
         yield* playwright.open({
           headless: false,
@@ -62,8 +57,8 @@ describe("playwright e2e", () => {
         const snapshot = yield* playwright.snapshot({});
         console.log("Snapshot");
         console.log(snapshot);
-        yield* Effect.never;
+        yield* Effect.sleep("40 seconds");
       }).pipe(Effect.provide(layerPlaywright)),
-    { timeout: 60_000 }
+    { timeout: 60_000 },
   );
 });

@@ -13,30 +13,9 @@ export const LiveViewerRpcsLive = LiveViewerRpcs.toLayer(
           events: request.events,
         }),
       "liveViewer.StreamEvents": (request) => {
-        console.error(
-          "[RPC] StreamEvents called planId=%s",
-          JSON.stringify(request.planId)
-        );
         return liveViewer.stream(request.planId);
       },
-      "liveViewer.ListTests": () =>
-        liveViewer.listTests().pipe(
-          Effect.tap((tests) =>
-            Effect.sync(() =>
-              console.error(
-                "[RPC] ListTests returning %d tests: %s",
-                tests.length,
-                JSON.stringify(tests.map((t) => t.id))
-              )
-            )
-          ),
-          Effect.tapCause((cause) =>
-            Effect.sync(() =>
-              console.error("[RPC] ListTests FAILED:", cause.toString())
-            )
-          ),
-          Effect.orDie
-        ),
+      "liveViewer.ListTests": () => liveViewer.listTests().pipe(Effect.orDie),
     });
-  })
+  }),
 ).pipe(Layer.provide(LiveViewer.layer));

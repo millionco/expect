@@ -10,7 +10,7 @@ import { cliAtomRuntime } from "./runtime";
 const REPLAY_REPORT_PREFIX = "rrweb report:";
 const PLAYWRIGHT_VIDEO_PREFIX = "Playwright video:";
 
-const liveViewerUrl = (planId: string) => `${LIVE_VIEWER_STATIC_URL}?testId=${planId}`;
+const liveViewerUrl = (planId: string) => `${LIVE_VIEWER_STATIC_URL}/replay/?testId=${planId}`;
 
 interface ExecuteInput {
   readonly options: ExecuteOptions;

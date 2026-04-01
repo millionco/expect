@@ -503,7 +503,7 @@ export const TestingScreen = ({
 
     if (normalizedInput === "o" && !key.ctrl && !key.meta && executedPlan?.id) {
       const { exec } = require("node:child_process") as typeof import("node:child_process");
-      const url = `${LIVE_VIEWER_STATIC_URL}?testId=${executedPlan.id}`;
+      const url = `${LIVE_VIEWER_STATIC_URL}/replay/?testId=${executedPlan.id}`;
       exec(`open "${url}"`);
       trackEvent("live_preview:opened");
       return;

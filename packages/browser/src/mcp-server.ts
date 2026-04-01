@@ -8,10 +8,11 @@ import { EXPECT_BROWSER_PROFILE_ENV_NAME } from "./mcp/constants";
 
 import { Playwright, PlaywrightSession } from "./playwright";
 import { Artifacts } from "./artifacts";
-import { McpServerStartError, NoSnapshotError, PlaywrightExecutionError } from "./errors";
+import { McpServerStartError, NoSnapshotError } from "./errors";
 import { evaluateRuntime } from "./utils/evaluate-runtime";
 import type { SnapshotResult } from "./types";
 import { autoDiscoverCdp } from "./cdp-discovery";
+import { hasStringMessage } from "@expect/shared/utils";
 
 const textResult = (text: string) => ({
   content: [{ type: "text" as const, text }],
@@ -38,40 +39,51 @@ const imageResult = (base64: string) => ({
   content: [{ type: "image" as const, data: base64, mimeType: "image/png" }],
 });
 
+const errorResult = (error: unknown) => ({
+  content: [
+    {
+      type: "text" as const,
+      text: hasStringMessage(error) ? error.message : String(error),
+    },
+  ],
+  isError: true as const,
+});
+
 const decodeBrowserProfile = Schema.decodeEffect(BrowserJson);
 
 export const layerMcpServer = Layer.effectDiscard(
   Effect.gen(function* () {
-    console.error("[MCP] Constructing MCP server");
-    console.error(
-      "[MCP] EXPECT_BROWSER_PROFILE env:",
-      process.env[EXPECT_BROWSER_PROFILE_ENV_NAME] ?? "(not set)",
-    );
-    console.error(
-      "[MCP] EXPECT_REPLAY_OUTPUT_PATH env:",
-      process.env.EXPECT_REPLAY_OUTPUT_PATH ?? "(not set)",
-    );
-    console.error("[MCP] EXPECT_PLAN_ID env:", process.env.EXPECT_PLAN_ID ?? "(not set)");
-
     const services = yield* Effect.services<Playwright | Artifacts>();
-    const run = Effect.runPromiseWith(services);
+    const runRaw = Effect.runPromiseWith(services);
+    const run = <A, E, R extends Artifacts | Playwright>(
+      effect: Effect.Effect<A, E, R>,
+      options: {
+        signal?: AbortSignal;
+        method: string;
+        attributes?: Record<string, unknown>;
+      },
+    ) =>
+      runRaw(
+        effect.pipe(
+          Effect.tapCause((cause) =>
+            Effect.logError(`An error occurred in ${options.method}`, cause),
+          ),
+          Effect.annotateLogs({ method: `McpServer.${options?.method}` }),
+          Effect.withSpan(`McpServer.${options.method}`, {
+            attributes: options.attributes,
+          }),
+        ),
+        options,
+      ).catch((error) => errorResult(error));
 
     const browserProfileJson = yield* Config.string(EXPECT_BROWSER_PROFILE_ENV_NAME).pipe(
       Config.option,
-    );
-    console.error(
-      "[MCP] browserProfileJson:",
-      Option.isSome(browserProfileJson) ? browserProfileJson.value.slice(0, 200) : "(none)",
     );
 
     const browserProfile = yield* Option.match(browserProfileJson, {
       onNone: () => Effect.succeedNone,
       onSome: (json) => decodeBrowserProfile(json).pipe(Effect.map(Option.some), Effect.orDie),
     });
-    console.error(
-      "[MCP] browserProfile:",
-      Option.isSome(browserProfile) ? browserProfile.value._tag : "(none)",
-    );
 
     const server = new McpServer({ name: "expect", version: "0.0.1" });
 
@@ -123,7 +135,13 @@ export const layerMcpServer = Layer.effectDiscard(
                 : Option.fromNullishOr(cdp),
           });
           return textResult(`Opened ${url}`);
-        }).pipe((effect) => run(effect, { signal })),
+        }).pipe((effect) =>
+          run(effect, {
+            signal,
+            method: "open",
+            attributes: { url, headed, waitUntil, cdp },
+          }),
+        ),
     );
 
     // screenshot
@@ -179,11 +197,16 @@ export const layerMcpServer = Layer.effectDiscard(
             };
           }
 
-          const buffer = yield* PlaywrightSession.use(({ page }) =>
-            Effect.tryPromise(() => page.screenshot({ fullPage })),
-          ).pipe(pw.withCurrentSession);
+          const page = yield* pw.getPage;
+          const buffer = yield* Effect.tryPromise(() => page.screenshot({ fullPage }));
           return imageResult(buffer.toString("base64"));
-        }).pipe((effect) => run(effect, { signal })),
+        }).pipe((effect) =>
+          run(effect, {
+            signal,
+            method: "screenshot",
+            attributes: { mode, fullPage },
+          }),
+        ),
     );
 
     // playwright — raw code execution
@@ -203,7 +226,7 @@ export const layerMcpServer = Layer.effectDiscard(
           if (!lastSnapshot) return yield* new NoSnapshotError();
           const result = yield* pw.execute(code, lastSnapshot);
           return jsonResult(result);
-        }).pipe((effect) => run(effect, { signal })),
+        }).pipe((effect) => run(effect, { signal, method: "playwright" })),
     );
 
     // console_logs
@@ -229,7 +252,7 @@ export const layerMcpServer = Layer.effectDiscard(
           return filtered.length === 0
             ? textResult("No console messages captured.")
             : jsonResult(filtered);
-        }).pipe((effect) => run(effect, { signal })),
+        }).pipe((effect) => run(effect, { signal, method: "console_logs", attributes: { type } })),
     );
 
     // network_requests
@@ -269,7 +292,13 @@ export const layerMcpServer = Layer.effectDiscard(
           return filtered.length === 0
             ? textResult("No network requests captured.")
             : jsonResult(filtered);
-        }).pipe((effect) => run(effect, { signal })),
+        }).pipe((effect) =>
+          run(effect, {
+            signal,
+            method: "network_requests",
+            attributes: { method, url, resourceType },
+          }),
+        ),
     );
 
     // performance_metrics
@@ -290,7 +319,7 @@ export const layerMcpServer = Layer.effectDiscard(
           const hasMetrics = metrics.fcp || metrics.lcp || metrics.inp;
           if (!hasMetrics) return textResult("No performance metrics available yet.");
           return jsonResult(metrics);
-        }).pipe((effect) => run(effect, { signal })),
+        }).pipe((effect) => run(effect, { signal, method: "performance_metrics" })),
     );
 
     // close
@@ -308,7 +337,7 @@ export const layerMcpServer = Layer.effectDiscard(
           yield* pw.close();
           lastSnapshot = undefined;
           return textResult("Browser closed.");
-        }).pipe((effect) => run(effect, { signal })),
+        }).pipe((effect) => run(effect, { signal, method: "close" })),
     );
 
     // Start stdio transport — acquireRelease ensures cleanup

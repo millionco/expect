@@ -185,6 +185,7 @@ export class Playwright extends ServiceMap.Service<Playwright>()("@browser/Playw
             return yield* effect.pipe(Effect.provideService(PlaywrightSession, session));
           }
 
+          yield* Effect.logInfo("1");
           const browser = yield* Effect.acquireRelease(
             Effect.tryPromise({
               try: () =>
@@ -204,27 +205,28 @@ export class Playwright extends ServiceMap.Service<Playwright>()("@browser/Playw
                 }),
               ),
           );
+          yield* Effect.logInfo("2");
 
           const contextOptions: Parameters<typeof browser.newContext>[0] =
             browserProfile._tag === "Some" && browserProfile.value._tag === "ChromiumBrowser"
               ? { locale: browserProfile.value.locale }
               : {};
 
+          yield* Effect.logInfo("3");
           const context = yield* Effect.tryPromise({
             try: () => browser.newContext(contextOptions),
             catch: (cause) => new BrowserLaunchError({ cause }),
           });
+          yield* Effect.logInfo("4");
           yield* Effect.tryPromise({
             try: () => context.addInitScript(RUNTIME_SCRIPT),
             catch: (cause) => new BrowserLaunchError({ cause }),
           });
+          yield* Effect.logInfo("5");
 
           /** cookies */
-          console.error("BROWSER PROFIEL ", JSON.stringify(browserProfile, null, 2));
           if (Option.isSome(browserProfile)) {
             const extractedCookies = yield* cookies.extract(browserProfile.value);
-            console.error("EXTRACTED COOKIES", JSON.stringify(extractedCookies, null, 2));
-            console.error("INSERTING COOKIES");
             yield* Effect.tryPromise({
               try: () =>
                 context.addCookies(extractedCookies.map((cookie) => cookie.playwrightFormat)),
@@ -232,15 +234,18 @@ export class Playwright extends ServiceMap.Service<Playwright>()("@browser/Playw
             });
           }
 
+          yield* Effect.logInfo("6");
           yield* Effect.tryPromise({
             try: () => context.addInitScript(RUNTIME_SCRIPT),
             catch: (cause) => new BrowserLaunchError({ cause }),
           });
+          yield* Effect.logInfo("7");
 
           const page = yield* Effect.tryPromise({
             try: () => context.newPage(),
             catch: (cause) => new BrowserLaunchError({ cause }),
           });
+          yield* Effect.logInfo("8");
 
           if (Option.isSome(initialNavigation)) {
             yield* Effect.tryPromise({
@@ -255,6 +260,8 @@ export class Playwright extends ServiceMap.Service<Playwright>()("@browser/Playw
                 }),
             });
           }
+
+          yield* Effect.logInfo("9 -- setting session");
 
           session = { browser, context, page };
           yield* Effect.addFinalizer(() =>
@@ -357,7 +364,7 @@ export class Playwright extends ServiceMap.Service<Playwright>()("@browser/Playw
         session ? Effect.succeed(session) : Effect.fail(new BrowserNotOpenError()),
       ).pipe(
         Effect.retry({ schedule: Schedule.spaced("100 millis") }),
-        Effect.timeout("5 seconds"),
+        Effect.timeout("15 seconds"),
       );
     });
 
