@@ -7,7 +7,7 @@ import { ALT_SCREEN_OFF, ALT_SCREEN_ON } from "./constants";
 import type { AgentBackend } from "@expect/agent";
 import { queryClient } from "./query-client";
 import { setInkInstance } from "./utils/clear-ink-display";
-import { agentProviderAtom } from "./data/runtime";
+import { agentProviderAtom, verboseAtom } from "./data/runtime";
 import { flushSession, trackSessionStarted } from "./utils/session-analytics";
 import { usePreferencesStore } from "./stores/use-preferences";
 
@@ -21,7 +21,12 @@ export const renderApp = async (agent: AgentBackend) => {
   process.stdout.write(ALT_SCREEN_ON);
   process.on("exit", () => process.stdout.write(MOUSE_DISABLE + ALT_SCREEN_OFF));
   const instance = render(
-    <RegistryProvider initialValues={[[agentProviderAtom, Option.some(agent)]]}>
+    <RegistryProvider
+      initialValues={[
+        [agentProviderAtom, Option.some(agent)],
+        [verboseAtom, usePreferencesStore.getState().verbose],
+      ]}
+    >
       <QueryClientProvider client={queryClient}>
         <App agent={agent} />
       </QueryClientProvider>
