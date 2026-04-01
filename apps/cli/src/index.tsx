@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { Option } from "effect";
 import { Command } from "commander";
 import { ChangesFor } from "@expect/supervisor";
@@ -15,6 +17,9 @@ import { usePreferencesStore } from "./stores/use-preferences";
 import { resolveChangesFor } from "./utils/resolve-changes-for";
 import { renderApp } from "./program";
 import { CI_EXECUTION_TIMEOUT_MS, VERSION } from "./constants";
+import { prompts } from "./utils/prompts";
+import { highlighter } from "./utils/highlighter";
+import { logger } from "./utils/logger";
 
 const DEFAULT_INSTRUCTION =
   "Test all changes from main in the browser and verify they work correctly.";
@@ -108,6 +113,28 @@ const runHeadlessForTarget = async (target: Target, opts: CommanderOpts) => {
   });
 };
 
+const SKILL_DIR = join(".agents", "skills", "expect");
+
+const isSkillInstalled = (): boolean => existsSync(join(process.cwd(), SKILL_DIR, "SKILL.md"));
+
+const promptSkillInstall = async () => {
+  if (isSkillInstalled()) return;
+
+  logger.break();
+  const response = await prompts({
+    type: "confirm",
+    name: "installSkill",
+    message: `Install the ${highlighter.info("expect")} skill for your coding agents?`,
+    initial: true,
+  });
+
+  if (response.installSkill) {
+    const agents = detectAvailableAgents();
+    await runAddSkill({ agents });
+    logger.break();
+  }
+};
+
 const waitForHydration = async () => {
   if (usePreferencesStore.persist.hasHydrated()) return;
   await new Promise<void>((resolve) => {
@@ -186,6 +213,8 @@ program.action(async () => {
   }
 
   if (opts.ci || isRunningInAgent() || isHeadless()) return runHeadlessForTarget(target, opts);
+
+  await promptSkillInstall();
 
   const hasDirectOptions = Boolean(opts.message || opts.flow || opts.yes);
 

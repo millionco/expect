@@ -11,7 +11,7 @@ Reference these rules when:
 
 - adding hover effects that move, scale, or transform elements
 - hover states are flickering or jittering
-- implementing hover interactions that must work across desktop and mobile
+- implementing hover interactions thatmust work across desktop and mobile
 - debouncing hover on elements with many adjacent triggers
 
 ## rule categories by priority
