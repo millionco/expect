@@ -10,6 +10,7 @@ import {
   Effect,
   FiberMap,
   FileSystem,
+  Filter,
   Layer,
   Match,
   Option,
@@ -512,18 +513,18 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
 
     const USAGE_LIMIT_PATTERNS = ["out of usage", "limits exceeded", "usage exceeded"];
 
-    const getAdapterSessionError = (line: string): SessionQueueError | undefined => {
+    const getAdapterSessionError = (line: string): Option.Option<SessionQueueError> => {
       const normalizedLine = line.toLowerCase();
 
       if (AUTH_FAILURE_PATTERNS.some((pattern) => normalizedLine.includes(pattern))) {
-        return new AcpProviderUnauthenticatedError({ provider: adapter.provider });
+        return Option.some(new AcpProviderUnauthenticatedError({ provider: adapter.provider }));
       }
 
       if (USAGE_LIMIT_PATTERNS.some((pattern) => normalizedLine.includes(pattern))) {
-        return new AcpProviderUsageLimitError({ provider: adapter.provider });
+        return Option.some(new AcpProviderUsageLimitError({ provider: adapter.provider }));
       }
 
-      return undefined;
+      return Option.none();
     };
 
     const client: acp.Client = {
@@ -568,20 +569,19 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
       Stream.decodeText(),
       Stream.splitLines,
       Stream.tap((line) => Effect.logDebug("ACP adapter stderr", { line })),
-      Stream.map(getAdapterSessionError),
-      Stream.filter((error): error is SessionQueueError => error !== undefined),
+      Stream.filterMap(Filter.fromPredicateOption(getAdapterSessionError)),
       Stream.take(1),
       Stream.tap((adapterSessionError) =>
-        Effect.gen(function* () {
-          yield* Effect.logWarning("ACP adapter reported fatal error", {
+        Effect.andThen(
+          Effect.logWarning("ACP adapter reported fatal error", {
             provider: adapter.provider,
-          });
-          yield* Effect.forEach(
+          }),
+          Effect.forEach(
             Array.from(sessionUpdatesMap.values()),
             (updatesQueue) => Queue.fail(updatesQueue, adapterSessionError),
             { concurrency: "unbounded" },
-          );
-        }),
+          ),
+        ),
       ),
       Stream.runDrain,
       Effect.forkScoped,
