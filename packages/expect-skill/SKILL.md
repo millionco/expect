@@ -86,6 +86,10 @@ Read `fixing-seo/SKILL.md` for SEO metadata rules.
 Read `react-best-practices/SKILL.md` for React performance optimization rules.
 </important>
 
+<important if="domain=performance or domain=web-vitals or domain=loading, or optimizing load times, reducing bundle size, fixing Core Web Vitals (LCP/FCP/TBT/CLS), implementing image strategies, adding prefetching, eliminating loading spinners, streaming content, or auditing resource budgets">
+Read `performance/SKILL.md` for web performance optimization rules.
+</important>
+
 <important if="domain=design-system or domain=responsive or domain=touch or domain=cross-browser or domain=dark-mode or domain=layout-stability or domain=font-loading, or reviewing UI design, UX patterns, or auditing web interface quality">
 Read `web-design-guidelines/SKILL.md` for web interface design review guidelines.
 </important>
