@@ -62,7 +62,11 @@ export interface EventMap {
   };
 
   // Port / URL selection
-  "port:selected": { readonly port_count: number; readonly has_custom_url: boolean };
+  "port:selected": {
+    readonly port_count: number;
+    readonly has_custom_url: boolean;
+    readonly source: "running" | "detected";
+  };
   "port:skipped": undefined;
 
   // Cookies

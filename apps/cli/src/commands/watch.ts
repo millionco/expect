@@ -14,6 +14,7 @@ interface WatchCommandOpts {
   headed?: boolean;
   noCookies?: boolean;
   replayHost?: string;
+  url?: string[];
 }
 
 export const runWatchCommand = async (opts: WatchCommandOpts) => {
@@ -33,6 +34,7 @@ export const runWatchCommand = async (opts: WatchCommandOpts) => {
     screen: Screen.Watch({
       changesFor,
       instruction,
+      baseUrl: opts.url?.[0],
     }),
   });
 

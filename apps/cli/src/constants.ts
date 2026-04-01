@@ -43,6 +43,7 @@ export const WATCH_IDLE_HINT_DURATION_S = 3;
 export const WATCH_IDLE_CYCLE_DURATION_S =
   WATCH_IDLE_SPINNER_DURATION_S + WATCH_IDLE_HINT_DURATION_S;
 export const TLS_PROBE_TIMEOUT_MS = 300;
+export const PROJECT_SCAN_MAX_DEPTH = 3;
 
 export const CI_EXECUTION_TIMEOUT_MS = 30 * 60 * 1000;
 export const CI_HEARTBEAT_INTERVAL_MS = 60_000;
@@ -51,7 +52,9 @@ export const NPM_PACKAGE_NAME = "expect-cli";
 export const UPDATE_CHECK_STALE_MS = 3_600_000;
 export const UPDATE_CHECK_TIMEOUT_MS = 5_000;
 
-export const LOCK_FILE_TO_AGENT: Record<string, string> = {
+export type PackageManager = "npm" | "pnpm" | "yarn" | "bun" | "deno";
+
+export const LOCK_FILE_TO_AGENT: Record<string, PackageManager> = {
   "pnpm-lock.yaml": "pnpm",
   "pnpm-workspace.yaml": "pnpm",
   "yarn.lock": "yarn",

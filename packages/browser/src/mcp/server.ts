@@ -235,7 +235,9 @@ export const createBrowserMcpServer = <E>(
             };
           }
 
-          const buffer = yield* Effect.tryPromise(() => page.screenshot({ fullPage }));
+          const buffer = yield* Effect.tryPromise(() =>
+            page.screenshot({ fullPage, scale: "css" }),
+          );
           yield* session.saveScreenshot(buffer);
           return imageResult(buffer.toString("base64"));
         }).pipe(Effect.withSpan(`mcp.tool.screenshot`)),

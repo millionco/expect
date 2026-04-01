@@ -34,6 +34,7 @@ interface HeadlessRunOptions {
   ci: boolean;
   timeoutMs: Option.Option<number>;
   output: "text" | "json";
+  baseUrl?: string;
 }
 
 export const runHeadless = (options: HeadlessRunOptions) =>
@@ -131,6 +132,7 @@ export const runHeadless = (options: HeadlessRunOptions) =>
               instruction: options.instruction,
               isHeadless: !options.headed,
               cookieBrowserKeys: [],
+              baseUrl: options.baseUrl,
             })
             .pipe(
               Stream.tap((executed) => Effect.sync(() => printNewEvents(executed))),

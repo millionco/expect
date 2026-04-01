@@ -152,12 +152,16 @@ export const MainMenu = ({ gitState }: MainMenuProps) => {
 
     usePreferencesStore.getState().rememberInstruction(trimmed);
 
-    if (cookieBrowserKeys.length > 0 || containsUrl(trimmed)) {
+    const cliBaseUrls = usePreferencesStore.getState().cliBaseUrls;
+    if (cliBaseUrls) usePreferencesStore.setState({ cliBaseUrls: undefined });
+
+    if (cookieBrowserKeys.length > 0 || containsUrl(trimmed) || cliBaseUrls) {
       setScreen(
         screenForTestingOrPortPicker({
           changesFor,
           instruction: trimmed,
           cookieBrowserKeys,
+          baseUrls: cliBaseUrls ? [...cliBaseUrls] : undefined,
         }),
       );
     } else {

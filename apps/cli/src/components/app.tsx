@@ -124,6 +124,7 @@ export const App = ({ agent }: { agent: AgentBackend }) => {
             savedFlow={screen.savedFlow}
             cookieBrowserKeys={screen.cookieBrowserKeys}
             baseUrls={screen.baseUrls}
+            devServerHints={screen.devServerHints}
           />
         );
       case "Results":

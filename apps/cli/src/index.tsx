@@ -43,6 +43,7 @@ interface CommanderOpts {
   ci?: boolean;
   timeout?: number;
   output?: OutputFormat;
+  url?: string[];
 }
 
 const program = new Command()
@@ -63,6 +64,7 @@ const program = new Command()
   .option("--ci", "force CI mode: headless, no cookies, auto-yes, 30-minute timeout")
   .option("--timeout <ms>", "execution timeout in milliseconds", parseInt)
   .option("--output <format>", "output format: text (default) or json")
+  .option("-u, --url <urls...>", "base URL(s) for the dev server (skips port picker)")
   .option("--replay-host <url>", "website host for live replay viewer", "https://expect.dev")
   .addHelpText(
     "after",
@@ -74,6 +76,7 @@ Examples:
   $ expect --target branch                          test all branch changes
   $ expect --target unstaged                        test unstaged changes
   $ expect --no-cookies -m "test" -y                skip system browser cookie extraction
+  $ expect -u http://localhost:3000 -m "test" -y    specify dev server URL directly
   $ expect watch -m "test the login flow"           watch mode`,
   );
 
@@ -85,10 +88,14 @@ const seedStores = (opts: CommanderOpts, changesFor: ChangesFor) => {
 
   if (opts.message) {
     useNavigationStore.setState({
-      screen: Screen.Testing({ changesFor, instruction: opts.message }),
+      screen: Screen.Testing({ changesFor, instruction: opts.message, baseUrls: opts.url }),
     });
   } else {
     useNavigationStore.setState({ screen: Screen.Main() });
+  }
+
+  if (opts.url) {
+    usePreferencesStore.setState({ cliBaseUrls: opts.url });
   }
 };
 
@@ -110,6 +117,7 @@ const runHeadlessForTarget = async (target: Target, opts: CommanderOpts) => {
     ci: ciMode,
     timeoutMs,
     output: opts.output ?? "text",
+    baseUrl: opts.url?.join(", "),
   });
 };
 
@@ -199,6 +207,7 @@ program
   .option("--verbose", "enable verbose logging")
   .option("--headed", "show a visible browser window during tests")
   .option("--no-cookies", "skip system browser cookie extraction")
+  .option("-u, --url <urls...>", "base URL(s) for the dev server")
   .option("--replay-host <url>", "website host for live replay viewer", "https://expect.dev")
   .action(async (opts: CommanderOpts) => {
     await runWatchCommand(opts);

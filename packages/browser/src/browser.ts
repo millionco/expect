@@ -410,7 +410,7 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
       yield* injectOverlayLabels(page, labelPositions);
       return yield* Effect.ensuring(
         Effect.tryPromise({
-          try: () => page.screenshot({ fullPage: options.fullPage }),
+          try: () => page.screenshot({ fullPage: options.fullPage, scale: "css" }),
           catch: toBrowserLaunchError,
         }).pipe(Effect.map((screenshotBuffer) => ({ screenshot: screenshotBuffer, annotations }))),
         // HACK: overlay removal is best-effort cleanup — evaluateRuntime uses Effect.promise which defects on failure

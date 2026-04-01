@@ -108,7 +108,7 @@ Do not guess at workarounds for tool bugs. Diagnose with `--verbose`, report wit
 
 You MUST complete every step. A skipped step is a failed task.
 
-1. Run `expect-cli -m "[instruction]" -y --cookies` with a fresh, adversarial instruction
+1. Run `expect-cli -m "[instruction] on [URL]" -y --cookies` with a fresh, adversarial instruction
 2. Read the full output — check exit code, count failures, read accessibility and performance results
 3. If ANY failure: fix it, then re-run from step 1. Accessibility violations and performance regressions are failures.
 4. Only after exit 0 with 0 failures: state the claim WITH the evidence
