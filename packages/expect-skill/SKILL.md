@@ -81,6 +81,10 @@ Read `react-best-practices/SKILL.md` for React performance optimization rules.
 Read `web-design-guidelines/SKILL.md` for web interface design review guidelines.
 </important>
 
+<important if="reviewing code for security issues, XSS, CSRF, open redirects, postMessage, cookie security, CSP, CORS, prototype pollution, or client-side storage vulnerabilities">
+Read `security-review/SKILL.md` for browser security review guidelines.
+</important>
+
 ## Before Claiming Completion
 
 You MUST complete every step. A skipped step is a failed task.
