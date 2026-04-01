@@ -35,7 +35,6 @@ This is a pnpm monorepo:
 - `packages/browser` — Playwright automation
 - `packages/cookies` — Browser profile / cookie extraction
 - `packages/shared` — Domain models
-- `packages/video` — Session recording
 
 ## Submitting Changes
 

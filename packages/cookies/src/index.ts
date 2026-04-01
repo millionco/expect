@@ -15,7 +15,6 @@ export {
   CookieDatabaseCopyError,
   CookieDecryptionKeyError,
   CookieReadError,
-  BinaryParseError,
   CdpConnectionError,
   BrowserSpawnError,
   UnsupportedPlatformError,

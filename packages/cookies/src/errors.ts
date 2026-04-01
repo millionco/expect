@@ -85,14 +85,6 @@ export class CookieReadError extends Schema.ErrorClass<CookieReadError>("CookieR
   message = `Failed to read cookies for ${this.browser}: ${this.cause}`;
 }
 
-export class BinaryParseError extends Schema.ErrorClass<BinaryParseError>("BinaryParseError")({
-  _tag: Schema.tag("BinaryParseError"),
-  filePath: Schema.String,
-  cause: Schema.String,
-}) {
-  message = `Failed to parse binary cookies at ${this.filePath}: ${this.cause}`;
-}
-
 export class CdpConnectionError extends Schema.ErrorClass<CdpConnectionError>("CdpConnectionError")(
   {
     _tag: Schema.tag("CdpConnectionError"),

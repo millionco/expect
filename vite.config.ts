@@ -22,7 +22,7 @@ export default defineConfig({
                   name: "react",
                   importNames: ["useEffect"],
                   message:
-                    "useEffect is banned. Use derived state, event handlers, data-fetching libraries, or useMountEffect. See .agents/skills/react-best-practices/rules/no-use-effect.md",
+                    "useEffect is banned. Use derived state, event handlers, data-fetching libraries, or useMountEffect. See .agents/skills/vercel-react-best-practices/rules/no-use-effect.md",
                 },
               ],
             },

@@ -1,7 +1,5 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  allowedDevOrigins: ["bens-macbook-pro.tail36228.ts.net"],
-};
+const nextConfig: NextConfig = {};
 
 export default nextConfig;

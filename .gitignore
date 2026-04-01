@@ -9,6 +9,5 @@ dist
 tsup.config.bundled_*
 **/src/generated/
 .testie-agent-traces/
-packages/video/build
 .cursor/plans
 .repos
