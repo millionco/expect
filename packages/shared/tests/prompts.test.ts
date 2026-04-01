@@ -32,14 +32,24 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("Test the login flow");
   });
 
-  it("includes browser tool instructions in system prompt", () => {
+  it("wraps user prompt sections in XML tags", () => {
+    const prompt = buildExecutionPrompt(makeDefaultOptions());
+    expect(prompt).toContain("<environment>");
+    expect(prompt).toContain("</environment>");
+    expect(prompt).toContain("<changed_files>");
+    expect(prompt).toContain("<diff_preview>");
+    expect(prompt).toContain("<developer_request>");
+    expect(prompt).toContain("<scope_strategy>");
+  });
+
+  it("includes browser tool descriptions in system prompt", () => {
     const prompt = buildExecutionSystemPrompt();
-    expect(prompt).toContain("open — Launch a browser");
-    expect(prompt).toContain("playwright — Execute Playwright");
-    expect(prompt).toContain("screenshot — Capture page state");
-    expect(prompt).toContain("console_logs — Get browser console messages");
-    expect(prompt).toContain("network_requests — Get captured network requests");
-    expect(prompt).toContain("close — Close the browser");
+    expect(prompt).toContain("open: launch a browser");
+    expect(prompt).toContain("playwright: execute Playwright");
+    expect(prompt).toContain("screenshot: capture page state");
+    expect(prompt).toContain("console_logs: get browser console");
+    expect(prompt).toContain("network_requests: get captured requests");
+    expect(prompt).toContain("close: close the browser");
   });
 
   it("includes step marker protocol in system prompt", () => {
@@ -67,11 +77,13 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("export const login = () => {}");
   });
 
-  it("includes coverage planning reminder", () => {
+  it("puts data before developer request and scope strategy at the end", () => {
     const prompt = buildExecutionPrompt(makeDefaultOptions());
-    expect(prompt).toContain("Coverage planning reminder:");
-    expect(prompt).toContain("Analyze every changed file below");
-    expect(prompt).toContain("Account for each changed file");
+    const diffIndex = prompt.indexOf("<diff_preview>");
+    const requestIndex = prompt.indexOf("<developer_request>");
+    const scopeIndex = prompt.indexOf("<scope_strategy>");
+    expect(diffIndex).toBeLessThan(requestIndex);
+    expect(requestIndex).toBeLessThan(scopeIndex);
   });
 
   it("includes environment context", () => {
@@ -160,21 +172,39 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("step-01, step-02, step-03");
   });
 
-  it("includes snapshot-driven workflow instructions in system prompt", () => {
+  it("includes snapshot workflow in system prompt", () => {
     const prompt = buildExecutionSystemPrompt();
-    expect(prompt).toContain("Snapshot-driven workflow:");
+    expect(prompt).toContain("<snapshot_workflow>");
     expect(prompt).toContain("ref()");
     expect(prompt).toContain("Never guess CSS selectors");
   });
 
-  it("places tool and snapshot guidance after strategy sections", () => {
+  it("wraps system prompt sections in XML tags", () => {
     const prompt = buildExecutionSystemPrompt();
-    expect(prompt.indexOf("Change-analysis protocol:")).toBeLessThan(
-      prompt.indexOf("You have browser tools via the MCP server named"),
-    );
-    expect(prompt.indexOf("Execution strategy:")).toBeLessThan(
-      prompt.indexOf("Snapshot-driven workflow:"),
-    );
+    expect(prompt).toContain("<change_analysis>");
+    expect(prompt).toContain("<coverage_rules>");
+    expect(prompt).toContain("<execution_strategy>");
+    expect(prompt).toContain("<ui_quality_rules>");
+    expect(prompt).toContain("<tools");
+    expect(prompt).toContain("<snapshot_workflow>");
+    expect(prompt).toContain("<status_markers>");
+    expect(prompt).toContain("<failure_reporting>");
+    expect(prompt).toContain("<run_completion>");
+  });
+
+  it("places sections in correct order", () => {
+    const prompt = buildExecutionSystemPrompt();
+    const changeAnalysis = prompt.indexOf("<change_analysis>");
+    const executionStrategy = prompt.indexOf("<execution_strategy>");
+    const uiQuality = prompt.indexOf("<ui_quality_rules>");
+    const tools = prompt.indexOf("<tools");
+    const statusMarkers = prompt.indexOf("<status_markers>");
+    const runCompletion = prompt.indexOf("<run_completion>");
+    expect(changeAnalysis).toBeLessThan(executionStrategy);
+    expect(executionStrategy).toBeLessThan(uiQuality);
+    expect(uiQuality).toBeLessThan(tools);
+    expect(tools).toBeLessThan(statusMarkers);
+    expect(statusMarkers).toBeLessThan(runCompletion);
   });
 
   it("includes assertion depth guidance in execution strategy", () => {
@@ -185,37 +215,33 @@ describe("buildExecutionPrompt", () => {
 
   it("includes change-analysis guidance in system prompt", () => {
     const prompt = buildExecutionSystemPrompt();
-    expect(prompt).toContain("Change-analysis protocol:");
+    expect(prompt).toContain("<change_analysis>");
     expect(prompt).toContain("Analyze EVERY changed file listed");
     expect(prompt).toContain("developer request is a starting point");
   });
 
-  it("includes coverage planning rules in system prompt", () => {
+  it("includes coverage rules in system prompt", () => {
     const prompt = buildExecutionSystemPrompt();
-    expect(prompt).toContain("Coverage planning rules:");
+    expect(prompt).toContain("<coverage_rules>");
     expect(prompt).toContain("test multiple consumers");
-    expect(prompt).toContain("every changed file is accounted for");
   });
 
-  it("includes code-level testing fallback guidance in system prompt", () => {
+  it("includes code-level testing guidance in system prompt", () => {
     const prompt = buildExecutionSystemPrompt();
-    expect(prompt).toContain("Code-level testing fallback:");
-    expect(prompt).toContain("built-in shell/bash tool");
+    expect(prompt).toContain("<code_testing>");
     expect(prompt).toContain("no user-visible surface");
   });
 
   it("includes project healthcheck guidance in system prompt", () => {
     const prompt = buildExecutionSystemPrompt();
-    expect(prompt).toContain("Project healthcheck:");
+    expect(prompt).toContain("healthcheck");
     expect(prompt).toContain("package.json");
-    expect(prompt).toContain("pnpm-lock.yaml");
+    expect(prompt).toContain("lock files");
   });
 
   it("includes layered interaction guidance for dropdowns and menus", () => {
     const prompt = buildExecutionSystemPrompt();
     expect(prompt).toContain("Layered interactions");
-    expect(prompt).toContain("clicking a trigger reveals new elements");
-    expect(prompt).toContain("Take a NEW snapshot");
     expect(prompt).toContain("selectOption");
   });
 
@@ -224,10 +250,10 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("snapshotAfter=true");
   });
 
-  it("scopes batching to actions that do not change DOM structure", () => {
+  it("includes batching guidance", () => {
     const prompt = buildExecutionSystemPrompt();
     expect(prompt).toContain("Batch actions that do NOT change DOM structure");
-    expect(prompt).toContain("Do NOT batch across DOM-changing boundaries");
+    expect(prompt).toContain("DOM-changing");
   });
 
   it("includes hover-to-reveal and nested menu guidance", () => {
@@ -238,21 +264,22 @@ describe("buildExecutionPrompt", () => {
 
   it("includes stability and recovery guidance in system prompt", () => {
     const prompt = buildExecutionSystemPrompt();
-    expect(prompt).toContain("Stability and recovery:");
+    expect(prompt).toContain("<stability_and_recovery>");
     expect(prompt).toContain("four attempts fail");
     expect(prompt).toContain("stop and report");
   });
 
-  it("requires rich copy-pasteable failure reports", () => {
+  it("requires structured failure reports with good/bad example", () => {
     const prompt = buildExecutionSystemPrompt();
-    expect(prompt).toContain("copy-pasteable for a follow-up coding agent");
     expect(prompt).toContain("category=<allowed-category>;");
     expect(prompt).toContain("next-agent-prompt=<one sentence");
+    expect(prompt).toContain("Bad: ASSERTION_FAILED|step-03|button missing");
+    expect(prompt).toContain("Good: ASSERTION_FAILED|step-03|category=app-bug");
   });
 
   it("includes UI quality rules section in system prompt", () => {
     const prompt = buildExecutionSystemPrompt();
-    expect(prompt).toContain("UI quality rules:");
+    expect(prompt).toContain("<ui_quality_rules>");
     expect(prompt).toContain("mandatory, not optional");
   });
 
@@ -265,7 +292,7 @@ describe("buildExecutionPrompt", () => {
 
   it("includes responsive viewport sizes with tablet breakpoints", () => {
     const prompt = buildExecutionSystemPrompt();
-    expect(prompt).toContain("Responsive design verification:");
+    expect(prompt).toContain("Responsive design:");
     expect(prompt).toContain("375\u00d7812 (iPhone SE)");
     expect(prompt).toContain("390\u00d7844 (iPhone 14)");
     expect(prompt).toContain("768\u00d71024 (iPad Mini)");
@@ -276,20 +303,20 @@ describe("buildExecutionPrompt", () => {
 
   it("includes touch interaction testing rules", () => {
     const prompt = buildExecutionSystemPrompt();
-    expect(prompt).toContain("Touch interaction testing:");
+    expect(prompt).toContain("Touch interaction:");
     expect(prompt).toContain("also complete via tap");
   });
 
   it("includes cross-browser Safari/WebKit check", () => {
     const prompt = buildExecutionSystemPrompt();
-    expect(prompt).toContain("Cross-browser check (Safari/WebKit):");
+    expect(prompt).toContain("Cross-browser (Safari/WebKit):");
     expect(prompt).toContain("flexbox gap");
-    expect(prompt).toContain("WebKit browser not available");
+    expect(prompt).toContain("WebKit is unavailable");
   });
 
   it("includes dark mode verification rules", () => {
     const prompt = buildExecutionSystemPrompt();
-    expect(prompt).toContain("Dark mode verification:");
+    expect(prompt).toContain("Dark mode:");
     expect(prompt).toContain("prefers-color-scheme");
     expect(prompt).toContain("dark mode");
   });
@@ -297,25 +324,21 @@ describe("buildExecutionPrompt", () => {
   it("includes layout stability (CLS) rules", () => {
     const prompt = buildExecutionSystemPrompt();
     expect(prompt).toContain("Layout stability (CLS):");
-    expect(prompt).toContain("layout-shift");
+    expect(prompt).toContain("layout shift");
     expect(prompt).toContain("0.1");
   });
 
   it("includes font loading verification rules", () => {
     const prompt = buildExecutionSystemPrompt();
-    expect(prompt).toContain("Font loading verification:");
+    expect(prompt).toContain("Font loading:");
     expect(prompt).toContain("document.fonts");
     expect(prompt).toContain("@font-face");
-    expect(prompt).toContain("system font stack");
+    expect(prompt).toContain("system stack");
   });
 
-  it("places UI quality rules after execution strategy and before browser tools", () => {
+  it("includes self-check before RUN_COMPLETED", () => {
     const prompt = buildExecutionSystemPrompt();
-    const strategyIndex = prompt.indexOf("Execution strategy:");
-    const uiRulesIndex = prompt.indexOf("UI quality rules:");
-    const toolsIndex = prompt.indexOf("You have browser tools via the MCP server");
-    expect(strategyIndex).toBeLessThan(uiRulesIndex);
-    expect(uiRulesIndex).toBeLessThan(toolsIndex);
+    expect(prompt).toContain("Review the changed files list and confirm every file is accounted for");
   });
 });
 
