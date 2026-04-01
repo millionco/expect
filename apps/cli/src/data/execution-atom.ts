@@ -56,7 +56,7 @@ const syncReplayProxy = Effect.fn("syncReplayProxy")(function* (
         body: JSON.stringify(replayEvents),
       }),
     ).pipe(
-      Effect.catchTag("UnknownError", (cause) =>
+      Effect.catchTag("UnknownException", (cause) =>
         Effect.logWarning("Failed to sync replay events to proxy", { cause }),
       ),
     );
