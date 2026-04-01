@@ -78,11 +78,21 @@ jobs:
           GITHUB_ACTIONS: ""
         run: |
           mkdir -p /tmp/expect-results
+          cat > /tmp/expect-test-plan.md << 'TESTPLAN'
+          Test the expect.dev marketing website at http://localhost:3000.
+          Run each item below as a separate test step. If a step fails, record the failure with evidence but continue to the next step.
+
+          1. Homepage loads — navigate to http://localhost:3000, verify the page renders with a hero section and install commands visible.
+          2. View demo — click the "View demo" button/link on the homepage, verify it navigates to /replay?demo=true and the replay player loads with demo content.
+          3. Replay controls — on the /replay?demo=true page, verify play/pause button works, speed selector is present, and step list is visible.
+          4. Copy button — go back to the homepage, click the copy button next to the install command, verify the clipboard contains the expected command text.
+          5. Theme toggle — click the theme toggle to switch to dark mode, verify the background color changes. Switch back to light mode.
+          6. Footer links — verify the footer contains links to GitHub (github.com/millionco/expect) and X (x.com/aidenybai) with target="_blank".
+          7. Legal pages — navigate to /terms, /privacy, and /security in sequence. Verify each page loads with text content.
+          8. Mobile viewport — resize the viewport to 375x812, navigate to the homepage, verify the page renders without horizontal scrollbar and key content is visible.
+          TESTPLAN
           node apps/cli/dist/index.js --ci --output json --timeout 900000 -m \
-            "Test the expect.dev marketing website at http://localhost:3000. \
-            Verify the homepage loads, key sections are visible, and navigation works. \
-            IMPORTANT: Run every test scenario to completion. If a step fails, record the failure \
-            with evidence (screenshot or error) but continue testing remaining steps. Do not bail early." \
+            "$(cat /tmp/expect-test-plan.md)" \
             > /tmp/expect-results/website.json 2>/tmp/expect-results/website.stderr.txt
 
       - name: Validate website results
