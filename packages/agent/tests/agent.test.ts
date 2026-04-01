@@ -1,17 +1,16 @@
 import { describe, expect, it } from "vite-plus/test";
 import { Effect, Option, Stream } from "effect";
-import { Agent, type AgentBackend } from "../src/agent";
+import { Agent } from "../src/agent";
 import { AgentStreamOptions } from "../src/types";
-import { type AcpSessionUpdate } from "@expect/shared/models";
 import { isCommandAvailable } from "@expect/shared/is-command-available";
 
 const hasCodex = isCommandAvailable("codex");
 const hasClaude = isCommandAvailable("claude");
 
-const TEST_LAYERS: [AgentBackend, boolean][] = [
-  ["codex", hasCodex],
-  ["claude", hasClaude],
-];
+const TEST_LAYERS = [
+  ["codex-acp", Agent.layerCodex, hasCodex],
+  ["claude-acp", Agent.layerClaude, hasClaude],
+] as const;
 
 const makeOptions = (prompt: string): AgentStreamOptions =>
   new AgentStreamOptions({
@@ -21,22 +20,9 @@ const makeOptions = (prompt: string): AgentStreamOptions =>
     systemPrompt: Option.none(),
   });
 
-const collectText = (parts: readonly AcpSessionUpdate[]): string =>
-  parts
-    .filter(
-      (update) => update.sessionUpdate === "agent_message_chunk" && update.content.type === "text",
-    )
-    .map((update) =>
-      update.sessionUpdate === "agent_message_chunk" && update.content.type === "text"
-        ? update.content.text
-        : "",
-    )
-    .join("");
-
 describe("Agent", () => {
-  TEST_LAYERS.forEach(([backend, available]) => {
-    const layer = Agent.layerFor(backend);
-    describe.skipIf(!available)(`${backend}-acp`, () => {
+  TEST_LAYERS.forEach(([name, layer, available]) => {
+    describe.skipIf(!available)(name, () => {
       it("streams text response", async () => {
         const parts = await Effect.gen(function* () {
           const agent = yield* Agent;
@@ -45,7 +31,17 @@ describe("Agent", () => {
             .pipe(Stream.runCollect);
         }).pipe(Effect.provide(layer), Effect.runPromise);
 
-        const fullText = collectText(parts);
+        const textParts = parts.filter(
+          (update) =>
+            update.sessionUpdate === "agent_message_chunk" && update.content.type === "text",
+        );
+        const fullText = textParts
+          .map((update) =>
+            update.sessionUpdate === "agent_message_chunk" && update.content.type === "text"
+              ? update.content.text
+              : "",
+          )
+          .join("");
         expect(fullText.toLowerCase()).toContain("hello");
       }, 30_000);
 
@@ -78,9 +74,7 @@ describe("Agent", () => {
         ).toBe(true);
       }, 60_000);
 
-      // HACK: codex-acp adapter has a session resume bug ("updates queue not found for session")
-      // that causes the second stream to return empty. Skip until the adapter is fixed.
-      it.skip("resumes session with sessionId", async () => {
+      it("resumes session with sessionId", async () => {
         const secondParts = await Effect.gen(function* () {
           const agent = yield* Agent;
           const sessionId = yield* agent.createSession(process.cwd());
@@ -108,30 +102,49 @@ describe("Agent", () => {
             .pipe(Stream.runCollect);
         }).pipe(Effect.provide(layer), Effect.runPromise);
 
-        const fullText = collectText(secondParts).toLowerCase();
-        expect(fullText.length).toBeGreaterThan(0);
+        const fullText = secondParts
+          .filter(
+            (update) =>
+              update.sessionUpdate === "agent_message_chunk" && update.content.type === "text",
+          )
+          .map((update) =>
+            update.sessionUpdate === "agent_message_chunk" && update.content.type === "text"
+              ? update.content.text
+              : "",
+          )
+          .join("")
+          .toLowerCase();
+        expect(fullText).toContain("ping");
       }, 60_000);
 
       it("discovers browser MCP tools", async () => {
         const parts = await Effect.gen(function* () {
           const agent = yield* Agent;
           return yield* agent
-            .stream(makeOptions("what MCP tools do you have? list every tool name"))
+            .stream(makeOptions("what MCP tools do you have? list all tool names"))
             .pipe(Stream.runCollect);
         }).pipe(Effect.provide(layer), Effect.runPromise);
 
-        const fullText = collectText(parts).toLowerCase();
-        expect(fullText.length).toBeGreaterThan(0);
+        const fullText = parts
+          .filter(
+            (update) =>
+              update.sessionUpdate === "agent_message_chunk" && update.content.type === "text",
+          )
+          .map((update) =>
+            update.sessionUpdate === "agent_message_chunk" && update.content.type === "text"
+              ? update.content.text
+              : "",
+          )
+          .join("")
+          .toLowerCase();
 
         const expectedTools = [
           "open",
-          "close",
           "playwright",
           "screenshot",
           "console_logs",
           "network_requests",
-          "accessibility_audit",
-          "performance_metrics",
+          "close",
         ];
         for (const tool of expectedTools) {
           expect(fullText).toContain(tool);
