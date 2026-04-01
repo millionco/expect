@@ -3,6 +3,7 @@ const MIN_SCROLLABLE_CHILDREN = 5;
 const HIDDEN_MARKER_ATTR = "data-expect-scroll-hidden";
 const PREV_ARIA_HIDDEN_ATTR = "data-expect-prev-aria-hidden";
 const MARKER_ELEMENT_ATTR = "data-expect-scroll-marker";
+const MARKER_STYLE = "position:absolute;width:0;height:0;overflow:hidden;";
 
 export interface ScrollContainerResult {
   totalChildren: number;
@@ -10,11 +11,30 @@ export interface ScrollContainerResult {
   hiddenBelow: number;
 }
 
+const hideChild = (child: Element, direction: "above" | "below") => {
+  const previous = child.getAttribute("aria-hidden");
+  if (previous) child.setAttribute(PREV_ARIA_HIDDEN_ATTR, previous);
+  child.setAttribute("aria-hidden", "true");
+  child.setAttribute(HIDDEN_MARKER_ATTR, direction);
+};
+
+const insertMarker = (parent: Element, label: string, before: Element | null) => {
+  const marker = document.createElement("div");
+  marker.setAttribute("role", "note");
+  marker.setAttribute("aria-label", label);
+  marker.setAttribute(MARKER_ELEMENT_ATTR, "true");
+  marker.style.cssText = MARKER_STYLE;
+  if (before) {
+    parent.insertBefore(marker, before);
+  } else {
+    parent.appendChild(marker);
+  }
+};
+
 export const prepareViewportSnapshot = (): ScrollContainerResult[] => {
   const results: ScrollContainerResult[] = [];
-  const allElements = document.querySelectorAll("*");
 
-  for (const element of allElements) {
+  for (const element of document.querySelectorAll("*")) {
     if (element.scrollHeight <= element.clientHeight + SCROLL_OVERFLOW_THRESHOLD_PX) continue;
 
     const style = getComputedStyle(element);
@@ -32,16 +52,10 @@ export const prepareViewportSnapshot = (): ScrollContainerResult[] => {
     for (const child of children) {
       const childRect = child.getBoundingClientRect();
       if (childRect.bottom < containerRect.top) {
-        const previous = child.getAttribute("aria-hidden");
-        if (previous) child.setAttribute(PREV_ARIA_HIDDEN_ATTR, previous);
-        child.setAttribute("aria-hidden", "true");
-        child.setAttribute(HIDDEN_MARKER_ATTR, "above");
+        hideChild(child, "above");
         hiddenAbove++;
       } else if (childRect.top > containerRect.bottom) {
-        const previous = child.getAttribute("aria-hidden");
-        if (previous) child.setAttribute(PREV_ARIA_HIDDEN_ATTR, previous);
-        child.setAttribute("aria-hidden", "true");
-        child.setAttribute(HIDDEN_MARKER_ATTR, "below");
+        hideChild(child, "below");
         hiddenBelow++;
       } else {
         if (!firstVisibleChild) firstVisibleChild = child;
@@ -52,32 +66,13 @@ export const prepareViewportSnapshot = (): ScrollContainerResult[] => {
     if (hiddenAbove === 0 && hiddenBelow === 0) continue;
 
     if (hiddenAbove > 0 && firstVisibleChild) {
-      const marker = document.createElement("div");
-      marker.setAttribute("role", "note");
-      marker.setAttribute("aria-label", `${hiddenAbove} items hidden above`);
-      marker.setAttribute(MARKER_ELEMENT_ATTR, "true");
-      marker.style.cssText = "position:absolute;width:0;height:0;overflow:hidden;";
-      element.insertBefore(marker, firstVisibleChild);
+      insertMarker(element, `${hiddenAbove} items hidden above`, firstVisibleChild);
     }
-
     if (hiddenBelow > 0 && lastVisibleChild) {
-      const marker = document.createElement("div");
-      marker.setAttribute("role", "note");
-      marker.setAttribute("aria-label", `${hiddenBelow} items hidden below`);
-      marker.setAttribute(MARKER_ELEMENT_ATTR, "true");
-      marker.style.cssText = "position:absolute;width:0;height:0;overflow:hidden;";
-      if (lastVisibleChild.nextSibling) {
-        element.insertBefore(marker, lastVisibleChild.nextSibling);
-      } else {
-        element.appendChild(marker);
-      }
+      insertMarker(element, `${hiddenBelow} items hidden below`, lastVisibleChild.nextSibling as Element | null);
     }
 
-    results.push({
-      totalChildren: children.length,
-      hiddenAbove,
-      hiddenBelow,
-    });
+    results.push({ totalChildren: children.length, hiddenAbove, hiddenBelow });
   }
 
   return results;

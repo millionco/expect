@@ -306,6 +306,8 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
       );
     });
 
+    const NO_SCROLL_CONTAINERS: ScrollContainerResult[] = [];
+
     const takeAriaSnapshot = Effect.fn("Browser.takeAriaSnapshot")(function* (
       page: Page,
       options: SnapshotOptions,
@@ -314,15 +316,13 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
       const selector = options.selector ?? "body";
       const useViewportAware = options.viewportAware ?? true;
 
-      let scrollContainers: ScrollContainerResult[] = [];
+      const scrollContainers: ScrollContainerResult[] = useViewportAware
+        ? yield* evaluateRuntime(page, "prepareViewportSnapshot").pipe(
+            Effect.catchCause(() => Effect.succeed(NO_SCROLL_CONTAINERS)),
+          )
+        : NO_SCROLL_CONTAINERS;
 
-      if (useViewportAware) {
-        scrollContainers = yield* evaluateRuntime(page, "prepareViewportSnapshot").pipe(
-          Effect.catchCause(() => Effect.succeed([] as typeof scrollContainers)),
-        );
-      }
-
-      const restore = useViewportAware && scrollContainers.length > 0
+      const restore = scrollContainers.length > 0
         ? evaluateRuntime(page, "restoreViewportSnapshot").pipe(
             Effect.catchCause(() => Effect.void),
           )
