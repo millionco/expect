@@ -242,8 +242,8 @@ export const runAddGithubAction = async (options: AddGithubActionOptions = {}) =
             ),
           ),
           Effect.provide(NodeServices.layer),
-          Effect.catchTag("ClaudeTokenGenerateError", () =>
-            Effect.succeed({ status: "token-failed" as const }),
+          Effect.catchTag("ClaudeTokenGenerateError", (error) =>
+            Effect.succeed({ status: "token-failed" as const, reason: error.reason }),
           ),
           Effect.catchTag("GhSecretSetError", (error) =>
             Effect.succeed({
@@ -260,7 +260,7 @@ export const runAddGithubAction = async (options: AddGithubActionOptions = {}) =
         logger.success("ANTHROPIC_API_KEY secret set.");
         secretSet = true;
       } else if (tokenResult.status === "token-failed") {
-        logger.warn("Could not generate token via claude setup-token.");
+        logger.warn(`Could not generate token: ${tokenResult.reason}`);
         logger.log(
           `  You can set it manually: ${highlighter.dim("gh secret set ANTHROPIC_API_KEY")}`,
         );

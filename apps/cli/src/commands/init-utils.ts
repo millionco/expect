@@ -17,8 +17,9 @@ export class ClaudeTokenGenerateError extends Schema.ErrorClass<ClaudeTokenGener
   "ClaudeTokenGenerateError",
 )({
   _tag: Schema.tag("ClaudeTokenGenerateError"),
+  reason: Schema.String,
 }) {
-  message = "Failed to generate Claude API token";
+  message = `Failed to generate Claude API token: ${this.reason}`;
 }
 
 export class GhSecretSetError extends Schema.ErrorClass<GhSecretSetError>("GhSecretSetError")({
@@ -26,15 +27,6 @@ export class GhSecretSetError extends Schema.ErrorClass<GhSecretSetError>("GhSec
   reason: Schema.String,
 }) {
   message = `Failed to set GitHub secret: ${this.reason}`;
-}
-
-export class GhVariableSetError extends Schema.ErrorClass<GhVariableSetError>("GhVariableSetError")(
-  {
-    _tag: Schema.tag("GhVariableSetError"),
-    reason: Schema.String,
-  },
-) {
-  message = `Failed to set GitHub variable: ${this.reason}`;
 }
 
 export const detectPackageManager = (): PackageManager => {
@@ -67,11 +59,16 @@ export const hasGitHubRemote = Effect.tryPromise({
       });
       child.on("error", reject);
     }),
-  catch: () => new Error("Failed to detect git remote"),
+  catch: (cause) => ({ _tag: "GitRemoteCheckError" as const, cause: String(cause) }),
 }).pipe(
   Effect.map((stdout) => stdout.includes("github.com")),
   Effect.timeout(GIT_REMOTE_TIMEOUT_MS),
-  Effect.orElseSucceed(() => false),
+  Effect.catchTag("GitRemoteCheckError", (error) =>
+    Effect.logWarning("Failed to detect git remote", error.cause).pipe(Effect.as(false)),
+  ),
+  Effect.catchTag("TimeoutError", () =>
+    Effect.logWarning("Git remote check timed out").pipe(Effect.as(false)),
+  ),
 );
 
 export const hasGhCli = Effect.sync(() => isCommandAvailable("gh"));
@@ -82,8 +79,12 @@ export const isGithubCliAuthenticated = Effect.try({
       stdio: "ignore",
       timeout: GH_CLI_DETECT_TIMEOUT_MS,
     }).status === 0,
-  catch: () => ({ _tag: "GhAuthCheckError" as const }),
-}).pipe(Effect.catchTag("GhAuthCheckError", () => Effect.succeed(false)));
+  catch: (cause) => ({ _tag: "GhAuthCheckError" as const, cause: String(cause) }),
+}).pipe(
+  Effect.catchTag("GhAuthCheckError", (error) =>
+    Effect.logWarning("GitHub CLI auth check failed", error.cause).pipe(Effect.as(false)),
+  ),
+);
 
 const INSTALL_TIMEOUT_MS = 60_000;
 
@@ -115,33 +116,36 @@ export const generateClaudeToken = Effect.gen(function* () {
     stderr: "inherit",
   });
 
-  let stdout = "";
-  yield* handle.stdout.pipe(
-    Stream.decodeText(),
-    Stream.runForEach((text) =>
-      Effect.sync(() => {
-        stdout += text;
-        process.stdout.write(text);
-      }),
-    ),
+  const [stdoutText, exitCode] = yield* Effect.all(
+    [Stream.mkString(Stream.decodeText(handle.stdout)), handle.exitCode],
+    { concurrency: 2 },
   );
 
-  const exitCode = yield* handle.exitCode;
+  process.stdout.write(stdoutText);
+
   if (exitCode !== ChildProcessSpawner.ExitCode(0)) {
-    return yield* new ClaudeTokenGenerateError();
+    return yield* new ClaudeTokenGenerateError({
+      reason: `claude setup-token exited with code ${exitCode}`,
+    });
   }
 
-  const match = stripAnsi(stdout).match(CLAUDE_TOKEN_PATTERN);
+  const match = stripAnsi(stdoutText).match(CLAUDE_TOKEN_PATTERN);
   if (!match) {
-    return yield* new ClaudeTokenGenerateError();
+    return yield* new ClaudeTokenGenerateError({
+      reason: "No API token found in output",
+    });
   }
 
   return match[1];
 }).pipe(
   Effect.scoped,
-  Effect.catchTag("PlatformError", () => new ClaudeTokenGenerateError().asEffect()),
+  Effect.catchTag("PlatformError", (platformError) =>
+    new ClaudeTokenGenerateError({ reason: platformError.message }).asEffect(),
+  ),
   Effect.timeout(CLAUDE_SETUP_TOKEN_TIMEOUT_MS),
-  Effect.catchTag("TimeoutError", () => new ClaudeTokenGenerateError().asEffect()),
+  Effect.catchTag("TimeoutError", () =>
+    new ClaudeTokenGenerateError({ reason: "claude setup-token timed out" }).asEffect(),
+  ),
 );
 
 export const setGhSecret = (name: string, value: string) =>
@@ -173,29 +177,3 @@ export const setGhSecret = (name: string, value: string) =>
     ),
   );
 
-export const setGhVariable = (name: string, value: string) =>
-  Effect.gen(function* () {
-    const handle = yield* ChildProcess.make("gh", ["variable", "set", name, "--body", value], {
-      stdout: "ignore",
-      stderr: "pipe",
-    });
-
-    const [exitCode, stderrOutput] = yield* Effect.all(
-      [handle.exitCode, Stream.mkString(Stream.decodeText(handle.stderr))],
-      { concurrency: 2 },
-    );
-
-    if (exitCode !== ChildProcessSpawner.ExitCode(0)) {
-      const reason = stderrOutput.trim() || `gh variable set exited with code ${exitCode}`;
-      return yield* new GhVariableSetError({ reason });
-    }
-  }).pipe(
-    Effect.scoped,
-    Effect.catchTag("PlatformError", (platformError) =>
-      new GhVariableSetError({ reason: platformError.message }).asEffect(),
-    ),
-    Effect.timeout(GH_SECRET_SET_TIMEOUT_MS),
-    Effect.catchTag("TimeoutError", () =>
-      new GhVariableSetError({ reason: "gh variable set timed out" }).asEffect(),
-    ),
-  );

@@ -24,7 +24,7 @@ export const layerCli = ({ verbose, agent }: { verbose: boolean; agent: AgentBac
   ).pipe(
     Layer.provide(Agent.layerFor(agent ?? "claude")),
     Layer.provide(DebugFileLoggerLayer),
-    Layer.provide(Tracing.layerAxiom),
+    Layer.provide(Tracing.layerAxiom("expect-cli")),
     Layer.provideMerge(Layer.succeed(References.MinimumLogLevel, verbose ? "All" : "Error")),
   );
 };

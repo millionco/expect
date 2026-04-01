@@ -139,33 +139,4 @@ describe("init-utils", () => {
     });
   });
 
-  describe("setGhVariable", () => {
-    it("succeeds when gh variable set exits 0", async () => {
-      const layer = makeSpawnerLayer(() => Effect.succeed(makeTestHandle({ exitCode: 0 })));
-
-      const { setGhVariable } = await import("../src/commands/init-utils");
-      await Effect.runPromise(
-        setGhVariable("EXPECT_BASE_URL", "http://localhost:3000").pipe(Effect.provide(layer)),
-      );
-    });
-
-    it("fails with GhVariableSetError when exit code is non-zero", async () => {
-      const layer = makeSpawnerLayer(() =>
-        Effect.succeed(makeTestHandle({ exitCode: 1, stderr: "not authorized" })),
-      );
-
-      const { setGhVariable } = await import("../src/commands/init-utils");
-      const result = await Effect.runPromise(
-        setGhVariable("EXPECT_BASE_URL", "http://localhost:3000").pipe(
-          Effect.as("ok" as const),
-          Effect.catchTag("GhVariableSetError", (error) =>
-            Effect.succeed({ failed: true, reason: error.reason }),
-          ),
-          Effect.provide(layer),
-        ),
-      );
-
-      expect(result).toEqual({ failed: true, reason: "not authorized" });
-    });
-  });
 });
