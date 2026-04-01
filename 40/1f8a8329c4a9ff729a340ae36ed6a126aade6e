@@ -1,0 +1,35 @@
+packages/agent/tests/detect-agents.test.ts
+  b138ecffd6d4c328 2-3
+packages/shared/package.json
+  b138ecffd6d4c328 11-12
+packages/shared/src/is-command-available.ts
+  b138ecffd6d4c328 1-9
+apps/cli/tests/init-utils.test.ts
+  b138ecffd6d4c328 6,8-10,49,58
+apps/cli/src/commands/init-utils.ts
+  b138ecffd6d4c328 4
+packages/agent/src/detect-agents.ts
+  b138ecffd6d4c328 1
+packages/agent/tests/agent.test.ts
+  b138ecffd6d4c328 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.3",
+  "base_commit_sha": "401f8a8329c4a9ff729a340ae36ed6a126aade6e",
+  "prompts": {
+    "b138ecffd6d4c328": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ab1a1214-f118-4d5d-a443-a3a4bda209ad",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 10,
+      "total_deletions": 9,
+      "accepted_lines": 22,
+      "overriden_lines": 0
+    }
+  }
+}
