@@ -73,6 +73,8 @@ jobs:
       EXPECT_BASE_URL: \${{ vars.EXPECT_BASE_URL || '${devUrl}' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # we need the history for Agent to compare against main
 ${setupSteps}
 
       - name: Install Playwright Chromium
