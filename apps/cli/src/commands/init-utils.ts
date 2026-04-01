@@ -100,7 +100,7 @@ export const generateClaudeToken = Effect.gen(function* () {
       Effect.sync(() => {
         stdout += text;
         process.stdout.write(text);
-      })
+      }),
     ),
   );
 
@@ -121,9 +121,7 @@ export const generateClaudeToken = Effect.gen(function* () {
     Effect.fail({ _tag: "ClaudeTokenGenerateError" as const }),
   ),
   Effect.timeout(CLAUDE_SETUP_TOKEN_TIMEOUT_MS),
-  Effect.catchTag("TimeoutError", () =>
-    Effect.fail({ _tag: "ClaudeTokenGenerateError" as const }),
-  ),
+  Effect.catchTag("TimeoutError", () => Effect.fail({ _tag: "ClaudeTokenGenerateError" as const })),
 );
 
 export const setGhSecret = (name: string, value: string) =>
@@ -134,10 +132,10 @@ export const setGhSecret = (name: string, value: string) =>
       stderr: "pipe",
     });
 
-    const [exitCode, stderrOutput] = yield* Effect.all([
-      handle.exitCode,
-      Stream.mkString(Stream.decodeText(handle.stderr)),
-    ], { concurrency: 2 });
+    const [exitCode, stderrOutput] = yield* Effect.all(
+      [handle.exitCode, Stream.mkString(Stream.decodeText(handle.stderr))],
+      { concurrency: 2 },
+    );
 
     if (exitCode !== ChildProcessSpawner.ExitCode(0)) {
       const reason = stderrOutput.trim() || `gh secret set exited with code ${exitCode}`;
@@ -161,10 +159,10 @@ export const setGhVariable = (name: string, value: string) =>
       stderr: "pipe",
     });
 
-    const [exitCode, stderrOutput] = yield* Effect.all([
-      handle.exitCode,
-      Stream.mkString(Stream.decodeText(handle.stderr)),
-    ], { concurrency: 2 });
+    const [exitCode, stderrOutput] = yield* Effect.all(
+      [handle.exitCode, Stream.mkString(Stream.decodeText(handle.stderr))],
+      { concurrency: 2 },
+    );
 
     if (exitCode !== ChildProcessSpawner.ExitCode(0)) {
       const reason = stderrOutput.trim() || `gh variable set exited with code ${exitCode}`;

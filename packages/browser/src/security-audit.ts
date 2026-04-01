@@ -4,12 +4,12 @@ import { Effect, Schema } from "effect";
 import type { Component, Repository, Vulnerability } from "retire/lib/types";
 import retireRepoRaw from "./retire-repo.json";
 
-export class SecurityAuditError extends Schema.ErrorClass<SecurityAuditError>(
-  "SecurityAuditError",
-)({
-  _tag: Schema.tag("SecurityAuditError"),
-  cause: Schema.String,
-}) {
+export class SecurityAuditError extends Schema.ErrorClass<SecurityAuditError>("SecurityAuditError")(
+  {
+    _tag: Schema.tag("SecurityAuditError"),
+    cause: Schema.String,
+  },
+) {
   message = `Security audit failed: ${this.cause}`;
 }
 
@@ -65,7 +65,11 @@ const extractFindings = (results: Component[]): SecurityFinding[] =>
 
 const fetchScriptContent = (page: Page, src: string) =>
   Effect.tryPromise({
-    try: () => page.context().request.get(src).then((response) => response.text()),
+    try: () =>
+      page
+        .context()
+        .request.get(src)
+        .then((response) => response.text()),
     catch: (cause) => new SecurityAuditError({ cause: `Failed to fetch ${src}: ${cause}` }),
   }).pipe(
     Effect.catchTag("SecurityAuditError", (error) =>
@@ -75,11 +79,7 @@ const fetchScriptContent = (page: Page, src: string) =>
     ),
   );
 
-const scanScript = (
-  page: Page,
-  retire: NonNullable<typeof cachedRetire>,
-  repo: Repository,
-) =>
+const scanScript = (page: Page, retire: NonNullable<typeof cachedRetire>, repo: Repository) =>
   Effect.fn("scanScript")(function* (script: { src: string; content: string }) {
     if (script.src) {
       const uriFindings = extractFindings(retire.scanUri(script.src, repo));
@@ -109,7 +109,7 @@ export const runSecurityAudit = Effect.fn("runSecurityAudit")(function* (page: P
       page.evaluate(() =>
         Array.from(document.querySelectorAll<HTMLScriptElement>("script"), (script) => ({
           src: script.src,
-          content: script.src ? "" : script.textContent ?? "",
+          content: script.src ? "" : (script.textContent ?? ""),
         })),
       ),
     catch: (cause) => new SecurityAuditError({ cause: `Failed to extract scripts: ${cause}` }),
@@ -125,8 +125,7 @@ export const runSecurityAudit = Effect.fn("runSecurityAudit")(function* (page: P
       })(new Set<string>()),
     )
     .sort(
-      (left, right) =>
-        (SEVERITY_ORDER[left.severity] ?? 3) - (SEVERITY_ORDER[right.severity] ?? 3),
+      (left, right) => (SEVERITY_ORDER[left.severity] ?? 3) - (SEVERITY_ORDER[right.severity] ?? 3),
     );
 
   yield* Effect.logInfo("Security audit complete", {
@@ -139,7 +138,9 @@ export const runSecurityAudit = Effect.fn("runSecurityAudit")(function* (page: P
     summary: Object.fromEntries(
       ["total", "critical", "high", "medium", "low"].map((level) => [
         level,
-        level === "total" ? findings.length : findings.filter((finding) => finding.severity === level).length,
+        level === "total"
+          ? findings.length
+          : findings.filter((finding) => finding.severity === level).length,
       ]),
     ),
   };

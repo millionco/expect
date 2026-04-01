@@ -26,22 +26,15 @@ const makeTestHandle = (options: {
     isRunning: Effect.succeed(false),
     kill: () => Effect.void,
     stdin: { run: () => Effect.void } as never,
-    stdout: options.stdout
-      ? Stream.make(new TextEncoder().encode(options.stdout))
-      : Stream.empty,
-    stderr: options.stderr
-      ? Stream.make(new TextEncoder().encode(options.stderr))
-      : Stream.empty,
+    stdout: options.stdout ? Stream.make(new TextEncoder().encode(options.stdout)) : Stream.empty,
+    stderr: options.stderr ? Stream.make(new TextEncoder().encode(options.stderr)) : Stream.empty,
     all: Stream.empty,
     getInputFd: () => ({ run: () => Effect.void }) as never,
     getOutputFd: () => Stream.empty,
   });
 
 const makeSpawnerLayer = (spawnFn: ChildProcessSpawner.ChildProcessSpawner["Service"]["spawn"]) =>
-  Layer.succeed(
-    ChildProcessSpawner.ChildProcessSpawner,
-    ChildProcessSpawner.make(spawnFn),
-  );
+  Layer.succeed(ChildProcessSpawner.ChildProcessSpawner, ChildProcessSpawner.make(spawnFn));
 
 describe("init-utils", () => {
   beforeEach(() => {
@@ -98,14 +91,10 @@ describe("init-utils", () => {
 
   describe("setGhSecret", () => {
     it("succeeds when gh secret set exits 0", async () => {
-      const layer = makeSpawnerLayer(() =>
-        Effect.succeed(makeTestHandle({ exitCode: 0 })),
-      );
+      const layer = makeSpawnerLayer(() => Effect.succeed(makeTestHandle({ exitCode: 0 })));
 
       const { setGhSecret } = await import("../src/commands/init-utils");
-      await Effect.runPromise(
-        setGhSecret("MY_SECRET", "my-value").pipe(Effect.provide(layer)),
-      );
+      await Effect.runPromise(setGhSecret("MY_SECRET", "my-value").pipe(Effect.provide(layer)));
     });
 
     it("fails with GhSecretSetError when exit code is non-zero", async () => {
@@ -152,15 +141,11 @@ describe("init-utils", () => {
 
   describe("setGhVariable", () => {
     it("succeeds when gh variable set exits 0", async () => {
-      const layer = makeSpawnerLayer(() =>
-        Effect.succeed(makeTestHandle({ exitCode: 0 })),
-      );
+      const layer = makeSpawnerLayer(() => Effect.succeed(makeTestHandle({ exitCode: 0 })));
 
       const { setGhVariable } = await import("../src/commands/init-utils");
       await Effect.runPromise(
-        setGhVariable("EXPECT_BASE_URL", "http://localhost:3000").pipe(
-          Effect.provide(layer),
-        ),
+        setGhVariable("EXPECT_BASE_URL", "http://localhost:3000").pipe(Effect.provide(layer)),
       );
     });
 

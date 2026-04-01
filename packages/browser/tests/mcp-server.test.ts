@@ -236,9 +236,7 @@ describe("MCP server tools", () => {
       expect(data.summary.total).toBeGreaterThan(0);
       expect(data.findings).toBeInstanceOf(Array);
 
-      const jqueryFinding = data.findings.find(
-        (f: { library: string }) => f.library === "jquery",
-      );
+      const jqueryFinding = data.findings.find((f: { library: string }) => f.library === "jquery");
       expect(jqueryFinding).toBeDefined();
       expect(jqueryFinding.version).toBe("1.6.1");
     } finally {

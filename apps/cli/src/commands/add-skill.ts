@@ -23,11 +23,11 @@ interface AddSkillOptions {
   agents: readonly SupportedAgent[];
 }
 
-export class SkillDownloadError extends Schema.ErrorClass<SkillDownloadError>(
-  "SkillDownloadError",
-)({
-  _tag: Schema.tag("SkillDownloadError"),
-}) {
+export class SkillDownloadError extends Schema.ErrorClass<SkillDownloadError>("SkillDownloadError")(
+  {
+    _tag: Schema.tag("SkillDownloadError"),
+  },
+) {
   message = "Failed to download skill files from GitHub";
 }
 
@@ -107,15 +107,11 @@ export const runAddSkill = async (options: AddSkillOptions) => {
 
   const results = await Effect.runPromise(
     Effect.forEach(selectedAgents, (agent) =>
-      ensureAgentSymlink(projectRoot, agent).pipe(
-        Effect.catchDefect(() => Effect.succeed(false)),
-      ),
+      ensureAgentSymlink(projectRoot, agent).pipe(Effect.catchDefect(() => Effect.succeed(false))),
     ),
   );
 
-  const linked = selectedAgents
-    .filter((_, index) => results[index])
-    .map(toDisplayName);
+  const linked = selectedAgents.filter((_, index) => results[index]).map(toDisplayName);
 
   if (linked.length > 0) {
     skillSpinner.succeed(`Skill installed for ${linked.join(", ")}.`);
