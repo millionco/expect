@@ -78,9 +78,6 @@ ${setupSteps}
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Install Claude Code
-        run: npm install -g @anthropic-ai/claude-code
-
       # Expect runs against your dev server by default, not a production build or deployed preview.
       # To test a preview URL instead, set EXPECT_BASE_URL to that URL. You can use
       # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idneeds
@@ -92,7 +89,6 @@ ${setupSteps}
       - name: Wait for dev server
         run: npx wait-on $EXPECT_BASE_URL --timeout 60000
 
-      
       - name: Run expect
         env:
           # Expect uses the GitHub token to comment on the pull request.
@@ -110,16 +106,6 @@ ${setupSteps}
 `;
 };
 
-const PNPM_SETUP_COMMENT = `
-      # If you use pnpm, replace the setup and install steps below with:
-      # - uses: pnpm/action-setup@v4
-      # - uses: actions/setup-node@v4
-      #   with:
-      #     node-version: 22
-      #     cache: pnpm
-      # - name: Install dependencies
-      #   run: pnpm install`;
-
 const buildSetupSteps = (packageManager: PackageManager, install: string): string => {
   if (packageManager === "pnpm") {
     return `
@@ -135,8 +121,7 @@ const buildSetupSteps = (packageManager: PackageManager, install: string): strin
   }
 
   if (packageManager === "bun") {
-    return `${PNPM_SETUP_COMMENT}
-
+    return `
       - uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
@@ -144,8 +129,7 @@ const buildSetupSteps = (packageManager: PackageManager, install: string): strin
   }
 
   if (packageManager === "yarn") {
-    return `${PNPM_SETUP_COMMENT}
-
+    return `
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -155,8 +139,7 @@ const buildSetupSteps = (packageManager: PackageManager, install: string): strin
         run: ${install}`;
   }
 
-  return `${PNPM_SETUP_COMMENT}
-
+  return `
       - uses: actions/setup-node@v4
         with:
           node-version: 22

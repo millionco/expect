@@ -1,12 +1,3 @@
-import whichSync from "which";
+import { isCommandAvailable } from "@expect/agent";
 
-export const commandExists = (command: string): Promise<boolean> =>
-  Promise.resolve(
-    (() => {
-      try {
-        return Boolean(whichSync.sync(command));
-      } catch {
-        return false;
-      }
-    })(),
-  );
+export const commandExists = (command: string): boolean => isCommandAvailable(command);

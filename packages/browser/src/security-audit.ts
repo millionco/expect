@@ -13,8 +13,10 @@ export class SecurityAuditError extends Schema.ErrorClass<SecurityAuditError>("S
   message = `Security audit failed: ${this.cause}`;
 }
 
+type Severity = "critical" | "high" | "medium" | "low";
+
 interface SecurityFinding {
-  readonly severity: "critical" | "high" | "medium" | "low";
+  readonly severity: Severity;
   readonly library: string;
   readonly version: string;
   readonly detail: string;
@@ -22,21 +24,21 @@ interface SecurityFinding {
   readonly info: readonly string[];
 }
 
-const SEVERITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+const SEVERITY_ORDER: Record<Severity, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+const KNOWN_SEVERITIES = new Set<string>(Object.keys(SEVERITY_ORDER));
 
 const sha1Hasher = {
   sha1: (data: string) => createHash("sha1").update(data).digest("hex"),
 };
 
-let cachedRetire: typeof import("retire/lib/retire.js") | undefined;
+let retireModulePromise: Promise<typeof import("retire/lib/retire.js")> | undefined;
 let cachedRepo: Repository | undefined;
 
-const loadRetire = async () => {
-  if (!cachedRetire) {
-    const mod = await import("retire/lib/retire.js");
-    cachedRetire = mod.default ?? mod;
+const loadRetire = () => {
+  if (!retireModulePromise) {
+    retireModulePromise = import("retire/lib/retire.js").then((mod) => mod.default ?? mod);
   }
-  return cachedRetire;
+  return retireModulePromise;
 };
 
 const loadRepo = (replaceVersion: (text: string) => string) => {
@@ -47,8 +49,11 @@ const loadRepo = (replaceVersion: (text: string) => string) => {
   return cachedRepo;
 };
 
+const normalizeSeverity = (raw: string | undefined): Severity =>
+  raw && KNOWN_SEVERITIES.has(raw) ? (raw as Severity) : "medium";
+
 const toFinding = (component: Component, vulnerability: Vulnerability): SecurityFinding => ({
-  severity: (vulnerability.severity as SecurityFinding["severity"]) ?? "medium",
+  severity: normalizeSeverity(vulnerability.severity),
   library: component.component,
   version: component.version,
   detail:
@@ -62,6 +67,16 @@ const extractFindings = (results: Component[]): SecurityFinding[] =>
   results.flatMap((component) =>
     (component.vulnerabilities ?? []).map((vulnerability) => toFinding(component, vulnerability)),
   );
+
+const deduplicateFindings = (findings: SecurityFinding[]): SecurityFinding[] => {
+  const seen = new Set<string>();
+  return findings.filter((finding) => {
+    const key = `${finding.library}@${finding.version}:${finding.detail}:${finding.cves.join(",")}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
 
 const fetchScriptContent = (page: Page, src: string) =>
   Effect.tryPromise({
@@ -78,22 +93,6 @@ const fetchScriptContent = (page: Page, src: string) =>
       ),
     ),
   );
-
-const scanScript = (page: Page, retire: NonNullable<typeof cachedRetire>, repo: Repository) =>
-  Effect.fn("scanScript")(function* (script: { src: string; content: string }) {
-    if (script.src) {
-      const uriFindings = extractFindings(retire.scanUri(script.src, repo));
-      const content = yield* fetchScriptContent(page, script.src);
-      const contentFindings = content
-        ? extractFindings(retire.scanFileContent(content, repo, sha1Hasher))
-        : [];
-      return [...uriFindings, ...contentFindings];
-    }
-    if (script.content) {
-      return extractFindings(retire.scanFileContent(script.content, repo, sha1Hasher));
-    }
-    return [];
-  });
 
 export const runSecurityAudit = Effect.fn("runSecurityAudit")(function* (page: Page) {
   yield* Effect.annotateCurrentSpan({ url: page.url() });
@@ -115,18 +114,29 @@ export const runSecurityAudit = Effect.fn("runSecurityAudit")(function* (page: P
     catch: (cause) => new SecurityAuditError({ cause: `Failed to extract scripts: ${cause}` }),
   });
 
-  const nested = yield* Effect.forEach(scriptSources, scanScript(page, retire, repo));
-  const findings = nested
-    .flat()
-    .filter(
-      ((seen) => (finding: SecurityFinding) => {
-        const key = `${finding.library}@${finding.version}:${finding.detail}:${finding.cves.join(",")}`;
-        return seen.has(key) ? false : (seen.add(key), true);
-      })(new Set<string>()),
-    )
-    .sort(
-      (left, right) => (SEVERITY_ORDER[left.severity] ?? 3) - (SEVERITY_ORDER[right.severity] ?? 3),
-    );
+  const nested = yield* Effect.forEach(
+    scriptSources,
+    (script) =>
+      Effect.gen(function* () {
+        if (script.src) {
+          const uriFindings = extractFindings(retire.scanUri(script.src, repo));
+          const content = yield* fetchScriptContent(page, script.src);
+          const contentFindings = content
+            ? extractFindings(retire.scanFileContent(content, repo, sha1Hasher))
+            : [];
+          return [...uriFindings, ...contentFindings];
+        }
+        if (script.content) {
+          return extractFindings(retire.scanFileContent(script.content, repo, sha1Hasher));
+        }
+        return [];
+      }),
+    { concurrency: "unbounded" },
+  );
+
+  const findings = deduplicateFindings(nested.flat()).sort(
+    (left, right) => SEVERITY_ORDER[left.severity] - SEVERITY_ORDER[right.severity],
+  );
 
   yield* Effect.logInfo("Security audit complete", {
     findingCount: findings.length,

@@ -168,7 +168,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         Effect.tap(() =>
           Effect.logDebug("Screenshot saved", { path: screenshotPath, index: screenshotIndex }),
         ),
-        Effect.catchCause((cause) => Effect.logDebug("Failed to save screenshot", { cause })),
+        Effect.catchCause((cause) => Effect.logWarning("Failed to save screenshot", { cause })),
       );
     });
 

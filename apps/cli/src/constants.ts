@@ -1,5 +1,5 @@
-declare const __VERSION__: string;
-export const VERSION: string = __VERSION__;
+declare const __VERSION__: string | undefined;
+export const VERSION: string = typeof __VERSION__ !== "undefined" ? __VERSION__ : "dev";
 
 export const TESTING_TOOL_TEXT_CHAR_LIMIT = 100;
 export const TESTING_TIMER_UPDATE_INTERVAL_MS = 1000;

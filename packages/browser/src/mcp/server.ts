@@ -345,26 +345,25 @@ export const createBrowserMcpServer = <E>(
             (entry) => entry.status !== undefined && entry.status >= 400,
           );
 
-          const duplicates: { url: string; method: string; count: number }[] = [];
-          const seen = new Map<string, number>();
+          const duplicateMap = new Map<string, { url: string; method: string; count: number }>();
+          const lastTimestamp = new Map<string, number>();
           for (const entry of entries) {
             const key = `${entry.method}:${entry.url}`;
-            const previous = seen.get(key);
+            const previous = lastTimestamp.get(key);
             if (
               previous !== undefined &&
               entry.timestamp - previous < DUPLICATE_REQUEST_WINDOW_MS
             ) {
-              const existing = duplicates.find(
-                (duplicate) => duplicate.url === entry.url && duplicate.method === entry.method,
-              );
+              const existing = duplicateMap.get(key);
               if (existing) {
                 existing.count++;
               } else {
-                duplicates.push({ url: entry.url, method: entry.method, count: 2 });
+                duplicateMap.set(key, { url: entry.url, method: entry.method, count: 2 });
               }
             }
-            seen.set(key, entry.timestamp);
+            lastTimestamp.set(key, entry.timestamp);
           }
+          const duplicates = Array.from(duplicateMap.values());
 
           const isHttps = entries.some(
             (entry) => entry.resourceType === "document" && entry.url.startsWith("https://"),

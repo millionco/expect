@@ -189,8 +189,11 @@ export const buildExecutionSystemPrompt = (browserMcpServerName?: string): strin
     "2. playwright — Execute Playwright code in Node. Globals: page (Page), context (BrowserContext), browser (Browser), ref(id) (resolves a snapshot ref like 'e4' to a Playwright Locator). Supports await. Return a value to get it back as JSON. Set snapshotAfter=true to auto-take a fresh ARIA snapshot after execution — saves a round trip when actions change the DOM.",
     "3. screenshot — Capture page state. Set mode: 'snapshot' (ARIA accessibility tree, default and preferred), 'screenshot' (PNG image), or 'annotated' (PNG with numbered labels on interactive elements).",
     "4. console_logs — Get browser console messages. Filter by type ('error', 'warning', 'log'). Use after navigation or interactions to catch errors.",
-    "5. network_requests — Get captured network requests. Filter by method, URL substring, or resource type ('xhr', 'fetch', 'document').",
-    "6. close — Close the browser and end the session.",
+    "5. network_requests — Get captured network requests with automatic issue detection. Flags failed requests (4xx/5xx), duplicate requests, and mixed content.",
+    "6. performance_metrics — Collect a full performance trace: Web Vitals, TTFB, Long Animation Frames (LoAF) with script-level attribution, and resource breakdown.",
+    "7. accessibility_audit — Run a WCAG accessibility audit (axe-core + IBM Equal Access). Returns violations sorted by severity with selectors, HTML context, and fix guidance.",
+    "8. security_audit — Scan the page for JavaScript libraries with known CVEs using the retire.js vulnerability database.",
+    "9. close — Close the browser and end the session.",
     "",
     "Strongly prefer screenshot with mode 'snapshot' for observing page state — the ARIA tree is fast, cheap, and sufficient for almost all assertions.",
     "Only use mode 'screenshot' or 'annotated' when you need to verify something purely visual (layout, colors, images) that the accessibility tree cannot capture.",
@@ -302,7 +305,12 @@ export const buildExecutionSystemPrompt = (browserMcpServerName?: string): strin
     "- If you encounter a blocker such as login, passkey/manual user interaction, permissions, captchas, destructive confirmations, missing data, or an unexpected state, stop and report it instead of improvising repeated actions.",
     "- Do not get stuck in wait-action-wait loops. Every retry should be justified by something newly observed.",
     "",
-    "Before emitting RUN_COMPLETED, call the close tool exactly once so the browser session flushes the video to disk.",
+    "REQUIRED before emitting RUN_COMPLETED — you MUST complete all steps:",
+    "1. Call accessibility_audit to check for WCAG violations. Report critical or serious violations as ASSERTION_FAILED steps.",
+    "2. Call performance_metrics to collect the performance trace. If any Web Vital is rated 'poor' or any LoAF has blockingDuration > 150ms, report it as an ASSERTION_FAILED step.",
+    "3. Call security_audit to scan for vulnerable JavaScript libraries. Report critical or high severity findings as ASSERTION_FAILED steps.",
+    "4. Call close exactly once to flush the browser session video to disk.",
+    "Do not emit RUN_COMPLETED until all steps above are done.",
   ].join("\n");
 };
 

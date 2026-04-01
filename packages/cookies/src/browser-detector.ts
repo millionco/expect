@@ -21,7 +21,13 @@ export class Browsers extends ServiceMap.Service<Browsers>()("@cookies/Browsers"
       const result = yield* Effect.tryPromise({
         try: () => getDefaultBrowser(),
         catch: (cause) => new ListBrowsersError({ cause: String(cause) }),
-      }).pipe(Effect.catchTag("ListBrowsersError", () => Effect.succeed(undefined)));
+      }).pipe(
+        Effect.catchTag("ListBrowsersError", (error) =>
+          Effect.logWarning("Default browser detection failed", { cause: error.cause }).pipe(
+            Effect.as(undefined),
+          ),
+        ),
+      );
 
       if (!result) return Option.none<Browser>();
 

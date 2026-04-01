@@ -1,6 +1,6 @@
 import { existsSync, lstatSync, mkdirSync, readlinkSync, symlinkSync, unlinkSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
-import { Effect, Exit, Schema } from "effect";
+import { Effect } from "effect";
 import { type SupportedAgent, toDisplayName, toSkillDir } from "@expect/agent";
 import { highlighter } from "../utils/highlighter";
 import { logger } from "../utils/logger";
@@ -23,29 +23,12 @@ interface AddSkillOptions {
   agents: readonly SupportedAgent[];
 }
 
-export class SkillDownloadError extends Schema.ErrorClass<SkillDownloadError>("SkillDownloadError")(
-  {
-    _tag: Schema.tag("SkillDownloadError"),
-  },
-) {
-  message = "Failed to download skill files from GitHub";
-}
-
-const downloadSkill = Effect.fn("downloadSkill")(function* (skillDir: string) {
-  yield* Effect.sync(() => mkdirSync(skillDir, { recursive: true }));
-
-  const success = yield* Effect.tryPromise({
-    try: () =>
-      tryRun(
-        `curl -sfL "${SKILL_TARBALL_URL}" | tar xz --strip-components=${SKILL_STRIP_COMPONENTS} -C "${skillDir}" "${SKILL_ARCHIVE_PATH}"`,
-      ),
-    catch: () => new SkillDownloadError(),
-  });
-
-  if (!success) {
-    return yield* new SkillDownloadError();
-  }
-});
+const downloadSkill = async (skillDir: string): Promise<boolean> => {
+  mkdirSync(skillDir, { recursive: true });
+  return tryRun(
+    `curl -sfL "${SKILL_TARBALL_URL}" | tar xz --strip-components=${SKILL_STRIP_COMPONENTS} -C "${skillDir}" "${SKILL_ARCHIVE_PATH}"`,
+  );
+};
 
 const selectAgents = async (agents: readonly SupportedAgent[], nonInteractive: boolean) => {
   if (nonInteractive) return [...agents];
@@ -70,24 +53,28 @@ const selectAgents = async (agents: readonly SupportedAgent[], nonInteractive: b
   return (response.agents ?? []) as SupportedAgent[];
 };
 
-const ensureAgentSymlink = Effect.fn("ensureAgentSymlink")(function* (
-  projectRoot: string,
-  agent: SupportedAgent,
-) {
-  const symlinkPath = join(projectRoot, toSkillDir(agent));
-  const targetPath = relative(dirname(symlinkPath), join(projectRoot, AGENTS_SKILLS_DIR));
+const ensureAgentSymlink = (projectRoot: string, agent: SupportedAgent): boolean | string => {
+  const skillSourceDir = join(projectRoot, AGENTS_SKILLS_DIR, SKILL_NAME);
+  const agentSkillDir = join(projectRoot, toSkillDir(agent));
+  const symlinkPath = join(agentSkillDir, SKILL_NAME);
+  const targetPath = relative(dirname(symlinkPath), skillSourceDir);
 
-  if (existsSync(symlinkPath)) {
-    const stats = lstatSync(symlinkPath);
-    if (!stats.isSymbolicLink()) return false;
-    if (readlinkSync(symlinkPath) === targetPath) return true;
-    unlinkSync(symlinkPath);
+  try {
+    if (existsSync(symlinkPath)) {
+      const stats = lstatSync(symlinkPath);
+      if (!stats.isSymbolicLink()) return `${symlinkPath} exists and is not a symlink`;
+      if (readlinkSync(symlinkPath) === targetPath) return true;
+      unlinkSync(symlinkPath);
+    }
+
+    mkdirSync(dirname(symlinkPath), { recursive: true });
+    symlinkSync(targetPath, symlinkPath);
+    return true;
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    return `Failed to create symlink: ${reason}`;
   }
-
-  mkdirSync(dirname(symlinkPath), { recursive: true });
-  symlinkSync(targetPath, symlinkPath);
-  return true;
-});
+};
 
 export const runAddSkill = async (options: AddSkillOptions) => {
   const projectRoot = process.cwd();
@@ -97,21 +84,25 @@ export const runAddSkill = async (options: AddSkillOptions) => {
 
   const skillSpinner = spinner("Downloading skill from GitHub...").start();
   const skillDir = join(projectRoot, AGENTS_SKILLS_DIR, SKILL_NAME);
-  const exit = await Effect.runPromiseExit(downloadSkill(skillDir));
+  const downloaded = await downloadSkill(skillDir);
 
-  if (Exit.isFailure(exit)) {
+  if (!downloaded) {
     skillSpinner.fail("Failed to download skill files from GitHub.");
     logger.error("Ensure curl and tar are installed, and check your internet connection.");
     return;
   }
 
-  const results = await Effect.runPromise(
-    Effect.forEach(selectedAgents, (agent) =>
-      ensureAgentSymlink(projectRoot, agent).pipe(Effect.catchDefect(() => Effect.succeed(false))),
-    ),
-  );
+  const results = selectedAgents.map((agent) => ({
+    agent,
+    result: ensureAgentSymlink(projectRoot, agent),
+  }));
 
-  const linked = selectedAgents.filter((_, index) => results[index]).map(toDisplayName);
+  const linked = results.filter((entry) => entry.result === true).map((entry) => toDisplayName(entry.agent));
+  const failed = results.filter((entry) => typeof entry.result === "string");
+
+  for (const { agent, result } of failed) {
+    logger.warn(`  ${toDisplayName(agent)}: ${result}`);
+  }
 
   if (linked.length > 0) {
     skillSpinner.succeed(`Skill installed for ${linked.join(", ")}.`);

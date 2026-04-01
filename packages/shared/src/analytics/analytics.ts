@@ -103,7 +103,13 @@ export class Analytics extends ServiceMap.Service<Analytics>()("@expect/Analytic
     const distinctId = yield* Effect.tryPromise(async () => {
       if (telemetryDisabled) return "";
       return machineId();
-    }).pipe(Effect.orDie);
+    }).pipe(
+      Effect.catchTag("UnknownError", (cause) =>
+        Effect.logWarning("Failed to get machine ID, using fallback", { cause }).pipe(
+          Effect.as(globalThis.crypto.randomUUID()),
+        ),
+      ),
+    );
 
     const capture = <K extends keyof EventMap>(
       eventName: K,

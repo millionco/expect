@@ -503,18 +503,24 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
       Queue.Queue<AcpSessionUpdate, SessionQueueError>
     >();
 
+    const AUTH_FAILURE_PATTERNS = [
+      "invalid api key",
+      "authentication failed",
+      "authentication error",
+      "unauthorized",
+      "invalid_api_key",
+    ];
+
+    const USAGE_LIMIT_PATTERNS = ["out of usage", "limits exceeded", "usage exceeded"];
+
     const getAdapterSessionError = (line: string): SessionQueueError | undefined => {
       const normalizedLine = line.toLowerCase();
 
-      if (normalizedLine.includes("invalid api key") || normalizedLine.includes("authentication")) {
+      if (AUTH_FAILURE_PATTERNS.some((pattern) => normalizedLine.includes(pattern))) {
         return new AcpProviderUnauthenticatedError({ provider: adapter.provider });
       }
 
-      if (
-        normalizedLine.includes("out of usage") ||
-        normalizedLine.includes("limits exceeded") ||
-        normalizedLine.includes("usage exceeded")
-      ) {
+      if (USAGE_LIMIT_PATTERNS.some((pattern) => normalizedLine.includes(pattern))) {
         return new AcpProviderUsageLimitError({ provider: adapter.provider });
       }
 
@@ -560,7 +566,7 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
       Stream.tap((line) => Effect.logDebug("ACP adapter stderr", { line })),
       Stream.map(getAdapterSessionError),
       Stream.filter((error): error is SessionQueueError => error !== undefined),
-      Stream.filter(() => !Ref.getUnsafe(adapterSessionErrorRef)),
+      Stream.filterEffect(() => Ref.get(adapterSessionErrorRef).pipe(Effect.map((existing) => !existing))),
       Stream.tap((adapterSessionError) =>
         Effect.gen(function* () {
           yield* Ref.set(adapterSessionErrorRef, adapterSessionError);
