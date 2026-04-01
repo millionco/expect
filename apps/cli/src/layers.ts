@@ -13,16 +13,9 @@ import {
 
 import { Agent, AgentBackend } from "@expect/agent";
 import { RrVideo } from "@expect/browser";
-import {
-  Analytics,
-  DebugFileLoggerLayer,
-  Tracing,
-} from "@expect/shared/observability";
+import { Analytics, DebugFileLoggerLayer, Tracing } from "@expect/shared/observability";
 import { CurrentPlanId, PlanId } from "@expect/shared/models";
-import {
-  layerLiveViewerRpcServer,
-  layerLiveViewerStaticServer,
-} from "./live-viewer-server";
+import { layerLiveViewerRpcServer, layerLiveViewerStaticServer } from "./live-viewer-server";
 import { OutputReporterHooks } from "../../../packages/supervisor/src/output-reporter";
 
 interface LayerCliOptions {
@@ -32,23 +25,15 @@ interface LayerCliOptions {
   timeoutMs?: number;
 }
 
-export const layerCli = ({
-  verbose,
-  agent,
-  reporter,
-  timeoutMs,
-}: LayerCliOptions) => {
-  const currentPlanId = Layer.succeed(
-    CurrentPlanId,
-    PlanId.makeUnsafe(crypto.randomUUID())
-  );
+export const layerCli = ({ verbose, agent, reporter, timeoutMs }: LayerCliOptions) => {
+  const currentPlanId = Layer.succeed(CurrentPlanId, PlanId.makeUnsafe(crypto.randomUUID()));
 
   const outputReporterLayer =
     reporter === "json"
       ? OutputReporter.layerJson
       : reporter === "github-actions"
-      ? OutputReporter.layerGitHubActions({ agent, timeoutMs })
-      : OutputReporter.layerStdoutNoop({ agent, timeoutMs });
+        ? OutputReporter.layerGitHubActions({ agent, timeoutMs })
+        : OutputReporter.layerStdoutNoop({ agent, timeoutMs });
 
   return Layer.mergeAll(
     Executor.layer,
@@ -60,7 +45,7 @@ export const layerCli = ({
     RrVideo.layer,
     Watch.layer,
     layerLiveViewerRpcServer,
-    layerLiveViewerStaticServer
+    layerLiveViewerStaticServer,
   ).pipe(
     Layer.provideMerge(outputReporterLayer),
     Layer.provideMerge(currentPlanId),
@@ -68,8 +53,6 @@ export const layerCli = ({
     Layer.provide(DebugFileLoggerLayer),
     Layer.provide(Tracing.layerAxiom),
     Layer.provideMerge(Git.withRepoRoot(process.cwd())),
-    Layer.provideMerge(
-      Layer.succeed(References.MinimumLogLevel, verbose ? "All" : "Error")
-    )
+    Layer.provideMerge(Layer.succeed(References.MinimumLogLevel, verbose ? "All" : "Error")),
   );
 };

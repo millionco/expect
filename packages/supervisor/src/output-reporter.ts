@@ -25,8 +25,7 @@ import { Github } from "./github";
 import { GitRepoRoot } from "./git/git";
 import { EXPECT_STATE_DIR, REPLAYS_DIRECTORY_NAME } from "./constants";
 
-const ghaEscape = (text: string) =>
-  text.replace(/\r?\n/g, " ").replace(/::/g, ": :");
+const ghaEscape = (text: string) => text.replace(/\r?\n/g, " ").replace(/::/g, ": :");
 
 const formatElapsed = (ms: number) => Duration.format(Duration.millis(ms));
 
@@ -39,7 +38,7 @@ const makeQueueWriter = (stdio: Stdio.Stdio, channel: "stdout" | "stderr") =>
       Stream.map((text) => text + "\n"),
       Stream.run(channel === "stdout" ? stdio.stdout() : stdio.stderr()),
       Effect.orDie,
-      Effect.forkScoped
+      Effect.forkScoped,
     );
     return (text: string) => Queue.offer(queue, text).pipe(Effect.orDie);
   });
@@ -49,10 +48,7 @@ type Writer = (text: string) => Effect.Effect<void>;
 export class OutputReporterHooks extends ServiceMap.Service<
   OutputReporterHooks,
   {
-    readonly onStepFailed: (
-      stepId: string,
-      message: string
-    ) => Effect.Effect<void>;
+    readonly onStepFailed: (stepId: string, message: string) => Effect.Effect<void>;
     readonly onGroupOpen: () => Effect.Effect<void>;
     readonly onGroupClose: () => Effect.Effect<void>;
     readonly onReportComplete: (report: TestReport) => Effect.Effect<void>;
@@ -78,18 +74,12 @@ export class OutputReporterHooks extends ServiceMap.Service<
       const writeStdout = yield* makeQueueWriter(stdio, "stdout");
 
       const replayPath = `${repoRoot}/${EXPECT_STATE_DIR}/${REPLAYS_DIRECTORY_NAME}/${planId}.ndjson`;
-      const githubOutputPath = yield* Config.string("GITHUB_OUTPUT").pipe(
-        Config.option
-      );
-      const summaryPath = yield* Config.string("GITHUB_STEP_SUMMARY").pipe(
-        Config.option
-      );
+      const githubOutputPath = yield* Config.string("GITHUB_OUTPUT").pipe(Config.option);
+      const summaryPath = yield* Config.string("GITHUB_STEP_SUMMARY").pipe(Config.option);
 
       return {
         onStepFailed: (stepId: string, message: string) =>
-          writeStdout(
-            `::error title=${ghaEscape(stepId)} failed::${ghaEscape(message)}`
-          ),
+          writeStdout(`::error title=${ghaEscape(stepId)} failed::${ghaEscape(message)}`),
         onGroupOpen: () => writeStdout("::group::expect test execution"),
         onGroupClose: () => writeStdout("::endgroup::"),
         onReportComplete: (report: TestReport) =>
@@ -98,16 +88,14 @@ export class OutputReporterHooks extends ServiceMap.Service<
               yield* fileSystem.writeFileString(
                 githubOutputPath.value,
                 `result=${report.status}\n`,
-                { flag: "a" }
+                { flag: "a" },
               );
             }
 
             if (Option.isSome(summaryPath)) {
-              yield* fileSystem.writeFileString(
-                summaryPath.value,
-                report.toGithubStepSummary,
-                { flag: "a" }
-              );
+              yield* fileSystem.writeFileString(summaryPath.value, report.toGithubStepSummary, {
+                flag: "a",
+              });
             }
 
             const videoPath = yield* rrvideo.convert({
@@ -120,7 +108,7 @@ export class OutputReporterHooks extends ServiceMap.Service<
               yield* fileSystem.writeFileString(
                 githubOutputPath.value,
                 `video_path=${videoPath}\n`,
-                { flag: "a" }
+                { flag: "a" },
               );
             }
 
@@ -136,7 +124,7 @@ export class OutputReporterHooks extends ServiceMap.Service<
                   cwd,
                   pullRequest.value,
                   COMMENT_MARKER,
-                  report.toGithubComment
+                  report.toGithubComment,
                 );
               }
             }
@@ -145,27 +133,23 @@ export class OutputReporterHooks extends ServiceMap.Service<
               GitHubCommandError: Effect.die,
               PlatformError: Effect.die,
               RrVideoConvertError: Effect.die,
-            })
+            }),
           ),
         onTimeout: (message: string) =>
-          writeStdout(
-            `::error title=Execution timed out::${ghaEscape(message)}`
-          ),
+          writeStdout(`::error title=Execution timed out::${ghaEscape(message)}`),
       };
-    })
+    }),
   ).pipe(
     Layer.provide(Github.layer),
     Layer.provide(RrVideo.layer),
-    Layer.provide(NodeServices.layer)
+    Layer.provide(NodeServices.layer),
   );
 }
 
 export class OutputReporter extends ServiceMap.Service<
   OutputReporter,
   {
-    readonly onExecutedPlan: (
-      executed: ExecutedTestPlan
-    ) => Effect.Effect<void>;
+    readonly onExecutedPlan: (executed: ExecutedTestPlan) => Effect.Effect<void>;
     readonly onComplete: (report: TestReport) => Effect.Effect<void>;
     readonly onTimeout: (timeoutMs: number) => Effect.Effect<void>;
   }
@@ -176,10 +160,7 @@ export class OutputReporter extends ServiceMap.Service<
     onTimeout: () => Effect.void,
   });
 
-  static layerStdout = (options: {
-    agent: string;
-    timeoutMs: number | undefined;
-  }) =>
+  static layerStdout = (options: { agent: string; timeoutMs: number | undefined }) =>
     Layer.effect(OutputReporter)(
       Effect.gen(function* () {
         const stdio = yield* Stdio.Stdio;
@@ -188,15 +169,13 @@ export class OutputReporter extends ServiceMap.Service<
         const seenEvents = new Set<string>();
 
         const timeoutLabel =
-          options.timeoutMs !== undefined
-            ? ` · timeout ${formatElapsed(options.timeoutMs)}`
-            : "";
+          options.timeoutMs !== undefined ? ` · timeout ${formatElapsed(options.timeoutMs)}` : "";
 
         yield* write("");
         yield* write(
           ` ${pc.bold(pc.cyan("expect"))}  ${pc.dim("CI")} · ${pc.dim(
-            options.agent
-          )}${pc.dim(timeoutLabel)}`
+            options.agent,
+          )}${pc.dim(timeoutLabel)}`,
         );
         yield* hooks.onGroupOpen();
 
@@ -222,34 +201,22 @@ export class OutputReporter extends ServiceMap.Service<
             Effect.gen(function* () {
               yield* hooks.onGroupClose();
               yield* write("");
-              const message = `Execution timed out after ${formatElapsed(
-                timeoutMs
-              )}`;
+              const message = `Execution timed out after ${formatElapsed(timeoutMs)}`;
               yield* write(
-                ` ${pc.red(figures.cross)} ${pc.red(
-                  pc.bold("Timeout")
-                )} ${pc.red(message)}`
+                ` ${pc.red(figures.cross)} ${pc.red(pc.bold("Timeout"))} ${pc.red(message)}`,
               );
               yield* hooks.onTimeout(message);
             }),
         };
-      })
+      }),
     ).pipe(Layer.provide(NodeServices.layer));
 
-  static layerStdoutNoop = (options: {
-    agent: string;
-    timeoutMs: number | undefined;
-  }) =>
-    this.layerStdout(options).pipe(
-      Layer.provideMerge(OutputReporterHooks.layerNoop)
-    );
+  static layerStdoutNoop = (options: { agent: string; timeoutMs: number | undefined }) =>
+    this.layerStdout(options).pipe(Layer.provideMerge(OutputReporterHooks.layerNoop));
 
-  static layerGitHubActions = (options: {
-    agent: string;
-    timeoutMs: number | undefined;
-  }) =>
+  static layerGitHubActions = (options: { agent: string; timeoutMs: number | undefined }) =>
     OutputReporter.layerStdout(options).pipe(
-      Layer.provideMerge(OutputReporterHooks.layerGitHubActions)
+      Layer.provideMerge(OutputReporterHooks.layerGitHubActions),
     );
 
   static layerJson = Layer.effect(OutputReporter)(
@@ -261,9 +228,7 @@ export class OutputReporter extends ServiceMap.Service<
         onExecutedPlan: () => Effect.void,
         onComplete: (report: TestReport) =>
           Effect.gen(function* () {
-            const encoded = yield* Schema.encodeEffect(TestReport)(report).pipe(
-              Effect.orDie
-            );
+            const encoded = yield* Schema.encodeEffect(TestReport)(report).pipe(Effect.orDie);
             yield* writeStdout(JSON.stringify(encoded, undefined, 2));
           }),
         onTimeout: (timeoutMs: number) =>
@@ -271,24 +236,22 @@ export class OutputReporter extends ServiceMap.Service<
             JSON.stringify(
               { status: "failed", summary: `Timed out after ${timeoutMs}ms` },
               undefined,
-              2
-            )
+              2,
+            ),
           ),
       };
-    })
+    }),
   ).pipe(Layer.provide(NodeServices.layer));
 }
 
 const printEvent = (
   write: Writer,
   event: ExecutionEvent,
-  executed: ExecutedTestPlan
+  executed: ExecutedTestPlan,
 ): Effect.Effect<void> => {
   switch (event._tag) {
     case "RunStarted": {
-      const baseUrl = Option.isSome(event.plan.baseUrl)
-        ? event.plan.baseUrl.value
-        : undefined;
+      const baseUrl = Option.isSome(event.plan.baseUrl) ? event.plan.baseUrl.value : undefined;
       return Effect.gen(function* () {
         yield* write("");
         yield* write(` ${pc.bold(event.plan.title)}`);
@@ -302,15 +265,11 @@ const printEvent = (
     case "StepCompleted": {
       const step = executed.steps.find((step) => step.id === event.stepId);
       const timeLabel =
-        step?.elapsedMs !== undefined
-          ? ` ${pc.dim(`(${formatElapsed(step.elapsedMs)})`)}`
-          : "";
+        step?.elapsedMs !== undefined ? ` ${pc.dim(`(${formatElapsed(step.elapsedMs)})`)}` : "";
       return write(` ${pc.green(figures.tick)} ${event.summary}${timeLabel}`);
     }
     case "StepFailed": {
-      const failedStep = executed.steps.find(
-        (step) => step.id === event.stepId
-      );
+      const failedStep = executed.steps.find((step) => step.id === event.stepId);
       const failedTitle = failedStep?.title ?? event.stepId;
       const timeLabel =
         failedStep?.elapsedMs !== undefined
@@ -322,16 +281,10 @@ const printEvent = (
       });
     }
     case "StepSkipped": {
-      const skippedStep = executed.steps.find(
-        (step) => step.id === event.stepId
-      );
+      const skippedStep = executed.steps.find((step) => step.id === event.stepId);
       const skippedTitle = skippedStep?.title ?? event.stepId;
       return Effect.gen(function* () {
-        yield* write(
-          ` ${pc.yellow(figures.arrowRight)} ${skippedTitle} ${pc.yellow(
-            "[skipped]"
-          )}`
-        );
+        yield* write(` ${pc.yellow(figures.arrowRight)} ${skippedTitle} ${pc.yellow("[skipped]")}`);
         if (event.reason) {
           yield* write(`   ${pc.dim(event.reason)}`);
         }
@@ -346,18 +299,11 @@ const printSummary = (write: Writer, report: TestReport) =>
   Effect.gen(function* () {
     yield* write("");
     const parts: string[] = [];
-    if (report.passedStepCount > 0)
-      parts.push(pc.green(`${report.passedStepCount} passed`));
-    if (report.failedStepCount > 0)
-      parts.push(pc.red(`${report.failedStepCount} failed`));
-    if (report.skippedStepCount > 0)
-      parts.push(pc.yellow(`${report.skippedStepCount} skipped`));
+    if (report.passedStepCount > 0) parts.push(pc.green(`${report.passedStepCount} passed`));
+    if (report.failedStepCount > 0) parts.push(pc.red(`${report.failedStepCount} failed`));
+    if (report.skippedStepCount > 0) parts.push(pc.yellow(`${report.skippedStepCount} skipped`));
     yield* write(
-      ` ${pc.bold("Tests")}  ${parts.join(pc.dim(" | "))} ${pc.dim(
-        `(${report.steps.length})`
-      )}`
+      ` ${pc.bold("Tests")}  ${parts.join(pc.dim(" | "))} ${pc.dim(`(${report.steps.length})`)}`,
     );
-    yield* write(
-      ` ${pc.bold("Time")}   ${formatElapsed(report.totalDurationMs)}`
-    );
+    yield* write(` ${pc.bold("Time")}   ${formatElapsed(report.totalDurationMs)}`);
   });
