@@ -285,4 +285,4 @@ const executeAtom = Effect.fnUntraced(
   Effect.provide(NodeServices.layer),
 );
 
-export const executeAtomFn = cliAtomRuntime.fn(executeAtom);
+const executeAtomFn = cliAtomRuntime.fn(executeAtom);

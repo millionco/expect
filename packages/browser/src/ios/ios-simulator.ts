@@ -36,7 +36,7 @@ const execCommand = Effect.fn("IosSimulator.execCommand")(function* (
   });
 });
 
-export const listSimulators = Effect.fn("IosSimulator.listSimulators")(function* () {
+const listSimulators = Effect.fn("IosSimulator.listSimulators")(function* () {
   const { stdout } = yield* execCommand("xcrun", ["simctl", "list", "devices", "--json"]);
 
   const decoded = yield* Schema.decodeUnknownEffect(SimctlOutputSchema)(JSON.parse(stdout)).pipe(
@@ -61,7 +61,7 @@ export const listSimulators = Effect.fn("IosSimulator.listSimulators")(function*
   return devices;
 });
 
-export const listRealDevices = Effect.fn("IosSimulator.listRealDevices")(function* () {
+const listRealDevices = Effect.fn("IosSimulator.listRealDevices")(function* () {
   const result = yield* execCommand("xcrun", ["xctrace", "list", "devices"]).pipe(
     Effect.catchTag("XcodeNotInstalledError", () => Effect.succeed({ stdout: "", stderr: "" })),
   );

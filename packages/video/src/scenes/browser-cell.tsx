@@ -545,17 +545,6 @@ export type PageVariant =
   | "kanban"
   | "analytics";
 
-export const PAGE_VARIANTS: PageVariant[] = [
-  "signup",
-  "login",
-  "dashboard",
-  "profile",
-  "checkout",
-  "inbox",
-  "kanban",
-  "analytics",
-];
-
 const bar = (style?: CSSProperties): ReactNode => (
   <div style={{ height: 12, backgroundColor: "#e5e5e5", borderRadius: 6, ...style }} />
 );

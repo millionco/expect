@@ -21,9 +21,6 @@ export const CLICK_SUPPORT_ENABLED =
 
 export const CONTEXT_PICKER_VISIBLE_COUNT = 8;
 
-export const TEST_FILE_CONTENT_SIZE_LIMIT_BYTES = 256 * 1024;
-export const TEST_FILE_SCAN_LIMIT = 50;
-
 export const AUDIT_LINT_KEYWORDS = ["lint", "check", "format", "typecheck", "type-check"];
 export const AUDIT_SCRIPT_TIMEOUT_MS = 120_000;
 
@@ -39,7 +36,7 @@ export const LISTENING_PORTS_REFETCH_INTERVAL_MS = 5000;
 
 export const WATCH_IDLE_TICK_INTERVAL_MS = 1000;
 export const WATCH_IDLE_SPINNER_DURATION_S = 5;
-export const WATCH_IDLE_HINT_DURATION_S = 3;
+const WATCH_IDLE_HINT_DURATION_S = 3;
 export const WATCH_IDLE_CYCLE_DURATION_S =
   WATCH_IDLE_SPINNER_DURATION_S + WATCH_IDLE_HINT_DURATION_S;
 export const TLS_PROBE_TIMEOUT_MS = 300;
