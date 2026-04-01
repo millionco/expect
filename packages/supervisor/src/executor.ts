@@ -6,7 +6,15 @@ import {
   Agent,
   AgentStreamOptions,
 } from "@expect/agent";
-import { Effect, FileSystem, Layer, Option, Schema, ServiceMap, Stream } from "effect";
+import {
+  Effect,
+  FileSystem,
+  Layer,
+  Option,
+  Schema,
+  ServiceMap,
+  Stream,
+} from "effect";
 import { LiveViewer } from "./live-viewer";
 import {
   type AcpConfigOption,
@@ -34,22 +42,22 @@ import {
 } from "./constants";
 
 const encodeSessionUpdate = Schema.encodeEffect(
-  Schema.fromJsonString(Schema.toCodecJson(AcpSessionUpdate)),
+  Schema.fromJsonString(Schema.toCodecJson(AcpSessionUpdate))
 );
 
 const encodeBrowserProfile = Schema.encodeEffect(BrowserJson);
 
-export class ExecutionError extends Schema.ErrorClass<ExecutionError>("@supervisor/ExecutionError")(
-  {
-    _tag: Schema.tag("ExecutionError"),
-    reason: Schema.Union([
-      AcpStreamError,
-      AcpSessionCreateError,
-      AcpProviderUnauthenticatedError,
-      AcpProviderUsageLimitError,
-    ]),
-  },
-) {
+export class ExecutionError extends Schema.ErrorClass<ExecutionError>(
+  "@supervisor/ExecutionError"
+)({
+  _tag: Schema.tag("ExecutionError"),
+  reason: Schema.Union([
+    AcpStreamError,
+    AcpSessionCreateError,
+    AcpProviderUnauthenticatedError,
+    AcpProviderUsageLimitError,
+  ]),
+}) {
   displayName = this.reason.displayName ?? `Browser testing failed`;
   message = this.reason.message;
 }
@@ -63,7 +71,9 @@ export interface ExecuteOptions {
   readonly savedFlow?: SavedFlow;
   readonly learnings?: string;
   readonly testCoverage?: TestCoverageReport;
-  readonly onConfigOptions?: (configOptions: readonly AcpConfigOption[]) => void;
+  readonly onConfigOptions?: (
+    configOptions: readonly AcpConfigOption[]
+  ) => void;
   readonly modelPreference?: { configId: string; value: string };
   readonly captureFixturePath?: string;
 }
@@ -73,138 +83,162 @@ interface ExecutorAccumState {
   readonly allTerminalSince: number | undefined;
 }
 
-const resolveTerminalTimestamp = (executed: ExecutedTestPlan, previous: number | undefined) => {
+const resolveTerminalTimestamp = (
+  executed: ExecutedTestPlan,
+  previous: number | undefined
+) => {
   if (!executed.allStepsTerminal) return undefined;
   return previous ?? Date.now();
 };
 
-export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Executor", {
-  make: Effect.gen(function* () {
-    const agent = yield* Agent;
-    const git = yield* Git;
-    const liveViewer = yield* LiveViewer;
-    const fileSystem = yield* FileSystem.FileSystem;
+export class Executor extends ServiceMap.Service<Executor>()(
+  "@supervisor/Executor",
+  {
+    make: Effect.gen(function* () {
+      const agent = yield* Agent;
+      const git = yield* Git;
+      const liveViewer = yield* LiveViewer;
+      const fileSystem = yield* FileSystem.FileSystem;
 
-    const gatherContext = Effect.fn("Executor.gatherContext")(function* (changesFor: ChangesFor) {
-      const currentBranch = yield* git.getCurrentBranch;
-      const mainBranch = yield* git.getMainBranch;
-      const changedFiles = yield* git.getChangedFiles(changesFor);
-      const diffPreview = yield* git.getDiffPreview(changesFor);
+      const gatherContext = Effect.fn("Executor.gatherContext")(function* (
+        changesFor: ChangesFor
+      ) {
+        const currentBranch = yield* git.getCurrentBranch;
+        const mainBranch = yield* git.getMainBranch;
+        const changedFiles = yield* git.getChangedFiles(changesFor);
+        const diffPreview = yield* git.getDiffPreview(changesFor);
 
-      const commitRange =
-        changesFor._tag === "Branch" || changesFor._tag === "Changes"
-          ? `${changesFor.mainBranch}..HEAD`
-          : changesFor._tag === "Commit"
+        const commitRange =
+          changesFor._tag === "Branch" || changesFor._tag === "Changes"
+            ? `${changesFor.mainBranch}..HEAD`
+            : changesFor._tag === "Commit"
             ? `-1 ${changesFor.hash}`
             : `HEAD~${EXECUTION_RECENT_COMMIT_LIMIT}..HEAD`;
 
-      const recentCommits = yield* git.getRecentCommits(commitRange);
+        const recentCommits = yield* git.getRecentCommits(commitRange);
 
-      return {
-        currentBranch,
-        mainBranch,
-        changedFiles: changedFiles.slice(0, EXECUTION_CONTEXT_FILE_LIMIT) as ChangedFile[],
-        recentCommits: recentCommits.slice(0, EXECUTION_RECENT_COMMIT_LIMIT) as CommitSummary[],
-        diffPreview,
-      };
-    });
-
-    const execute = Effect.fn("Executor.execute")(function* (options: ExecuteOptions) {
-      const context = yield* gatherContext(options.changesFor);
-
-      const prompt = buildExecutionPrompt({
-        userInstruction: options.instruction,
-        scope: options.changesFor._tag,
-        currentBranch: context.currentBranch,
-        mainBranch: context.mainBranch,
-        changedFiles: context.changedFiles,
-        recentCommits: context.recentCommits,
-        diffPreview: context.diffPreview,
-        baseUrl: options.baseUrl,
-        isHeadless: options.isHeadless,
-        cookieImportProfiles: options.cookieImportProfiles,
-        savedFlow: options.savedFlow,
-        learnings: options.learnings,
-        testCoverage: options.testCoverage,
+        return {
+          currentBranch,
+          mainBranch,
+          changedFiles: changedFiles.slice(
+            0,
+            EXECUTION_CONTEXT_FILE_LIMIT
+          ) as ChangedFile[],
+          recentCommits: recentCommits.slice(
+            0,
+            EXECUTION_RECENT_COMMIT_LIMIT
+          ) as CommitSummary[],
+          diffPreview,
+        };
       });
 
-      const planId = PlanId.makeUnsafe(crypto.randomUUID());
+      const execute = Effect.fn("Executor.execute")(function* (
+        options: ExecuteOptions
+      ) {
+        const context = yield* gatherContext(options.changesFor);
 
-      const syntheticPlan = new TestPlan({
-        id: planId,
-        changesFor: options.changesFor,
-        currentBranch: context.currentBranch,
-        diffPreview: context.diffPreview,
-        fileStats: [],
-        instruction: options.instruction,
-        baseUrl: options.baseUrl ? Option.some(options.baseUrl) : Option.none(),
-        isHeadless: options.isHeadless,
-        cookieImportProfiles: options.cookieImportProfiles,
-        testCoverage: options.testCoverage ? Option.some(options.testCoverage) : Option.none(),
-        title: options.instruction,
-        rationale: "Direct execution",
-        steps: [],
-      });
+        const prompt = buildExecutionPrompt({
+          userInstruction: options.instruction,
+          scope: options.changesFor._tag,
+          currentBranch: context.currentBranch,
+          mainBranch: context.mainBranch,
+          changedFiles: context.changedFiles,
+          recentCommits: context.recentCommits,
+          diffPreview: context.diffPreview,
+          baseUrl: options.baseUrl,
+          isHeadless: options.isHeadless,
+          cookieImportProfiles: options.cookieImportProfiles,
+          savedFlow: options.savedFlow,
+          learnings: options.learnings,
+          testCoverage: options.testCoverage,
+        });
 
-      const initial = new ExecutedTestPlan({
-        ...syntheticPlan,
-        events: [new RunStarted({ plan: syntheticPlan })],
-      });
+        const planId = PlanId.makeUnsafe(crypto.randomUUID());
 
-      yield* liveViewer.push(planId, {
-        _tag: "InitialPlan",
-        plan: syntheticPlan,
-      });
+        const syntheticPlan = new TestPlan({
+          id: planId,
+          changesFor: options.changesFor,
+          currentBranch: context.currentBranch,
+          diffPreview: context.diffPreview,
+          fileStats: [],
+          instruction: options.instruction,
+          baseUrl: options.baseUrl
+            ? Option.some(options.baseUrl)
+            : Option.none(),
+          isHeadless: options.isHeadless,
+          cookieImportProfiles: options.cookieImportProfiles,
+          testCoverage: options.testCoverage
+            ? Option.some(options.testCoverage)
+            : Option.none(),
+          title: options.instruction,
+          rationale: "Direct execution",
+          steps: [],
+        });
 
-      const mcpEnv = [{ name: EXPECT_PLAN_ID_ENV_NAME, value: planId as string }];
-      if (options.cookieImportProfiles.length > 0) {
-        const profileJson = yield* encodeBrowserProfile(options.cookieImportProfiles[0]).pipe(
-          Effect.orDie,
+        const initial = new ExecutedTestPlan({
+          ...syntheticPlan,
+          events: [new RunStarted({ plan: syntheticPlan })],
+        });
+
+        yield* liveViewer.push(planId, {
+          _tag: "InitialPlan",
+          plan: syntheticPlan,
+        });
+
+        const mcpEnv = [
+          { name: EXPECT_PLAN_ID_ENV_NAME, value: planId as string },
+        ];
+        if (options.cookieImportProfiles.length > 0) {
+          const profileJson = yield* encodeBrowserProfile(
+            options.cookieImportProfiles[0]
+          ).pipe(Effect.orDie);
+          mcpEnv.push({
+            name: EXPECT_BROWSER_PROFILE_ENV_NAME,
+            value: profileJson,
+          });
+        }
+
+        const streamOptions = new AgentStreamOptions({
+          cwd: process.cwd(),
+          sessionId: Option.none(),
+          prompt,
+          systemPrompt: Option.none(),
+          mcpEnv,
+          modelPreference: options.modelPreference,
+        });
+
+        return agent.stream(streamOptions).pipe(
+          Stream.tap((update) => {
+            const callback = options.onConfigOptions;
+            if (update.sessionUpdate === "config_option_update" && callback) {
+              return Effect.sync(() => callback(update.configOptions));
+            }
+            return Effect.void;
+          }),
+          Stream.tap((update) =>
+            liveViewer.push(planId, { _tag: "SessionUpdate", update })
+          ),
+          Stream.mapAccum(
+            () => initial,
+            (executed, part) => {
+              const next = executed.addEvent(part);
+              return [next, [next]] as const;
+            }
+          ),
+          Stream.takeUntil((executed) => executed.hasRunFinished),
+          Stream.mapError((reason) => new ExecutionError({ reason })),
+          Stream.ensuring(liveViewer.push(planId, { _tag: "Done" }))
         );
-        console.error("[Executor] Passing browser profile to MCP:", profileJson.slice(0, 200));
-        mcpEnv.push({ name: EXPECT_BROWSER_PROFILE_ENV_NAME, value: profileJson });
-      } else {
-        console.error("[Executor] No cookieImportProfiles, skipping browser profile env");
-      }
-      console.error("[Executor] mcpEnv:", JSON.stringify(mcpEnv.map((e) => e.name)));
+      },
+      Stream.unwrap);
 
-      const streamOptions = new AgentStreamOptions({
-        cwd: process.cwd(),
-        sessionId: Option.none(),
-        prompt,
-        systemPrompt: Option.none(),
-        mcpEnv,
-        modelPreference: options.modelPreference,
-      });
-
-      return agent.stream(streamOptions).pipe(
-        Stream.tap((update) => {
-          const callback = options.onConfigOptions;
-          if (update.sessionUpdate === "config_option_update" && callback) {
-            return Effect.sync(() => callback(update.configOptions));
-          }
-          return Effect.void;
-        }),
-        Stream.tap((update) => liveViewer.push(planId, { _tag: "SessionUpdate", update })),
-        Stream.mapAccum(
-          () => initial,
-          (executed, part) => {
-            const next = executed.addEvent(part);
-            return [next, [next]] as const;
-          },
-        ),
-        Stream.takeUntil((executed) => executed.hasRunFinished),
-        Stream.mapError((reason) => new ExecutionError({ reason })),
-        Stream.ensuring(liveViewer.push(planId, { _tag: "Done" })),
-      );
-    }, Stream.unwrap);
-
-    return { execute } as const;
-  }),
-}) {
+      return { execute } as const;
+    }),
+  }
+) {
   static layer = Layer.effect(this)(this.make).pipe(
     Layer.provide(LiveViewer.layer),
     Layer.provide(NodeServices.layer),
-    Layer.provide(Git.layer),
+    Layer.provide(Git.layer)
   );
 }

@@ -24,26 +24,32 @@ export const TestSelector = () => {
       </div>
     ))
     .onError((error) => {
-      console.error("[TestSelector] onError:", error);
-      const message = error instanceof Error ? error.message : JSON.stringify(error, null, 2);
+      const message =
+        error instanceof Error ? error.message : JSON.stringify(error, null, 2);
       return (
         <div
           className="flex items-center justify-center p-4 text-sm font-medium text-red-500"
           style={{ fontFamily: CONTROL_FONT_FAMILY }}
         >
-          <pre className="whitespace-pre-wrap text-xs">Failed to load tests: {message}</pre>
+          <pre className="whitespace-pre-wrap text-xs">
+            Failed to load tests: {message}
+          </pre>
         </div>
       );
     })
     .onDefect((defect) => {
-      console.error("[TestSelector] onDefect:", defect);
-      const message = defect instanceof Error ? defect.message : JSON.stringify(defect, null, 2);
+      const message =
+        defect instanceof Error
+          ? defect.message
+          : JSON.stringify(defect, null, 2);
       return (
         <div
           className="flex items-center justify-center p-4 text-sm font-medium text-red-500"
           style={{ fontFamily: CONTROL_FONT_FAMILY }}
         >
-          <pre className="whitespace-pre-wrap text-xs">Failed to load tests: {message}</pre>
+          <pre className="whitespace-pre-wrap text-xs">
+            Failed to load tests: {message}
+          </pre>
         </div>
       );
     })
@@ -59,8 +65,10 @@ export const TestSelector = () => {
             </span>
             <span className="text-sm text-[color(display-p3_0.587_0.587_0.587)]">
               Run{" "}
-              <code className="rounded bg-black/5 px-1.5 py-0.5 font-mono text-xs">expect</code> to
-              create your first test.
+              <code className="rounded bg-black/5 px-1.5 py-0.5 font-mono text-xs">
+                expect
+              </code>{" "}
+              to create your first test.
             </span>
           </div>
         );
@@ -74,7 +82,9 @@ export const TestSelector = () => {
             value={Option.getOrElse(selectedId, () => "")}
             onChange={(event) => {
               const value = event.target.value;
-              setSelectedId(value ? Option.some(PlanId.makeUnsafe(value)) : Option.none());
+              setSelectedId(
+                value ? Option.some(PlanId.makeUnsafe(value)) : Option.none()
+              );
             }}
             className="min-w-0 flex-1 cursor-pointer appearance-none rounded-xl border border-[color(display-p3_0.882_0.882_0.882)] bg-white px-3 py-2 text-sm font-medium text-[color(display-p3_0.188_0.188_0.188)] outline-none"
           >

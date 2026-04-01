@@ -13,7 +13,10 @@ import {
   type ExecutedTestPlan,
   type ExecutionEvent,
 } from "@expect/shared/models";
-import { TESTING_TIMER_UPDATE_INTERVAL_MS, TESTING_TOOL_TEXT_CHAR_LIMIT } from "../../constants";
+import {
+  TESTING_TIMER_UPDATE_INTERVAL_MS,
+  TESTING_TOOL_TEXT_CHAR_LIMIT,
+} from "../../constants";
 import { useColors, theme } from "../theme-context";
 import InkSpinner from "ink-spinner";
 import { Spinner } from "../ui/spinner";
@@ -32,7 +35,10 @@ import { executeAtomFn, screenshotPathsAtom } from "../../data/execution-atom";
 import { agentConfigOptionsAtom } from "../../data/config-options";
 import { agentProviderAtom } from "../../data/runtime";
 import { trackEvent } from "../../utils/session-analytics";
-import { formatToolCall, type FormattedToolCall } from "../../utils/format-tool-call";
+import {
+  formatToolCall,
+  type FormattedToolCall,
+} from "../../utils/format-tool-call";
 import { useScrollableList } from "../../hooks/use-scrollable-list";
 import { useStdoutDimensions } from "../../hooks/use-stdout-dimensions";
 
@@ -62,7 +68,7 @@ const formatTokenCount = (tokens: number): string => {
 const collectToolCalls = (
   events: readonly ExecutionEvent[],
   fromIndex: number,
-  toIndex: number = events.length,
+  toIndex: number = events.length
 ): ToolCallDisplay[] => {
   const calls: ToolCallDisplay[] = [];
 
@@ -96,7 +102,7 @@ const collectToolCalls = (
 
 const markLastCallRunning = (
   calls: ToolCallDisplay[],
-  events: readonly ExecutionEvent[],
+  events: readonly ExecutionEvent[]
 ): ToolCallDisplay[] => {
   if (calls.length === 0) return calls;
   const lastEvent = events.at(-1);
@@ -111,7 +117,7 @@ const markLastCallRunning = (
 
 const getActiveStepToolCalls = (
   events: readonly ExecutionEvent[],
-  showAll = false,
+  showAll = false
 ): ToolCallDisplay[] => {
   let lastStepStartIndex = -1;
   for (let index = events.length - 1; index >= 0; index--) {
@@ -128,7 +134,7 @@ const getActiveStepToolCalls = (
 
 const getPlanningToolCalls = (
   events: readonly ExecutionEvent[],
-  showAll = false,
+  showAll = false
 ): ToolCallDisplay[] => {
   const calls = collectToolCalls(events, 0);
   const marked = markLastCallRunning(calls, events);
@@ -137,7 +143,7 @@ const getPlanningToolCalls = (
 
 const findStepEventRange = (
   events: readonly ExecutionEvent[],
-  stepIndex: number,
+  stepIndex: number
 ): [number, number] => {
   let currentStep = -1;
   let startIndex = 0;
@@ -155,7 +161,7 @@ const findStepEventRange = (
 
 const getCompletedStepToolCalls = (
   events: readonly ExecutionEvent[],
-  stepIndex: number,
+  stepIndex: number
 ): ToolCallDisplay[] => {
   const [from, to] = findStepEventRange(events, stepIndex);
   return collectToolCalls(events, from, to);
@@ -172,8 +178,8 @@ const ToolCallBlock = ({
   return (
     <Text color={COLORS.DIM} wrap="truncate">
       {indent}
-      {figures.lineVertical} <Text color={COLORS.TEXT}>{display.tool.name}</Text>(
-      {display.tool.args})
+      {figures.lineVertical}{" "}
+      <Text color={COLORS.TEXT}>{display.tool.name}</Text>({display.tool.args})
       {display.isRunning && (
         <Text>
           {" "}
@@ -181,7 +187,9 @@ const ToolCallBlock = ({
         </Text>
       )}
       {display.resultTokens !== undefined &&
-        ` ${figures.arrowDown} ${formatTokenCount(display.resultTokens)} tokens`}
+        ` ${figures.arrowDown} ${formatTokenCount(
+          display.resultTokens
+        )} tokens`}
     </Text>
   );
 };
@@ -198,7 +206,7 @@ const buildToolCallRows = (
   toolCalls: ToolCallDisplay[],
   indent: string,
   keyPrefix: string,
-  colors: ReturnType<typeof useColors>,
+  colors: ReturnType<typeof useColors>
 ): React.ReactElement[] => {
   const rows: React.ReactElement[] = [];
   for (let toolIndex = 0; toolIndex < toolCalls.length; toolIndex++) {
@@ -210,7 +218,8 @@ const buildToolCallRows = (
       rows.push(
         <Text key={`${baseKey}-h`} color={colors.DIM} wrap="truncate">
           {indent}
-          {figures.lineVertical} <Text color={colors.TEXT}>{display.tool.name}</Text>(
+          {figures.lineVertical}{" "}
+          <Text color={colors.TEXT}>{display.tool.name}</Text>(
           {display.isRunning && (
             <Text>
               {" "}
@@ -218,8 +227,10 @@ const buildToolCallRows = (
             </Text>
           )}
           {display.resultTokens !== undefined &&
-            ` ${figures.arrowDown} ${formatTokenCount(display.resultTokens)} tokens`}
-        </Text>,
+            ` ${figures.arrowDown} ${formatTokenCount(
+              display.resultTokens
+            )} tokens`}
+        </Text>
       );
       for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
         rows.push(
@@ -227,20 +238,21 @@ const buildToolCallRows = (
             {indent}
             {figures.lineVertical} {"  "}
             <Text color={colors.TEXT}>{lines[lineIndex]}</Text>
-          </Text>,
+          </Text>
         );
       }
       rows.push(
         <Text key={`${baseKey}-c`} color={colors.DIM}>
           {indent}
           {figures.lineVertical} )
-        </Text>,
+        </Text>
       );
     } else {
       rows.push(
         <Text key={baseKey} color={colors.DIM} wrap="truncate">
           {indent}
-          {figures.lineVertical} <Text color={colors.TEXT}>{display.tool.name}</Text>(
+          {figures.lineVertical}{" "}
+          <Text color={colors.TEXT}>{display.tool.name}</Text>(
           {display.tool.args})
           {display.isRunning && (
             <Text>
@@ -249,8 +261,10 @@ const buildToolCallRows = (
             </Text>
           )}
           {display.resultTokens !== undefined &&
-            ` ${figures.arrowDown} ${formatTokenCount(display.resultTokens)} tokens`}
-        </Text>,
+            ` ${figures.arrowDown} ${formatTokenCount(
+              display.resultTokens
+            )} tokens`}
+        </Text>
       );
     }
   }
@@ -269,16 +283,20 @@ export const TestingScreen = ({
   const [, terminalRows] = useStdoutDimensions();
 
   const agentProviderValue = useAtomValue(agentProviderAtom);
-  const agentBackend = Option.isSome(agentProviderValue) ? agentProviderValue.value : "claude";
+  const agentBackend = Option.isSome(agentProviderValue)
+    ? agentProviderValue.value
+    : "claude";
   const setConfigOptions = useAtomSet(agentConfigOptionsAtom);
   const modelPreferenceConfigId = usePreferencesStore(
-    (state) => state.modelPreferences[agentBackend]?.configId,
+    (state) => state.modelPreferences[agentBackend]?.configId
   );
   const modelPreferenceValue = usePreferencesStore(
-    (state) => state.modelPreferences[agentBackend]?.value,
+    (state) => state.modelPreferences[agentBackend]?.value
   );
   const browserHeaded = usePreferencesStore((state) => state.browserHeaded);
-  const toggleNotifications = usePreferencesStore((state) => state.toggleNotifications);
+  const toggleNotifications = usePreferencesStore(
+    (state) => state.toggleNotifications
+  );
   const [executionResult, triggerExecute] = useAtom(executeAtomFn, {
     mode: "promiseExit",
   });
@@ -288,8 +306,12 @@ export const TestingScreen = ({
   const isExecutionComplete = AsyncResult.isSuccess(executionResult);
   const report = isExecutionComplete ? executionResult.value.report : undefined;
 
-  const [executedPlan, setExecutedPlan] = useState<ExecutedTestPlan | undefined>(undefined);
-  const [runStartedAt, setRunStartedAt] = useState<number | undefined>(undefined);
+  const [executedPlan, setExecutedPlan] = useState<
+    ExecutedTestPlan | undefined
+  >(undefined);
+  const [runStartedAt, setRunStartedAt] = useState<number | undefined>(
+    undefined
+  );
   const [elapsedTimeMs, setElapsedTimeMs] = useState(0);
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
   const expanded = usePlanExecutionStore((state) => state.expanded);
@@ -306,15 +328,21 @@ export const TestingScreen = ({
 
     if (steps.length === 0 && isExecuting) {
       const toolCalls = getPlanningToolCalls(executedPlan.events, true);
-      expandedRows.push(...buildToolCallRows(toolCalls, "  ", "planning", COLORS));
+      expandedRows.push(
+        ...buildToolCallRows(toolCalls, "  ", "planning", COLORS)
+      );
     }
 
     for (let stepIndex = 0; stepIndex < steps.length; stepIndex++) {
       const step = steps[stepIndex];
-      const label = Option.isSome(step.summary) ? step.summary.value : step.title;
+      const label = Option.isSome(step.summary)
+        ? step.summary.value
+        : step.title;
       const stepElapsedMs = getStepElapsedMs(step);
       const stepElapsedLabel =
-        stepElapsedMs !== undefined ? formatElapsedTime(stepElapsedMs) : undefined;
+        stepElapsedMs !== undefined
+          ? formatElapsedTime(stepElapsedMs)
+          : undefined;
       const num = `${stepIndex + 1}.`;
 
       if (step.status === "active") {
@@ -331,10 +359,12 @@ export const TestingScreen = ({
               baseColor={theme.shimmerBase}
               highlightColor={theme.shimmerHighlight}
             />
-          </Box>,
+          </Box>
         );
         const toolCalls = getActiveStepToolCalls(executedPlan.events, true);
-        expandedRows.push(...buildToolCallRows(toolCalls, "     ", `s${stepIndex}`, COLORS));
+        expandedRows.push(
+          ...buildToolCallRows(toolCalls, "     ", `s${stepIndex}`, COLORS)
+        );
       } else if (step.status === "passed") {
         expandedRows.push(
           <Text key={`step-${stepIndex}`}>
@@ -346,11 +376,18 @@ export const TestingScreen = ({
               {" "}
               {figures.tick} {cliTruncate(label, TESTING_TOOL_TEXT_CHAR_LIMIT)}
             </Text>
-            {stepElapsedLabel && <Text color={COLORS.DIM}> {stepElapsedLabel}</Text>}
-          </Text>,
+            {stepElapsedLabel && (
+              <Text color={COLORS.DIM}> {stepElapsedLabel}</Text>
+            )}
+          </Text>
         );
-        const toolCalls = getCompletedStepToolCalls(executedPlan.events, stepIndex);
-        expandedRows.push(...buildToolCallRows(toolCalls, "     ", `s${stepIndex}`, COLORS));
+        const toolCalls = getCompletedStepToolCalls(
+          executedPlan.events,
+          stepIndex
+        );
+        expandedRows.push(
+          ...buildToolCallRows(toolCalls, "     ", `s${stepIndex}`, COLORS)
+        );
       } else if (step.status === "failed") {
         expandedRows.push(
           <Text key={`step-${stepIndex}`}>
@@ -362,11 +399,18 @@ export const TestingScreen = ({
               {" "}
               {figures.cross} {cliTruncate(label, TESTING_TOOL_TEXT_CHAR_LIMIT)}
             </Text>
-            {stepElapsedLabel && <Text color={COLORS.DIM}> {stepElapsedLabel}</Text>}
-          </Text>,
+            {stepElapsedLabel && (
+              <Text color={COLORS.DIM}> {stepElapsedLabel}</Text>
+            )}
+          </Text>
         );
-        const toolCalls = getCompletedStepToolCalls(executedPlan.events, stepIndex);
-        expandedRows.push(...buildToolCallRows(toolCalls, "     ", `s${stepIndex}`, COLORS));
+        const toolCalls = getCompletedStepToolCalls(
+          executedPlan.events,
+          stepIndex
+        );
+        expandedRows.push(
+          ...buildToolCallRows(toolCalls, "     ", `s${stepIndex}`, COLORS)
+        );
       } else if (step.status === "skipped") {
         expandedRows.push(
           <Text key={`step-${stepIndex}`}>
@@ -376,17 +420,20 @@ export const TestingScreen = ({
             </Text>
             <Text color={COLORS.YELLOW}>
               {" "}
-              {figures.arrowRight} {cliTruncate(label, TESTING_TOOL_TEXT_CHAR_LIMIT)}
+              {figures.arrowRight}{" "}
+              {cliTruncate(label, TESTING_TOOL_TEXT_CHAR_LIMIT)}
             </Text>
-            {stepElapsedLabel && <Text color={COLORS.DIM}> {stepElapsedLabel}</Text>}
-          </Text>,
+            {stepElapsedLabel && (
+              <Text color={COLORS.DIM}> {stepElapsedLabel}</Text>
+            )}
+          </Text>
         );
       } else {
         expandedRows.push(
           <Text key={`step-${stepIndex}`} color={COLORS.DIM}>
             {"  "}
             {num} {figures.circle} {step.title}
-          </Text>,
+          </Text>
         );
       }
     }
@@ -410,16 +457,15 @@ export const TestingScreen = ({
   useEffect(() => {
     setRunStartedAt(Date.now());
 
-    const baseUrl = baseUrls && baseUrls.length > 0 ? baseUrls.join(", ") : undefined;
-    const urlTags = baseUrls ? baseUrls.map((url) => `[url: ${url}]`).join(" ") : undefined;
-    const instructionWithUrls = urlTags ? `${instruction} ${urlTags}` : instruction;
+    const baseUrl =
+      baseUrls && baseUrls.length > 0 ? baseUrls.join(", ") : undefined;
+    const urlTags = baseUrls
+      ? baseUrls.map((url) => `[url: ${url}]`).join(" ")
+      : undefined;
+    const instructionWithUrls = urlTags
+      ? `${instruction} ${urlTags}`
+      : instruction;
 
-    console.error(
-      "[TestingScreen] cookieImportProfiles:",
-      JSON.stringify(
-        cookieImportProfiles.map((p: any) => ({ _tag: p._tag, constructor: p.constructor?.name })),
-      ),
-    );
     triggerExecute({
       options: {
         changesFor,
@@ -460,16 +506,32 @@ export const TestingScreen = ({
     setConfigOptions,
   ]);
 
-  const replayUrl = isExecutionComplete ? executionResult.value.replayUrl : undefined;
-  const localReplayUrl = isExecutionComplete ? executionResult.value.localReplayUrl : undefined;
-  const videoUrl = isExecutionComplete ? executionResult.value.videoUrl : undefined;
+  const replayUrl = isExecutionComplete
+    ? executionResult.value.replayUrl
+    : undefined;
+  const localReplayUrl = isExecutionComplete
+    ? executionResult.value.localReplayUrl
+    : undefined;
+  const videoUrl = isExecutionComplete
+    ? executionResult.value.videoUrl
+    : undefined;
 
   useEffect(() => {
     if (isExecutionComplete && executedPlan && report) {
       usePlanExecutionStore.getState().setExecutedPlan(executedPlan);
-      setScreen(Screen.Results({ report, replayUrl, localReplayUrl, videoUrl }));
+      setScreen(
+        Screen.Results({ report, replayUrl, localReplayUrl, videoUrl })
+      );
     }
-  }, [isExecutionComplete, executedPlan, report, replayUrl, localReplayUrl, videoUrl, setScreen]);
+  }, [
+    isExecutionComplete,
+    executedPlan,
+    report,
+    replayUrl,
+    localReplayUrl,
+    videoUrl,
+    setScreen,
+  ]);
 
   const goToMain = () => {
     usePlanExecutionStore.getState().setExecutedPlan(undefined);
@@ -502,7 +564,8 @@ export const TestingScreen = ({
     }
 
     if (normalizedInput === "o" && !key.ctrl && !key.meta && executedPlan?.id) {
-      const { exec } = require("node:child_process") as typeof import("node:child_process");
+      const { exec } =
+        require("node:child_process") as typeof import("node:child_process");
       const url = `${LIVE_VIEWER_STATIC_URL}/replay/?testId=${executedPlan.id}`;
       exec(`open "${url}"`);
       trackEvent("live_preview:opened");
@@ -539,7 +602,9 @@ export const TestingScreen = ({
       }
       if (executedPlan && report) {
         usePlanExecutionStore.getState().setExecutedPlan(executedPlan);
-        setScreen(Screen.Results({ report, replayUrl, localReplayUrl, videoUrl }));
+        setScreen(
+          Screen.Results({ report, replayUrl, localReplayUrl, videoUrl })
+        );
         return;
       }
       goToMain();
@@ -548,7 +613,7 @@ export const TestingScreen = ({
 
   const visibleExpandedRows = expandedRows.slice(
     expandedScroll.scrollOffset,
-    expandedScroll.scrollOffset + visibleCount,
+    expandedScroll.scrollOffset + visibleCount
   );
 
   return (
@@ -607,101 +672,124 @@ export const TestingScreen = ({
                         />
                       </Box>
                       {toolCalls.map((tool, toolIndex) => (
-                        <ToolCallBlock key={toolIndex} display={tool} indent={"  "} />
+                        <ToolCallBlock
+                          key={toolIndex}
+                          display={tool}
+                          indent={"  "}
+                        />
                       ))}
                     </Box>
                   );
                 })()}
 
               <Box flexDirection="column" marginTop={1}>
-                {(executedPlan?.steps ?? []).map((step: TestPlanStep, stepIndex: number) => {
-                  const label = Option.isSome(step.summary) ? step.summary.value : step.title;
-                  const stepElapsedMs = getStepElapsedMs(step);
-                  const stepElapsedLabel =
-                    stepElapsedMs !== undefined ? formatElapsedTime(stepElapsedMs) : undefined;
-                  const num = `${stepIndex + 1}.`;
+                {(executedPlan?.steps ?? []).map(
+                  (step: TestPlanStep, stepIndex: number) => {
+                    const label = Option.isSome(step.summary)
+                      ? step.summary.value
+                      : step.title;
+                    const stepElapsedMs = getStepElapsedMs(step);
+                    const stepElapsedLabel =
+                      stepElapsedMs !== undefined
+                        ? formatElapsedTime(stepElapsedMs)
+                        : undefined;
+                    const num = `${stepIndex + 1}.`;
 
-                  if (step.status === "active") {
-                    const toolCalls = executedPlan
-                      ? getActiveStepToolCalls(executedPlan.events, false)
-                      : [];
-                    return (
-                      <Box key={step.id} flexDirection="column">
-                        <Box>
+                    if (step.status === "active") {
+                      const toolCalls = executedPlan
+                        ? getActiveStepToolCalls(executedPlan.events, false)
+                        : [];
+                      return (
+                        <Box key={step.id} flexDirection="column">
+                          <Box>
+                            <Text color={COLORS.DIM}>
+                              {"  "}
+                              {num}{" "}
+                            </Text>
+                            <Spinner />
+                            <Text> </Text>
+                            <TextShimmer
+                              text={`${step.title} ${elapsedTimeLabel}`}
+                              baseColor={theme.shimmerBase}
+                              highlightColor={theme.shimmerHighlight}
+                            />
+                          </Box>
+                          {toolCalls.map((tool, toolIndex) => (
+                            <ToolCallBlock
+                              key={toolIndex}
+                              display={tool}
+                              indent={"     "}
+                            />
+                          ))}
+                        </Box>
+                      );
+                    }
+
+                    if (step.status === "passed") {
+                      return (
+                        <Text key={step.id}>
                           <Text color={COLORS.DIM}>
                             {"  "}
-                            {num}{" "}
+                            {num}
                           </Text>
-                          <Spinner />
-                          <Text> </Text>
-                          <TextShimmer
-                            text={`${step.title} ${elapsedTimeLabel}`}
-                            baseColor={theme.shimmerBase}
-                            highlightColor={theme.shimmerHighlight}
-                          />
-                        </Box>
-                        {toolCalls.map((tool, toolIndex) => (
-                          <ToolCallBlock key={toolIndex} display={tool} indent={"     "} />
-                        ))}
-                      </Box>
-                    );
-                  }
+                          <Text color={COLORS.GREEN}>
+                            {" "}
+                            {figures.tick}{" "}
+                            {cliTruncate(label, TESTING_TOOL_TEXT_CHAR_LIMIT)}
+                          </Text>
+                          {stepElapsedLabel && (
+                            <Text color={COLORS.DIM}> {stepElapsedLabel}</Text>
+                          )}
+                        </Text>
+                      );
+                    }
 
-                  if (step.status === "passed") {
+                    if (step.status === "failed") {
+                      return (
+                        <Text key={step.id}>
+                          <Text color={COLORS.DIM}>
+                            {"  "}
+                            {num}
+                          </Text>
+                          <Text color={COLORS.RED}>
+                            {" "}
+                            {figures.cross}{" "}
+                            {cliTruncate(label, TESTING_TOOL_TEXT_CHAR_LIMIT)}
+                          </Text>
+                          {stepElapsedLabel && (
+                            <Text color={COLORS.DIM}> {stepElapsedLabel}</Text>
+                          )}
+                        </Text>
+                      );
+                    }
+
+                    if (step.status === "skipped") {
+                      return (
+                        <Text key={step.id}>
+                          <Text color={COLORS.DIM}>
+                            {"  "}
+                            {num}
+                          </Text>
+                          <Text color={COLORS.YELLOW}>
+                            {" "}
+                            {figures.arrowRight}{" "}
+                            {cliTruncate(label, TESTING_TOOL_TEXT_CHAR_LIMIT)}
+                          </Text>
+                          {stepElapsedLabel && (
+                            <Text color={COLORS.DIM}> {stepElapsedLabel}</Text>
+                          )}
+                        </Text>
+                      );
+                    }
+
                     return (
-                      <Text key={step.id}>
-                        <Text color={COLORS.DIM}>
-                          {"  "}
-                          {num}
-                        </Text>
-                        <Text color={COLORS.GREEN}>
-                          {" "}
-                          {figures.tick} {cliTruncate(label, TESTING_TOOL_TEXT_CHAR_LIMIT)}
-                        </Text>
-                        {stepElapsedLabel && <Text color={COLORS.DIM}> {stepElapsedLabel}</Text>}
+                      <Text key={step.id} color={COLORS.DIM}>
+                        {"  "}
+                        {num} {figures.circle} {step.title}
                       </Text>
                     );
                   }
-
-                  if (step.status === "failed") {
-                    return (
-                      <Text key={step.id}>
-                        <Text color={COLORS.DIM}>
-                          {"  "}
-                          {num}
-                        </Text>
-                        <Text color={COLORS.RED}>
-                          {" "}
-                          {figures.cross} {cliTruncate(label, TESTING_TOOL_TEXT_CHAR_LIMIT)}
-                        </Text>
-                        {stepElapsedLabel && <Text color={COLORS.DIM}> {stepElapsedLabel}</Text>}
-                      </Text>
-                    );
-                  }
-
-                  if (step.status === "skipped") {
-                    return (
-                      <Text key={step.id}>
-                        <Text color={COLORS.DIM}>
-                          {"  "}
-                          {num}
-                        </Text>
-                        <Text color={COLORS.YELLOW}>
-                          {" "}
-                          {figures.arrowRight} {cliTruncate(label, TESTING_TOOL_TEXT_CHAR_LIMIT)}
-                        </Text>
-                        {stepElapsedLabel && <Text color={COLORS.DIM}> {stepElapsedLabel}</Text>}
-                      </Text>
-                    );
-                  }
-
-                  return (
-                    <Text key={step.id} color={COLORS.DIM}>
-                      {"  "}
-                      {num} {figures.circle} {step.title}
-                    </Text>
-                  );
-                })}
+                )}
               </Box>
             </>
           )}
