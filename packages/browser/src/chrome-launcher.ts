@@ -202,6 +202,7 @@ export const launchSystemChrome = Effect.fn("launchSystemChrome")(function* (opt
 
   const wsUrl = yield* Effect.callback<string, ChromeLaunchTimeoutError>((resume) => {
     const deadline = Date.now() + CDP_LAUNCH_TIMEOUT_MS;
+    let pendingTimer: ReturnType<typeof setTimeout> | undefined;
 
     const poll = () => {
       if (Date.now() > deadline) {
@@ -234,10 +235,14 @@ export const launchSystemChrome = Effect.fn("launchSystemChrome")(function* (opt
         return;
       }
 
-      setTimeout(poll, CDP_POLL_INTERVAL_MS);
+      pendingTimer = setTimeout(poll, CDP_POLL_INTERVAL_MS);
     };
 
     poll();
+
+    return Effect.sync(() => {
+      if (pendingTimer !== undefined) clearTimeout(pendingTimer);
+    });
   }).pipe(Effect.tapError(() => cleanupFailedLaunch(child, tempDir)));
 
   yield* Effect.logInfo("System Chrome launched, CDP available", { wsUrl });

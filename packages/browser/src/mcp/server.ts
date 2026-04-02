@@ -115,7 +115,7 @@ export const createBrowserMcpServer = <E>(
           });
           const engineSuffix = browserType && browserType !== "chromium" ? ` [${browserType}]` : "";
           const cdpSuffix = cdpUrl ? ` (connected via CDP: ${cdpUrl})` : "";
-          const chromeSuffix = systemChrome ? " (system Chrome)" : "";
+          const chromeSuffix = systemChrome && !cdpUrl ? " (system Chrome)" : "";
           return textResult(
             `Opened ${url}${engineSuffix}${cdpSuffix}${chromeSuffix}` +
               (result.injectedCookieCount > 0
