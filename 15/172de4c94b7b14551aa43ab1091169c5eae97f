@@ -1,0 +1,29 @@
+packages/shared/package.json
+  dcf852e2d26232a6 12
+apps/cli/src/commands/init-utils.ts
+  dcf852e2d26232a6 14
+packages/agent/src/acp-client.ts
+  dcf852e2d26232a6 31,498,642
+packages/shared/src/launched-from.ts
+  dcf852e2d26232a6 1-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.3",
+  "base_commit_sha": "15172de4c94b7b14551aa43ab1091169c5eae97f",
+  "prompts": {
+    "dcf852e2d26232a6": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "837e72d2-0fc0-4716-994a-3aa83e52a3f1",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 169,
+      "total_deletions": 76,
+      "accepted_lines": 32,
+      "overriden_lines": 1
+    }
+  }
+}
