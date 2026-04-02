@@ -98,12 +98,15 @@ export class Analytics extends ServiceMap.Service<Analytics>()("@expect/Analytic
       }) ||
       githubActionsValue !== "";
 
+    if (telemetryDisabled) {
+      const capture = (() => Effect.void) as never;
+      const track = ((() => <A, E, R>(self: Effect.Effect<A, E, R>) => self) as never);
+      return { capture, track, flush: Effect.void } as const;
+    }
+
     const projectId = hash(process.cwd());
 
-    const distinctId = yield* Effect.tryPromise(async () => {
-      if (telemetryDisabled) return "";
-      return machineId();
-    }).pipe(
+    const distinctId = yield* Effect.tryPromise(() => machineId()).pipe(
       Effect.catchTag("UnknownError", (cause) =>
         Effect.logWarning("Failed to get machine ID, using fallback", { cause }).pipe(
           Effect.as(globalThis.crypto.randomUUID()),
@@ -116,7 +119,6 @@ export class Analytics extends ServiceMap.Service<Analytics>()("@expect/Analytic
       ...[properties]: EventMap[K] extends undefined ? [] : [EventMap[K]]
     ) =>
       Effect.gen(function* () {
-        if (telemetryDisabled) return;
         const commonProperties = {
           timestamp: new Date().toISOString(),
           projectId,
@@ -158,7 +160,7 @@ export class Analytics extends ServiceMap.Service<Analytics>()("@expect/Analytic
           );
         })) as never;
 
-    return { capture, track, flush: telemetryDisabled ? Effect.void : provider.flush } as const;
+    return { capture, track, flush: provider.flush } as const;
   }),
 }) {
   static layerPostHog = Layer.effect(this)(this.make).pipe(

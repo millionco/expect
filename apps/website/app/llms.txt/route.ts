@@ -1,17 +1,17 @@
-import { readFileSync } from "fs";
+import * as fs from "fs";
 import { NextResponse } from "next/server";
-import { join } from "path";
+import * as path from "path";
 
-const root = join(process.cwd(), "..", "..");
+const root = path.join(process.cwd(), "..", "..");
 
-const readme = readFileSync(join(root, "README.md"), "utf-8")
+const readme = fs
+  .readFileSync(path.join(root, "README.md"), "utf-8")
   .replace(/^# <img[^>]*\/>\s*/m, "# ")
   .replace(/\[!\[.*?\]\(.*?\)\]\(.*?\)\n?/g, "");
 
-const skill = readFileSync(
-  join(root, "packages", "expect-skill", "SKILL.md"),
-  "utf-8",
-).replace(/^---[\s\S]*?---\n+/, "");
+const skill = fs
+  .readFileSync(path.join(root, "packages", "expect-skill", "SKILL.md"), "utf-8")
+  .replace(/^---[\s\S]*?---\n+/, "");
 
 const content = `${readme.trim()}\n\n---\n\n${skill.trim()}\n`;
 

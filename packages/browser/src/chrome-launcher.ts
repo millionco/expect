@@ -183,13 +183,18 @@ export const launchSystemChrome = Effect.fn("launchSystemChrome")(function* (opt
 }) {
   const chromePath = yield* findSystemChrome();
 
-  const tempDir = options.profilePath
-    ? undefined
-    : fs.mkdtempSync(path.join(os.tmpdir(), "expect-chrome-"));
+  let tempDir: string | undefined;
+  if (!options.profilePath) {
+    tempDir = yield* Effect.tryPromise(() =>
+      fs.promises.mkdtemp(path.join(os.tmpdir(), "expect-chrome-")),
+    ).pipe(Effect.catchTag("UnknownError", Effect.die));
+  }
 
   const userDataDir = options.profilePath ?? tempDir!;
 
-  fs.rmSync(path.join(userDataDir, "DevToolsActivePort"), { force: true });
+  yield* Effect.tryPromise(() =>
+    fs.promises.rm(path.join(userDataDir, "DevToolsActivePort"), { force: true }),
+  ).pipe(Effect.catchTag("UnknownError", () => Effect.void));
 
   const args = buildLaunchArgs({ headless: options.headless, userDataDir });
 

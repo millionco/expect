@@ -203,20 +203,20 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
         browserType: engine,
       });
 
-      const chromeProcess =
-        useSystemChrome && !options.cdpUrl
-          ? yield* launchSystemChrome({
-              headless: !options.headed,
-            }).pipe(
-              Effect.tap((launched) =>
-                Effect.logInfo("Connected to system Chrome via CDP", { wsUrl: launched.wsUrl }),
-              ),
-              Effect.catchTags({
-                ChromeNotFoundError: Effect.die,
-                ChromeLaunchTimeoutError: Effect.die,
-              }),
-            )
-          : undefined;
+      const chromeProcess = yield* Effect.gen(function* () {
+        if (!useSystemChrome || options.cdpUrl) return undefined;
+        return yield* launchSystemChrome({
+          headless: !options.headed,
+        }).pipe(
+          Effect.tap((launched) =>
+            Effect.logInfo("Connected to system Chrome via CDP", { wsUrl: launched.wsUrl }),
+          ),
+          Effect.catchTags({
+            ChromeNotFoundError: Effect.die,
+            ChromeLaunchTimeoutError: Effect.die,
+          }),
+        );
+      });
 
       const cdpEndpoint =
         chromeProcess?.wsUrl ?? (engine === "chromium" ? options.cdpUrl : undefined);
