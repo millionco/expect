@@ -329,7 +329,7 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
         Effect.tapError(() =>
           cleanup.pipe(
             Effect.andThen(() => {
-              if (cdpEndpoint) return Effect.void;
+              if (cdpEndpoint && !chromeProcess) return Effect.void;
               return Effect.tryPromise(() => browser.close()).pipe(
                 Effect.catchTag("UnknownError", () => Effect.void),
               );
