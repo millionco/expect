@@ -3,6 +3,7 @@ import {
   lstatSync,
   mkdirSync,
   readlinkSync,
+  rmSync,
   symlinkSync,
   unlinkSync,
   writeFileSync,
@@ -114,7 +115,7 @@ const selectAgents = async (agents: readonly SupportedAgent[], nonInteractive: b
   return (response.agents ?? []) as SupportedAgent[];
 };
 
-const ensureAgentSymlink = (projectRoot: string, agent: SupportedAgent): boolean | string => {
+export const ensureAgentSymlink = (projectRoot: string, agent: SupportedAgent): boolean | string => {
   const skillSourceDir = join(projectRoot, AGENTS_SKILLS_DIR, SKILL_NAME);
   const agentSkillDir = join(projectRoot, toSkillDir(agent));
   const symlinkPath = join(agentSkillDir, SKILL_NAME);
@@ -123,9 +124,12 @@ const ensureAgentSymlink = (projectRoot: string, agent: SupportedAgent): boolean
   try {
     if (existsSync(symlinkPath)) {
       const stats = lstatSync(symlinkPath);
-      if (!stats.isSymbolicLink()) return `${symlinkPath} exists and is not a symlink`;
-      if (readlinkSync(symlinkPath) === targetPath) return true;
-      unlinkSync(symlinkPath);
+      if (stats.isSymbolicLink()) {
+        if (readlinkSync(symlinkPath) === targetPath) return true;
+        unlinkSync(symlinkPath);
+      } else {
+        rmSync(symlinkPath, { recursive: true, force: true });
+      }
     }
 
     mkdirSync(dirname(symlinkPath), { recursive: true });

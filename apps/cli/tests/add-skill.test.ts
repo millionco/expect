@@ -1,8 +1,17 @@
-import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import {
+  lstatSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  readlinkSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, it, beforeEach, afterEach } from "vite-plus/test";
-import { extractTarEntries, readNullTerminated } from "../src/commands/add-skill";
+import { ensureAgentSymlink, extractTarEntries, readNullTerminated } from "../src/commands/add-skill";
 
 const TAR_HEADER_SIZE = 512;
 
@@ -106,5 +115,26 @@ describe("extractTarEntries", () => {
     extractTarEntries(tar, "prefix/", destDir);
 
     expect(readdirSync(destDir)).toEqual([]);
+  });
+});
+
+describe("ensureAgentSymlink", () => {
+  it("replaces an existing non-symlink expect directory with a symlink", () => {
+    const projectRoot = mkdtempSync(join(tmpdir(), "ensure-symlink-"));
+
+    try {
+      mkdirSync(join(projectRoot, ".agents", "skills", "expect"), { recursive: true });
+      mkdirSync(join(projectRoot, ".codex", "skills", "expect"), { recursive: true });
+      writeFileSync(join(projectRoot, ".codex", "skills", "expect", "old-file.txt"), "legacy");
+
+      const result = ensureAgentSymlink(projectRoot, "codex");
+
+      expect(result).toBe(true);
+      const linkedPath = join(projectRoot, ".codex", "skills", "expect");
+      expect(lstatSync(linkedPath).isSymbolicLink()).toBe(true);
+      expect(readlinkSync(linkedPath)).toBe("../../../.agents/skills/expect");
+    } finally {
+      rmSync(projectRoot, { recursive: true, force: true });
+    }
   });
 });
