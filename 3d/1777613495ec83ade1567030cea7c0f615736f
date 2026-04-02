@@ -1,0 +1,25 @@
+apps/cli/src/commands/audit.tsx
+  dcf852e2d26232a6 6
+apps/cli/src/index.tsx
+  dcf852e2d26232a6 12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.3",
+  "base_commit_sha": "3d1777613495ec83ade1567030cea7c0f615736f",
+  "prompts": {
+    "dcf852e2d26232a6": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "837e72d2-0fc0-4716-994a-3aa83e52a3f1",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 2,
+      "accepted_lines": 5,
+      "overriden_lines": 0
+    }
+  }
+}
