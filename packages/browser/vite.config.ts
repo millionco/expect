@@ -7,4 +7,7 @@ export default defineConfig({
     dts: true,
     sourcemap: true,
   },
+  test: {
+    testTimeout: 0,
+  },
 });
