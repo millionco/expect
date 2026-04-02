@@ -132,7 +132,7 @@ describe("ensureAgentSymlink", () => {
       expect(result).toBe(true);
       const linkedPath = join(projectRoot, ".codex", "skills", "expect");
       expect(lstatSync(linkedPath).isSymbolicLink()).toBe(true);
-      expect(readlinkSync(linkedPath)).toBe("../../../.agents/skills/expect");
+      expect(readlinkSync(linkedPath)).toBe("../../.agents/skills/expect");
     } finally {
       rmSync(projectRoot, { recursive: true, force: true });
     }
