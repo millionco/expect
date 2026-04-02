@@ -78,15 +78,15 @@ export const createBrowserMcpServer = <E>(
           .describe(
             "Browser engine to launch (default: chromium). Use 'webkit' for Safari-like testing or 'firefox' for Firefox testing. CDP connections are only supported with chromium.",
           ),
-        systemChrome: z
+        liveChrome: z
           .boolean()
           .optional()
           .describe(
-            "Use the system-installed Chrome (Google Chrome, Brave, Edge) instead of Playwright's bundled Chromium. First tries to connect to an already-running Chrome with remote debugging enabled; if none is found, launches a new headed instance. Ignored when 'cdp' is provided.",
+            "Connect to the user's already-running Chrome browser instead of launching Playwright's bundled Chromium. The user must have Chrome open with remote debugging enabled. Falls back to bundled Chromium if no running Chrome is found. Ignored when 'cdp' is provided.",
           ),
       },
     },
-    ({ url, headed, cookies, waitUntil, cdp, browser: browserType, systemChrome }) =>
+    ({ url, headed, cookies, waitUntil, cdp, browser: browserType, liveChrome }) =>
       runMcp(
         Effect.gen(function* () {
           const session = yield* McpSession;
@@ -102,15 +102,11 @@ export const createBrowserMcpServer = <E>(
             waitUntil,
             cdpUrl: cdp,
             browserType,
-            systemChrome,
+            liveChrome,
           });
           const engineSuffix = browserType && browserType !== "chromium" ? ` [${browserType}]` : "";
           const cdpSuffix = cdp ? ` (connected via CDP: ${cdp})` : "";
-          const chromeSuffix = systemChrome
-            ? result.isExternalBrowser
-              ? " (live Chrome)"
-              : " (system Chrome)"
-            : "";
+          const chromeSuffix = liveChrome && result.isExternalBrowser ? " (live Chrome)" : "";
           return textResult(
             `Opened ${url}${engineSuffix}${cdpSuffix}${chromeSuffix}` +
               (result.injectedCookieCount > 0
