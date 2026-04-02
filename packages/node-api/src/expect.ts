@@ -152,7 +152,9 @@ const executeToPass = Effect.fn("expect.toPass")(function* (
   }
 
   const instruction = buildInstruction(resolvedUrl, targetData, requirements);
-  const isHeadless = !(options?.isHeaded ?? !(config.isHeadless ?? true));
+  const isHeadless = options?.isHeaded !== undefined
+    ? !options.isHeaded
+    : (config.isHeadless ?? true);
 
   yield* Effect.logInfo("expect.toPass starting", {
     url: resolvedUrl,

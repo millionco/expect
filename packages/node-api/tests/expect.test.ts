@@ -1,61 +1,6 @@
 import { describe, expect, it, beforeEach } from "vite-plus/test";
-import { DateTime, Option } from "effect";
-import {
-  ExecutedTestPlan,
-  PlanId,
-  StepId,
-  TestPlanStep,
-  StepCompleted,
-  StepFailed,
-  StepSkipped,
-  RunStarted,
-  RunFinished,
-  TestPlan,
-  ChangesFor,
-  ToolResult,
-} from "@expect/shared/models";
 import { configure, resetGlobalConfig } from "../src/config";
 import { expect as expectFn } from "../src/expect";
-
-const makeDateTime = (epochMs: number) => DateTime.makeUnsafe(new Date(epochMs));
-
-const makeStep = (
-  overrides: Partial<{
-    id: string;
-    title: string;
-    status: "pending" | "active" | "passed" | "failed" | "skipped";
-    startedAt: Option.Option<DateTime.Utc>;
-    endedAt: Option.Option<DateTime.Utc>;
-  }> = {},
-): TestPlanStep =>
-  new TestPlanStep({
-    id: StepId.makeUnsafe(overrides.id ?? "step-01"),
-    title: overrides.title ?? "Test step",
-    instruction: "Do something",
-    expectedOutcome: "Something happens",
-    routeHint: Option.none(),
-    status: overrides.status ?? "passed",
-    summary: Option.none(),
-    startedAt: overrides.startedAt ?? Option.none(),
-    endedAt: overrides.endedAt ?? Option.none(),
-  });
-
-const makePlan = (): TestPlan =>
-  new TestPlan({
-    id: PlanId.makeUnsafe("plan-01"),
-    changesFor: ChangesFor.makeUnsafe({ _tag: "WorkingTree" }),
-    currentBranch: "main",
-    diffPreview: "",
-    fileStats: [],
-    instruction: "test",
-    baseUrl: Option.some("http://localhost:3000"),
-    isHeadless: true,
-    cookieBrowserKeys: [],
-    testCoverage: Option.none(),
-    title: "Test Plan",
-    rationale: "testing",
-    steps: [],
-  });
 
 describe("expect() — target resolution", () => {
   beforeEach(() => {
