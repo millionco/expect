@@ -1,7 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { z } from "zod/v4";
-import { Config, Effect, Layer, Option, Schema } from "effect";
+import { Config, Effect, Layer, Option, Schema, ServiceMap } from "effect";
 import { BrowserJson } from "@expect/cookies";
 import type { ConsoleLog, NetworkRequest } from "@expect/shared/models";
 import { EXPECT_BROWSER_PROFILE_ENV_NAME } from "./mcp/constants";
@@ -13,6 +14,10 @@ import { evaluateRuntime } from "./utils/evaluate-runtime";
 import type { SnapshotResult } from "./types";
 import { autoDiscoverCdp } from "./cdp-discovery";
 import { hasStringMessage } from "@expect/shared/utils";
+
+export const McpTransport = ServiceMap.Reference<Transport>("@browser/McpTransport", {
+  defaultValue: () => new StdioServerTransport(),
+});
 
 const textResult = (text: string) => ({
   content: [{ type: "text" as const, text }],
@@ -334,14 +339,16 @@ export const layerMcpServer = Layer.effectDiscard(
       (_, { signal }) =>
         Effect.gen(function* () {
           const pw = yield* Playwright;
+          if (!pw.hasSession()) {
+            return textResult("No browser open.");
+          }
           yield* pw.close();
           lastSnapshot = undefined;
           return textResult("Browser closed.");
         }).pipe((effect) => run(effect, { signal, method: "close" })),
     );
 
-    // Start stdio transport — acquireRelease ensures cleanup
-    const transport = new StdioServerTransport();
+    const transport = yield* McpTransport;
     yield* Effect.logInfo(`Starting MCP server`);
     yield* Effect.acquireRelease(
       Effect.tryPromise({
