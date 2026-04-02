@@ -5,6 +5,7 @@ import path from "node:path";
 import which from "which";
 import { Effect } from "effect";
 import { ChromeNotFoundError, ChromeLaunchTimeoutError } from "./errors";
+import { parseDevToolsActivePort } from "./utils/parse-devtools-active-port";
 import {
   CDP_LAUNCH_TIMEOUT_MS,
   CDP_POLL_INTERVAL_MS,
@@ -92,19 +93,10 @@ export const findSystemChrome = Effect.fn("findSystemChrome")(function* () {
   return yield* new ChromeNotFoundError();
 });
 
-const readDevToolsActivePort = (
-  userDataDir: string,
-): { port: number; wsPath: string } | undefined => {
+const readDevToolsActivePort = (userDataDir: string) => {
   const filePath = path.join(userDataDir, "DevToolsActivePort");
   try {
-    const content = fs.readFileSync(filePath, "utf-8");
-    const lines = content.trim().split("\n");
-    const portStr = lines[0]?.trim();
-    if (!portStr) return undefined;
-    const port = Number.parseInt(portStr, 10);
-    if (Number.isNaN(port)) return undefined;
-    const wsPath = lines[1]?.trim() ?? "/devtools/browser";
-    return { port, wsPath };
+    return parseDevToolsActivePort(fs.readFileSync(filePath, "utf-8"));
   } catch {
     return undefined;
   }

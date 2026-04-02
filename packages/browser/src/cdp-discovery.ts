@@ -5,6 +5,7 @@ import net from "node:net";
 import { Effect, Option } from "effect";
 import { CDP_DISCOVERY_TIMEOUT_MS, CDP_COMMON_PORTS, CDP_PORT_PROBE_TIMEOUT_MS } from "./constants";
 import { CdpDiscoveryError } from "./errors";
+import { parseDevToolsActivePort } from "./utils/parse-devtools-active-port";
 
 interface VersionInfo {
   readonly webSocketDebuggerUrl?: string;
@@ -162,21 +163,13 @@ const readDevToolsActivePort = (userDataDir: string) =>
       }),
   }).pipe(
     Effect.flatMap((content) => {
-      const lines = content.trim().split("\n");
-      const portStr = lines[0]?.trim();
-      if (!portStr) {
+      const parsed = parseDevToolsActivePort(content);
+      if (!parsed) {
         return new CdpDiscoveryError({
-          cause: `Empty DevToolsActivePort in ${userDataDir}`,
+          cause: `Invalid DevToolsActivePort in ${userDataDir}`,
         }).asEffect();
       }
-      const port = Number.parseInt(portStr, 10);
-      if (Number.isNaN(port)) {
-        return new CdpDiscoveryError({
-          cause: `Invalid port in DevToolsActivePort: ${portStr}`,
-        }).asEffect();
-      }
-      const wsPath = lines[1]?.trim() ?? "/devtools/browser";
-      return Effect.succeed({ port, wsPath });
+      return Effect.succeed(parsed);
     }),
   );
 
