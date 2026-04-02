@@ -47,10 +47,10 @@ const logUsageGuide = () => {
     `     ${highlighter.dim("$")} ${highlighter.info('expect-cli -m "test the login flow" -y')}`,
   );
   logger.break();
-  logger.log(`  Set ${highlighter.info("EXPECT_BASE_URL")} if your app is not on localhost:3000:`);
+  logger.log(`  Use ${highlighter.info("-u")} to set a custom base URL:`);
   logger.break();
   logger.log(
-    `     ${highlighter.dim("$")} ${highlighter.info('EXPECT_BASE_URL=http://localhost:5173 expect-cli -m "test the homepage" -y')}`,
+    `     ${highlighter.dim("$")} ${highlighter.info('expect-cli -u http://localhost:5173 -m "test the homepage" -y')}`,
   );
   logger.break();
 };
