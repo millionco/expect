@@ -651,6 +651,14 @@ describe("My Effect tests", () => {
   - `@effect/sql-mysql2`: MySQL
 - `ManagedRuntime` from `effect`: Integrate Effect with 3rd party frameworks like React.
 
+### ManagedRuntime guidance
+
+`ManagedRuntime` is an escape hatch for calling Effect code from outside Effect code (similar to how `useEffect` bridges side effects in React). Do not use `ManagedRuntime` when you are already inside Effect code.
+
+`ManagedRuntime` owns layer lifecycle. Running an Effect through a `ManagedRuntime` constructs and manages its layers. If your app already constructs layers through `layerCli`, introducing a `ManagedRuntime` can initialize a second copy of those layers (once via `layerCli`, once via `ManagedRuntime`).
+
+In this codebase, prefer the layer already provided by `layerCli` instead of creating a separate `ManagedRuntime`. If you need `ManagedRuntime` semantics, make `layerCli` return a `ManagedRuntime` so layers are constructed once.
+
 Use the `effect_docs_search` MCP tool to find more information about these modules.
 
 ## React Compiler
