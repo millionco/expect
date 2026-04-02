@@ -18,7 +18,9 @@ export const trackEvent = <K extends keyof EventMap>(
       );
       yield* captureEffect;
     }).pipe(
-      Effect.catchCause((cause) => Effect.logDebug("Analytics capture failed", { eventName, cause })),
+      Effect.catchCause((cause) =>
+        Effect.logDebug("Analytics capture failed", { eventName, cause }),
+      ),
     ),
   );
 
@@ -37,7 +39,5 @@ export const flushSession = (sessionStartedAt: number) =>
         session_ms: Date.now() - sessionStartedAt,
       });
       yield* analytics.flush;
-    }).pipe(
-      Effect.catchCause((cause) => Effect.logDebug("Analytics flush failed", { cause })),
-    ),
+    }).pipe(Effect.catchCause((cause) => Effect.logDebug("Analytics flush failed", { cause }))),
   );

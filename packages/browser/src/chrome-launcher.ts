@@ -71,9 +71,13 @@ export const findSystemChrome = Effect.fn("findSystemChrome")(function* () {
       localAppData && path.join(localAppData, "Google", "Chrome", "Application", "chrome.exe"),
       localAppData &&
         path.join(localAppData, "BraveSoftware", "Brave-Browser", "Application", "brave.exe"),
+      localAppData && path.join(localAppData, "Microsoft", "Edge", "Application", "msedge.exe"),
       programFiles && path.join(programFiles, "Google", "Chrome", "Application", "chrome.exe"),
       programFilesX86 &&
         path.join(programFilesX86, "Google", "Chrome", "Application", "chrome.exe"),
+      programFiles && path.join(programFiles, "Microsoft", "Edge", "Application", "msedge.exe"),
+      programFilesX86 &&
+        path.join(programFilesX86, "Microsoft", "Edge", "Application", "msedge.exe"),
     ].filter(Boolean) as string[];
 
     for (const candidate of candidates) {
