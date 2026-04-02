@@ -1,0 +1,39 @@
+{
+  "name": "expect",
+  "version": "0.0.23",
+  "type": "module",
+  "exports": {
+    ".": "./src/expect-api.ts"
+  },
+  "scripts": {
+    "lint": "vp lint && tsc --noEmit",
+    "format": "vp fmt",
+    "format:check": "vp fmt --check",
+    "check": "vp check",
+    "test": "vp test run",
+    "test:watch": "vp test",
+    "typecheck": "tsgo --noEmit"
+  },
+  "dependencies": {
+    "@effect/platform-node": "4.0.0-beta.35",
+    "@expect/agent": "workspace:*",
+    "@expect/browser": "workspace:*",
+    "@expect/cookies": "workspace:*",
+    "@expect/shared": "workspace:*",
+    "@expect/supervisor": "workspace:*",
+    "effect": "4.0.0-beta.35"
+  },
+  "peerDependencies": {
+    "playwright": ">=1.50.0"
+  },
+  "peerDependenciesMeta": {
+    "playwright": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "playwright": "^1.52.0",
+    "typescript": "^5.7.0"
+  }
+}

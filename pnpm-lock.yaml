@@ -355,6 +355,40 @@ importers:
         specifier: ^5.7.0
         version: 5.9.3
 
+  packages/node-api:
+    dependencies:
+      '@effect/platform-node':
+        specifier: 4.0.0-beta.35
+        version: 4.0.0-beta.35(effect@4.0.0-beta.35)(ioredis@5.10.0)
+      '@expect/agent':
+        specifier: workspace:*
+        version: link:../agent
+      '@expect/browser':
+        specifier: workspace:*
+        version: link:../browser
+      '@expect/cookies':
+        specifier: workspace:*
+        version: link:../cookies
+      '@expect/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@expect/supervisor':
+        specifier: workspace:*
+        version: link:../supervisor
+      effect:
+        specifier: 4.0.0-beta.35
+        version: 4.0.0-beta.35
+    devDependencies:
+      '@types/node':
+        specifier: ^22.15.0
+        version: 22.19.15
+      playwright:
+        specifier: ^1.52.0
+        version: 1.58.2
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
   packages/shared:
     dependencies:
       '@effect/platform-node':
