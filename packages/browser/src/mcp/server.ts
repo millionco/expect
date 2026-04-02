@@ -107,7 +107,9 @@ export const createBrowserMcpServer = <E>(
           const engineSuffix = browserType && browserType !== "chromium" ? ` [${browserType}]` : "";
           const cdpSuffix = cdp ? ` (connected via CDP: ${cdp})` : "";
           const chromeSuffix = systemChrome
-            ? (result.isExternalBrowser ? " (live Chrome)" : " (system Chrome)")
+            ? result.isExternalBrowser
+              ? " (live Chrome)"
+              : " (system Chrome)"
             : "";
           return textResult(
             `Opened ${url}${engineSuffix}${cdpSuffix}${chromeSuffix}` +

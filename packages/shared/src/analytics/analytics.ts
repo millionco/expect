@@ -100,7 +100,9 @@ export class Analytics extends ServiceMap.Service<Analytics>()("@expect/Analytic
 
     if (telemetryDisabled) {
       const capture = (() => Effect.void) as never;
-      const track = ((() => <A, E, R>(self: Effect.Effect<A, E, R>) => self) as never);
+      const track = (() =>
+        <A, E, R>(self: Effect.Effect<A, E, R>) =>
+          self) as never;
       return { capture, track, flush: Effect.void } as const;
     }
 

@@ -329,7 +329,10 @@ describe("Browser.createPage browserType", () => {
 });
 
 describe("Browser.createPage systemChrome", () => {
-  const existingPage = { goto: vi.fn().mockResolvedValue(undefined), evaluate: vi.fn().mockResolvedValue(undefined) };
+  const existingPage = {
+    goto: vi.fn().mockResolvedValue(undefined),
+    evaluate: vi.fn().mockResolvedValue(undefined),
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -367,9 +370,7 @@ describe("Browser.createPage systemChrome", () => {
   });
 
   it("connects to auto-discovered Chrome when systemChrome is true", async () => {
-    autoDiscoverCdpMock.mockReturnValue(
-      Effect.succeed("ws://127.0.0.1:9222/devtools/browser/abc"),
-    );
+    autoDiscoverCdpMock.mockReturnValue(Effect.succeed("ws://127.0.0.1:9222/devtools/browser/abc"));
 
     const result = await runBrowser((browser) =>
       browser.createPage("https://example.com", { systemChrome: true }),
@@ -386,9 +387,7 @@ describe("Browser.createPage systemChrome", () => {
   });
 
   it("falls back to launchSystemChrome when discovered CDP fails to connect", async () => {
-    autoDiscoverCdpMock.mockReturnValue(
-      Effect.succeed("ws://127.0.0.1:9222/devtools/browser/bad"),
-    );
+    autoDiscoverCdpMock.mockReturnValue(Effect.succeed("ws://127.0.0.1:9222/devtools/browser/bad"));
     connectOverCDPMock.mockRejectedValueOnce(new Error("Timeout"));
     launchSystemChromeMock.mockReturnValue(
       Effect.succeed({
@@ -455,9 +454,7 @@ describe("Browser.createPage systemChrome", () => {
   });
 
   it("opens a fresh tab for external Chrome instead of reusing existing pages", async () => {
-    autoDiscoverCdpMock.mockReturnValue(
-      Effect.succeed("ws://127.0.0.1:9222/devtools/browser/abc"),
-    );
+    autoDiscoverCdpMock.mockReturnValue(Effect.succeed("ws://127.0.0.1:9222/devtools/browser/abc"));
 
     await runBrowser((browser) =>
       browser.createPage("https://example.com", { systemChrome: true }),

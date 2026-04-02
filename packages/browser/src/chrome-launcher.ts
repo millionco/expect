@@ -213,10 +213,32 @@ export const launchSystemChrome = Effect.fn("launchSystemChrome")(function* (opt
   const wsUrl = yield* Effect.callback<string, ChromeLaunchTimeoutError>((resume) => {
     const deadline = Date.now() + CDP_LAUNCH_TIMEOUT_MS;
     let pendingTimer: ReturnType<typeof setTimeout> | undefined;
+    let settled = false;
+
+    const settle = (effect: Effect.Effect<string, ChromeLaunchTimeoutError>) => {
+      if (settled) return;
+      settled = true;
+      if (pendingTimer !== undefined) clearTimeout(pendingTimer);
+      child.removeListener("error", onSpawnError);
+      resume(effect);
+    };
+
+    const onSpawnError = (error: Error) => {
+      settle(
+        Effect.fail(
+          new ChromeLaunchTimeoutError({
+            timeoutMs: CDP_LAUNCH_TIMEOUT_MS,
+            cause: `Chrome process error: ${error.message}`,
+          }),
+        ),
+      );
+    };
+
+    child.on("error", onSpawnError);
 
     const poll = () => {
       if (Date.now() > deadline) {
-        resume(
+        settle(
           Effect.fail(
             new ChromeLaunchTimeoutError({
               timeoutMs: CDP_LAUNCH_TIMEOUT_MS,
@@ -229,12 +251,12 @@ export const launchSystemChrome = Effect.fn("launchSystemChrome")(function* (opt
 
       const result = readDevToolsActivePort(userDataDir);
       if (result) {
-        resume(Effect.succeed(`ws://127.0.0.1:${result.port}${result.wsPath}`));
+        settle(Effect.succeed(`ws://127.0.0.1:${result.port}${result.wsPath}`));
         return;
       }
 
       if (child.exitCode !== null) {
-        resume(
+        settle(
           Effect.fail(
             new ChromeLaunchTimeoutError({
               timeoutMs: CDP_LAUNCH_TIMEOUT_MS,
@@ -251,7 +273,9 @@ export const launchSystemChrome = Effect.fn("launchSystemChrome")(function* (opt
     poll();
 
     return Effect.sync(() => {
+      settled = true;
       if (pendingTimer !== undefined) clearTimeout(pendingTimer);
+      child.removeListener("error", onSpawnError);
     });
   }).pipe(Effect.tapError(() => cleanupFailedLaunch(child, tempDir)));
 
