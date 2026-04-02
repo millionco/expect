@@ -21,9 +21,14 @@ import { prompts } from "./utils/prompts";
 import { highlighter } from "./utils/highlighter";
 import { logger } from "./utils/logger";
 
-try {
-  fetch(`${VERSION_API_URL}?source=cli&t=${Date.now()}`).catch(() => {});
-} catch {}
+if (!isRunningInAgent() && !isHeadless()) {
+  import("node-machine-id")
+    .then((module) => module.machineId())
+    .catch(() => "unknown")
+    .then((mid) => {
+      fetch(`${VERSION_API_URL}?source=cli&mid=${mid}&t=${Date.now()}`).catch(() => {});
+    });
+}
 
 const DEFAULT_INSTRUCTION =
   "Test all changes from main in the browser and verify they work correctly.";
