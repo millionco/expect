@@ -79,9 +79,15 @@ export const createBrowserMcpServer = <E>(
           .describe(
             "Browser engine to launch (default: chromium). Use 'webkit' for Safari-like testing or 'firefox' for Firefox testing. CDP connections are only supported with chromium.",
           ),
+        systemChrome: z
+          .boolean()
+          .optional()
+          .describe(
+            "Launch the system-installed Chrome (Google Chrome, Brave, Edge) instead of Playwright's bundled Chromium. Connects via CDP. Useful for testing with the real browser the user has installed. Ignored when 'cdp' is also provided.",
+          ),
       },
     },
-    ({ url, headed, cookies, waitUntil, cdp, browser: browserType }) =>
+    ({ url, headed, cookies, waitUntil, cdp, browser: browserType, systemChrome }) =>
       runMcp(
         Effect.gen(function* () {
           const session = yield* McpSession;
@@ -105,11 +111,13 @@ export const createBrowserMcpServer = <E>(
             waitUntil,
             cdpUrl,
             browserType,
+            systemChrome,
           });
           const engineSuffix = browserType && browserType !== "chromium" ? ` [${browserType}]` : "";
           const cdpSuffix = cdpUrl ? ` (connected via CDP: ${cdpUrl})` : "";
+          const chromeSuffix = systemChrome ? " (system Chrome)" : "";
           return textResult(
-            `Opened ${url}${engineSuffix}${cdpSuffix}` +
+            `Opened ${url}${engineSuffix}${cdpSuffix}${chromeSuffix}` +
               (result.injectedCookieCount > 0
                 ? ` (${result.injectedCookieCount} cookies synced from local browser)`
                 : ""),

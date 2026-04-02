@@ -92,9 +92,7 @@ describe("extractTarEntries", () => {
   });
 
   it("creates nested directories", () => {
-    const tar = buildTar([
-      { name: "prefix/sub/dir/file.txt", content: "nested" },
-    ]);
+    const tar = buildTar([{ name: "prefix/sub/dir/file.txt", content: "nested" }]);
 
     extractTarEntries(tar, "prefix/", destDir);
 

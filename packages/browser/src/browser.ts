@@ -24,6 +24,7 @@ import {
   NavigationError,
   SnapshotTimeoutError,
 } from "./errors";
+import { launchSystemChrome, killChromeProcess } from "./chrome-launcher";
 import { toActionError } from "./utils/action-error";
 import { compactTree } from "./utils/compact-tree";
 import { createLocator } from "./utils/create-locator";
@@ -194,13 +195,33 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
       options: CreatePageOptions = {},
     ) {
       const engine = options.browserType ?? "chromium";
+      const useSystemChrome = options.systemChrome && engine === "chromium";
       yield* Effect.annotateCurrentSpan({
         url: url ?? "about:blank",
         cdp: Boolean(options.cdpUrl),
+        systemChrome: Boolean(useSystemChrome),
         browserType: engine,
       });
 
-      const cdpEndpoint = engine === "chromium" ? options.cdpUrl : undefined;
+      const chromeProcess =
+        useSystemChrome && !options.cdpUrl
+          ? yield* launchSystemChrome({
+              headless: !options.headed,
+            }).pipe(
+              Effect.tap((launched) =>
+                Effect.logInfo("Connected to system Chrome via CDP", { wsUrl: launched.wsUrl }),
+              ),
+              Effect.catchTags({
+                ChromeNotFoundError: Effect.die,
+                ChromeLaunchTimeoutError: Effect.die,
+              }),
+            )
+          : undefined;
+
+      const cdpEndpoint =
+        chromeProcess?.wsUrl ?? (engine === "chromium" ? options.cdpUrl : undefined);
+      const cleanup = chromeProcess ? killChromeProcess(chromeProcess) : Effect.void;
+
       const browserType = resolveBrowserType(engine);
       const browser = cdpEndpoint
         ? yield* Effect.tryPromise({
@@ -301,16 +322,20 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
           });
         }
 
-        return { browser, context, page };
+        return { browser, context, page, cleanup };
       });
 
       return yield* setupPage.pipe(
-        Effect.tapError(() => {
-          if (cdpEndpoint) return Effect.void;
-          return Effect.tryPromise(() => browser.close()).pipe(
-            Effect.catchTag("UnknownError", () => Effect.void),
-          );
-        }),
+        Effect.tapError(() =>
+          cleanup.pipe(
+            Effect.andThen(() => {
+              if (cdpEndpoint) return Effect.void;
+              return Effect.tryPromise(() => browser.close()).pipe(
+                Effect.catchTag("UnknownError", () => Effect.void),
+              );
+            }),
+          ),
+        ),
       );
     });
 

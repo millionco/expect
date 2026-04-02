@@ -44,6 +44,7 @@ export interface BrowserSessionData {
   readonly browser: PlaywrightBrowser;
   readonly context: BrowserContext;
   readonly page: Page;
+  readonly cleanup: Effect.Effect<void>;
   readonly consoleMessages: ConsoleEntry[];
   readonly networkRequests: NetworkEntry[];
   readonly replayOutputPath: string | undefined;
@@ -58,6 +59,7 @@ export interface OpenOptions {
   waitUntil?: "load" | "domcontentloaded" | "networkidle" | "commit";
   cdpUrl?: string;
   browserType?: BrowserEngine;
+  systemChrome?: boolean;
 }
 
 export interface OpenResult {
@@ -225,12 +227,14 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         videoOutputDir,
         cdpUrl: options.cdpUrl ?? defaultCdpUrl,
         browserType: options.browserType,
+        systemChrome: options.systemChrome,
       });
 
       const sessionData: BrowserSessionData = {
         browser: pageResult.browser,
         context: pageResult.context,
         page: pageResult.page,
+        cleanup: pageResult.cleanup,
         consoleMessages: [],
         networkRequests: [],
         replayOutputPath: Option.getOrUndefined(replayOutputPath),
@@ -510,6 +514,12 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
 
       yield* Effect.tryPromise(() => activeSession.browser.close()).pipe(
         Effect.catchCause((cause) => Effect.logDebug("Failed to close browser", { cause })),
+      );
+
+      yield* activeSession.cleanup.pipe(
+        Effect.catchCause((cause) =>
+          Effect.logDebug("Failed to clean up Chrome process", { cause }),
+        ),
       );
 
       if (pageVideo) {

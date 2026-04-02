@@ -3,6 +3,7 @@ export { buildReplayViewerHtml } from "./replay-viewer";
 export { diffSnapshots } from "./diff";
 export { collectEvents, collectAllEvents, loadSession } from "./recorder";
 export { autoDiscoverCdp, discoverCdpUrl } from "./cdp-discovery";
+export { launchSystemChrome, killChromeProcess } from "./chrome-launcher";
 export { RrVideo, RrVideoConvertError } from "./rrvideo";
 export type {
   Browser as BrowserProfile,
@@ -16,6 +17,8 @@ export {
   BrowserLaunchError,
   CdpConnectionError,
   CdpDiscoveryError,
+  ChromeNotFoundError,
+  ChromeLaunchTimeoutError,
   NavigationError,
   RecorderInjectionError,
   RefAmbiguousError,
