@@ -1,6 +1,6 @@
 import { Config, Effect, Layer, Option, ServiceMap } from "effect";
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import { machineId } from "node-machine-id";
+import { machineId } from "../machine-id";
 import { hash } from "ohash";
 import { PostHog } from "posthog-node";
 

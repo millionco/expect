@@ -19,11 +19,11 @@ import { renderApp } from "./program";
 import { CI_EXECUTION_TIMEOUT_MS, VERSION, VERSION_API_URL } from "./constants";
 import { prompts } from "./utils/prompts";
 import { highlighter } from "./utils/highlighter";
+import { machineId } from "@expect/shared/machine-id";
 import { logger } from "./utils/logger";
 
 if (!isRunningInAgent() && !isHeadless()) {
-  import("node-machine-id")
-    .then((module) => module.machineId())
+  machineId()
     .catch(() => "unknown")
     .then((mid) => {
       fetch(`${VERSION_API_URL}?source=cli&mid=${mid}&t=${Date.now()}`).catch(() => {});
