@@ -1,14 +1,14 @@
-import { Effect, ManagedRuntime } from "effect";
+import { Effect } from "effect";
 import { Analytics, type EventMap } from "@expect/shared/observability";
 import { usePreferencesStore } from "../stores/use-preferences";
 
-const analyticsRuntime = ManagedRuntime.make(Analytics.layerPostHog);
+const analyticsLayer = Analytics.layerPostHog;
 
 export const trackEvent = <K extends keyof EventMap>(
   eventName: K,
   ...[properties]: EventMap[K] extends undefined ? [] : [EventMap[K]]
 ) =>
-  analyticsRuntime.runPromise(
+  Effect.runPromise(
     Effect.gen(function* () {
       const analytics = yield* Analytics;
       const captureEffect: Effect.Effect<void> = (analytics.capture as Function).call(
@@ -18,9 +18,8 @@ export const trackEvent = <K extends keyof EventMap>(
       );
       yield* captureEffect;
     }).pipe(
-      Effect.catchCause((cause) =>
-        Effect.logDebug("Analytics capture failed", { eventName, cause }),
-      ),
+      Effect.catchCause(() => Effect.void),
+      Effect.provide(analyticsLayer),
     ),
   );
 
@@ -32,12 +31,12 @@ export const trackSessionStarted = () =>
   });
 
 export const flushSession = (sessionStartedAt: number) =>
-  analyticsRuntime.runPromise(
+  Effect.runPromise(
     Effect.gen(function* () {
       const analytics = yield* Analytics;
       yield* analytics.capture("session:ended", {
         session_ms: Date.now() - sessionStartedAt,
       });
       yield* analytics.flush;
-    }).pipe(Effect.catchCause((cause) => Effect.logDebug("Analytics flush failed", { cause }))),
+    }).pipe(Effect.provide(analyticsLayer)),
   );

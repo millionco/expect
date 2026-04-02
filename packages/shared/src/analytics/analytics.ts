@@ -37,13 +37,13 @@ export class AnalyticsProvider extends ServiceMap.Service<
 >()("@expect/AnalyticsProvider") {
   static layerPostHog = Layer.succeed(this)({
     capture: (event) =>
-      Effect.tryPromise(() =>
+      Effect.sync(() => {
         posthogClient.captureImmediate({
           event: event.eventName,
           properties: event.properties,
           distinctId: event.distinctId,
-        }),
-      ),
+        });
+      }),
     identify: (params) =>
       Effect.sync(() => {
         posthogClient.identify({
@@ -54,7 +54,10 @@ export class AnalyticsProvider extends ServiceMap.Service<
           },
         });
       }),
-    flush: Effect.tryPromise(() => posthogClient.flush()),
+    flush: Effect.tryPromise({
+      try: () => posthogClient.flush(),
+      catch: (cause) => cause,
+    }).pipe(Effect.ignore),
   });
 
   static layerDev = Layer.succeed(this)({
@@ -155,17 +158,7 @@ export class Analytics extends ServiceMap.Service<Analytics>()("@expect/Analytic
           );
         })) as never;
 
-    const flush = telemetryDisabled
-      ? Effect.void
-      : provider.flush.pipe(
-          Effect.catchCause((cause) =>
-            Effect.logWarning("Analytics flush failed", { cause }).pipe(
-              Effect.annotateLogs({ module: "Analytics" }),
-            ),
-          ),
-        );
-
-    return { capture, track, flush } as const;
+    return { capture, track, flush: telemetryDisabled ? Effect.void : provider.flush } as const;
   }),
 }) {
   static layerPostHog = Layer.effect(this)(this.make).pipe(
