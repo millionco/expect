@@ -105,9 +105,6 @@ export const discoverCdpUrl = Effect.fn("discoverCdpUrl")(function* (host: strin
   const listResult = yield* tryDiscover(discoverViaJsonList(host, port));
   if (Option.isSome(listResult)) return listResult.value;
 
-  const reachable = yield* isPortReachable(host, port);
-  if (reachable) return `ws://${host}:${port}/devtools/browser`;
-
   return yield* new CdpDiscoveryError({
     cause: `All CDP discovery methods failed for ${host}:${port}`,
   });
@@ -126,6 +123,7 @@ const getChromeUserDataDirs = () => {
       path.join(base, "BraveSoftware", "Brave-Browser"),
       path.join(base, "Microsoft Edge"),
       path.join(base, "Arc", "User Data"),
+      path.join(base, "net.imput.helium"),
     ];
   }
 

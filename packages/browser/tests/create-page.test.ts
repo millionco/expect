@@ -5,6 +5,7 @@ const {
   browserListMock,
   cookieExtractMock,
   launchMock,
+  connectOverCDPMock,
   newContextMock,
   addCookiesMock,
   addInitScriptMock,
@@ -12,11 +13,15 @@ const {
   newPageMock,
   gotoMock,
   closeMock,
+  autoDiscoverCdpMock,
+  launchSystemChromeMock,
+  killChromeProcessMock,
 } = vi.hoisted(() => ({
   defaultBrowserMock: vi.fn(),
   browserListMock: vi.fn(),
   cookieExtractMock: vi.fn(),
   launchMock: vi.fn(),
+  connectOverCDPMock: vi.fn(),
   newContextMock: vi.fn(),
   addCookiesMock: vi.fn(),
   addInitScriptMock: vi.fn(),
@@ -24,6 +29,9 @@ const {
   newPageMock: vi.fn(),
   gotoMock: vi.fn(),
   closeMock: vi.fn(),
+  autoDiscoverCdpMock: vi.fn(),
+  launchSystemChromeMock: vi.fn(),
+  killChromeProcessMock: vi.fn(),
 }));
 
 vi.mock("@expect/cookies", async () => {
@@ -58,6 +66,7 @@ const firefoxLaunchMock = vi.hoisted(() => vi.fn());
 vi.mock("playwright", () => ({
   chromium: {
     launch: launchMock,
+    connectOverCDP: connectOverCDPMock,
   },
   webkit: {
     launch: webkitLaunchMock,
@@ -65,6 +74,15 @@ vi.mock("playwright", () => ({
   firefox: {
     launch: firefoxLaunchMock,
   },
+}));
+
+vi.mock("../src/cdp-discovery", () => ({
+  autoDiscoverCdp: autoDiscoverCdpMock,
+}));
+
+vi.mock("../src/chrome-launcher", () => ({
+  launchSystemChrome: launchSystemChromeMock,
+  killChromeProcess: killChromeProcessMock,
 }));
 
 import { Effect, Option } from "effect";
@@ -307,5 +325,172 @@ describe("Browser.createPage browserType", () => {
     );
 
     expect(webkitLaunchMock).toHaveBeenCalledWith(expect.objectContaining({ args: [] }));
+  });
+});
+
+describe("Browser.createPage systemChrome", () => {
+  const existingPage = { goto: vi.fn().mockResolvedValue(undefined), evaluate: vi.fn().mockResolvedValue(undefined) };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    gotoMock.mockResolvedValue(undefined);
+    newPageMock.mockResolvedValue({ goto: gotoMock });
+    addCookiesMock.mockResolvedValue(undefined);
+    addInitScriptMock.mockResolvedValue(undefined);
+    pagesMock.mockReturnValue([existingPage]);
+    newContextMock.mockResolvedValue({
+      newPage: newPageMock,
+      addCookies: addCookiesMock,
+      addInitScript: addInitScriptMock,
+      pages: pagesMock,
+    });
+    closeMock.mockResolvedValue(undefined);
+
+    const mockCdpBrowser = {
+      contexts: () => [
+        {
+          newPage: newPageMock,
+          addCookies: addCookiesMock,
+          addInitScript: addInitScriptMock,
+          pages: pagesMock,
+        },
+      ],
+      newContext: newContextMock,
+      close: closeMock,
+    };
+    connectOverCDPMock.mockResolvedValue(mockCdpBrowser);
+
+    defaultBrowserMock.mockReturnValue(Effect.succeed(Option.none()));
+    browserListMock.mockReturnValue(Effect.succeed([]));
+    killChromeProcessMock.mockReturnValue(Effect.void);
+  });
+
+  it("connects to auto-discovered Chrome when systemChrome is true", async () => {
+    autoDiscoverCdpMock.mockReturnValue(
+      Effect.succeed("ws://127.0.0.1:9222/devtools/browser/abc"),
+    );
+
+    const result = await runBrowser((browser) =>
+      browser.createPage("https://example.com", { systemChrome: true }),
+    );
+
+    expect(autoDiscoverCdpMock).toHaveBeenCalledOnce();
+    expect(connectOverCDPMock).toHaveBeenCalledWith(
+      "ws://127.0.0.1:9222/devtools/browser/abc",
+      expect.objectContaining({ timeout: expect.any(Number) }),
+    );
+    expect(launchSystemChromeMock).not.toHaveBeenCalled();
+    expect(launchMock).not.toHaveBeenCalled();
+    expect(result.isExternalBrowser).toBe(true);
+  });
+
+  it("falls back to launchSystemChrome when discovered CDP fails to connect", async () => {
+    autoDiscoverCdpMock.mockReturnValue(
+      Effect.succeed("ws://127.0.0.1:9222/devtools/browser/bad"),
+    );
+    connectOverCDPMock.mockRejectedValueOnce(new Error("Timeout"));
+    launchSystemChromeMock.mockReturnValue(
+      Effect.succeed({
+        process: { kill: vi.fn() },
+        wsUrl: "ws://127.0.0.1:55555/devtools/browser/xyz",
+        userDataDir: "/tmp/test",
+        tempUserDataDir: "/tmp/test",
+      }),
+    );
+
+    const result = await runBrowser((browser) =>
+      browser.createPage("https://example.com", { systemChrome: true }),
+    );
+
+    expect(autoDiscoverCdpMock).toHaveBeenCalledOnce();
+    expect(launchSystemChromeMock).toHaveBeenCalledOnce();
+    expect(result.isExternalBrowser).toBe(false);
+  });
+
+  it("falls back to launchSystemChrome when auto-discovery fails", async () => {
+    const { CdpDiscoveryError } = await import("../src/errors");
+    autoDiscoverCdpMock.mockReturnValue(
+      new CdpDiscoveryError({ cause: "No running Chrome found" }).asEffect(),
+    );
+    launchSystemChromeMock.mockReturnValue(
+      Effect.succeed({
+        process: { kill: vi.fn() },
+        wsUrl: "ws://127.0.0.1:55555/devtools/browser/xyz",
+        userDataDir: "/tmp/expect-chrome-test",
+        tempUserDataDir: "/tmp/expect-chrome-test",
+      }),
+    );
+
+    const result = await runBrowser((browser) =>
+      browser.createPage("https://example.com", { systemChrome: true }),
+    );
+
+    expect(autoDiscoverCdpMock).toHaveBeenCalledOnce();
+    expect(launchSystemChromeMock).toHaveBeenCalledOnce();
+    expect(connectOverCDPMock).toHaveBeenCalledWith("ws://127.0.0.1:55555/devtools/browser/xyz");
+    expect(launchMock).not.toHaveBeenCalled();
+    expect(result.isExternalBrowser).toBe(false);
+  });
+
+  it("launches system Chrome headed when falling back", async () => {
+    const { CdpDiscoveryError } = await import("../src/errors");
+    autoDiscoverCdpMock.mockReturnValue(
+      new CdpDiscoveryError({ cause: "No running Chrome" }).asEffect(),
+    );
+    launchSystemChromeMock.mockReturnValue(
+      Effect.succeed({
+        process: { kill: vi.fn() },
+        wsUrl: "ws://127.0.0.1:55555/devtools/browser/xyz",
+        userDataDir: "/tmp/test",
+        tempUserDataDir: "/tmp/test",
+      }),
+    );
+
+    await runBrowser((browser) =>
+      browser.createPage("https://example.com", { systemChrome: true }),
+    );
+
+    expect(launchSystemChromeMock).toHaveBeenCalledWith({ headless: false });
+  });
+
+  it("opens a fresh tab for external Chrome instead of reusing existing pages", async () => {
+    autoDiscoverCdpMock.mockReturnValue(
+      Effect.succeed("ws://127.0.0.1:9222/devtools/browser/abc"),
+    );
+
+    await runBrowser((browser) =>
+      browser.createPage("https://example.com", { systemChrome: true }),
+    );
+
+    expect(newPageMock).toHaveBeenCalledOnce();
+  });
+
+  it("skips auto-discovery when cdpUrl is already provided", async () => {
+    await runBrowser((browser) =>
+      browser.createPage("https://example.com", {
+        systemChrome: true,
+        cdpUrl: "ws://custom:1234/devtools/browser/manual",
+      }),
+    );
+
+    expect(autoDiscoverCdpMock).not.toHaveBeenCalled();
+    expect(launchSystemChromeMock).not.toHaveBeenCalled();
+    expect(connectOverCDPMock).toHaveBeenCalledWith("ws://custom:1234/devtools/browser/manual");
+  });
+
+  it("ignores systemChrome when browserType is not chromium", async () => {
+    webkitLaunchMock.mockResolvedValue({
+      newContext: newContextMock,
+      close: closeMock,
+    });
+
+    await runBrowser((browser) =>
+      browser.createPage("https://example.com", { systemChrome: true, browserType: "webkit" }),
+    );
+
+    expect(autoDiscoverCdpMock).not.toHaveBeenCalled();
+    expect(launchSystemChromeMock).not.toHaveBeenCalled();
+    expect(webkitLaunchMock).toHaveBeenCalledOnce();
   });
 });

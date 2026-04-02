@@ -26,6 +26,7 @@ const SYSTEM_CHROME_PATHS_DARWIN = [
   "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
   "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
   "/Applications/Arc.app/Contents/MacOS/Arc",
+  "/Applications/Helium.app/Contents/MacOS/Helium",
 ] as const;
 
 const SYSTEM_CHROME_NAMES_LINUX = [
