@@ -6,7 +6,7 @@ Published as `expect-sdk` on npm. Used by coding agents (Claude Code, Codex CLI,
 
 1. **Within distribution** - Agents should one-shot the SDK without additional documentation. APIs use familiar shapes from Playwright and the Claude Agent SDK so models generate correct code from training data alone. Strong types enforce correct usage at compile time - branded types, discriminated unions, no `any`.
 
-2. **Interoperable with Playwright** - Setup and teardown accept `string` (AI-driven) or `(page: Page) => Promise<void>` (Playwright callback). Use Playwright for deterministic setup, AI for fuzzy verification. Incrementally adoptable alongside existing test suites.
+2. **Interoperable with Playwright** - Setup and teardown accept `string` (AI-driven) or `(page: Page) => Promise<void | string>` (Playwright callback, optionally returning a string as AI context). Use Playwright for deterministic setup, AI for fuzzy verification. Incrementally adoptable alongside existing test suites.
 
 3. **Composable primitives** - `Expect.test()`, `Expect.session()`, `Expect.withSession()`, and `Expect.cookies()` compose into arbitrarily complex test scenarios through plain JavaScript (async functions, spread, conditionals). Sessions persist browser state across tests. Cookies extract and merge via arrays. No DSL - composition is just code.
 
@@ -22,7 +22,7 @@ import { Expect, defineConfig, configure } from "expect-sdk";
 
 ```ts
 type Context = string | Record<string, unknown>;
-type SetupFn = string | ((page: import("playwright").Page) => Promise<void>);
+type SetupFn = string | ((page: import("playwright").Page) => Promise<void | string>);
 type BrowserEngine = "chromium" | "firefox" | "webkit";
 type BrowserName = "chrome" | "firefox" | "safari" | "edge" | "brave" | "arc";
 type CookieInput = true | BrowserName | BrowserName[] | Cookie[];
@@ -185,9 +185,17 @@ const result = await Expect.test({
 });
 ```
 
-Setup and teardown - string (AI-driven) or Playwright callback:
+Setup and teardown - string (AI-driven) or Playwright callback. Callbacks can return a string to pass as AI context:
 
 ```ts
+// String setup - AI executes it
+await Expect.test({
+  url: "/login",
+  setup: "log in as admin using email admin@test.com and password admin123",
+  tests: ["dashboard shows welcome banner for admin"],
+});
+
+// Callback setup - deterministic Playwright code
 await Expect.test({
   url: "/admin",
   setup: async (page) => {
@@ -200,10 +208,17 @@ await Expect.test({
   teardown: "delete any users created during this test",
 });
 
+// Callback returning string - Playwright setup + dynamic AI context
 await Expect.test({
-  url: "/login",
-  setup: "log in as admin using email admin@test.com and password admin123",
-  tests: ["dashboard shows welcome banner for admin"],
+  url: "/dashboard",
+  setup: async (page) => {
+    await page.goto("http://localhost:3000/login");
+    await page.fill("#email", "admin@test.com");
+    await page.click("button[type=submit]");
+    const username = await page.textContent("#username");
+    return `the logged-in user is "${username}"`;
+  },
+  tests: ["welcome message displays the correct username"],
 });
 ```
 
@@ -598,7 +613,7 @@ Do not create a session when a single `Expect.test()` with `setup` would suffice
 
 ### Key patterns
 
-Pass `context` for data the AI needs. Pass `setup`/`teardown` as a string (AI executes) or Playwright callback. Pass `cookies: "chrome"` for auth. Pass `page` to reuse an existing Playwright page.
+Pass `context` for data the AI needs. Pass `setup`/`teardown` as a string (AI executes) or Playwright callback (optionally returning a string as AI context). Pass `cookies: "chrome"` for auth. Pass `page` to reuse an existing Playwright page.
 
 ```ts
 await Expect.test({
@@ -735,8 +750,11 @@ Config file is optional: `defineConfig({ baseUrl, cookies })` in `expect.config.
 
 - String setup is passed to the AI as an instruction
 - Function setup receives the Playwright page
+- Function setup returning a string passes it as AI context
+- Function setup returning void has no AI context
 - String teardown is passed to the AI
 - Function teardown receives the Playwright page
+- Function teardown returning a string passes it as AI context
 - Teardown runs even when tests fail
 
 ### Cookies
