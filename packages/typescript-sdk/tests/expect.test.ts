@@ -26,12 +26,22 @@ describe("Expect.test input validation", () => {
 
   it("does not throw when baseUrl is configured", () => {
     configure({ baseUrl: "http://localhost:3000" });
-    expect(() => Expect.test({ url: "/login", tests: ["something"] })).not.toThrow();
+    const run = Expect.test({ url: "/login", tests: ["something"] });
+    run.then(
+      () => {},
+      () => {},
+    );
+    expect(run).toBeDefined();
   });
 
   it("uses baseUrl when no url provided", () => {
     configure({ baseUrl: "http://localhost:3000" });
-    expect(() => Expect.test({ tests: ["something"] })).not.toThrow();
+    const run = Expect.test({ tests: ["something"] });
+    run.then(
+      () => {},
+      () => {},
+    );
+    expect(run).toBeDefined();
   });
 
   it("throws when tools are provided", () => {

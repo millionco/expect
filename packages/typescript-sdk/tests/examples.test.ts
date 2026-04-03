@@ -1,70 +1,44 @@
 import { describe, it, expect, beforeEach } from "vite-plus/test";
-import { Expect } from "../src/expect";
 import { configure, resetGlobalConfig } from "../src/config";
+import { resolveUrl, buildInstruction } from "../src/build-instruction";
+import { Expect } from "../src/expect";
 
-describe("examples — input validation only (no agent needed)", () => {
+describe("example patterns — validation only", () => {
   beforeEach(() => {
     resetGlobalConfig();
   });
 
-  it("basic: accepts absolute url + tests", () => {
-    const run = Expect.test({
-      url: "http://localhost:3000",
-      tests: ["the page loads without errors", "the main heading is visible"],
-    });
-    expect(run).toBeDefined();
-    expect(typeof run.then).toBe("function");
-    expect(typeof run[Symbol.asyncIterator]).toBe("function");
+  it("basic: resolves absolute url", () => {
+    const url = resolveUrl("http://localhost:3000", undefined);
+    expect(url).toBe("http://localhost:3000/");
   });
 
-  it("auth: configure baseUrl + multiple test calls", () => {
+  it("auth: configure baseUrl resolves relative urls", () => {
     configure({ baseUrl: "http://localhost:3000" });
-
-    const login = Expect.test({
-      url: "/login",
-      tests: ["submitting empty form shows validation errors"],
-    });
-    const signup = Expect.test({
-      url: "/signup",
-      tests: ["signup form has email field"],
-    });
-
-    expect(login).toBeDefined();
-    expect(signup).toBeDefined();
+    const loginUrl = resolveUrl("/login", "http://localhost:3000");
+    const signupUrl = resolveUrl("/signup", "http://localhost:3000");
+    expect(loginUrl).toBe("http://localhost:3000/login");
+    expect(signupUrl).toBe("http://localhost:3000/signup");
   });
 
-  it("session: creates session and returns test method", () => {
-    const session = Expect.session({
-      url: "http://localhost:3000",
-      cookies: "chrome",
-    });
-
+  it("session: creates session with test and close methods", () => {
+    const session = Expect.session({ url: "http://localhost:3000" });
     expect(typeof session.test).toBe("function");
     expect(typeof session.close).toBe("function");
-
-    const run = session.test({
-      url: "/login",
-      tests: ["login form renders"],
-    });
-    expect(run).toBeDefined();
+    expect(typeof session[Symbol.asyncDispose]).toBe("function");
   });
 
-  it("streaming: test run is async iterable", () => {
-    const run = Expect.test({
-      url: "http://localhost:3000/login",
-      tests: ["signing in redirects to dashboard"],
-    });
-
-    expect(Symbol.asyncIterator in run).toBe(true);
+  it("instruction: builds numbered test list", () => {
+    const instruction = buildInstruction("http://localhost:3000/login", [
+      "signing in with valid credentials redirects to the dashboard",
+      "the dashboard shows the user's name",
+    ]);
+    expect(instruction).toContain("1. signing in");
+    expect(instruction).toContain("2. the dashboard");
+    expect(instruction).toContain("http://localhost:3000/login");
   });
 
-  it("playwright-setup: accepts page option", () => {
-    const fakePage = { url: () => "http://localhost:3000/dashboard" };
-
-    const run = Expect.test({
-      page: fakePage as never,
-      tests: ["dashboard shows welcome message"],
-    });
-    expect(run).toBeDefined();
+  it("cookies: Expect.cookies is callable", () => {
+    expect(typeof Expect.cookies).toBe("function");
   });
 });

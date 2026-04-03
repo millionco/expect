@@ -13,7 +13,7 @@
     "format:check": "vp fmt --check",
     "check": "vp check",
     "test": "vp test run --exclude tests/e2e.test.ts",
-    "test:e2e": "vp test run tests/e2e.test.ts --testTimeout 0",
+    "test:e2e": "~/.bun/bin/bun tests/e2e.test.ts",
     "test:watch": "vp test --exclude tests/e2e.test.ts",
     "typecheck": "tsgo --noEmit"
   },
@@ -27,6 +27,7 @@
     "effect": "4.0.0-beta.35"
   },
   "devDependencies": {
+    "@types/bun": "^1.3.11",
     "@types/node": "^22.15.0",
     "typescript": "^5.7.0"
   },
