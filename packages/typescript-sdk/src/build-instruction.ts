@@ -1,5 +1,4 @@
 import { ExpectConfigError } from "./errors";
-import type { Context, Test } from "./types";
 
 export const resolveUrl = (url: unknown, baseUrl: string | undefined): string => {
   if (typeof url !== "string") {
@@ -25,29 +24,14 @@ export const resolveUrl = (url: unknown, baseUrl: string | undefined): string =>
   return new URL(url, baseUrl).href;
 };
 
-const formatContext = (context: Context): string => {
-  if (typeof context === "string") return context;
-  return JSON.stringify(context, undefined, 2);
-};
-
 export const buildInstruction = (
   url: string,
-  sharedContext: Context | undefined,
-  tests: readonly Test[],
+  tests: readonly string[],
 ): string => {
   const lines = [`Navigate to ${url} and verify the following requirements:`, ""];
 
-  for (const [index, test] of tests.entries()) {
-    const title = typeof test === "string" ? test : test.title;
-    const context =
-      typeof test === "string"
-        ? sharedContext
-        : (test.context ?? sharedContext);
-
+  for (const [index, title] of tests.entries()) {
     lines.push(`${index + 1}. ${title}`);
-    if (context !== undefined) {
-      lines.push(`   Context: ${formatContext(context)}`);
-    }
   }
 
   return lines.join("\n");
