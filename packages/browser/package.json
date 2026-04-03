@@ -7,6 +7,7 @@
     ".": "./src/index.ts",
     "./mcp": "./src/mcp/index.ts",
     "./cli": "./src/mcp/start.ts",
+    "./mcp/rules-content": "./src/mcp/rules-content.ts",
     "./runtime": "./src/runtime/index.ts"
   },
   "scripts": {

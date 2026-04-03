@@ -10,6 +10,7 @@ import { formatPerformanceTrace } from "../performance-trace";
 import { McpSession } from "./mcp-session";
 import { autoDiscoverCdp } from "../cdp-discovery";
 import { DUPLICATE_REQUEST_WINDOW_MS } from "./constants";
+import { registerRulesResources } from "./rules-resources";
 
 const textResult = (text: string) => ({
   content: [{ type: "text" as const, text }],
@@ -515,6 +516,8 @@ export const createBrowserMcpServer = <E>(
         }).pipe(Effect.withSpan(`mcp.tool.close`)),
       ),
   );
+
+  registerRulesResources(server);
 
   return server;
 };
