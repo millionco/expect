@@ -77,7 +77,7 @@ const MainLive = Layer.mergeAll(UserService.Default, OtherService.Default);
 - Infrastructure with runtime injection (Cloudflare KV, worker bindings)
 - Factory patterns where resources are provided externally
 
-See `references/service-patterns.md` for detailed patterns.
+See `expect://rules/effect/service-patterns` for detailed patterns.
 
 ## Error Definition Pattern
 
@@ -184,7 +184,7 @@ export class SessionExpiredError extends Schema.TaggedError<SessionExpiredError>
 // - SessionExpiredError → "Your session expired. Please log in again."
 ```
 
-See `references/error-patterns.md` for error remapping and retry patterns.
+See `expect://rules/effect/error-patterns` for error remapping and retry patterns.
 
 ## Schema & Branded Types Pattern
 
@@ -224,7 +224,7 @@ export type CreateUserInput = Schema.Schema.Type<typeof CreateUserInput>;
 - Simple strings that don't cross service boundaries (URLs, file paths)
 - Primitive config values
 
-See `references/schema-patterns.md` for transforms and advanced patterns.
+See `expect://rules/effect/schema-patterns` for transforms and advanced patterns.
 
 ## Function Pattern with Effect.fn
 
@@ -277,7 +277,7 @@ const AppLive = Layer.mergeAll(
 );
 ```
 
-See `references/layer-patterns.md` for testing layers and config-dependent layers.
+See `expect://rules/effect/layer-patterns` for testing layers and config-dependent layers.
 
 ## Option Handling
 
@@ -371,13 +371,13 @@ const scrollYAtom = Atom.make((get) => {
 }).pipe(Atom.keepAlive);
 ```
 
-See `references/effect-atom-patterns.md` for complete patterns including families, localStorage, and anti-patterns.
+See `expect://rules/effect/effect-atom-patterns` for complete patterns including families, localStorage, and anti-patterns.
 
 ## RPC & Cluster Patterns
 
 For RPC contracts and cluster workflows, see:
 
-- `references/rpc-cluster-patterns.md` - RpcGroup, Workflow.make, Activity patterns
+- `expect://rules/effect/rpc-cluster-patterns` - RpcGroup, Workflow.make, Activity patterns
 
 ## Anti-Patterns (Forbidden)
 
@@ -406,7 +406,7 @@ const key = process.env.API_KEY; // Use Config.string("API_KEY")
 type User = { name: string | null }; // Use Option<string>
 ```
 
-See `references/anti-patterns.md` for the complete list with rationale.
+See `expect://rules/effect/anti-patterns` for the complete list with rationale.
 
 ## Observability
 
@@ -428,7 +428,7 @@ const config = Config.all({
 });
 ```
 
-See `references/observability-patterns.md` for metrics and tracing patterns.
+See `expect://rules/effect/observability-patterns` for metrics and tracing patterns.
 
 ## Reference Files
 

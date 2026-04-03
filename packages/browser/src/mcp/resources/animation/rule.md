@@ -10,23 +10,23 @@ version: 1.0.0
 
 # Animation Patterns & Performance
 
-Practical animation reference and performance rules. See `rules/` for detailed guides on specific topics.
+Practical animation reference and performance rules. Fetch `expect://rules/animation/<sub-rule>` for detailed guides.
 
 ## Rules
 
 | Rule            | File                       | When to apply                                        |
 | --------------- | -------------------------- | ---------------------------------------------------- |
-| Accessibility   | `rules/accessibility.md`   | Reduced motion, touch targets, focus management      |
-| Consistency     | `rules/consistency.md`     | Uniform animation language, motion tokens            |
-| Easing          | `rules/easing.md`          | Enter/exit easing, on-screen movement, custom curves |
-| Enter & Exit    | `rules/enter-exit.md`      | Fill mode, tooltip sequencing, stagger timing        |
-| Framer Motion   | `rules/framer-motion.md`   | layout/layoutId, AnimatePresence, variants, gestures |
-| GPU Performance | `rules/gpu-performance.md` | 60fps, GPU promotion, render isolation, blur limits  |
-| Hover           | `rules/hover.md`           | Flicker prevention, touch devices, hover debounce    |
-| Properties      | `rules/properties.md`      | Compositor-only properties, forbidden layout props   |
-| Springs         | `rules/springs.md`         | When to use springs, bounce defaults, parameters     |
-| Timing          | `rules/timing.md`          | Interaction feedback, content transitions, frequency |
-| Transforms      | `rules/transforms.md`      | Scale feedback, transform origin, 3D transforms      |
+| Accessibility   | `expect://rules/animation/accessibility`   | Reduced motion, touch targets, focus management      |
+| Consistency     | `expect://rules/animation/consistency`     | Uniform animation language, motion tokens            |
+| Easing          | `expect://rules/animation/easing`          | Enter/exit easing, on-screen movement, custom curves |
+| Enter & Exit    | `expect://rules/animation/enter-exit`      | Fill mode, tooltip sequencing, stagger timing        |
+| Framer Motion   | `expect://rules/animation/framer-motion`   | layout/layoutId, AnimatePresence, variants, gestures |
+| GPU Performance | `expect://rules/animation/gpu-performance` | 60fps, GPU promotion, render isolation, blur limits  |
+| Hover           | `expect://rules/animation/hover`           | Flicker prevention, touch devices, hover debounce    |
+| Properties      | `expect://rules/animation/properties`      | Compositor-only properties, forbidden layout props   |
+| Springs         | `expect://rules/animation/springs`         | When to use springs, bounce defaults, parameters     |
+| Timing          | `expect://rules/animation/timing`          | Interaction feedback, content transitions, frequency |
+| Transforms      | `expect://rules/animation/transforms`      | Scale feedback, transform origin, 3D transforms      |
 
 ## Recording & Debugging
 

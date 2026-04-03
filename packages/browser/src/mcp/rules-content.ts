@@ -14,27 +14,6 @@ const STRIP_FRONTMATTER = /^---[\s\S]*?---\n+/;
 
 const stripFrontmatter = (content: string): string => content.replace(STRIP_FRONTMATTER, "");
 
-const rewriteSubRuleRefs = (content: string, slug: string): string =>
-  content
-    .replace(/`rules\/([^`]+)\.md`/g, (_, name) => `\`expect://rules/${slug}/${name}\``)
-    .replace(/`references\/([^`]+)\.md`/g, (_, name) => `\`expect://rules/${slug}/${name}\``)
-    .replace(
-      /See `rules\/` for detailed guides[^.]*\./g,
-      `Fetch \`expect://rules/${slug}/<sub-rule>\` for detailed guides.`,
-    )
-    .replace(
-      /Read individual rule files in `rules\/`[^.]*/g,
-      `Fetch \`expect://rules/${slug}/<sub-rule>\` for detailed rule content`,
-    )
-    .replace(
-      /Read individual rule files for detailed explanations and code examples:/g,
-      "Fetch individual sub-rule resources for detailed explanations and code examples:",
-    )
-    .replace(/^rules\/[\w-]+\.md$/gm, (match) => {
-      const name = match.replace(/^rules\//, "").replace(/\.md$/, "");
-      return `expect://rules/${slug}/${name}`;
-    });
-
 export interface RuleDefinition {
   readonly slug: string;
   readonly description: string;
@@ -121,8 +100,7 @@ export const getRuleContent = (rule: RuleDefinition): string | undefined => {
     if (content) parts.push(stripFrontmatter(content));
   }
   if (parts.length === 0) return undefined;
-  const merged = parts.join("\n\n---\n\n");
-  return rule.subRuleDir ? rewriteSubRuleRefs(merged, rule.slug) : merged;
+  return parts.join("\n\n---\n\n");
 };
 
 export const getSubRules = (rule: RuleDefinition): ReadonlyArray<string> => {

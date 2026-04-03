@@ -111,11 +111,11 @@ The `accessibility_audit` tool runs axe-core + IBM Equal Access and returns viol
 1. Fix `critical` and `serious` first — these block users
 2. Group violations by `ruleId` — one fix often resolves multiple nodes
 3. Use `nodes[].selector` to locate the element, `nodes[].html` to confirm the component
-4. Apply the fix from `nodes[].failureSummary` or the lookup table in `rules/audit-rule-mapping.md`
+4. Apply the fix from `nodes[].failureSummary` or the lookup table in `expect://rules/accessibility/audit-rule-mapping`
 5. Prefer native HTML over ARIA when both solve the problem
 6. Re-run `accessibility_audit` after fixing to confirm resolution
 
-For complex widgets (dialog, combobox, menu, tabs), read `rules/patterns.md` before writing custom implementations.
+For complex widgets (dialog, combobox, menu, tabs), read `expect://rules/accessibility/patterns` before writing custom implementations.
 
 ## Red Flags
 

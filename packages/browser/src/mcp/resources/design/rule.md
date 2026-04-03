@@ -10,20 +10,20 @@ version: 1.0.0
 
 # UI/UX Design Principles
 
-Practical design rules distilled from [userinterface.wiki](https://www.userinterface.wiki/). See `rules/` for detailed guides.
+Practical design rules distilled from [userinterface.wiki](https://www.userinterface.wiki/). Fetch `expect://rules/design/<sub-rule>` for detailed guides.
 
 ## Rules
 
 | Rule                 | File                            | When to apply                                              |
 | -------------------- | ------------------------------- | ---------------------------------------------------------- |
-| Animation Principles | `rules/animation-principles.md` | Squash/stretch, staging, anticipation, timing, appeal      |
-| Timing Functions     | `rules/timing-functions.md`     | Choosing springs vs easing vs linear vs no animation       |
-| Exit Animations      | `rules/exit-animations.md`      | AnimatePresence modes, nested exits, manual exit control   |
-| Audio Feedback       | `rules/audio-feedback.md`       | Adding sound to interactions, Web Audio API, accessibility |
-| Laws of UX           | `rules/laws-of-ux.md`           | Fitts's Law, Hick's Law, Miller's Law, Doherty Threshold   |
-| Container Animation  | `rules/container-animation.md`  | Animating width/height with useMeasure + Motion            |
-| Typography           | `rules/typography.md`           | Tabular nums, OpenType features, text-wrap, font loading   |
-| Visual Design        | `rules/visual-design.md`        | Shadows, border radius, spacing scales, button anatomy     |
+| Animation Principles | `expect://rules/design/animation-principles` | Squash/stretch, staging, anticipation, timing, appeal      |
+| Timing Functions     | `expect://rules/design/timing-functions`     | Choosing springs vs easing vs linear vs no animation       |
+| Exit Animations      | `expect://rules/design/exit-animations`      | AnimatePresence modes, nested exits, manual exit control   |
+| Audio Feedback       | `expect://rules/design/audio-feedback`       | Adding sound to interactions, Web Audio API, accessibility |
+| Laws of UX           | `expect://rules/design/laws-of-ux`           | Fitts's Law, Hick's Law, Miller's Law, Doherty Threshold   |
+| Container Animation  | `expect://rules/design/container-animation`  | Animating width/height with useMeasure + Motion            |
+| Typography           | `expect://rules/design/typography`           | Tabular nums, OpenType features, text-wrap, font loading   |
+| Visual Design        | `expect://rules/design/visual-design`        | Shadows, border radius, spacing scales, button anatomy     |
 
 ## Decision Framework
 

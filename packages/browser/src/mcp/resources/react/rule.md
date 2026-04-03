@@ -124,11 +124,11 @@ Reference these guidelines when:
 
 ## How to Use
 
-Read individual rule files for detailed explanations and code examples:
+Fetch individual sub-rule resources for detailed explanations and code examples:
 
 ```
-rules/async-parallel.md
-rules/bundle-barrel-imports.md
+expect://rules/react/async-parallel
+expect://rules/react/bundle-barrel-imports
 ```
 
 Each rule file contains:
@@ -140,4 +140,4 @@ Each rule file contains:
 
 ## Full Details
 
-Read individual rule files in `rules/` for the complete guide with all rules expanded.
+Fetch `expect://rules/react/<sub-rule>` for detailed rule content.

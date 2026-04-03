@@ -55,7 +55,7 @@ Do NOT report issues based solely on pattern matching. Investigate first, report
 
 ### Framework-Mitigated Patterns
 
-Check `references/xss.md` before flagging. Common false positives:
+Check `expect://rules/security/xss` before flagging. Common false positives:
 
 | Pattern                              | Why It's Usually Safe          |
 | ------------------------------------ | ------------------------------ |
@@ -76,16 +76,16 @@ Only flag these when:
 
 | Code Type                                    | Load Reference                      |
 | -------------------------------------------- | ----------------------------------- |
-| JSX, templates, DOM manipulation             | `references/xss.md`                 |
-| Form submissions, state mutations            | `references/csrf.md`                |
-| Redirects, link hrefs                        | `references/open-redirect.md`       |
-| `postMessage`, `addEventListener("message")` | `references/postmessage.md`         |
-| Cookies, `Set-Cookie`, auth tokens           | `references/cookies.md`             |
-| CSP headers, meta tags                       | `references/csp.md`                 |
-| CORS headers, fetch credentials              | `references/cors.md`                |
-| localStorage, sessionStorage                 | `references/client-storage.md`      |
-| Object merging, query parsing                | `references/prototype-pollution.md` |
-| Next.js App Router, RSC, Server Actions      | `references/nextjs-react.md`        |
+| JSX, templates, DOM manipulation             | `expect://rules/security/xss`                 |
+| Form submissions, state mutations            | `expect://rules/security/csrf`                |
+| Redirects, link hrefs                        | `expect://rules/security/open-redirect`       |
+| `postMessage`, `addEventListener("message")` | `expect://rules/security/postmessage`         |
+| Cookies, `Set-Cookie`, auth tokens           | `expect://rules/security/cookies`             |
+| CSP headers, meta tags                       | `expect://rules/security/csp`                 |
+| CORS headers, fetch credentials              | `expect://rules/security/cors`                |
+| localStorage, sessionStorage                 | `expect://rules/security/client-storage`      |
+| Object merging, query parsing                | `expect://rules/security/prototype-pollution` |
+| Next.js App Router, RSC, Server Actions      | `expect://rules/security/nextjs-react`        |
 
 ### 2. Research Before Flagging
 
