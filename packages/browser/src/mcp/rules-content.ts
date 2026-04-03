@@ -1,7 +1,12 @@
 declare const __RULES_CONTENT__: Record<string, string> | undefined;
 
-const rulesContentMap = (): Record<string, string> =>
-  typeof __RULES_CONTENT__ !== "undefined" ? __RULES_CONTENT__ : {};
+let cachedContent: Record<string, string> | undefined;
+
+const rulesContentMap = (): Record<string, string> => {
+  if (cachedContent) return cachedContent;
+  cachedContent = typeof __RULES_CONTENT__ !== "undefined" ? __RULES_CONTENT__ : {};
+  return cachedContent;
+};
 
 export const rulesAvailable = (): boolean => typeof __RULES_CONTENT__ !== "undefined";
 

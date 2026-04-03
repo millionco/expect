@@ -2,7 +2,6 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   RULES,
-  findRule,
   getRulesToc,
   getSkillContent,
   getSubRuleContent,
@@ -63,7 +62,7 @@ export const registerRulesResources = (server: McpServer) => {
           mimeType: "text/markdown",
         },
         async (uri, { subRule }) => {
-          const subRuleName = subRule as string;
+          const subRuleName = String(subRule);
           const content = getSubRuleContent(rule, subRuleName);
           if (!content) {
             return { contents: [{ uri: uri.href, text: `Sub-rule not found: ${subRuleName}` }] };
