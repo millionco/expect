@@ -343,6 +343,7 @@ if (result.status === "failed") {
 
 ## Compare to other testing tools
 
+
 |                | expect-sdk                      | Playwright / Cypress     | Manual QA      |
 | -------------- | ------------------------------- | ------------------------ | -------------- |
 | Test authoring | Plain English                   | Selectors + assertions   | Click around   |
@@ -350,6 +351,7 @@ if (result.status === "failed") {
 | Setup          | `npm install expect-sdk`        | Page objects, fixtures   | Hire people    |
 | Flakiness      | AI retries intelligently        | Explicit waits           | Human judgment |
 | Best for       | Behavior verification           | Pixel-precise assertions | Exploratory    |
+
 
 Use expect-sdk when you care about **what** the app does. Use Playwright when you care about **how** it renders.
 
@@ -371,18 +373,20 @@ const result = await Expect.test({
 });
 ```
 
-| Field         | Type                     | Default      | Description                                                      |
-| ------------- | ------------------------ | ------------ | ---------------------------------------------------------------- |
-| `url`         | `string`                 | -            | URL to navigate to (absolute or relative to `baseUrl`)           |
-| `page`        | `Page`                   | -            | Existing Playwright page (skips browser creation, `url` ignored) |
-| `cookies`     | `CookieInput`            | -            | `true`, browser name, browser name array, or `Cookie[]`          |
-| `tools`       | `Tool[]`                 | -            | Custom tools the AI can call                                     |
-| `tests`       | `Test[]`                 | **required** | Test descriptions as strings or `{ title?, prompt }` objects     |
-| `setup`       | `Action`                 | -            | String instruction or `(page: Page) => Promise<void \| string>`  |
-| `teardown`    | `Action`                 | -            | String instruction or `(page: Page) => Promise<void \| string>`  |
-| `mode`        | `"headed" \| "headless"` | `"headless"` | Browser visibility                                               |
-| `timeout`     | `number`                 | `300000`     | Timeout in milliseconds                                          |
-| `isRecording` | `boolean`                | `false`      | Enable session recording                                         |
+
+| Field         | Type                    | Default      | Description                                                      |
+| ------------- | ----------------------- | ------------ | ---------------------------------------------------------------- |
+| `url`         | `string`                | -            | URL to navigate to (absolute or relative to `baseUrl`)           |
+| `page`        | `Page`                  | -            | Existing Playwright page (skips browser creation, `url` ignored) |
+| `cookies`     | `CookieInput`           | -            | `true`, browser name, browser name array, or `Cookie[]`          |
+| `tools`       | `Tool[]`                | -            | Custom tools the AI can call                                     |
+| `tests`       | `Test[]`                | **required** | Test descriptions as strings or `{ title?, prompt }` objects     |
+| `setup`       | `Action`                | -            | String instruction or `(page: Page) => Promise<void | string>`   |
+| `teardown`    | `Action`                | -            | String instruction or `(page: Page) => Promise<void | string>`   |
+| `mode`        | `"headed" | "headless"` | `"headless"` | Browser visibility                                               |
+| `timeout`     | `number`                | `300000`     | Timeout in milliseconds                                          |
+| `isRecording` | `boolean`               | `false`      | Enable session recording                                         |
+
 
 ### `TestRun`
 
@@ -454,12 +458,14 @@ await session.test({ url: "/dashboard", tests: ["loads while authenticated"] });
 await session.close();
 ```
 
-| Field     | Type                     | Default      | Description                       |
-| --------- | ------------------------ | ------------ | --------------------------------- |
-| `url`     | `string`                 | -            | Base URL for the session          |
-| `cookies` | `CookieInput`            | -            | Cookies to inject                 |
-| `mode`    | `"headed" \| "headless"` | `"headless"` | Browser visibility                |
-| `timeout` | `number`                 | `300000`     | Default timeout for session tests |
+
+| Field     | Type                    | Default      | Description                       |
+| --------- | ----------------------- | ------------ | --------------------------------- |
+| `url`     | `string`                | -            | Base URL for the session          |
+| `cookies` | `CookieInput`           | -            | Cookies to inject                 |
+| `mode`    | `"headed" | "headless"` | `"headless"` | Browser visibility                |
+| `timeout` | `number`                | `300000`     | Default timeout for session tests |
+
 
 ### `ExpectSession`
 
