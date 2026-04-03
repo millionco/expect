@@ -153,9 +153,6 @@ export const getSubRuleContent = (
   return undefined;
 };
 
-export const findRule = (slug: string): RuleDefinition | undefined =>
-  RULES.find((rule) => rule.slug === slug);
-
 export const getRulesToc = (): string => {
   const lines = ["# Available Rules", ""];
   for (const rule of RULES) {
