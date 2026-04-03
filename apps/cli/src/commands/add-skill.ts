@@ -92,6 +92,14 @@ const downloadSkill = async (skillDir: string): Promise<boolean> => {
   }
 };
 
+const getPathStats = (path: string) => {
+  try {
+    return lstatSync(path);
+  } catch {
+    return undefined;
+  }
+};
+
 const selectAgents = async (agents: readonly SupportedAgent[], nonInteractive: boolean) => {
   if (nonInteractive) return [...agents];
 
@@ -122,8 +130,8 @@ export const ensureAgentSymlink = (projectRoot: string, agent: SupportedAgent): 
   const targetPath = relative(dirname(symlinkPath), skillSourceDir);
 
   try {
-    if (existsSync(symlinkPath)) {
-      const stats = lstatSync(symlinkPath);
+    const stats = getPathStats(symlinkPath);
+    if (stats) {
       if (stats.isSymbolicLink()) {
         if (readlinkSync(symlinkPath) === targetPath) return true;
         unlinkSync(symlinkPath);
