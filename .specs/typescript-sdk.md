@@ -8,7 +8,7 @@ Published as `expect-sdk` on npm. Used by coding agents (Claude Code, Codex CLI,
 
 2. **Interoperable with Playwright** — Setup and teardown accept `string` (AI-driven) or `(page: Page) => Promise<void>` (Playwright callback). Use Playwright for deterministic setup, AI for fuzzy verification. Incrementally adoptable alongside existing test suites.
 
-3. **Composable primitives** — Three functions compose into arbitrarily complex test scenarios through plain JavaScript (async functions, spread, conditionals). Sessions persist browser state across tests. Cookies extract and merge via arrays. No DSL — composition is just code.
+3. **Composable primitives** — `Expect.test()`, `Expect.session()`, `Expect.withSession()`, and `Expect.cookies()` compose into arbitrarily complex test scenarios through plain JavaScript (async functions, spread, conditionals). Sessions persist browser state across tests. Cookies extract and merge via arrays. No DSL — composition is just code.
 
 ---
 
@@ -23,6 +23,7 @@ import { Expect, defineConfig, configure } from "expect-sdk";
 ```ts
 type Context = string | Record<string, unknown>;
 type SetupFn = string | ((page: import("playwright").Page) => Promise<void>);
+type BrowserEngine = "chromium" | "firefox" | "webkit";
 type BrowserName = "chrome" | "firefox" | "safari" | "edge" | "brave" | "arc";
 type CookieInput = BrowserName | Cookie[];
 type Test = string | { title: string; context?: Context };
@@ -36,12 +37,6 @@ interface Cookie {
   httpOnly?: boolean;
   sameSite?: "Strict" | "Lax" | "None";
   expires?: number;
-}
-
-interface TestOptions {
-  mode?: "headed" | "headless";
-  timeout?: number;
-  isRecording?: boolean;
 }
 
 interface TestResult {
@@ -86,7 +81,9 @@ interface TestInput {
   tests: Test[];
   setup?: SetupFn;
   teardown?: SetupFn;
-  options?: TestOptions;
+  mode?: "headed" | "headless";
+  timeout?: number;
+  isRecording?: boolean;
 }
 ```
 
@@ -185,7 +182,9 @@ interface SessionConfig {
   context?: Context;
   cookies?: CookieInput;
   hooks?: SessionHooks;
-  options?: TestOptions;
+  mode?: "headed" | "headless";
+  timeout?: number;
+  isRecording?: boolean;
 }
 
 interface SessionHooks {
@@ -207,7 +206,9 @@ interface SessionTestInput {
   tests: Test[];
   setup?: SetupFn;
   teardown?: SetupFn;
-  options?: TestOptions;
+  mode?: "headed" | "headless";
+  timeout?: number;
+  isRecording?: boolean;
 }
 ```
 
@@ -326,7 +327,7 @@ Shallow-merges partial config into global state. Inline alternative to config fi
 ```ts
 interface ExpectConfig {
   baseUrl?: string;
-  browser?: "chromium" | "firefox" | "webkit";
+  browser?: BrowserEngine;
   mode?: "headed" | "headless";
   cookies?: CookieInput;
   context?: Context;
