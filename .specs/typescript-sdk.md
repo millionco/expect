@@ -4,11 +4,11 @@ Published as `expect-sdk` on npm. Used by coding agents (Claude Code, Codex CLI,
 
 ## Design Principles
 
-1. **Within distribution** — Agents should one-shot the SDK without additional documentation. APIs use familiar shapes from Playwright and the Claude Agent SDK so models generate correct code from training data alone. Strong types enforce correct usage at compile time — branded types, discriminated unions, no `any`.
+1. **Within distribution** - Agents should one-shot the SDK without additional documentation. APIs use familiar shapes from Playwright and the Claude Agent SDK so models generate correct code from training data alone. Strong types enforce correct usage at compile time - branded types, discriminated unions, no `any`.
 
-2. **Interoperable with Playwright** — Setup and teardown accept `string` (AI-driven) or `(page: Page) => Promise<void>` (Playwright callback). Use Playwright for deterministic setup, AI for fuzzy verification. Incrementally adoptable alongside existing test suites.
+2. **Interoperable with Playwright** - Setup and teardown accept `string` (AI-driven) or `(page: Page) => Promise<void>` (Playwright callback). Use Playwright for deterministic setup, AI for fuzzy verification. Incrementally adoptable alongside existing test suites.
 
-3. **Composable primitives** — `Expect.test()`, `Expect.session()`, `Expect.withSession()`, and `Expect.cookies()` compose into arbitrarily complex test scenarios through plain JavaScript (async functions, spread, conditionals). Sessions persist browser state across tests. Cookies extract and merge via arrays. No DSL — composition is just code.
+3. **Composable primitives** - `Expect.test()`, `Expect.session()`, `Expect.withSession()`, and `Expect.cookies()` compose into arbitrarily complex test scenarios through plain JavaScript (async functions, spread, conditionals). Sessions persist browser state across tests. Cookies extract and merge via arrays. No DSL - composition is just code.
 
 ---
 
@@ -110,7 +110,7 @@ const result = await Expect.test({
 });
 ```
 
-Per-test context (replaces shared context — no merging):
+Per-test context (replaces shared context - no merging):
 
 ```ts
 const result = await Expect.test({
@@ -149,7 +149,7 @@ const result = await Expect.test({
 });
 ```
 
-Setup and teardown — string (AI-driven) or Playwright callback:
+Setup and teardown - string (AI-driven) or Playwright callback:
 
 ```ts
 await Expect.test({
@@ -360,7 +360,7 @@ configure({ baseUrl: "http://localhost:3000" });
 
 ## Architecture
 
-Package at `packages/typescript-sdk/`, published as `expect-sdk`. Thin wrapper — no business logic.
+Package at `packages/typescript-sdk/`, published as `expect-sdk`. Thin wrapper - no business logic.
 
 ```
 expect-sdk (packages/typescript-sdk)
@@ -375,22 +375,103 @@ Does NOT depend on the CLI or Ink. Public API is pure promises. Effect is an int
 
 ---
 
-## Distribution
+## SKILL.md Addition
 
-Ships with the packages/expect-skill/SKILL.md file. Agents pick it up via `.agents/skills/`.
-
-Every public symbol gets JSDoc with `@example`. Types alone should be enough.
-
-Error messages include a `Fix:` line with exact code:
-
-```
-ExpectConfigError: No baseUrl configured and URL "/login" is relative.
-
-Fix: configure({ baseUrl: "http://localhost:3000" })
-Or use a full URL: Expect.test({ url: "http://localhost:3000/login", tests: [...] })
-```
+The following section is added to the existing `packages/expect-skill/SKILL.md` (after "The Command" section). It teaches agents to use the SDK for programmatic tests.
 
 Defaults: `mode: "headless"`, `browser: "chromium"`, API key from `ANTHROPIC_API_KEY`, 5-minute timeout, `rootDir: process.cwd()`.
+
+---
+
+````markdown
+## SDK (Programmatic)
+
+Use `expect-sdk` when you need test results in code - CI scripts, test suites, custom tooling. Use `expect-cli` for everything else.
+
+```ts
+import { Expect } from "expect-sdk";
+
+const result = await Expect.test({
+  url: "http://localhost:3000/login",
+  tests: [
+    "signing in with valid credentials redirects to the dashboard",
+    "invalid credentials show an error message",
+  ],
+});
+```
+
+**Always check `result.isSuccess`.** Do not assume the test passed. Read `result.errors` for failed steps with AI summaries.
+
+**Bad - fire and forget:**
+```ts
+await Expect.test({ url: "/login", tests: ["login works"] });
+console.log("done"); // you don't know if it passed
+```
+
+**Good - check results, act on failures:**
+```ts
+const result = await Expect.test({ url: "/login", tests: ["login works"] });
+if (!result.isSuccess) {
+  throw new Error(result.errors.map((e) => e.summary).join("\n"));
+}
+```
+
+### Writing SDK tests
+
+Same rule as CLI: think like a user trying to break the feature.
+
+**Bad:** `tests: ["the page loads"]`
+**Good:** `tests: ["submitting empty form shows validation errors", "valid submission redirects to dashboard"]`
+
+### When to use sessions
+
+Use `Expect.test()` for isolated tests. Use `Expect.withSession()` only when tests need shared browser state (e.g., login persists across pages).
+
+```ts
+await Expect.withSession({ url: "http://localhost:3000" }, async (session) => {
+  await session.test({
+    url: "/login",
+    context: { email: "admin@test.com", password: "admin123" },
+    tests: ["signing in redirects to dashboard"],
+  });
+  await session.test({ url: "/settings", tests: ["settings loads while authenticated"] });
+});
+```
+
+Do not create a session when a single `Expect.test()` with `setup` would suffice.
+
+### Key patterns
+
+Pass `context` for data the AI needs. Pass `setup`/`teardown` as a string (AI executes) or Playwright callback. Pass `cookies: "chrome"` for auth. Pass `page` to reuse an existing Playwright page.
+
+```ts
+await Expect.test({
+  url: "/admin",
+  cookies: "chrome",
+  context: { role: "admin" },
+  setup: "navigate to user management",
+  tests: ["user table shows all accounts"],
+  teardown: "delete any test users",
+});
+```
+
+### All fields
+
+| Field | Type | Default |
+|---|---|---|
+| `url` | `string` | - |
+| `page` | `Page` | - |
+| `context` | `string \| object` | - |
+| `cookies` | `BrowserName \| Cookie[]` | - |
+| `tests` | `(string \| { title, context? })[]` | **required** |
+| `setup` | `string \| (page) => Promise<void>` | - |
+| `teardown` | `string \| (page) => Promise<void>` | - |
+| `mode` | `"headed" \| "headless"` | `"headless"` |
+| `timeout` | `number` | `300000` |
+| `isRecording` | `boolean` | `false` |
+
+Config file is optional: `defineConfig({ baseUrl, cookies })` in `expect.config.ts` enables relative URLs.
+````
 
 ---
 
@@ -398,12 +479,12 @@ Defaults: `mode: "headless"`, `browser: "chromium"`, API key from `ANTHROPIC_API
 
 - **No "skipped" status.** Every test is "passed" or "failed". `isSuccess` is true only when every step passed.
 - **Session page model.** Each `session.test()` creates a fresh page within the shared browser context. Cookies and localStorage persist across tests; DOM state does not.
-- **Playwright optional peer dep.** String-based setup/teardown works without Playwright. The `(page: Page) => Promise<void>` callback overload requires Playwright installed. The type uses `import("playwright").Page` — compile error if missing, which is the correct signal.
-- **`await using` supported, not required.** Sessions implement `Symbol.asyncDispose`. Use `await using`, `Expect.withSession()`, or manual `session.close()` — all three work.
+- **Playwright optional peer dep.** String-based setup/teardown works without Playwright. The `(page: Page) => Promise<void>` callback overload requires Playwright installed. The type uses `import("playwright").Page` - compile error if missing, which is the correct signal.
+- **`await using` supported, not required.** Sessions implement `Symbol.asyncDispose`. Use `await using`, `Expect.withSession()`, or manual `session.close()` - all three work.
 - **`url` vs `page`/`browserContext` precedence.** When `page` is provided on `TestInput`, the SDK uses it directly and `url` is ignored. When `browserContext` is provided on `SessionConfig`, the SDK creates pages from it and `url` is only used for navigation. If neither `page`/`browserContext` nor `url` (with `baseUrl`) is provided, throws `ExpectConfigError`.
 - **Hook + setup ordering.** Execution order: `beforeEach` → `setup` → tests → `teardown` → `afterEach`. Session hooks wrap per-test setup/teardown. `beforeAll` runs once on session creation, `afterAll` on session close.
 - **`errors` is derived.** `errors` is always `steps.filter(s => s.status === "failed")`. It's a convenience field, not independent data.
-- **Parallel execution.** Sequential by default. Parallel via `Promise.all` on the caller side — not optimized for v1.
+- **Parallel execution.** Sequential by default. Parallel via `Promise.all` on the caller side - not optimized for v1.
 - **Dev server lifecycle.** The SDK does not manage dev servers. The caller ensures the URL is reachable.
 - **Working tree only.** v1 validates against the working tree. Branch diff is a future addition.
 
