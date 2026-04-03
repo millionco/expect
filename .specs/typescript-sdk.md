@@ -15,7 +15,7 @@ Published as `expect-sdk` on npm. Used by coding agents (Claude Code, Codex CLI,
 ## API
 
 ```ts
-import { Expect, defineConfig, configure } from "expect-sdk";
+import { Expect, tool, defineConfig, configure } from "expect-sdk";
 ```
 
 ### Types
@@ -23,7 +23,6 @@ import { Expect, defineConfig, configure } from "expect-sdk";
 ```ts
 type Context = string | Record<string, unknown>;
 type SetupFn = string | ((page: import("playwright").Page) => Promise<void | string>);
-type BrowserEngine = "chromium" | "firefox" | "webkit";
 type BrowserName = "chrome" | "firefox" | "safari" | "edge" | "brave" | "arc";
 type CookieInput = true | BrowserName | BrowserName[] | Cookie[];
 type Test = string | { title: string; context?: Context };
@@ -39,8 +38,15 @@ interface Cookie {
   expires?: number;
 }
 
+interface Tool {
+  name: string;
+  description: string;
+  schema: StandardJSONSchemaV1 | Record<string, unknown>;
+  handler: (input: Record<string, unknown>) => Promise<string>;
+}
+
 interface TestResult {
-  isSuccess: boolean;
+  status: "pending" | "passed" | "failed";
   url: string;
   duration: number;
   recordingPath?: string;
@@ -50,7 +56,7 @@ interface TestResult {
 
 interface StepResult {
   title: string;
-  status: "passed" | "failed";
+  status: "pending" | "passed" | "failed";
   summary: string;
   screenshotPath?: string;
   duration: number;
@@ -68,6 +74,32 @@ type TestEvent =
 interface TestRun extends PromiseLike<TestResult> {
   [Symbol.asyncIterator](): AsyncIterator<TestEvent>;
 }
+```
+
+### `tool(name, description, schema, handler): Tool`
+
+Creates a custom tool the AI agent can call during test execution. Accepts Standard JSON Schema (zod v4, arktype, valibot) or raw JSON Schema. The SDK wraps tools into an in-process MCP server automatically.
+
+```ts
+import { z } from "zod";
+
+// With zod v4 (Standard JSON Schema - type-safe)
+const createUser = tool("create_user", "Create a test user",
+  z.object({ email: z.string(), role: z.enum(["admin", "member"]) }),
+  async ({ email, role }) => {
+    const user = await workos.users.create({ email, role });
+    return `Created user ${user.email} with ID ${user.id}`;
+  },
+);
+
+// With raw JSON Schema (no library needed)
+const deleteUser = tool("delete_user", "Delete a test user",
+  { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
+  async (input) => {
+    await workos.users.delete(input.id as string);
+    return `Deleted user ${input.id}`;
+  },
+);
 ```
 
 ### `Expect`
@@ -93,6 +125,7 @@ interface TestInput {
   page?: import("playwright").Page;
   context?: Context;
   cookies?: CookieInput;
+  tools?: Tool[];
   tests: Test[];
   setup?: SetupFn;
   teardown?: SetupFn;
@@ -185,6 +218,37 @@ const result = await Expect.test({
 });
 ```
 
+With custom tools the AI can call during execution:
+
+```ts
+const createUser = tool("create_user", "Create a test user",
+  z.object({ email: z.string(), role: z.enum(["admin", "member"]) }),
+  async ({ email, role }) => {
+    const user = await workos.users.create({ email, role });
+    return `Created user ${user.email} with ID ${user.id}`;
+  },
+);
+
+await Expect.test({
+  url: "/admin/users",
+  tools: [createUser],
+  tests: ["admin can create a new user and see them in the table"],
+});
+```
+
+Tools compose via arrays:
+
+```ts
+const workosTools = [createUser, deleteUser, listUsers];
+const stripeTools = [createCustomer, createSubscription];
+
+await Expect.test({
+  url: "/billing",
+  tools: [...workosTools, ...stripeTools],
+  tests: ["billing page shows active subscription for the user"],
+});
+```
+
 Setup and teardown - string (AI-driven) or Playwright callback. Callbacks can return a string to pass as AI context:
 
 ```ts
@@ -232,6 +296,7 @@ interface SessionConfig {
   browserContext?: import("playwright").BrowserContext;
   context?: Context;
   cookies?: CookieInput;
+  tools?: Tool[];
   hooks?: SessionHooks;
   mode?: "headed" | "headless";
   timeout?: number;
@@ -342,7 +407,7 @@ await Expect.withSession({ url: "http://localhost:3000" }, async (session) => {
     tests: ["admin panel is accessible"],
   });
 
-  if (result.isSuccess) {
+  if (result.status === "passed") {
     await session.test({
       setup: "create a new user called Test User",
       tests: ["user appears in the user table"],
@@ -389,7 +454,7 @@ Shallow-merges partial config into global state. Inline alternative to config fi
 ```ts
 interface ExpectConfig {
   baseUrl?: string;
-  browser?: BrowserEngine;
+  browser?: BrowserName;
   mode?: "headed" | "headless";
   cookies?: CookieInput;
   context?: Context;
@@ -406,7 +471,7 @@ import { defineConfig } from "expect-sdk";
 
 export default defineConfig({
   baseUrl: "http://localhost:3000",
-  browser: "chromium",
+  browser: "chrome",
   mode: "headless",
   cookies: "chrome",
 });
@@ -546,7 +611,7 @@ expect-cli run login.expect.ts
 
 The following section is added to the existing `packages/expect-skill/SKILL.md` (after "The Command" section). It teaches agents to use the SDK for programmatic tests.
 
-Defaults: `mode: "headless"`, `browser: "chromium"`, API key from `ANTHROPIC_API_KEY`, 5-minute timeout, `rootDir: process.cwd()`.
+Defaults: `mode: "headless"`, `browser: "chrome"`, API key from `ANTHROPIC_API_KEY`, 5-minute timeout, `rootDir: process.cwd()`.
 
 ---
 
@@ -569,7 +634,7 @@ const result = await Expect.test({
 
 `await` for the result. `for await` for real-time progress.
 
-**Always check `result.isSuccess`.** Do not assume the test passed. Read `result.errors` for failed steps with AI summaries.
+**Always check `result.status`.** Do not assume the test passed. Read `result.errors` for failed steps with AI summaries.
 
 **Bad - fire and forget:**
 
@@ -582,7 +647,7 @@ console.log("done"); // you don't know if it passed
 
 ```ts
 const result = await Expect.test({ url: "/login", tests: ["login works"] });
-if (!result.isSuccess) {
+if (result.status === "failed") {
   throw new Error(result.errors.map((e) => e.summary).join("\n"));
 }
 ```
@@ -648,7 +713,7 @@ Config file is optional: `defineConfig({ baseUrl, cookies })` in `expect.config.
 
 ## Decisions
 
-- **No "skipped" status.** Every test is "passed" or "failed". `isSuccess` is true only when every step passed.
+- **No "skipped" status.** Every test is "passed" or "failed". `status` is "passed" only when every step passed.
 - **Session page model.** Each `session.test()` creates a fresh page within the shared browser context. Cookies and localStorage persist across tests; DOM state does not.
 - **Playwright optional peer dep.** String-based setup/teardown works without Playwright. The `(page: Page) => Promise<void>` callback overload requires Playwright installed. The type uses `import("playwright").Page` - compile error if missing, which is the correct signal.
 - **`await using` supported, not required.** Sessions implement `Symbol.asyncDispose`. Use `await using`, `Expect.withSession()`, or manual `session.close()` - all three work.
@@ -705,8 +770,8 @@ Config file is optional: `defineConfig({ baseUrl, cookies })` in `expect.config.
 - `StepCompleted` events map to `"passed"`
 - `StepFailed` and `StepSkipped` events map to `"failed"`
 - Steps with no matching event default to `"failed"`
-- `isSuccess` is true only when all steps passed
-- `isSuccess` is false when steps array is empty
+- `status` is "passed" only when all steps passed
+- `status` is "failed" when steps array is empty
 - `errors` equals `steps.filter(s => s.status === "failed")`
 - Screenshots associated with steps via event stream
 - Duration calculated correctly
@@ -767,6 +832,16 @@ Config file is optional: `defineConfig({ baseUrl, cookies })` in `expect.config.
 - `cookies: ["chrome", "safari"]` extracts from multiple, merges and injects
 - `cookies: Cookie[]` injects raw cookies
 - Spread composition works: `[...extracted, ...custom]`
+
+### Custom tools
+
+- `tool()` with Standard JSON Schema creates a typed tool
+- `tool()` with raw JSON Schema creates an untyped tool
+- Tools are registered as an in-process MCP server
+- AI agent can call tools during test execution
+- Tool handler receives parsed input, returns string
+- Multiple tools compose via array spread
+- Session-level tools are available to all `session.test()` calls
 
 ### Playwright interop
 
