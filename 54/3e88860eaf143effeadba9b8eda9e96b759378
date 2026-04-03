@@ -1,0 +1,43 @@
+packages/browser/src/mcp/server.ts
+  b8e45c1ae8f38b6b 39-74,145-150,152-154,157-160,162
+apps/cli/src/data/execution-atom.ts
+  b8e45c1ae8f38b6b 14-17,182-211
+apps/cli/src/index.tsx
+  b8e45c1ae8f38b6b 6,38-39,46,70-74,92-93,126-131,142
+apps/cli/src/utils/run-test.ts
+  b8e45c1ae8f38b6b 2,16,38,137,372-380,382,384-386,388-402,404-410,412
+apps/cli/src/utils/write-run-result.ts
+  b8e45c1ae8f38b6b 1-60
+packages/shared/tests/prompts.test.ts
+  b8e45c1ae8f38b6b 15,111,256-257,301-302,314-315,325-338,343-344,350-351,357-358,364-365
+apps/cli/src/layers.ts
+  b8e45c1ae8f38b6b 7,29
+packages/shared/src/prompts.ts
+  b8e45c1ae8f38b6b 6,24,58-67,73-80,85-90,96-103,142-145,147-164,174-190,194-198,207-252,264-369,371,373,375-379,400,410-414,451,481,513
+packages/supervisor/src/constants.ts
+  b8e45c1ae8f38b6b 11-12
+packages/shared/src/models.ts
+  b8e45c1ae8f38b6b 329-331
+packages/supervisor/src/executor.ts
+  b8e45c1ae8f38b6b 28,63,137,139,144
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "543e88860eaf143effeadba9b8eda9e96b759378",
+  "prompts": {
+    "b8e45c1ae8f38b6b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "72c60689-7841-4108-a7f3-a386dc355671",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 576,
+      "total_deletions": 222,
+      "accepted_lines": 495,
+      "overriden_lines": 1
+    }
+  }
+}
