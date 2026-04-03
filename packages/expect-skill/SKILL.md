@@ -64,42 +64,42 @@ Think like a user trying to break the feature, not a QA checklist confirming it 
 **Bad:** `expect-cli -m "Test the search feature on http://localhost:5173" -y --cookies`
 **Good:** `expect-cli -m "Search with no query, a single character, a query with no results, and a valid query. Click a result, go back, verify the previous query is preserved. Rapid-fire 5 searches and confirm no stale results appear on http://localhost:5173" -y --cookies`
 
-## Reference Skills
+## Reference Rules
 
 `expect-cli` runs built-in quality checks during every test. Each failure includes a `domain=` tag (e.g. `domain=responsive`, `domain=accessibility`, `domain=animation`).
 
-When a matching domain is relevant to your current task, read the sub-skill before writing code or re-running tests. When `expect-cli` reports a failure with a `domain=` tag, read the matching sub-skill before attempting a fix.
+When a matching domain is relevant to your current task, run the matching rules command before writing code or re-running tests. When `expect-cli` reports a failure with a `domain=` tag, run the matching rules command before attempting a fix.
 
 <important if="domain=animation, or fixing/reviewing CSS animations, transitions, hover effects, tooltips, or motion performance">
-Read `fixing-animation/SKILL.md` for animation rules and performance patterns.
+Run `expect-cli rules animation` for animation rules and performance patterns.
 </important>
 
 <important if="domain=accessibility, or fixing/reviewing accessibility, ARIA attributes, keyboard navigation, focus management, or screen reader support">
-Read `fixing-accessibility/SKILL.md` for accessibility rules and common fixes.
+Run `expect-cli rules accessibility` for accessibility rules and common fixes.
 </important>
 
 <important if="domain=seo, or fixing/reviewing SEO metadata, Open Graph tags, canonical URLs, or structured data">
-Read `fixing-seo/SKILL.md` for SEO metadata rules.
+Run `expect-cli rules seo` for SEO metadata rules.
 </important>
 
 <important if="domain=performance, or writing/reviewing React components, Next.js pages, data fetching, or optimizing bundle size and render performance">
-Read `react-best-practices/SKILL.md` for React performance optimization rules.
+Run `expect-cli rules react` for React performance optimization rules.
 </important>
 
 <important if="domain=performance or domain=web-vitals or domain=loading, or optimizing load times, reducing bundle size, fixing Core Web Vitals (LCP/FCP/TBT/CLS), implementing image strategies, adding prefetching, eliminating loading spinners, streaming content, or auditing resource budgets">
-Read `performance/SKILL.md` for web performance optimization rules.
+Run `expect-cli rules performance` for web performance optimization rules.
 </important>
 
 <important if="domain=design-system or domain=responsive or domain=touch or domain=cross-browser or domain=dark-mode or domain=layout-stability or domain=font-loading, or reviewing UI design, UX patterns, or auditing web interface quality">
-Read `web-design-guidelines/SKILL.md` for web interface design review guidelines.
+Run `expect-cli rules design` for web interface design review guidelines.
 </important>
 
 <important if="domain=security, or reviewing code for security issues, XSS, CSRF, open redirects, postMessage, cookie security, CSP, CORS, prototype pollution, or client-side storage vulnerabilities">
-Read `security-review/SKILL.md` for browser security review guidelines.
+Run `expect-cli rules security` for browser security review guidelines.
 </important>
 
 <important if="domain=design or domain=animation or domain=motion or domain=audio or domain=typography or domain=shadows or domain=ux-psychology, or implementing animations, choosing between springs and easing, adding sound feedback, applying UX laws, fixing typography, styling shadows/borders, or animating container bounds">
-Read `design/SKILL.md` for UI/UX design principles and patterns.
+Run `expect-cli rules design` for UI/UX design principles and patterns.
 </important>
 
 ## When Expect Itself Fails

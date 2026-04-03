@@ -8,6 +8,7 @@ import { runInit } from "./commands/init";
 import { runAddGithubAction } from "./commands/add-github-action";
 import { runAddSkill } from "./commands/add-skill";
 import { runAuditCommand } from "./commands/audit";
+import { runRulesCommand } from "./commands/rules";
 import { runWatchCommand } from "./commands/watch";
 import { isRunningInAgent } from "@expect/shared/launched-from";
 import { isHeadless } from "./utils/is-headless";
@@ -200,6 +201,13 @@ program
   .description("audit your workspace for lint, type, and formatting issues")
   .action(async () => {
     await runAuditCommand();
+  });
+
+program
+  .command("rules [name] [sub-rule]")
+  .description("display built-in rules and guidelines for coding agents")
+  .action((name?: string, subRule?: string) => {
+    runRulesCommand(name, subRule);
   });
 
 program
