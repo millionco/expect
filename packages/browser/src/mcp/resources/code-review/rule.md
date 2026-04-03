@@ -5,57 +5,38 @@ description: Perform code reviews. Use when reviewing pull requests, examining c
 
 # Code Review
 
-Follow these guidelines when reviewing code.
-
-## Review Checklist
+## Checklist
 
 ### Identifying Problems
 
-Look for these issues in code changes:
-
-- **Runtime errors**: Potential exceptions, null pointer issues, out-of-bounds access
-- **Performance**: Unbounded O(n²) operations, N+1 queries, unnecessary allocations
-- **Side effects**: Unintended behavioral changes affecting other components
-- **Backwards compatibility**: Breaking API changes without migration path
-- **ORM queries**: Complex Django ORM with unexpected query performance
-- **Security vulnerabilities**: Injection, XSS, access control gaps, secrets exposure
+- [ ] No runtime errors: exceptions, null pointers, out-of-bounds access
+- [ ] No unbounded O(n²) operations, N+1 queries, or unnecessary allocations
+- [ ] No unintended side effects affecting other components
+- [ ] No breaking API changes without migration path
+- [ ] No complex ORM queries with unexpected performance
+- [ ] No security vulnerabilities: injection, XSS, access control gaps, secrets exposure
 
 ### Design Assessment
 
-- Do component interactions make logical sense?
-- Does the change align with existing project architecture?
-- Are there conflicts with current requirements or goals?
+- [ ] Component interactions make logical sense
+- [ ] Change aligns with existing project architecture
+- [ ] No conflicts with current requirements or goals
 
 ### Test Coverage
 
-Every PR should have appropriate test coverage:
-
-- Functional tests for business logic
-- Integration tests for component interactions
-- End-to-end tests for critical user paths
-
-Verify tests cover actual requirements and edge cases. Avoid excessive branching or looping in test code.
+- [ ] Functional tests for business logic
+- [ ] Integration tests for component interactions
+- [ ] End-to-end tests for critical user paths
+- [ ] Tests cover actual requirements and edge cases
+- [ ] No excessive branching or looping in test code
 
 ### Long-Term Impact
 
-Flag for senior engineer review when changes involve:
+- [ ] Flag for senior review: DB schema changes, API contract changes, new frameworks, perf-critical paths, security-sensitive code
 
-- Database schema modifications
-- API contract changes
-- New framework or library adoption
-- Performance-critical code paths
-- Security-sensitive functionality
+### Feedback
 
-## Feedback Guidelines
-
-### Tone
-
-- Be polite and empathetic
-- Provide actionable suggestions, not vague criticism
-- Phrase as questions when uncertain: "Have you considered...?"
-
-### Approval
-
-- Approve when only minor issues remain
-- Don't block PRs for stylistic preferences
-- Remember: the goal is risk reduction, not perfect code
+- [ ] Be polite and empathetic; provide actionable suggestions
+- [ ] Phrase as questions when uncertain: "Have you considered...?"
+- [ ] Approve when only minor issues remain — don't block for style
+- [ ] Goal is risk reduction, not perfect code

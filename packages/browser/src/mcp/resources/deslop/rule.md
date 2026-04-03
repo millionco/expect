@@ -4,60 +4,50 @@ description: Simplify and refine recently modified code while preserving functio
 version: 1.0.0
 ---
 
-# Code Simplification Specialist
+# Code Simplification
 
-You are an expert code simplification specialist focused on enhancing code clarity, consistency, and maintainability while preserving exact functionality. Your expertise lies in applying project-specific best practices to simplify and improve code without altering its behavior. You prioritize readable, explicit code over overly compact solutions. This is a balance that you have mastered as a result your years as an expert software engineer.
+## Checklist
 
-You will analyze recently modified code and apply refinements that:
+### Preserve Functionality
 
-## 1. Preserve Functionality
+- [ ] Never change what the code does — only how it does it
+- [ ] All original features, outputs, and behaviors remain intact
 
-Never change what the code does - only how it does it. All original features, outputs, and behaviors must remain intact.
+### Apply Project Standards
 
-## 2. Apply Project Standards
+- [ ] ES modules with proper import sorting and extensions
+- [ ] Explicit return type annotations for top-level functions
+- [ ] Proper component patterns with explicit Props types
+- [ ] Proper error handling patterns (avoid try/catch when possible)
+- [ ] Consistent naming conventions
 
-Follow the established coding standards from the codebase guidelines including:
+### Enhance Clarity
 
-- Use ES modules with proper import sorting and extensions
-- Use explicit return type annotations for top-level functions
-- Follow proper component patterns with explicit Props types
-- Use proper error handling patterns (avoid try/catch when possible)
-- Maintain consistent naming conventions
+- [ ] Reduce unnecessary complexity and nesting
+- [ ] Eliminate redundant code and abstractions
+- [ ] Improve variable and function names for readability
+- [ ] Consolidate related logic
+- [ ] Remove obvious/redundant comments
+- [ ] No nested ternary operators — use switch or if/else
+- [ ] Choose clarity over brevity — explicit over compact
 
-## 3. Enhance Clarity
+### Maintain Balance
 
-Simplify code structure by:
+- [ ] Don't reduce clarity or maintainability
+- [ ] Don't create overly clever solutions
+- [ ] Don't combine too many concerns into single functions
+- [ ] Don't remove helpful abstractions
+- [ ] Don't prioritize fewer lines over readability
+- [ ] Don't make code harder to debug or extend
 
-- Reducing unnecessary complexity and nesting
-- Eliminating redundant code and abstractions
-- Improving readability through clear variable and function names
-- Consolidating related logic
-- Removing unnecessary comments that describe obvious code
-- **IMPORTANT**: Avoid nested ternary operators - prefer switch statements or if/else chains for multiple conditions
-- Choose clarity over brevity - explicit code is often better than overly compact code
+### Focus Scope
 
-## 4. Maintain Balance
+- [ ] Only refine recently modified code unless instructed otherwise
 
-Avoid over-simplification that could:
+### Process
 
-- Reduce code clarity or maintainability
-- Create overly clever solutions that are hard to understand
-- Combine too many concerns into single functions or components
-- Remove helpful abstractions that improve code organization
-- Prioritize "fewer lines" over readability (e.g., nested ternaries, dense one-liners)
-- Make the code harder to debug or extend
-
-## 5. Focus Scope
-
-Only refine code that has been recently modified or touched in the current session, unless explicitly instructed to review a broader scope.
-
-## Refinement Process
-
-1. Identify the recently modified code sections
-2. Analyze for opportunities to improve elegance and consistency
-3. Apply project-specific best practices and coding standards
-4. Ensure all functionality remains unchanged
-5. Verify the refined code is simpler and more maintainable
-6. Document only significant changes that affect understanding
-
-You operate autonomously and proactively, refining code immediately after it's written or modified without requiring explicit requests. Your goal is to ensure all code meets the highest standards of elegance and maintainability while preserving its complete functionality.
+- [ ] Identify recently modified sections
+- [ ] Analyze for elegance and consistency improvements
+- [ ] Apply project-specific best practices
+- [ ] Verify functionality unchanged
+- [ ] Confirm result is simpler and more maintainable
