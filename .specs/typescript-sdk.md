@@ -1,4 +1,4 @@
-# TypeScript SDK
+# Expect TypeScript SDK
 
 Published as `expect-sdk` on npm. Used by coding agents (Claude Code, Codex CLI, Cursor) to generate browser tests, and by the Expect CLI to generate and cache ran tests. Inspired by [Claude Agent SDK V2](https://platform.claude.com/docs/en/agent-sdk/typescript-v2-preview).
 
@@ -250,7 +250,10 @@ const session = Expect.session({ url: "http://localhost:3000", cookies: "chrome"
 // session.test() returns TestRun with its own TestResult
 const r1 = await session.test({ url: "/login", tests: ["login works"] });
 // r1: TestResult - cookies from login persist in the browser context
-const r2 = await session.test({ url: "/dashboard", tests: ["dashboard loads while authenticated"] });
+const r2 = await session.test({
+  url: "/dashboard",
+  tests: ["dashboard loads while authenticated"],
+});
 const r3 = await session.test({ url: "/settings", tests: ["settings page accessible"] });
 
 await session.close(); // destroys browser context
@@ -296,7 +299,9 @@ Creates a custom tool the AI agent can call during test execution. Accepts Stand
 import { z } from "zod";
 
 // Standard JSON Schema (zod v4) - type-safe handler
-const createUser = tool("create_user", "Create a test user",
+const createUser = tool(
+  "create_user",
+  "Create a test user",
   z.object({ email: z.string(), role: z.enum(["admin", "member"]) }),
   async ({ email, role }) => {
     const user = await workos.users.create({ email, role });
@@ -305,7 +310,9 @@ const createUser = tool("create_user", "Create a test user",
 );
 
 // Raw JSON Schema - no library needed
-const deleteUser = tool("delete_user", "Delete a test user",
+const deleteUser = tool(
+  "delete_user",
+  "Delete a test user",
   { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
   async (input) => {
     await workos.users.delete(input.id as string);
@@ -553,18 +560,18 @@ await Expect.test({
 
 ### All fields (`Expect.test`)
 
-| Field | Type | Default |
-|---|---|---|
-| `url` | `string` | - |
-| `page` | `Page` | - |
-| `cookies` | `true \| BrowserName \| BrowserName[] \| Cookie[]` | - |
-| `tools` | `Tool[]` | - |
-| `tests` | `string[]` | **required** |
-| `setup` | `string \| (page) => Promise<void \| string>` | - |
-| `teardown` | `string \| (page) => Promise<void \| string>` | - |
-| `mode` | `"headed" \| "headless"` | `"headless"` |
-| `timeout` | `number` | `300000` |
-| `isRecording` | `boolean` | `false` |
+| Field         | Type                                               | Default      |
+| ------------- | -------------------------------------------------- | ------------ |
+| `url`         | `string`                                           | -            |
+| `page`        | `Page`                                             | -            |
+| `cookies`     | `true \| BrowserName \| BrowserName[] \| Cookie[]` | -            |
+| `tools`       | `Tool[]`                                           | -            |
+| `tests`       | `string[]`                                         | **required** |
+| `setup`       | `string \| (page) => Promise<void \| string>`      | -            |
+| `teardown`    | `string \| (page) => Promise<void \| string>`      | -            |
+| `mode`        | `"headed" \| "headless"`                           | `"headless"` |
+| `timeout`     | `number`                                           | `300000`     |
+| `isRecording` | `boolean`                                          | `false`      |
 
 Config file is optional: `defineConfig({ baseUrl, cookies })` in `expect.config.ts` enables relative URLs.
 ````
