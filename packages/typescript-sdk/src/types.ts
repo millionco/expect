@@ -1,4 +1,4 @@
-export type SetupFn = string | ((page: import("playwright").Page) => Promise<void | string>);
+export type Action = string | ((page: import("playwright").Page) => Promise<void | string>);
 
 export type BrowserName = "chrome" | "firefox" | "safari" | "edge" | "brave" | "arc";
 

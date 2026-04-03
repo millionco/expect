@@ -22,9 +22,10 @@ import { Expect, tool, defineConfig, configure } from "expect-sdk";
 ### Types
 
 ```ts
-type SetupFn = string | ((page: import("playwright").Page) => Promise<void | string>);
+type Action = string | ((page: import("playwright").Page) => Promise<void | string>);
 type BrowserName = "chrome" | "firefox" | "safari" | "edge" | "brave" | "arc";
 type CookieInput = true | BrowserName | BrowserName[] | Cookie[];
+type Test = string | { title?: string; prompt: string };
 
 interface Cookie {
   name: string;
@@ -95,9 +96,9 @@ interface TestInput {
   page?: import("playwright").Page;
   cookies?: CookieInput;
   tools?: Tool[];
-  tests: string[];
-  setup?: SetupFn;
-  teardown?: SetupFn;
+  tests: Test[];
+  setup?: Action;
+  teardown?: Action;
   mode?: "headed" | "headless";
   timeout?: number;
   isRecording?: boolean;
@@ -105,7 +106,8 @@ interface TestInput {
 ```
 
 ```ts
-// tests: string[] - one-shot, browser auto-closes after completion
+import { Expect } from "expect-sdk";
+
 const result = await Expect.test({
   url: "http://localhost:3000/login",
   tests: [
@@ -113,22 +115,31 @@ const result = await Expect.test({
     "invalid credentials show an error message",
   ],
 });
-// result: TestResult { status: "passed" | "failed", steps, errors, ... }
 ```
 
-Streaming events:
+With detailed prompts:
 
 ```ts
-// TestRun is both PromiseLike<TestResult> and AsyncIterable<TestEvent>
-const run = Expect.test({
-  url: "http://localhost:3000/login",
+const result = await Expect.test({
+  url: "http://localhost:3000/dashboard",
   tests: [
-    "signing in with valid credentials redirects to the dashboard",
-    "invalid credentials show an error message",
+    "sidebar navigation works",
+    {
+      title: "dashboard loads correctly",
+      prompt: "verify the user's name appears in the header, sidebar shows Settings/Projects/Team, no loading spinners remain after 3 seconds, no console errors",
+    },
   ],
 });
+```
 
-// event: TestEvent - discriminated union on event.type
+Streaming:
+
+```ts
+const run = Expect.test({
+  url: "http://localhost:3000/login",
+  tests: ["signing in redirects to the dashboard"],
+});
+
 for await (const event of run) {
   if (event.type === "step:passed") console.log(`PASS: ${event.step.title}`);
   if (event.type === "step:failed") console.log(`FAIL: ${event.step.title}`);
@@ -137,69 +148,38 @@ for await (const event of run) {
 const result = await run;
 ```
 
-Playwright page interop:
+Playwright page:
 
 ```ts
 import { chromium } from "playwright";
 
 const browser = await chromium.launch();
-// page: import("playwright").Page - SDK uses this page directly
 const page = await browser.newPage();
 await page.goto("http://localhost:3000/login");
 await page.fill("#email", "test@test.com");
 
 const result = await Expect.test({
-  page, // url is optional when page is provided
+  page,
   tests: ["login form is pre-filled with test@test.com"],
 });
 ```
 
-Custom tools:
+Tools, setup, teardown:
 
 ```ts
-// tools: Tool[] - registered as in-process MCP server, AI can call during execution
-await Expect.test({
-  url: "/admin/users",
-  tools: [createUser, deleteUser],
-  tests: ["admin can create a new user and see them in the table"],
-});
-```
-
-Setup and teardown:
-
-```ts
-// setup: string - AI executes the instruction before tests
-await Expect.test({
-  url: "/login",
-  setup: "log in as admin using email admin@test.com and password admin123",
-  tests: ["dashboard shows welcome banner for admin"],
-});
-
-// setup: (page: Page) => Promise<void> - Playwright callback
 await Expect.test({
   url: "/admin",
+  cookies: "chrome",
+  tools: [createUser, deleteUser],
   setup: async (page) => {
     await page.fill("#email", "admin@test.com");
-    await page.fill("#password", "admin123");
     await page.click("button[type=submit]");
     await page.waitForURL("/dashboard");
-  },
-  tests: ["admin panel shows user management table"],
-  // teardown: string - AI executes after tests
-  teardown: "delete any users created during this test",
-});
-
-// setup: (page: Page) => Promise<string> - callback returning string as AI context
-await Expect.test({
-  url: "/dashboard",
-  setup: async (page) => {
-    await page.goto("http://localhost:3000/login");
-    await page.fill("#email", "admin@test.com");
-    await page.click("button[type=submit]");
     const username = await page.textContent("#username");
-    return `the logged-in user is "${username}"`; // returned string becomes AI context
+    return `the logged-in user is "${username}"`;
   },
-  tests: ["welcome message displays the correct username"],
+  tests: ["admin can create a new user and see them in the table"],
+  teardown: "delete any users created during this test",
 });
 ```
 
@@ -220,10 +200,10 @@ interface SessionConfig {
 }
 
 interface SessionHooks {
-  beforeAll?: SetupFn;
-  afterAll?: SetupFn;
-  beforeEach?: SetupFn;
-  afterEach?: SetupFn;
+  beforeAll?: Action;
+  afterAll?: Action;
+  beforeEach?: Action;
+  afterEach?: Action;
 }
 
 interface ExpectSession {
@@ -234,9 +214,9 @@ interface ExpectSession {
 
 interface SessionTestInput {
   url?: string;
-  tests: string[];
-  setup?: SetupFn;
-  teardown?: SetupFn;
+  tests: Test[];
+  setup?: Action;
+  teardown?: Action;
   mode?: "headed" | "headless";
   timeout?: number;
   isRecording?: boolean;
@@ -244,19 +224,16 @@ interface SessionTestInput {
 ```
 
 ```ts
-// session: persistent browser context, cookies persist across .test() calls
 const session = Expect.session({ url: "http://localhost:3000", cookies: "chrome" });
 
-// session.test() returns TestRun with its own TestResult
 const r1 = await session.test({ url: "/login", tests: ["login works"] });
-// r1: TestResult - cookies from login persist in the browser context
 const r2 = await session.test({
   url: "/dashboard",
   tests: ["dashboard loads while authenticated"],
 });
 const r3 = await session.test({ url: "/settings", tests: ["settings page accessible"] });
 
-await session.close(); // destroys browser context
+await session.close();
 ```
 
 With hooks:
@@ -266,7 +243,6 @@ const session = Expect.session({
   url: "http://localhost:3000",
   cookies: "chrome",
   hooks: {
-    // SetupFn: string (AI executes) or (page: Page) => Promise<void | string>
     beforeAll: "seed the database with test data",
     beforeEach: async (page) => {
       await page.goto("/");
@@ -284,11 +260,10 @@ await session.close();
 Existing Playwright browser context:
 
 ```ts
-// browserContext: import("playwright").BrowserContext - SDK creates pages from it
 const browserContext = await browser.newContext();
 const session = Expect.session({ browserContext });
 const r1 = await session.test({ url: "/login", tests: ["login works"] });
-await session.close(); // does NOT close the externally-provided browserContext
+await session.close();
 ```
 
 ### `tool(name, description, schema, handler): Tool`
@@ -298,7 +273,6 @@ Creates a custom tool the AI agent can call during test execution. Accepts Stand
 ```ts
 import { z } from "zod";
 
-// Standard JSON Schema (zod v4) - type-safe handler
 const createUser = tool(
   "create_user",
   "Create a test user",
@@ -309,7 +283,6 @@ const createUser = tool(
   },
 );
 
-// Raw JSON Schema - no library needed
 const deleteUser = tool(
   "delete_user",
   "Delete a test user",
@@ -566,7 +539,7 @@ await Expect.test({
 | `page`        | `Page`                                             | -            |
 | `cookies`     | `true \| BrowserName \| BrowserName[] \| Cookie[]` | -            |
 | `tools`       | `Tool[]`                                           | -            |
-| `tests`       | `string[]`                                         | **required** |
+| `tests`       | `(string \| { title?, prompt })[]`                 | **required** |
 | `setup`       | `string \| (page) => Promise<void \| string>`      | -            |
 | `teardown`    | `string \| (page) => Promise<void \| string>`      | -            |
 | `mode`        | `"headed" \| "headless"`                           | `"headless"` |
