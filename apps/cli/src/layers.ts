@@ -4,6 +4,7 @@ import { Executor, FlowStorage, Git, Reporter, Updates, Watch } from "@expect/su
 import { Agent, AgentBackend } from "@expect/agent";
 import { RrVideo } from "@expect/browser";
 import { Analytics, DebugFileLoggerLayer, Tracing } from "@expect/shared/observability";
+import * as NodeServices from "@effect/platform-node/NodeServices";
 
 export const layerCli = ({ verbose, agent }: { verbose: boolean; agent: AgentBackend }) => {
   const gitLayer = Git.withRepoRoot(process.cwd());
@@ -25,6 +26,7 @@ export const layerCli = ({ verbose, agent }: { verbose: boolean; agent: AgentBac
     Layer.provide(Agent.layerFor(agent ?? "claude")),
     Layer.provide(DebugFileLoggerLayer),
     Layer.provide(Tracing.layerAxiom("expect-cli")),
+    Layer.provideMerge(NodeServices.layer),
     Layer.provideMerge(Layer.succeed(References.MinimumLogLevel, verbose ? "All" : "Error")),
   );
 };

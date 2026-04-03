@@ -4,7 +4,7 @@ description: "Use when editing .tsx/.jsx/.css/.html, React components, pages, ro
 license: MIT
 metadata:
   author: millionco
-  version: "2.2.0"
+  version: "2.3.0"
 ---
 
 # Expect
@@ -41,6 +41,39 @@ expect-cli -m "[INSTRUCTION] on [URL]" -y --cookies
 - Include the URL of the app in the instruction
 - Accessibility and performance are checked automatically. Do not mention them in your instruction.
 
+### Scope Tiers
+
+Control test depth with `--scope`:
+
+| Tier         | Flag               | What it does                                                                                                                         | When to use                                                                      |
+| ------------ | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| **quick**    | `--scope quick`    | One URL, one verification, ~30 seconds. No follow-up flows, no viewport matrix, no a11y/perf audit.                                  | Verifying a specific bug fix, checking a single CSS change, fast iteration loops |
+| **standard** | (default)          | Primary flow + 1-2 follow-ups, mobile+desktop responsive check, a11y audit.                                                          | Normal development — the right balance of speed and coverage                     |
+| **thorough** | `--scope thorough` | Full audit: 7 viewports, WebKit cross-browser, dark mode, CLS, font loading, perf metrics, project healthcheck, 2-8 follow-up flows. | Pre-merge branch reviews, design system migrations, release candidates           |
+
+**Use `--scope quick` for fast iteration.** When you just fixed one thing and want to confirm it works, don't run the full test suite:
+
+```bash
+expect-cli -m "Verify the submit button is visible at mobile viewport on http://localhost:3000/login" -y --cookies --scope quick
+```
+
+**Use `--scope thorough` for branch reviews:**
+
+```bash
+expect-cli --target branch --scope thorough -y --cookies
+```
+
+### Run Result Files
+
+Every run writes structured results to `.expect/runs/{planId}.json`. Each run gets a unique UUID filename, so parallel agents don't conflict. Read these files instead of polling terminal output:
+
+```bash
+# Read the latest run result
+cat .expect/runs/*.json | jq -s 'sort_by(.duration_ms) | last'
+```
+
+The JSON contains: `status`, `title`, `duration_ms`, `steps[]` (with per-step status/duration/errors), `artifacts` (video, replay, screenshots), and `summary`.
+
 ## Parallel Execution
 
 `expect-cli` takes 1-30 minutes. Never block your main thread.
@@ -48,21 +81,43 @@ expect-cli -m "[INSTRUCTION] on [URL]" -y --cookies
 1. **Set shell timeout to at least 1800 seconds** — the default will kill it
 2. **Launch each `expect-cli` call in a subagent** (Task/Agent tool or background shell with timeout 0 / `&`) and continue working
 3. **When testing multiple features, run separate invocations concurrently** - one subagent per feature
+4. **Read results from `.expect/runs/*.json`** instead of polling terminal output — each run writes a unique file on completion
 
 Do not skip parallel execution because "it's simpler to wait." Do not skip subagent usage because "it's just one test."
 
 ## Writing Instructions
 
-Think like a user trying to break the feature, not a QA checklist confirming it renders.
+**Be specific about what changed, not broad about everything on the page.** The highest-value tests are: one URL, one specific behavior, verified fast. Broad instructions that test unrelated features waste 3-5 minutes per run.
 
-**Bad:** `expect-cli -m "Check that the login form renders on http://localhost:5173" -y --cookies`
-**Good:** `expect-cli -m "Submit the login form empty, with invalid email, with wrong password, and with valid credentials. Verify error messages, redirect on success, and console errors on http://localhost:5173" -y --cookies`
+**Bad — too vague, tests unrelated features:**
 
-**Bad:** `expect-cli -m "Verify the settings page works on http://localhost:5173/settings" -y --cookies`
-**Good:** `expect-cli -m "Change display name to empty string, to a 500-char string, and to a valid name. Toggle every switch off then on. Hit save without changes. Verify toasts, validation errors, and that refreshing persists the update on http://localhost:5173/settings" -y --cookies`
+```
+expect-cli -m "Check that the login form renders on http://localhost:5173" -y --cookies
+```
 
-**Bad:** `expect-cli -m "Test the search feature on http://localhost:5173" -y --cookies`
-**Good:** `expect-cli -m "Search with no query, a single character, a query with no results, and a valid query. Click a result, go back, verify the previous query is preserved. Rapid-fire 5 searches and confirm no stale results appear on http://localhost:5173" -y --cookies`
+**Good — focused on the actual change:**
+
+```
+expect-cli -m "Submit the login form with invalid email and verify the error message says 'Invalid email format' on http://localhost:5173/login" -y --cookies --scope quick
+```
+
+**Bad — tests everything on the page instead of the change:**
+
+```
+expect-cli -m "Verify the settings page works on http://localhost:5173/settings" -y --cookies
+```
+
+**Good — targets the specific behavior that changed:**
+
+```
+expect-cli -m "Change display name to a 500-char string, hit save, refresh, and verify it persisted with truncation on http://localhost:5173/settings" -y --cookies
+```
+
+**For thorough coverage** (branch reviews, pre-merge), use `--scope thorough` and let the tool decide what to test from the diff:
+
+```
+expect-cli --target branch --scope thorough -m "Test all changed components" -y --cookies
+```
 
 ## Reference Skills
 
@@ -116,9 +171,11 @@ Do not guess at workarounds for tool bugs. Diagnose with `--verbose`, report wit
 
 You MUST complete every step. A skipped step is a failed task.
 
-1. Run `expect-cli -m "[instruction] on [URL]" -y --cookies` with a fresh, adversarial instruction
-2. Read the full output — check exit code, count failures, read accessibility and performance results
-3. If ANY failure: fix it, then re-run from step 1. Accessibility violations and performance regressions are failures.
+1. Run `expect-cli -m "[instruction] on [URL]" -y --cookies` with a focused instruction targeting the change
+2. Read the full output or `.expect/runs/*.json` — check exit code, count failures, read accessibility results
+3. If ANY failure: fix it, then re-run with `--scope quick` targeting the specific fix
 4. Only after exit 0 with 0 failures: state the claim WITH the evidence
+
+Use `--scope quick` for fix-and-verify loops to keep iteration fast. Use default scope for initial verification.
 
 Skip any step = lying, not verifying. No exceptions for "just this once", "it's simple enough", or "I already checked manually".

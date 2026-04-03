@@ -12,6 +12,7 @@ const makeDefaultOptions = (
 ): ExecutionPromptOptions => ({
   userInstruction: "Test the login flow",
   scope: "Changes",
+  scopeTier: "standard",
   currentBranch: "feat/login",
   mainBranch: "main",
   changedFiles: [
@@ -107,7 +108,7 @@ describe("buildExecutionPrompt", () => {
   });
 
   it("includes scope strategy for branch scope", () => {
-    const prompt = buildExecutionPrompt(makeDefaultOptions({ scope: "Branch" }));
+    const prompt = buildExecutionPrompt(makeDefaultOptions({ scope: "Branch", scopeTier: "thorough" }));
     expect(prompt).toContain("branch-level review");
     expect(prompt).toContain("5-8 total tested flows");
   });
@@ -252,8 +253,8 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("no user-visible surface");
   });
 
-  it("includes project healthcheck guidance in system prompt", () => {
-    const prompt = buildExecutionSystemPrompt();
+  it("includes project healthcheck guidance in thorough system prompt", () => {
+    const prompt = buildExecutionSystemPrompt({ scopeTier: "thorough" });
     expect(prompt).toContain("healthcheck");
     expect(prompt).toContain("package.json");
     expect(prompt).toContain("lock files");
@@ -297,8 +298,8 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("Good: ASSERTION_FAILED|step-03|category=app-bug");
   });
 
-  it("includes UI quality rules section in system prompt", () => {
-    const prompt = buildExecutionSystemPrompt();
+  it("includes UI quality rules section in thorough system prompt", () => {
+    const prompt = buildExecutionSystemPrompt({ scopeTier: "thorough" });
     expect(prompt).toContain("<ui_quality_rules>");
     expect(prompt).toContain("these checks are mandatory");
   });
@@ -310,8 +311,8 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("hardcoded hex/rgb colors");
   });
 
-  it("includes responsive viewport sizes with tablet breakpoints", () => {
-    const prompt = buildExecutionSystemPrompt();
+  it("includes responsive viewport sizes with tablet breakpoints in thorough mode", () => {
+    const prompt = buildExecutionSystemPrompt({ scopeTier: "thorough" });
     expect(prompt).toContain("Responsive design:");
     expect(prompt).toContain("375\u00d7812 (iPhone SE)");
     expect(prompt).toContain("390\u00d7844 (iPhone 14)");
@@ -321,35 +322,47 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("setViewportSize");
   });
 
-  it("includes touch interaction testing rules", () => {
-    const prompt = buildExecutionSystemPrompt();
+  it("includes only mobile and desktop viewports in standard mode", () => {
+    const prompt = buildExecutionSystemPrompt({ scopeTier: "standard" });
+    expect(prompt).toContain("375\u00d7812 (mobile)");
+    expect(prompt).toContain("1280\u00d7800 (desktop)");
+    expect(prompt).not.toContain("iPad Mini");
+  });
+
+  it("excludes UI quality rules in quick mode", () => {
+    const prompt = buildExecutionSystemPrompt({ scopeTier: "quick" });
+    expect(prompt).not.toContain("<ui_quality_rules>");
+  });
+
+  it("includes touch interaction testing rules in thorough mode", () => {
+    const prompt = buildExecutionSystemPrompt({ scopeTier: "thorough" });
     expect(prompt).toContain("Touch interaction:");
     expect(prompt).toContain("also complete via tap");
   });
 
-  it("includes cross-browser Safari/WebKit check", () => {
-    const prompt = buildExecutionSystemPrompt();
+  it("includes cross-browser Safari/WebKit check in thorough mode", () => {
+    const prompt = buildExecutionSystemPrompt({ scopeTier: "thorough" });
     expect(prompt).toContain("Cross-browser (Safari/WebKit):");
     expect(prompt).toContain("flexbox gap");
     expect(prompt).toContain("WebKit is unavailable");
   });
 
-  it("includes dark mode verification rules", () => {
-    const prompt = buildExecutionSystemPrompt();
+  it("includes dark mode verification rules in thorough mode", () => {
+    const prompt = buildExecutionSystemPrompt({ scopeTier: "thorough" });
     expect(prompt).toContain("Dark mode:");
     expect(prompt).toContain("prefers-color-scheme");
     expect(prompt).toContain("dark mode");
   });
 
-  it("includes layout stability (CLS) rules", () => {
-    const prompt = buildExecutionSystemPrompt();
+  it("includes layout stability (CLS) rules in thorough mode", () => {
+    const prompt = buildExecutionSystemPrompt({ scopeTier: "thorough" });
     expect(prompt).toContain("Layout stability (CLS):");
     expect(prompt).toContain("layout shift");
     expect(prompt).toContain("0.1");
   });
 
-  it("includes font loading verification rules", () => {
-    const prompt = buildExecutionSystemPrompt();
+  it("includes font loading verification rules in thorough mode", () => {
+    const prompt = buildExecutionSystemPrompt({ scopeTier: "thorough" });
     expect(prompt).toContain("Font loading:");
     expect(prompt).toContain("document.fonts");
     expect(prompt).toContain("@font-face");

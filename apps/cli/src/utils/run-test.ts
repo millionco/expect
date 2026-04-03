@@ -1,5 +1,5 @@
 import { Config, Effect, Option, Stream, Schema } from "effect";
-import { type ChangesFor, CiResultOutput, CiStepResult } from "@expect/shared/models";
+import { type ChangesFor, CiResultOutput, CiStepResult, type ScopeTier } from "@expect/shared/models";
 import { Executor, ExecutedTestPlan, Reporter, Github } from "@expect/supervisor";
 import { Analytics } from "@expect/shared/observability";
 import type { AgentBackend } from "@expect/agent";
@@ -13,6 +13,7 @@ import { createCiReporter } from "./ci-reporter";
 import { writeGhaOutputs, writeGhaStepSummary } from "./gha-output";
 import { getStepElapsedMs, getTotalElapsedMs } from "./step-elapsed";
 import { formatElapsedTime } from "./format-elapsed-time";
+import { writeRunResult } from "./write-run-result";
 
 class ExecutionTimeoutError extends Schema.ErrorClass<ExecutionTimeoutError>(
   "ExecutionTimeoutError",
@@ -34,6 +35,7 @@ interface HeadlessRunOptions {
   ci: boolean;
   timeoutMs: Option.Option<number>;
   output: "text" | "json";
+  scopeTier: ScopeTier;
   baseUrl?: string;
 }
 
@@ -132,6 +134,7 @@ export const runHeadless = (options: HeadlessRunOptions) =>
               instruction: options.instruction,
               isHeadless: !options.headed,
               cookieBrowserKeys: [],
+              scopeTier: options.scopeTier,
               baseUrl: options.baseUrl,
             })
             .pipe(
@@ -366,39 +369,47 @@ export const runHeadless = (options: HeadlessRunOptions) =>
             );
           }
 
+          const stepResults = report.steps.map((step) => {
+            const entry = statuses.get(step.id);
+            const stepStatus = entry?.status ?? ("not-run" as const);
+            const elapsed = getStepElapsedMs(step);
+            return new CiStepResult({
+              title: step.title,
+              status: stepStatus,
+              ...(elapsed !== undefined ? { duration_ms: elapsed } : {}),
+              ...(stepStatus === "failed" && entry?.summary ? { error: entry.summary } : {}),
+            });
+          });
+
+          const summaryParts = [`${passedCount} passed`, `${failedCount} failed`];
+          if (skippedCount > 0) summaryParts.push(`${skippedCount} skipped`);
+          const summaryText = `${summaryParts.join(", ")} out of ${report.steps.length} step${report.steps.length === 1 ? "" : "s"}`;
+
+          const resultOutput = new CiResultOutput({
+            version: VERSION,
+            status: report.status,
+            title: report.title,
+            duration_ms: totalDurationMs,
+            steps: stepResults,
+            artifacts: {
+              ...(effectiveVideoPath ? { video: effectiveVideoPath } : {}),
+              ...(artifacts.replayPath ? { replay: artifacts.replayPath } : {}),
+              ...(artifacts.screenshotPaths.length > 0
+                ? { screenshots: [...artifacts.screenshotPaths] }
+                : {}),
+            },
+            summary: summaryText,
+          });
+
+          const runResultPath = yield* writeRunResult(
+            finalExecuted.id ?? crypto.randomUUID(),
+            resultOutput,
+          );
+          if (!isJsonOutput) {
+            process.stderr.write(`Run result: ${runResultPath}\n`);
+          }
+
           if (isJsonOutput) {
-            const stepResults = report.steps.map((step) => {
-              const entry = statuses.get(step.id);
-              const stepStatus = entry?.status ?? ("not-run" as const);
-              const elapsed = getStepElapsedMs(step);
-              return new CiStepResult({
-                title: step.title,
-                status: stepStatus,
-                ...(elapsed !== undefined ? { duration_ms: elapsed } : {}),
-                ...(stepStatus === "failed" && entry?.summary ? { error: entry.summary } : {}),
-              });
-            });
-
-            const summaryParts = [`${passedCount} passed`, `${failedCount} failed`];
-            if (skippedCount > 0) summaryParts.push(`${skippedCount} skipped`);
-            const summaryText = `${summaryParts.join(", ")} out of ${report.steps.length} step${report.steps.length === 1 ? "" : "s"}`;
-
-            const resultOutput = new CiResultOutput({
-              version: VERSION,
-              status: report.status,
-              title: report.title,
-              duration_ms: totalDurationMs,
-              steps: stepResults,
-              artifacts: {
-                ...(effectiveVideoPath ? { video: effectiveVideoPath } : {}),
-                ...(artifacts.replayPath ? { replay: artifacts.replayPath } : {}),
-                ...(artifacts.screenshotPaths.length > 0
-                  ? { screenshots: [...artifacts.screenshotPaths] }
-                  : {}),
-              },
-              summary: summaryText,
-            });
-
             const jsonString = JSON.stringify(
               Schema.encodeSync(CiResultOutput)(resultOutput),
               undefined,

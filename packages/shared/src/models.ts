@@ -326,6 +326,9 @@ export const ChangesFor = Schema.TaggedUnion({
 });
 export type ChangesFor = typeof ChangesFor.Type;
 
+export const ScopeTier = Schema.Literals(["quick", "standard", "thorough"] as const);
+export type ScopeTier = typeof ScopeTier.Type;
+
 export const changesForDisplayName = (changesFor: ChangesFor): string =>
   Match.value(changesFor).pipe(
     Match.tagsExhaustive({
