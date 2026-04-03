@@ -114,7 +114,8 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           fuser -k 7681/tcp 2>/dev/null || true
-          sleep 1
+          lsof -ti:7681 | xargs -r kill -9 2>/dev/null || true
+          sleep 2
           ttyd -p 7681 --writable node apps/cli/dist/index.js > /tmp/ttyd.log 2>&1 &
           TTYD_PID=$!
           sleep 3
