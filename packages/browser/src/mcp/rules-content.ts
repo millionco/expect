@@ -46,77 +46,77 @@ export const RULES: ReadonlyArray<RuleDefinition> = [
   {
     slug: "accessibility",
     description: "WCAG 2.1 AA accessibility rules, ARIA, keyboard navigation, focus management",
-    sources: ["expect-skill/fixing-accessibility"],
+    sources: ["accessibility"],
     subRuleDir: "rules",
   },
   {
     slug: "animation",
     description:
       "CSS/UI animation patterns, performance, hover effects, transitions, Framer Motion",
-    sources: ["expect-skill/fixing-animation"],
+    sources: ["animation"],
     subRuleDir: "rules",
   },
   {
     slug: "design",
     description: "UI/UX design principles, web interface guidelines, typography, shadows, motion",
-    sources: ["expect-skill/design", "expect-skill/web-design-guidelines"],
+    sources: ["design", "web-design"],
     subRuleDir: "rules",
   },
   {
     slug: "performance",
     description: "Web performance, Core Web Vitals, streaming, images, prefetch, resource budgets",
-    sources: ["expect-skill/performance"],
+    sources: ["performance"],
   },
   {
     slug: "react",
     description: "React and Next.js performance optimization, 59 rules across 9 categories",
-    sources: ["expect-skill/react-best-practices"],
+    sources: ["react"],
     subRuleDir: "rules",
   },
   {
     slug: "security",
     description: "Browser security review: XSS, CSRF, CSP, CORS, open redirects, postMessage",
-    sources: ["expect-skill/security-review"],
+    sources: ["security"],
     subRuleDir: "references",
   },
   {
     slug: "seo",
     description: "SEO metadata, Open Graph, canonical URLs, structured data, robots directives",
-    sources: ["expect-skill/fixing-seo"],
+    sources: ["seo"],
   },
   {
     slug: "code-review",
     description: "Code review guidelines: bugs, performance, side effects, test coverage, design",
-    sources: ["agents/code-review"],
+    sources: ["code-review"],
   },
   {
     slug: "deslop",
     description: "Simplify and refine code while preserving functionality",
-    sources: ["agents/deslop"],
+    sources: ["deslop"],
   },
   {
     slug: "effect",
     description: "Effect-TS patterns for services, errors, layers, schemas, and atoms",
-    sources: ["agents/effect-best-practices"],
+    sources: ["effect"],
     subRuleDir: "references",
   },
   {
     slug: "effect-patterns",
     description: "Portable Effect patterns for promises with timeouts, retries, caching, tracing",
-    sources: ["agents/effect-portable-patterns"],
+    sources: ["effect-patterns"],
   },
   {
     slug: "skill-writing",
     description:
       "Write and improve agent skills (SKILL.md files), prompt structure, TDD for skills",
-    sources: ["agents/skill-writing"],
+    sources: ["skill-writing"],
   },
 ];
 
-export const getSkillContent = (rule: RuleDefinition): string | undefined => {
+export const getRuleContent = (rule: RuleDefinition): string | undefined => {
   const parts: string[] = [];
   for (const source of rule.sources) {
-    const key = `${source}/SKILL.md`;
+    const key = `${source}/rule.md`;
     const content = rulesContentMap()[key];
     if (content) parts.push(stripFrontmatter(content));
   }

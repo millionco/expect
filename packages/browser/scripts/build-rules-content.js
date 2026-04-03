@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const isRelevantMdFile = (relPath) => {
-  if (relPath.endsWith("/SKILL.md") || relPath === "SKILL.md") return true;
+  if (relPath.endsWith("/rule.md") || relPath === "rule.md") return true;
   const parts = relPath.split("/");
   if (parts.length >= 2) {
     const parentDir = parts[parts.length - 2];
@@ -28,20 +28,6 @@ const collectMdFiles = (baseDir, dir, prefix = "") => {
 
 export const buildRulesContent = () => {
   const scriptDir = fileURLToPath(new URL(".", import.meta.url));
-  const repoRoot = join(scriptDir, "..", "..", "..");
-  const expectSkillDir = join(repoRoot, "packages", "expect-skill");
-  const agentSkillsDir = join(repoRoot, ".agents", "skills");
-  const content = {};
-
-  const expectFiles = collectMdFiles(expectSkillDir, ".");
-  for (const [key, value] of Object.entries(expectFiles)) {
-    content[`expect-skill/${key}`] = value;
-  }
-
-  const agentFiles = collectMdFiles(agentSkillsDir, ".");
-  for (const [key, value] of Object.entries(agentFiles)) {
-    content[`agents/${key}`] = value;
-  }
-
-  return JSON.stringify(content);
+  const resourcesDir = join(scriptDir, "..", "src", "mcp", "resources");
+  return JSON.stringify(collectMdFiles(resourcesDir, "."));
 };
