@@ -1,102 +1,93 @@
 declare const __RULES_CONTENT__: Record<string, string> | undefined;
 
-let cachedContent: Record<string, string> | undefined;
-
-const rulesContentMap = (): Record<string, string> => {
-  if (cachedContent) return cachedContent;
-  cachedContent = typeof __RULES_CONTENT__ !== "undefined" ? __RULES_CONTENT__ : {};
-  return cachedContent;
-};
-
 export const rulesAvailable = (): boolean => typeof __RULES_CONTENT__ !== "undefined";
 
-const STRIP_FRONTMATTER = /^---[\s\S]*?---\n+/;
+const contentMap = (): Record<string, string> =>
+  typeof __RULES_CONTENT__ !== "undefined" ? __RULES_CONTENT__ : {};
+
+const STRIP_FRONTMATTER = /^---[\s\S]*?---\n/;
 
 const stripFrontmatter = (content: string): string => content.replace(STRIP_FRONTMATTER, "");
+
+interface MergedSources {
+  readonly slug: string;
+  readonly sources: ReadonlyArray<string>;
+}
 
 export interface RuleDefinition {
   readonly slug: string;
   readonly description: string;
-  readonly sources: ReadonlyArray<string>;
+  readonly mergedSources?: ReadonlyArray<string>;
   readonly subRuleDir?: "rules" | "references";
 }
+
+const sourcesFor = (rule: RuleDefinition): ReadonlyArray<string> =>
+  rule.mergedSources ?? [rule.slug];
 
 export const RULES: ReadonlyArray<RuleDefinition> = [
   {
     slug: "accessibility",
     description: "WCAG 2.1 AA accessibility rules, ARIA, keyboard navigation, focus management",
-    sources: ["accessibility"],
     subRuleDir: "rules",
   },
   {
     slug: "animation",
     description:
       "CSS/UI animation patterns, performance, hover effects, transitions, Framer Motion",
-    sources: ["animation"],
     subRuleDir: "rules",
   },
   {
     slug: "design",
     description: "UI/UX design principles, web interface guidelines, typography, shadows, motion",
-    sources: ["design", "web-design"],
+    mergedSources: ["design", "web-design"],
     subRuleDir: "rules",
   },
   {
     slug: "performance",
     description: "Web performance, Core Web Vitals, streaming, images, prefetch, resource budgets",
-    sources: ["performance"],
   },
   {
     slug: "react",
     description: "React and Next.js performance optimization, 59 rules across 9 categories",
-    sources: ["react"],
     subRuleDir: "rules",
   },
   {
     slug: "security",
     description: "Browser security review: XSS, CSRF, CSP, CORS, open redirects, postMessage",
-    sources: ["security"],
     subRuleDir: "references",
   },
   {
     slug: "seo",
     description: "SEO metadata, Open Graph, canonical URLs, structured data, robots directives",
-    sources: ["seo"],
   },
   {
     slug: "code-review",
     description: "Code review guidelines: bugs, performance, side effects, test coverage, design",
-    sources: ["code-review"],
   },
   {
     slug: "deslop",
     description: "Simplify and refine code while preserving functionality",
-    sources: ["deslop"],
   },
   {
     slug: "effect",
     description: "Effect-TS patterns for services, errors, layers, schemas, and atoms",
-    sources: ["effect"],
     subRuleDir: "references",
   },
   {
     slug: "effect-patterns",
     description: "Portable Effect patterns for promises with timeouts, retries, caching, tracing",
-    sources: ["effect-patterns"],
   },
   {
     slug: "skill-writing",
     description:
       "Write and improve agent skills (SKILL.md files), prompt structure, TDD for skills",
-    sources: ["skill-writing"],
   },
 ];
 
 export const getRuleContent = (rule: RuleDefinition): string | undefined => {
   const parts: string[] = [];
-  for (const source of rule.sources) {
-    const key = `${source}/rule.md`;
-    const content = rulesContentMap()[key];
+  for (const source of sourcesFor(rule)) {
+    const content = contentMap()[`${source}/rule.md`];
     if (content) parts.push(stripFrontmatter(content));
   }
   if (parts.length === 0) return undefined;
@@ -105,14 +96,12 @@ export const getRuleContent = (rule: RuleDefinition): string | undefined => {
 
 export const getSubRules = (rule: RuleDefinition): ReadonlyArray<string> => {
   if (!rule.subRuleDir) return [];
+  const prefix = `${rule.slug}/${rule.subRuleDir}/`;
   const subRules: string[] = [];
-  const primarySource = rule.sources[0];
-  const prefix = `${primarySource}/${rule.subRuleDir}/`;
 
-  for (const key of Object.keys(rulesContentMap())) {
+  for (const key of Object.keys(contentMap())) {
     if (key.startsWith(prefix) && key.endsWith(".md")) {
-      const filename = key.slice(prefix.length).replace(/\.md$/, "");
-      subRules.push(filename);
+      subRules.push(key.slice(prefix.length).replace(/\.md$/, ""));
     }
   }
 
@@ -124,19 +113,7 @@ export const getSubRuleContent = (
   subRuleName: string,
 ): string | undefined => {
   if (!rule.subRuleDir) return undefined;
-  const primarySource = rule.sources[0];
-  const key = `${primarySource}/${rule.subRuleDir}/${subRuleName}.md`;
-  const content = rulesContentMap()[key];
+  const content = contentMap()[`${rule.slug}/${rule.subRuleDir}/${subRuleName}.md`];
   if (content) return stripFrontmatter(content);
   return undefined;
-};
-
-export const getRulesToc = (): string => {
-  const lines = ["# Available Rules", ""];
-  for (const rule of RULES) {
-    const subRules = getSubRules(rule);
-    const subRuleCount = subRules.length > 0 ? ` (${subRules.length} sub-rules)` : "";
-    lines.push(`- **${rule.slug}** — ${rule.description}${subRuleCount}`);
-  }
-  return lines.join("\n");
 };

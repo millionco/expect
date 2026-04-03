@@ -74,8 +74,8 @@ Only flag these when:
 
 ### 1. Detect Context
 
-| Code Type                                    | Load Reference                      |
-| -------------------------------------------- | ----------------------------------- |
+| Code Type                                    | Load Reference                                |
+| -------------------------------------------- | --------------------------------------------- |
 | JSX, templates, DOM manipulation             | `expect://rules/security/xss`                 |
 | Form submissions, state mutations            | `expect://rules/security/csrf`                |
 | Redirects, link hrefs                        | `expect://rules/security/open-redirect`       |

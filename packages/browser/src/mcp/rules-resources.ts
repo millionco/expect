@@ -3,14 +3,20 @@ import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   RULES,
   getRuleContent,
-  getRulesToc,
   getSubRuleContent,
   getSubRules,
   rulesAvailable,
 } from "./rules-content";
 
-const buildRulesPromptText = (): string => {
-  const lines = [
+export const registerRulesResources = (server: McpServer) => {
+  if (!rulesAvailable()) return;
+
+  const rulesWithSubRules = RULES.map((rule) => ({
+    rule,
+    subRules: getSubRules(rule),
+  }));
+
+  const promptLines = [
     "This MCP server provides built-in rules as resources. When you encounter a test failure with a `domain=` tag, or when a task involves one of the domains below, fetch the matching resource before writing code or attempting a fix.",
     "",
     "Fetch `expect://rules` for the full table of contents.",
@@ -18,21 +24,13 @@ const buildRulesPromptText = (): string => {
     "Available rule resources:",
     "",
   ];
-
-  for (const rule of RULES) {
-    const subRules = getSubRules(rule);
+  for (const { rule, subRules } of rulesWithSubRules) {
     const subRuleHint =
       subRules.length > 0
         ? ` — fetch \`expect://rules/${rule.slug}/{sub-rule}\` for ${subRules.length} detailed sub-rules`
         : "";
-    lines.push(`- \`expect://rules/${rule.slug}\` — ${rule.description}${subRuleHint}`);
+    promptLines.push(`- \`expect://rules/${rule.slug}\` — ${rule.description}${subRuleHint}`);
   }
-
-  return lines.join("\n");
-};
-
-export const registerRulesResources = (server: McpServer) => {
-  if (!rulesAvailable()) return;
 
   server.registerPrompt(
     "rules",
@@ -41,11 +39,17 @@ export const registerRulesResources = (server: McpServer) => {
       messages: [
         {
           role: "user" as const,
-          content: { type: "text" as const, text: buildRulesPromptText() },
+          content: { type: "text" as const, text: promptLines.join("\n") },
         },
       ],
     }),
   );
+
+  const tocLines = ["# Available Rules", ""];
+  for (const { rule, subRules } of rulesWithSubRules) {
+    const countSuffix = subRules.length > 0 ? ` (${subRules.length} sub-rules)` : "";
+    tocLines.push(`- **${rule.slug}** — ${rule.description}${countSuffix}`);
+  }
 
   server.registerResource(
     "rules-toc",
@@ -56,12 +60,11 @@ export const registerRulesResources = (server: McpServer) => {
       mimeType: "text/markdown",
     },
     async (uri) => ({
-      contents: [{ uri: uri.href, text: getRulesToc() }],
+      contents: [{ uri: uri.href, text: tocLines.join("\n") }],
     }),
   );
 
-  for (const rule of RULES) {
-    const subRules = getSubRules(rule);
+  for (const { rule, subRules } of rulesWithSubRules) {
     const subRuleList = subRules.length > 0 ? ` (${subRules.length} sub-rules)` : "";
 
     server.registerResource(
@@ -77,10 +80,9 @@ export const registerRulesResources = (server: McpServer) => {
         if (!content)
           return { contents: [{ uri: uri.href, text: `Rule not found: ${rule.slug}` }] };
 
-        const subRuleNames = getSubRules(rule);
         const appendix =
-          subRuleNames.length > 0
-            ? `\n\n## Available Sub-Rules\n\n${subRuleNames.map((name) => `- expect://rules/${rule.slug}/${name}`).join("\n")}\n`
+          subRules.length > 0
+            ? `\n\n## Available Sub-Rules\n\n${subRules.map((name) => `- expect://rules/${rule.slug}/${name}`).join("\n")}\n`
             : "";
 
         return { contents: [{ uri: uri.href, text: content + appendix }] };
@@ -97,10 +99,11 @@ export const registerRulesResources = (server: McpServer) => {
           mimeType: "text/markdown",
         },
         async (uri, { subRule }) => {
-          const subRuleName = String(subRule);
-          const content = getSubRuleContent(rule, subRuleName);
+          const content = getSubRuleContent(rule, String(subRule));
           if (!content) {
-            return { contents: [{ uri: uri.href, text: `Sub-rule not found: ${subRuleName}` }] };
+            return {
+              contents: [{ uri: uri.href, text: `Sub-rule not found: ${String(subRule)}` }],
+            };
           }
           return { contents: [{ uri: uri.href, text: content }] };
         },

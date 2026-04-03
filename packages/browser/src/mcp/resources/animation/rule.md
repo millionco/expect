@@ -14,8 +14,8 @@ Practical animation reference and performance rules. Fetch `expect://rules/anima
 
 ## Rules
 
-| Rule            | File                       | When to apply                                        |
-| --------------- | -------------------------- | ---------------------------------------------------- |
+| Rule            | File                                       | When to apply                                        |
+| --------------- | ------------------------------------------ | ---------------------------------------------------- |
 | Accessibility   | `expect://rules/animation/accessibility`   | Reduced motion, touch targets, focus management      |
 | Consistency     | `expect://rules/animation/consistency`     | Uniform animation language, motion tokens            |
 | Easing          | `expect://rules/animation/easing`          | Enter/exit easing, on-screen movement, custom curves |

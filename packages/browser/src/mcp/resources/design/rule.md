@@ -14,8 +14,8 @@ Practical design rules distilled from [userinterface.wiki](https://www.userinter
 
 ## Rules
 
-| Rule                 | File                            | When to apply                                              |
-| -------------------- | ------------------------------- | ---------------------------------------------------------- |
+| Rule                 | File                                         | When to apply                                              |
+| -------------------- | -------------------------------------------- | ---------------------------------------------------------- |
 | Animation Principles | `expect://rules/design/animation-principles` | Squash/stretch, staging, anticipation, timing, appeal      |
 | Timing Functions     | `expect://rules/design/timing-functions`     | Choosing springs vs easing vs linear vs no animation       |
 | Exit Animations      | `expect://rules/design/exit-animations`      | AnimatePresence modes, nested exits, manual exit control   |
