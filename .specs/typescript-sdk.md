@@ -373,6 +373,60 @@ expect-sdk (packages/typescript-sdk)
 
 Does NOT depend on the CLI or Ink. Public API is pure promises. Effect is an internal implementation detail.
 
+### CLI Runner
+
+`expect-cli` can run SDK test files directly. No manual setup required.
+
+```bash
+expect-cli run
+```
+
+1. Globs for `**/*.expect.ts` files in the project
+2. Auto-installs `expect-sdk` as a dev dependency if missing
+3. Runs each file with `tsx`
+4. Collects `TestResult` from each file's default export
+5. Prints results, exits 0 on all pass, 1 on any failure
+
+Test files export a `TestResult` or `TestResult[]`:
+
+```ts
+// login.expect.ts
+import { Expect } from "expect-sdk";
+
+export default await Expect.test({
+  url: "http://localhost:3000/login",
+  tests: [
+    "signing in with valid credentials redirects to the dashboard",
+    "invalid credentials show an error message",
+  ],
+});
+```
+
+```ts
+// auth.expect.ts
+import { Expect } from "expect-sdk";
+
+const login = await Expect.test({
+  url: "/login",
+  tests: ["login page loads"],
+});
+
+const signup = await Expect.test({
+  url: "/signup",
+  tests: ["signup page loads"],
+});
+
+export default [login, signup];
+```
+
+Run a single file:
+
+```bash
+expect-cli run login.expect.ts
+```
+
+`expect-cli run` outputs the same structured results as `expect-cli -m`, including `--json` support.
+
 ---
 
 ## SKILL.md Addition
