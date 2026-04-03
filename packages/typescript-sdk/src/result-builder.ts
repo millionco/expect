@@ -1,6 +1,6 @@
 import { DateTime, Option } from "effect";
 import type { ExecutedTestPlan, TestPlanStep, ExecutionEvent } from "@expect/shared/models";
-import type { StepResult, TestResult, TestEvent } from "./types";
+import type { Status, StepResult, TestResult, TestEvent } from "./types";
 
 const REPLAY_SESSION_PREFIX = "rrweb replay:";
 const SCREENSHOT_PREFIX = "Screenshot:";
@@ -15,7 +15,7 @@ const stepDurationMs = (step: TestPlanStep): number => {
   );
 };
 
-const stepStatusToResultStatus = (status: string): "pending" | "passed" | "failed" => {
+const stepStatusToResultStatus = (status: string): Status => {
   if (status === "passed") return "passed";
   if (status === "failed" || status === "skipped") return "failed";
   return "pending";
@@ -83,7 +83,7 @@ export const buildTestResult = (
   const hasFailure = errors.length > 0;
   const hasPending = steps.some((step) => step.status === "pending");
 
-  let status: TestResult["status"] = "passed";
+  let status: Status = "passed";
   if (hasFailure) status = "failed";
   else if (hasPending || steps.length === 0) status = "pending";
 

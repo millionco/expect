@@ -11,20 +11,22 @@ export type CookieInput = true | BrowserName | BrowserName[] | Cookie[];
 
 export type Test = string | { title?: string; prompt: string };
 
+export type Status = "pending" | "passed" | "failed";
+
 export interface Tool extends Pick<McpTool, "name" | "description" | "inputSchema"> {
   readonly handler: (input: Record<string, unknown>) => Promise<string>;
 }
 
 export interface StepResult {
   readonly title: string;
-  readonly status: "pending" | "passed" | "failed";
+  readonly status: Status;
   readonly summary: string;
   readonly screenshotPath?: string;
   readonly duration: number;
 }
 
 export interface TestResult {
-  readonly status: "pending" | "passed" | "failed";
+  readonly status: Status;
   readonly url: string;
   readonly duration: number;
   readonly recordingPath?: string;
