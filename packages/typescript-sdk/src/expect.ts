@@ -299,7 +299,13 @@ const runExecution = (
       }
     }
 
-    const instruction = buildInstructionWithActions(url, tests, input.before, beforeContext, input.after);
+    const instruction = buildInstructionWithActions(
+      url,
+      tests,
+      input.before,
+      beforeContext,
+      input.after,
+    );
 
     const executeOptions: ExecuteOptions = {
       changesFor: ChangesFor.makeUnsafe({ _tag: "WorkingTree" }),

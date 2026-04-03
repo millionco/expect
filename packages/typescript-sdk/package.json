@@ -12,9 +12,9 @@
     "format:check": "vp fmt --check",
     "build": "vp pack",
     "check": "vp check",
-    "test": "vp test run --exclude tests/e2e.test.ts",
-    "test:e2e": "~/.bun/bin/bun tests/e2e.test.ts",
-    "test:watch": "vp test --exclude tests/e2e.test.ts",
+    "test": "vp test run",
+    "test:e2e": "~/.bun/bin/bun tests/e2e.ts",
+    "test:watch": "vp test",
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
