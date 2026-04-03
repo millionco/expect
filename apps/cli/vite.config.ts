@@ -1,58 +1,10 @@
 import { createRequire } from "node:module";
-import { readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import type { Plugin } from "rolldown";
 import { defineConfig } from "vite-plus";
 import { reactCompilerPlugin } from "./react-compiler-plugin";
-
-const isRelevantMdFile = (relPath: string): boolean => {
-  if (relPath.endsWith("/SKILL.md") || relPath === "SKILL.md") return true;
-  const parts = relPath.split("/");
-  if (parts.length >= 2) {
-    const parentDir = parts[parts.length - 2];
-    if (parentDir === "rules" || parentDir === "references") return true;
-  }
-  return false;
-};
-
-const collectMdFiles = (
-  baseDir: string,
-  dir: string,
-  prefix: string = "",
-): Record<string, string> => {
-  const result: Record<string, string> = {};
-  for (const entry of readdirSync(join(baseDir, dir))) {
-    const fullPath = join(baseDir, dir, entry);
-    const relPath = prefix ? `${prefix}/${entry}` : entry;
-    if (statSync(fullPath).isDirectory()) {
-      Object.assign(result, collectMdFiles(baseDir, join(dir, entry), relPath));
-    } else if (entry.endsWith(".md") && !entry.startsWith("_") && isRelevantMdFile(relPath)) {
-      result[relPath] = readFileSync(fullPath, "utf-8");
-    }
-  }
-  return result;
-};
-
-const buildRulesContent = (): string => {
-  const configDir = fileURLToPath(new URL(".", import.meta.url));
-  const repoRoot = join(configDir, "..", "..");
-  const expectSkillDir = join(repoRoot, "packages", "expect-skill");
-  const agentSkillsDir = join(repoRoot, ".agents", "skills");
-  const content: Record<string, string> = {};
-
-  const expectFiles = collectMdFiles(expectSkillDir, ".");
-  for (const [key, value] of Object.entries(expectFiles)) {
-    content[`expect-skill/${key}`] = value;
-  }
-
-  const agentFiles = collectMdFiles(agentSkillsDir, ".");
-  for (const [key, value] of Object.entries(agentFiles)) {
-    content[`agents/${key}`] = value;
-  }
-
-  return JSON.stringify(content);
-};
+import { buildRulesContent } from "../../packages/browser/scripts/build-rules-content.js";
 
 const require = createRequire(import.meta.url);
 const pkg = require("./package.json");
