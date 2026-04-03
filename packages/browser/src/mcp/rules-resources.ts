@@ -9,8 +9,43 @@ import {
   rulesAvailable,
 } from "./rules-content";
 
+const buildRulesPromptText = (): string => {
+  const lines = [
+    "This MCP server provides built-in rules as resources. When you encounter a test failure with a `domain=` tag, or when a task involves one of the domains below, fetch the matching resource before writing code or attempting a fix.",
+    "",
+    "Fetch `expect://rules` for the full table of contents.",
+    "",
+    "Available rule resources:",
+    "",
+  ];
+
+  for (const rule of RULES) {
+    const subRules = getSubRules(rule);
+    const subRuleHint =
+      subRules.length > 0
+        ? ` — fetch \`expect://rules/${rule.slug}/{sub-rule}\` for ${subRules.length} detailed sub-rules`
+        : "";
+    lines.push(`- \`expect://rules/${rule.slug}\` — ${rule.description}${subRuleHint}`);
+  }
+
+  return lines.join("\n");
+};
+
 export const registerRulesResources = (server: McpServer) => {
   if (!rulesAvailable()) return;
+
+  server.registerPrompt(
+    "rules",
+    { description: "Available rule resources for fixing domain-specific issues" },
+    () => ({
+      messages: [
+        {
+          role: "user" as const,
+          content: { type: "text" as const, text: buildRulesPromptText() },
+        },
+      ],
+    }),
+  );
 
   server.registerResource(
     "rules-toc",
