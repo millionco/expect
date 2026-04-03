@@ -1,6 +1,8 @@
 import pc from "picocolors";
 import { logger } from "../utils/logger";
 
+declare const __RULES_CONTENT__: Record<string, string>;
+
 const STRIP_FRONTMATTER = /^---[\s\S]*?---\n+/;
 
 const stripFrontmatter = (content: string): string => content.replace(STRIP_FRONTMATTER, "");
@@ -12,118 +14,82 @@ interface RuleDefinition {
   readonly subRuleDir?: "rules" | "references";
 }
 
-const expectSkillContent = import.meta.glob<string>(
-  "../../../../packages/expect-skill/**/SKILL.md",
-  { eager: true, query: "?raw", import: "default" },
-);
-
-const expectSubRuleContent = import.meta.glob<string>(
-  [
-    "../../../../packages/expect-skill/**/rules/*.md",
-    "../../../../packages/expect-skill/**/references/*.md",
-  ],
-  { eager: true, query: "?raw", import: "default" },
-);
-
-const agentSkillContent = import.meta.glob<string>(
-  "../../../../.agents/skills/**/SKILL.md",
-  { eager: true, query: "?raw", import: "default" },
-);
-
-const agentSubRuleContent = import.meta.glob<string>(
-  [
-    "../../../../.agents/skills/**/rules/*.md",
-    "../../../../.agents/skills/**/references/*.md",
-  ],
-  { eager: true, query: "?raw", import: "default" },
-);
-
-const allSkillContent = { ...expectSkillContent, ...agentSkillContent };
-const allSubRuleContent = { ...expectSubRuleContent, ...agentSubRuleContent };
-
 const RULES: ReadonlyArray<RuleDefinition> = [
   {
     slug: "accessibility",
     description: "WCAG 2.1 AA accessibility rules, ARIA, keyboard navigation, focus management",
-    sources: ["packages/expect-skill/fixing-accessibility"],
+    sources: ["expect-skill/fixing-accessibility"],
     subRuleDir: "rules",
   },
   {
     slug: "animation",
-    description: "CSS/UI animation patterns, performance, hover effects, transitions, Framer Motion",
-    sources: ["packages/expect-skill/fixing-animation"],
+    description:
+      "CSS/UI animation patterns, performance, hover effects, transitions, Framer Motion",
+    sources: ["expect-skill/fixing-animation"],
     subRuleDir: "rules",
   },
   {
     slug: "design",
     description: "UI/UX design principles, web interface guidelines, typography, shadows, motion",
-    sources: ["packages/expect-skill/design", "packages/expect-skill/web-design-guidelines"],
+    sources: ["expect-skill/design", "expect-skill/web-design-guidelines"],
     subRuleDir: "rules",
   },
   {
     slug: "performance",
     description: "Web performance, Core Web Vitals, streaming, images, prefetch, resource budgets",
-    sources: ["packages/expect-skill/performance"],
+    sources: ["expect-skill/performance"],
   },
   {
     slug: "react",
     description: "React and Next.js performance optimization, 59 rules across 9 categories",
-    sources: ["packages/expect-skill/react-best-practices"],
+    sources: ["expect-skill/react-best-practices"],
     subRuleDir: "rules",
   },
   {
     slug: "security",
     description: "Browser security review: XSS, CSRF, CSP, CORS, open redirects, postMessage",
-    sources: ["packages/expect-skill/security-review"],
+    sources: ["expect-skill/security-review"],
     subRuleDir: "references",
   },
   {
     slug: "seo",
     description: "SEO metadata, Open Graph, canonical URLs, structured data, robots directives",
-    sources: ["packages/expect-skill/fixing-seo"],
+    sources: ["expect-skill/fixing-seo"],
   },
   {
     slug: "code-review",
     description: "Code review guidelines: bugs, performance, side effects, test coverage, design",
-    sources: [".agents/skills/code-review"],
+    sources: ["agents/code-review"],
   },
   {
     slug: "deslop",
     description: "Simplify and refine code while preserving functionality",
-    sources: [".agents/skills/deslop"],
+    sources: ["agents/deslop"],
   },
   {
     slug: "effect",
     description: "Effect-TS patterns for services, errors, layers, schemas, and atoms",
-    sources: [".agents/skills/effect-best-practices"],
+    sources: ["agents/effect-best-practices"],
     subRuleDir: "references",
   },
   {
     slug: "effect-patterns",
     description: "Portable Effect patterns for promises with timeouts, retries, caching, tracing",
-    sources: [".agents/skills/effect-portable-patterns"],
+    sources: ["agents/effect-portable-patterns"],
   },
   {
     slug: "skill-writing",
-    description: "Write and improve agent skills (SKILL.md files), prompt structure, TDD for skills",
-    sources: [".agents/skills/skill-writing"],
+    description:
+      "Write and improve agent skills (SKILL.md files), prompt structure, TDD for skills",
+    sources: ["agents/skill-writing"],
   },
 ];
-
-const findGlobContent = (
-  contentMap: Record<string, string>,
-  sourcePath: string,
-): string | undefined => {
-  for (const [globPath, content] of Object.entries(contentMap)) {
-    if (globPath.includes(sourcePath)) return content;
-  }
-  return undefined;
-};
 
 const getSkillContent = (rule: RuleDefinition): string | undefined => {
   const parts: string[] = [];
   for (const source of rule.sources) {
-    const content = findGlobContent(allSkillContent, `${source}/SKILL.md`);
+    const key = `${source}/SKILL.md`;
+    const content = __RULES_CONTENT__[key];
     if (content) parts.push(stripFrontmatter(content));
   }
   if (parts.length === 0) return undefined;
@@ -134,14 +100,12 @@ const getSubRules = (rule: RuleDefinition): ReadonlyArray<string> => {
   if (!rule.subRuleDir) return [];
   const subRules: string[] = [];
   const primarySource = rule.sources[0];
-  const dirSegment = `${primarySource}/${rule.subRuleDir}/`;
+  const prefix = `${primarySource}/${rule.subRuleDir}/`;
 
-  for (const globPath of Object.keys(allSubRuleContent)) {
-    if (globPath.includes(dirSegment)) {
-      const filename = globPath.split("/").pop();
-      if (filename && filename.endsWith(".md") && !filename.startsWith("_")) {
-        subRules.push(filename.replace(/\.md$/, ""));
-      }
+  for (const key of Object.keys(__RULES_CONTENT__)) {
+    if (key.startsWith(prefix) && key.endsWith(".md")) {
+      const filename = key.slice(prefix.length).replace(/\.md$/, "");
+      subRules.push(filename);
     }
   }
 
@@ -151,8 +115,8 @@ const getSubRules = (rule: RuleDefinition): ReadonlyArray<string> => {
 const getSubRuleContent = (rule: RuleDefinition, subRuleName: string): string | undefined => {
   if (!rule.subRuleDir) return undefined;
   const primarySource = rule.sources[0];
-  const searchPath = `${primarySource}/${rule.subRuleDir}/${subRuleName}.md`;
-  const content = findGlobContent(allSubRuleContent, searchPath);
+  const key = `${primarySource}/${rule.subRuleDir}/${subRuleName}.md`;
+  const content = __RULES_CONTENT__[key];
   if (content) return stripFrontmatter(content);
   return undefined;
 };

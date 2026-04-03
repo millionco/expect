@@ -1,9 +1,48 @@
 import { createRequire } from "node:module";
-import { readFileSync, realpathSync } from "node:fs";
+import { readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Plugin } from "rolldown";
 import { defineConfig } from "vite-plus";
 import { reactCompilerPlugin } from "./react-compiler-plugin";
+
+const collectMdFiles = (
+  baseDir: string,
+  dir: string,
+  prefix: string = "",
+): Record<string, string> => {
+  const result: Record<string, string> = {};
+  for (const entry of readdirSync(join(baseDir, dir))) {
+    const fullPath = join(baseDir, dir, entry);
+    const relPath = prefix ? `${prefix}/${entry}` : entry;
+    if (statSync(fullPath).isDirectory()) {
+      Object.assign(result, collectMdFiles(baseDir, join(dir, entry), relPath));
+    } else if (entry.endsWith(".md") && !entry.startsWith("_")) {
+      result[relPath] = readFileSync(fullPath, "utf-8");
+    }
+  }
+  return result;
+};
+
+const buildRulesContent = (): string => {
+  const configDir = fileURLToPath(new URL(".", import.meta.url));
+  const repoRoot = join(configDir, "..", "..");
+  const expectSkillDir = join(repoRoot, "packages", "expect-skill");
+  const agentSkillsDir = join(repoRoot, ".agents", "skills");
+  const content: Record<string, string> = {};
+
+  const expectFiles = collectMdFiles(expectSkillDir, ".");
+  for (const [key, value] of Object.entries(expectFiles)) {
+    content[`expect-skill/${key}`] = value;
+  }
+
+  const agentFiles = collectMdFiles(agentSkillsDir, ".");
+  for (const [key, value] of Object.entries(agentFiles)) {
+    content[`agents/${key}`] = value;
+  }
+
+  return JSON.stringify(content);
+};
 
 const require = createRequire(import.meta.url);
 const pkg = require("./package.json");
@@ -93,6 +132,7 @@ export default defineConfig({
     banner: "#!/usr/bin/env node",
     define: {
       __VERSION__: JSON.stringify(pkg.version),
+      __RULES_CONTENT__: buildRulesContent(),
     },
     deps: {
       alwaysBundle: [/^@expect\//],
