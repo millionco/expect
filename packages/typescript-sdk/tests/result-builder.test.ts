@@ -117,7 +117,12 @@ describe("buildTestResult", () => {
       makeStep({ id: "s1", status: "passed", summary: "ok" }),
       makeStep({ id: "s2", status: "passed", summary: "ok" }),
     ]);
-    const result = buildTestResult(executed, "http://localhost:3000", Date.now() - 1000, NO_ARTIFACTS);
+    const result = buildTestResult(
+      executed,
+      "http://localhost:3000",
+      Date.now() - 1000,
+      NO_ARTIFACTS,
+    );
     expect(result.status).toBe("passed");
     expect(result.errors).toHaveLength(0);
   });
@@ -161,7 +166,12 @@ describe("buildTestResult", () => {
 
   it("includes url", () => {
     const executed = makeExecuted();
-    const result = buildTestResult(executed, "http://localhost:3000/login", Date.now(), NO_ARTIFACTS);
+    const result = buildTestResult(
+      executed,
+      "http://localhost:3000/login",
+      Date.now(),
+      NO_ARTIFACTS,
+    );
     expect(result.url).toBe("http://localhost:3000/login");
   });
 

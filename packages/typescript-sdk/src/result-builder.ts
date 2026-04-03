@@ -120,14 +120,20 @@ const mapExecutionEvent = (event: ExecutionEvent, context: DiffContext): TestEve
       const step = context.stepMap.get(event.stepId);
       const index = context.stepIndexMap.get(event.stepId) ?? -1;
       return step
-        ? { type: "step:passed", step: buildStepResult(step, context.artifacts.screenshotPaths, index) }
+        ? {
+            type: "step:passed",
+            step: buildStepResult(step, context.artifacts.screenshotPaths, index),
+          }
         : undefined;
     }
     case "StepFailed": {
       const step = context.stepMap.get(event.stepId);
       const index = context.stepIndexMap.get(event.stepId) ?? -1;
       return step
-        ? { type: "step:failed", step: buildStepResult(step, context.artifacts.screenshotPaths, index) }
+        ? {
+            type: "step:failed",
+            step: buildStepResult(step, context.artifacts.screenshotPaths, index),
+          }
         : undefined;
     }
     case "StepSkipped":
@@ -143,7 +149,12 @@ const mapExecutionEvent = (event: ExecutionEvent, context: DiffContext): TestEve
     case "RunFinished":
       return {
         type: "completed",
-        result: buildTestResult(context.executed, context.url, context.startedAt, context.artifacts),
+        result: buildTestResult(
+          context.executed,
+          context.url,
+          context.startedAt,
+          context.artifacts,
+        ),
       };
     default:
       return undefined;

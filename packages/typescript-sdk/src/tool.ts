@@ -4,8 +4,7 @@ import type { Tool } from "./types";
 type SchemaInput = StandardJSONSchemaV1 | Record<string, unknown>;
 
 const isStandardSchema = (schema: SchemaInput): schema is StandardJSONSchemaV1 =>
-  "~standard" in schema &&
-  typeof (schema as Record<string, unknown>)["~standard"] === "object";
+  "~standard" in schema && typeof (schema as Record<string, unknown>)["~standard"] === "object";
 
 const toInputSchema = (schema: SchemaInput): Tool["inputSchema"] => {
   if (isStandardSchema(schema)) {

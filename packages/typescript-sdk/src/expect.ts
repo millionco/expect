@@ -187,8 +187,7 @@ const executeTests = Effect.fn("Sdk.executeTests")(function* (
     Stream.runLast,
     Effect.flatMap((option) =>
       Option.match(option, {
-        onNone: () =>
-          Effect.fail(new ExpectTimeoutError({ timeoutMs: 0 })),
+        onNone: () => Effect.fail(new ExpectTimeoutError({ timeoutMs: 0 })),
         onSome: (executed) => Effect.succeed(executed.finalizeTextBlock().synthesizeRunFinished()),
       }),
     ),
@@ -306,7 +305,13 @@ const runExecution = (
       }
     }
 
-    const instruction = buildInstructionWithActions(url, tests, input.setup, setupContext, input.teardown);
+    const instruction = buildInstructionWithActions(
+      url,
+      tests,
+      input.setup,
+      setupContext,
+      input.teardown,
+    );
 
     const executeOptions: ExecuteOptions = {
       changesFor: ChangesFor.makeUnsafe({ _tag: "WorkingTree" }),

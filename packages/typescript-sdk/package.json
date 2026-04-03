@@ -11,6 +11,7 @@
     "lint": "vp lint && tsc --noEmit",
     "format": "vp fmt",
     "format:check": "vp fmt --check",
+    "build": "vp pack",
     "check": "vp check",
     "test": "vp test run --exclude tests/e2e.test.ts",
     "test:e2e": "~/.bun/bin/bun tests/e2e.test.ts",
