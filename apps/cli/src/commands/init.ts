@@ -122,9 +122,7 @@ export const runInit = async (options: InitOptions = {}) => {
         `Installed! ${highlighter.info("expect-cli")} is now available globally.`,
       );
     } else {
-      globalSpinner.warn(
-        `Installed, but ${highlighter.info("expect-cli")} is not on your PATH.`,
-      );
+      globalSpinner.warn(`Installed, but ${highlighter.info("expect-cli")} is not on your PATH.`);
       const globalPrefix = spawnSync("npm", ["prefix", "-g"], {
         encoding: "utf8",
         stdio: ["ignore", "pipe", "ignore"],
