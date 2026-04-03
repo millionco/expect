@@ -1,20 +1,11 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
-import {
-  RULES,
-  getRuleContent,
-  getSubRuleContent,
-  getSubRules,
-  rulesAvailable,
-} from "./rules-content";
+import { getRuleContent, getRules, getSubRuleContent, rulesAvailable } from "./rules-content";
 
 export const registerRulesResources = (server: McpServer) => {
   if (!rulesAvailable()) return;
 
-  const rulesWithSubRules = RULES.map((rule) => ({
-    rule,
-    subRules: getSubRules(rule),
-  }));
+  const rules = getRules();
 
   const promptLines = [
     "This MCP server provides built-in rules as resources. When you encounter a test failure with a `domain=` tag, or when a task involves one of the domains below, fetch the matching resource before writing code or attempting a fix.",
@@ -24,10 +15,10 @@ export const registerRulesResources = (server: McpServer) => {
     "Available rule resources:",
     "",
   ];
-  for (const { rule, subRules } of rulesWithSubRules) {
+  for (const rule of rules) {
     const subRuleHint =
-      subRules.length > 0
-        ? ` — fetch \`expect://rules/${rule.slug}/{sub-rule}\` for ${subRules.length} detailed sub-rules`
+      rule.subRules.length > 0
+        ? ` — fetch \`expect://rules/${rule.slug}/{sub-rule}\` for ${rule.subRules.length} detailed sub-rules`
         : "";
     promptLines.push(`- \`expect://rules/${rule.slug}\` — ${rule.description}${subRuleHint}`);
   }
@@ -46,8 +37,8 @@ export const registerRulesResources = (server: McpServer) => {
   );
 
   const tocLines = ["# Available Rules", ""];
-  for (const { rule, subRules } of rulesWithSubRules) {
-    const countSuffix = subRules.length > 0 ? ` (${subRules.length} sub-rules)` : "";
+  for (const rule of rules) {
+    const countSuffix = rule.subRules.length > 0 ? ` (${rule.subRules.length} sub-rules)` : "";
     tocLines.push(`- **${rule.slug}** — ${rule.description}${countSuffix}`);
   }
 
@@ -64,8 +55,8 @@ export const registerRulesResources = (server: McpServer) => {
     }),
   );
 
-  for (const { rule, subRules } of rulesWithSubRules) {
-    const subRuleList = subRules.length > 0 ? ` (${subRules.length} sub-rules)` : "";
+  for (const rule of rules) {
+    const subRuleList = rule.subRules.length > 0 ? ` (${rule.subRules.length} sub-rules)` : "";
 
     server.registerResource(
       `rule-${rule.slug}`,
@@ -81,8 +72,8 @@ export const registerRulesResources = (server: McpServer) => {
           return { contents: [{ uri: uri.href, text: `Rule not found: ${rule.slug}` }] };
 
         const appendix =
-          subRules.length > 0
-            ? `\n\n## Available Sub-Rules\n\n${subRules.map((name) => `- expect://rules/${rule.slug}/${name}`).join("\n")}\n`
+          rule.subRules.length > 0
+            ? `\n\n## Available Sub-Rules\n\n${rule.subRules.map((name) => `- expect://rules/${rule.slug}/${name}`).join("\n")}\n`
             : "";
 
         return { contents: [{ uri: uri.href, text: content + appendix }] };

@@ -5,107 +5,72 @@ export const rulesAvailable = (): boolean => typeof __RULES_CONTENT__ !== "undef
 const contentMap = (): Record<string, string> =>
   typeof __RULES_CONTENT__ !== "undefined" ? __RULES_CONTENT__ : {};
 
-const STRIP_FRONTMATTER = /^---[\s\S]*?---\n/;
+const FRONTMATTER_PATTERN = /^---\n([\s\S]*?)\n---\n/;
 
-const stripFrontmatter = (content: string): string => content.replace(STRIP_FRONTMATTER, "");
+const stripFrontmatter = (content: string): string => content.replace(FRONTMATTER_PATTERN, "");
 
-interface MergedSources {
-  readonly slug: string;
-  readonly sources: ReadonlyArray<string>;
-}
+const extractDescription = (content: string): string => {
+  const match = content.match(FRONTMATTER_PATTERN);
+  if (!match) return "";
+  const descriptionMatch = match[1].match(/description:\s*>?\s*\n?([\s\S]*?)(?:\n\w|\n---|$)/);
+  if (!descriptionMatch) return "";
+  return descriptionMatch[1].trim().replace(/\n\s*/g, " ");
+};
 
 export interface RuleDefinition {
   readonly slug: string;
   readonly description: string;
-  readonly mergedSources?: ReadonlyArray<string>;
   readonly subRuleDir?: "rules" | "references";
+  readonly subRules: ReadonlyArray<string>;
 }
 
-const sourcesFor = (rule: RuleDefinition): ReadonlyArray<string> =>
-  rule.mergedSources ?? [rule.slug];
+const discoverRules = (): ReadonlyArray<RuleDefinition> => {
+  const map = contentMap();
+  const slugs = new Set<string>();
 
-export const RULES: ReadonlyArray<RuleDefinition> = [
-  {
-    slug: "accessibility",
-    description: "WCAG 2.1 AA accessibility rules, ARIA, keyboard navigation, focus management",
-    subRuleDir: "rules",
-  },
-  {
-    slug: "animation",
-    description:
-      "CSS/UI animation patterns, performance, hover effects, transitions, Framer Motion",
-    subRuleDir: "rules",
-  },
-  {
-    slug: "design",
-    description: "UI/UX design principles, web interface guidelines, typography, shadows, motion",
-    mergedSources: ["design", "web-design"],
-    subRuleDir: "rules",
-  },
-  {
-    slug: "performance",
-    description: "Web performance, Core Web Vitals, streaming, images, prefetch, resource budgets",
-  },
-  {
-    slug: "react",
-    description: "React and Next.js performance optimization, 59 rules across 9 categories",
-    subRuleDir: "rules",
-  },
-  {
-    slug: "security",
-    description: "Browser security review: XSS, CSRF, CSP, CORS, open redirects, postMessage",
-    subRuleDir: "references",
-  },
-  {
-    slug: "seo",
-    description: "SEO metadata, Open Graph, canonical URLs, structured data, robots directives",
-  },
-  {
-    slug: "code-review",
-    description: "Code review guidelines: bugs, performance, side effects, test coverage, design",
-  },
-  {
-    slug: "deslop",
-    description: "Simplify and refine code while preserving functionality",
-  },
-  {
-    slug: "effect",
-    description: "Effect-TS patterns for services, errors, layers, schemas, and atoms",
-    subRuleDir: "references",
-  },
-  {
-    slug: "effect-patterns",
-    description: "Portable Effect patterns for promises with timeouts, retries, caching, tracing",
-  },
-  {
-    slug: "skill-writing",
-    description:
-      "Write and improve agent skills (SKILL.md files), prompt structure, TDD for skills",
-  },
-];
-
-export const getRuleContent = (rule: RuleDefinition): string | undefined => {
-  const parts: string[] = [];
-  for (const source of sourcesFor(rule)) {
-    const content = contentMap()[`${source}/rule.md`];
-    if (content) parts.push(stripFrontmatter(content));
-  }
-  if (parts.length === 0) return undefined;
-  return parts.join("\n\n---\n\n");
-};
-
-export const getSubRules = (rule: RuleDefinition): ReadonlyArray<string> => {
-  if (!rule.subRuleDir) return [];
-  const prefix = `${rule.slug}/${rule.subRuleDir}/`;
-  const subRules: string[] = [];
-
-  for (const key of Object.keys(contentMap())) {
-    if (key.startsWith(prefix) && key.endsWith(".md")) {
-      subRules.push(key.slice(prefix.length).replace(/\.md$/, ""));
+  for (const key of Object.keys(map)) {
+    if (key.endsWith("/rule.md")) {
+      slugs.add(key.replace(/\/rule\.md$/, ""));
     }
   }
 
-  return subRules.sort();
+  const rules: RuleDefinition[] = [];
+
+  for (const slug of [...slugs].sort()) {
+    const ruleContent = map[`${slug}/rule.md`];
+    const description = ruleContent ? extractDescription(ruleContent) : "";
+
+    let subRuleDir: "rules" | "references" | undefined;
+    const subRules: string[] = [];
+
+    for (const dir of ["rules", "references"] as const) {
+      const prefix = `${slug}/${dir}/`;
+      for (const key of Object.keys(map)) {
+        if (key.startsWith(prefix) && key.endsWith(".md")) {
+          subRuleDir = dir;
+          subRules.push(key.slice(prefix.length).replace(/\.md$/, ""));
+        }
+      }
+      if (subRules.length > 0) break;
+    }
+
+    rules.push({ slug, description, subRuleDir, subRules: subRules.sort() });
+  }
+
+  return rules;
+};
+
+let cachedRules: ReadonlyArray<RuleDefinition> | undefined;
+
+export const getRules = (): ReadonlyArray<RuleDefinition> => {
+  if (!cachedRules) cachedRules = discoverRules();
+  return cachedRules;
+};
+
+export const getRuleContent = (rule: RuleDefinition): string | undefined => {
+  const content = contentMap()[`${rule.slug}/rule.md`];
+  if (!content) return undefined;
+  return stripFrontmatter(content);
 };
 
 export const getSubRuleContent = (
