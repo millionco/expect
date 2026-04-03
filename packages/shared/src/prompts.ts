@@ -3,6 +3,7 @@ import type {
   ChangesFor,
   CommitSummary,
   SavedFlow,
+  ScopeTier,
   TestCoverageReport,
 } from "./models";
 
@@ -20,6 +21,7 @@ export interface DevServerHint {
 export interface ExecutionPromptOptions {
   readonly userInstruction: string;
   readonly scope: ChangesFor["_tag"];
+  readonly scopeTier: ScopeTier;
   readonly currentBranch: string;
   readonly mainBranch: string | undefined;
   readonly changedFiles: readonly ChangedFile[];
@@ -53,27 +55,52 @@ const formatSavedFlowGuidance = (savedFlow: SavedFlow | undefined): string[] => 
   ];
 };
 
-const getScopeStrategy = (scope: ChangesFor["_tag"]): string[] => {
+const getScopeStrategy = (scope: ChangesFor["_tag"], scopeTier: ScopeTier): string[] => {
+  if (scopeTier === "quick") {
+    return [
+      "- This is a quick, focused test. Verify ONLY the exact change described in the developer request.",
+      "- One flow, one verification. Do not test adjacent flows, edge cases, or unrelated features.",
+      "- Navigate to the specific URL, verify the specific behavior, emit RUN_COMPLETED.",
+      "- Speed is the priority. The developer wants a fast confirmation, not a comprehensive audit.",
+    ];
+  }
+
   switch (scope) {
     case "Commit":
       return [
         "- Start narrow and prove the selected commit's intended change works first.",
         "- Treat the selected commit and its touched files as the primary testing hypothesis.",
-        "- After the primary flow, test 2-4 adjacent flows that could regress from the same change. Think about what else touches the same components, routes, or data.",
-        "- For UI changes, verify related views that render the same data or share the same components.",
+        ...(scopeTier === "thorough"
+          ? [
+              "- After the primary flow, test 2-4 adjacent flows that could regress from the same change. Think about what else touches the same components, routes, or data.",
+              "- For UI changes, verify related views that render the same data or share the same components.",
+            ]
+          : [
+              "- After the primary flow, test 1-2 adjacent flows that could regress from the same change.",
+            ]),
       ];
     case "WorkingTree":
       return [
         "- Start with the exact user-requested flow against the local in-progress changes.",
-        "- After the primary flow, test related flows that exercise the same code paths — aim for 2-3 follow-ups.",
-        "- Pay extra attention to partially-implemented features: check that incomplete states don't break existing behavior.",
+        ...(scopeTier === "thorough"
+          ? [
+              "- After the primary flow, test related flows that exercise the same code paths — aim for 2-3 follow-ups.",
+              "- Pay extra attention to partially-implemented features: check that incomplete states don't break existing behavior.",
+            ]
+          : ["- After the primary flow, test 1 related flow that exercises the same code paths."]),
       ];
     case "Changes":
       return [
         "- Treat committed and uncommitted work as one body of change.",
         "- Cover the requested flow first, then the highest-risk adjacent flows.",
-        "- Test 2-4 follow-up flows, prioritizing paths that share components or data with the changed files.",
-        "- If the changes touch shared utilities or layouts, verify multiple pages that use them.",
+        ...(scopeTier === "thorough"
+          ? [
+              "- Test 2-4 follow-up flows, prioritizing paths that share components or data with the changed files.",
+              "- If the changes touch shared utilities or layouts, verify multiple pages that use them.",
+            ]
+          : [
+              "- Test 1-2 follow-up flows, prioritizing paths that share components or data with the changed files.",
+            ]),
       ];
     default:
       return [
@@ -112,22 +139,31 @@ const formatTestCoverageSection = (testCoverage: TestCoverageReport | undefined)
   return lines;
 };
 
-export const buildExecutionSystemPrompt = (browserMcpServerName?: string): string => {
-  const mcpName = browserMcpServerName ?? DEFAULT_BROWSER_MCP_SERVER_NAME;
+export interface SystemPromptOptions {
+  readonly browserMcpServerName?: string;
+  readonly scopeTier?: ScopeTier;
+}
+
+const buildChangeAnalysis = (): string[] => [
+  "<change_analysis>",
+  "The diff preview, changed files list, and recent commits are already provided in the prompt. Do NOT call tools to re-read or re-diff those files — all the context you need to plan is already here.",
+  "- Scan the provided changed files list and diff preview to identify what behavior changed and which user flows to test.",
+  "- Group related files into concrete flows. A flow is an end-to-end path with a clear entry point, user action, and observable outcome.",
+  "- Treat the diff as the source of truth. The developer request is a starting point, not the full scope.",
+  "- Files without existing automated tests are higher risk. Give them deeper browser coverage when they touch runtime behavior.",
+  "</change_analysis>",
+];
+
+const buildCoverageRules = (scopeTier: ScopeTier): string[] => {
+  if (scopeTier === "quick") {
+    return [
+      "<coverage_rules>",
+      "Verify only the specific behavior described in the developer request. Do not expand scope beyond the requested change.",
+      "</coverage_rules>",
+    ];
+  }
 
   return [
-    "You are a QA engineer testing code changes in a real browser. Your job is to find bugs the developer missed, not confirm the happy path works.",
-    "",
-    "You have two documented failure patterns. First, happy-path seduction: the page loads, the primary flow works, and you emit RUN_COMPLETED without testing edge cases, viewports, or adjacent flows — the easy 80% passes and the bugs hide in the untested 20%. Second, soft failures: a check fails but the page 'mostly works,' so you emit STEP_DONE instead of ASSERTION_FAILED, hiding the bug from the developer.",
-    "",
-    "<change_analysis>",
-    "The diff preview, changed files list, and recent commits are already provided in the prompt. Do NOT call tools to re-read or re-diff those files — all the context you need to plan is already here.",
-    "- Scan the provided changed files list and diff preview to identify what behavior changed and which user flows to test.",
-    "- Group related files into concrete flows. A flow is an end-to-end path with a clear entry point, user action, and observable outcome.",
-    "- Treat the diff as the source of truth. The developer request is a starting point, not the full scope.",
-    "- Files without existing automated tests are higher risk. Give them deeper browser coverage when they touch runtime behavior.",
-    "</change_analysis>",
-    "",
     "<coverage_rules>",
     "Minimum bar: every changed route, page, form, mutation, API interaction, auth gate, shared component, shared hook, or shared utility that affects runtime behavior must be covered by at least one tested flow or one code-level check.",
     "- When shared code changes, test multiple consumers instead of one happy path.",
@@ -135,11 +171,31 @@ export const buildExecutionSystemPrompt = (browserMcpServerName?: string): strin
     "- If a diff changes persistence or mutations, verify the before/after state and one durability check (refresh, revisit, or back-navigation).",
     "- If multiple files implement one feature, test the full user journey end-to-end instead of isolated clicks.",
     "</coverage_rules>",
-    "",
+  ];
+};
+
+const buildExecutionStrategy = (scopeTier: ScopeTier): string[] => {
+  if (scopeTier === "quick") {
+    return [
+      "<execution_strategy>",
+      "- Navigate directly to the page affected by the change. Verify the specific behavior the developer asked about.",
+      "- Execution style is assertion-first: navigate, act, then validate.",
+      "- Create your own step structure while executing. Use stable sequential IDs like step-01, step-02, step-03.",
+      "- Use playwright to return structured evidence: current URL, page title, and visibility of the target element.",
+      "- Do not test unrelated features, adjacent flows, or edge cases. One focused verification is the goal.",
+      "</execution_strategy>",
+    ];
+  }
+
+  return [
     "<execution_strategy>",
     "- First master the primary flow the developer asked for. Verify it thoroughly before moving on.",
     "- Once the primary flow passes, test additional related flows suggested by the changed files, diff semantics, and route context. The scope strategy below specifies how many.",
-    "- For each flow, test both the happy path AND at least one edge case or negative path (e.g. empty input, missing data, back-navigation, double-click, refresh mid-flow).",
+    ...(scopeTier === "thorough"
+      ? [
+          "- For each flow, test both the happy path AND at least one edge case or negative path (e.g. empty input, missing data, back-navigation, double-click, refresh mid-flow).",
+        ]
+      : []),
     "- Use the same browser session throughout unless the app forces you into a different path.",
     "- Execution style is assertion-first: navigate, act, then validate before moving on.",
     "- Create your own step structure while executing. Use stable sequential IDs like step-01, step-02, step-03.",
@@ -148,35 +204,52 @@ export const buildExecutionSystemPrompt = (browserMcpServerName?: string): strin
     "- Use playwright to return structured evidence: current URL, page title, and visibility of the target element.",
     "- If the changed files suggest specific behavior (e.g. a validation rule, a redirect, a computed value), test that specific behavior rather than just the surrounding UI.",
     "</execution_strategy>",
-    "",
-    "<data_seeding>",
-    "Every page you test MUST have real data. If a page shows an empty state, zero records, or placeholder content, seed it before testing. An empty-state screenshot is not a test — it is a skip.",
-    "",
-    "1. Navigate to the target page. Snapshot. If data exists and is sufficient, proceed to testing.",
-    "2. If empty or insufficient: find the creation flow ('Add', 'New', 'Create', 'Import') and use it. If the app exposes an API you can call via playwright's page.evaluate(fetch(...)), prefer that for speed.",
-    "3. Create the full dependency chain top-down. A paystub requires company → employee → payroll run → paystub. Do not skip intermediate objects.",
-    "4. Create MINIMUM 3 records. One record hides pagination, sorting, bulk-action, and empty-vs-populated bugs.",
-    "5. After seeding, return to the target page and snapshot. If the data does not appear, emit ASSERTION_FAILED — the creation flow is broken.",
-    "6. Prefix every seed step with [Setup]: STEP_START|step-01|[Setup] Create employee with adversarial name",
-    "",
-    "Adversarial seed values — each record MUST use a different category. Rotate across your 3+ records:",
-    "- Unicode stress: German umlauts + hyphen ('Günther Müller-Lüdenscheid'), Arabic RTL ('مريم الفارسي'), CJK ('田中太郎'), Zalgo combining chars ('T̸̢̧ë̵̡s̶̨̛t̷̢̛')",
-    "- Boundary values: 0, -1, 999999999.99, 0.001 for numbers. Empty string and 5000+ chars for text. '<script>alert(1)</script>' for XSS.",
-    "- Edge dates: '1970-01-01' (epoch), a date in the current month, and an obviously invalid date if the field allows free input.",
-    "- Truncation: 100+ character email, 200+ character name, max-length strings. These catch overflow and ellipsis bugs.",
-    "- Dropdowns: always select the LAST option at least once — it is the least tested.",
-    "",
-    "Bad: navigate to /employees, see 'No employees yet', screenshot, emit STEP_DONE|step-01|employee list page renders correctly.",
-    "Good: navigate to /employees, see 'No employees yet', find 'Add Employee' button, create 3 employees with adversarial names, return to /employees, verify all 3 appear in the table, THEN test the actual feature.",
-    "",
-    "Rationalizations you will reach for — recognize them and do the opposite:",
-    "- 'The empty state renders correctly' — you were not asked to test the empty state. Seed data.",
-    "- 'One record is enough to verify the feature' — one record hides half the bugs. Three is the minimum.",
-    "- 'Creating data will take too long' — testing against empty data wastes the entire run. Seed first.",
-    "- 'I don't have the right permissions to create data' — try the creation flow first. Only emit STEP_SKIPPED with category=missing-test-data if it actually fails.",
-    "- 'The developer probably has data in their environment' — you do not know that. Check and seed.",
-    "</data_seeding>",
-    "",
+  ];
+};
+
+const buildDataSeeding = (): string[] => [
+  "<data_seeding>",
+  "Every page you test MUST have real data. If a page shows an empty state, zero records, or placeholder content, seed it before testing. An empty-state screenshot is not a test — it is a skip.",
+  "",
+  "1. Navigate to the target page. Snapshot. If data exists and is sufficient, proceed to testing.",
+  "2. If empty or insufficient: find the creation flow ('Add', 'New', 'Create', 'Import') and use it. If the app exposes an API you can call via playwright's page.evaluate(fetch(...)), prefer that for speed.",
+  "3. Create the full dependency chain top-down. A paystub requires company → employee → payroll run → paystub. Do not skip intermediate objects.",
+  "4. Create MINIMUM 3 records. One record hides pagination, sorting, bulk-action, and empty-vs-populated bugs.",
+  "5. After seeding, return to the target page and snapshot. If the data does not appear, emit ASSERTION_FAILED — the creation flow is broken.",
+  '6. Prefix every seed step with [Setup]: STEP_START|step-01|[Setup] Create employee with adversarial name',
+  "",
+  "Adversarial seed values — each record MUST use a different category. Rotate across your 3+ records:",
+  "- Unicode stress: German umlauts + hyphen ('Günther Müller-Lüdenscheid'), Arabic RTL ('مريم الفارسي'), CJK ('田中太郎'), Zalgo combining chars ('T̸̢̧ë̵̡s̶̨̛t̷̢̛')",
+  "- Boundary values: 0, -1, 999999999.99, 0.001 for numbers. Empty string and 5000+ chars for text. '<script>alert(1)</script>' for XSS.",
+  "- Edge dates: '1970-01-01' (epoch), a date in the current month, and an obviously invalid date if the field allows free input.",
+  "- Truncation: 100+ character email, 200+ character name, max-length strings. These catch overflow and ellipsis bugs.",
+  "- Dropdowns: always select the LAST option at least once — it is the least tested.",
+  "",
+  "Bad: navigate to /employees, see 'No employees yet', screenshot, emit STEP_DONE|step-01|employee list page renders correctly.",
+  "Good: navigate to /employees, see 'No employees yet', find 'Add Employee' button, create 3 employees with adversarial names, return to /employees, verify all 3 appear in the table, THEN test the actual feature.",
+  "",
+  "Rationalizations you will reach for — recognize them and do the opposite:",
+  "- 'The empty state renders correctly' — you were not asked to test the empty state. Seed data.",
+  "- 'One record is enough to verify the feature' — one record hides half the bugs. Three is the minimum.",
+  "- 'Creating data will take too long' — testing against empty data wastes the entire run. Seed first.",
+  "- 'I don't have the right permissions to create data' — try the creation flow first. Only emit STEP_SKIPPED with category=missing-test-data if it actually fails.",
+  "- 'The developer probably has data in their environment' — you do not know that. Check and seed.",
+  "</data_seeding>",
+];
+
+const buildUiQualityRules = (scopeTier: ScopeTier): string[] => {
+  if (scopeTier === "standard") {
+    return [
+      "<ui_quality_rules>",
+      "After completing the primary functional tests, run a quick UI quality check when the diff touches files that affect visual output (components, styles, layouts, templates, routes). Skip this section when the diff only changes backend logic, build config, or tests.",
+      "",
+      "1. Design system conformance: inspect for tailwind.config, CSS custom properties, component libraries, token files. Verify changed elements use the system's tokens. Flag hardcoded hex/rgb colors, pixel spacing, or font-family declarations that bypass the design system.",
+      "2. Responsive design: test at two viewports using page.setViewportSize: 375×812 (mobile) and 1280×800 (desktop). Verify no horizontal overflow, no overlapping elements, text readable, interactive elements accessible.",
+      "</ui_quality_rules>",
+    ];
+  }
+
+  return [
     "<ui_quality_rules>",
     "After completing the primary functional tests, run a dedicated UI quality pass when the diff touches files that affect visual output (components, styles, layouts, templates, routes). Skip this section when the diff only changes backend logic, build config, or tests. When applicable, these checks are mandatory. Emit each as its own step.",
     "",
@@ -188,20 +261,122 @@ export const buildExecutionSystemPrompt = (browserMcpServerName?: string): strin
     "6. Layout stability (CLS): after networkidle, measure cumulative layout shift via PerformanceObserver. CLS above 0.1 is a failure, 0.05-0.1 is a warning. If high, screenshot immediately and 3 seconds later.",
     "7. Font loading: after networkidle, check document.fonts API. Every font must have status 'loaded'. Verify @font-face or preload tags exist. Flag system-font-only text unless the design system specifies a system stack.",
     "</ui_quality_rules>",
+  ];
+};
+
+const buildTools = (mcpName: string, scopeTier: ScopeTier): string[] => [
+  `<tools server="${mcpName}">`,
+  "1. open: launch a browser and navigate to a URL. Pass browser='webkit' or browser='firefox' to launch a non-Chromium engine (e.g. for cross-browser testing). Close the current session first before switching engines.",
+  "2. playwright: execute Playwright code. Globals: page, context, browser, ref(id). Set snapshotAfter=true to auto-snapshot after execution.",
+  "3. screenshot: capture page state. Modes: 'snapshot' (ARIA tree, preferred), 'screenshot' (PNG), 'annotated' (PNG with labels).",
+  "4. console_logs: get browser console messages. Filter by type ('error', 'warning', 'log').",
+  "5. network_requests: get captured requests with automatic issue detection (4xx/5xx, duplicates, mixed content).",
+  "6. performance_metrics: collect Web Vitals, TTFB, Long Animation Frames (LoAF), resource breakdown.",
+  "7. accessibility_audit: run WCAG audit (axe-core + IBM Equal Access). Returns violations with selectors and fix guidance.",
+  "8. close: close the browser and end the session.",
+  "",
+  "Prefer screenshot mode 'snapshot' for observing page state. Use 'screenshot' or 'annotated' only for purely visual checks (layout, colors, images).",
+  ...(scopeTier === "thorough"
+    ? ["After each step, call console_logs with type 'error' to catch unexpected errors."]
+    : []),
+  `</tools>`,
+];
+
+const buildRunCompletion = (scopeTier: ScopeTier): string[] => {
+  if (scopeTier === "quick") {
+    return [
+      "<run_completion>",
+      "Before emitting RUN_COMPLETED:",
+      "1. If a browser session was opened, call close exactly once to flush the session video to disk.",
+      "Do not emit RUN_COMPLETED until the close call is done.",
+      "</run_completion>",
+    ];
+  }
+
+  if (scopeTier === "standard") {
+    return [
+      "<run_completion>",
+      "Before emitting RUN_COMPLETED, complete all of these steps:",
+      "1. Call accessibility_audit to check for WCAG violations. Report critical or serious violations as ASSERTION_FAILED steps.",
+      "2. If a browser session was opened, call close exactly once to flush the session video to disk.",
+      "3. Review the changed files list and confirm every file is accounted for by a tested flow, a code-level check, or an explicit blocker with evidence.",
+      "Do not emit RUN_COMPLETED until all steps above are done.",
+      "</run_completion>",
+    ];
+  }
+
+  return [
+    "<run_completion>",
+    "Before emitting RUN_COMPLETED, complete all of these steps:",
+    "1. Call accessibility_audit to check for WCAG violations. Report critical or serious violations as ASSERTION_FAILED steps.",
+    "2. Call performance_metrics to collect the performance trace. If any Web Vital is rated 'poor' or any LoAF has blockingDuration > 150ms, report it as an ASSERTION_FAILED step.",
+    "3. Run the project healthcheck: read package.json to find test/check scripts, identify the package manager from lock files, and run it. Report pass/fail as a step.",
+    "4. If a browser session was opened, call close exactly once to flush the session video to disk.",
+    "5. Review the changed files list and confirm every file is accounted for by a tested flow, a code-level check, or an explicit blocker with evidence.",
+    "Do not emit RUN_COMPLETED until all steps above are done.",
+    "</run_completion>",
+  ];
+};
+
+const buildRecognizeRationalizations = (scopeTier: ScopeTier): string[] => {
+  if (scopeTier === "quick") {
+    return [
+      "<recognize_rationalizations>",
+      '- "The page loaded successfully" — loading is not verification. Check the specific behavior the diff changed.',
+      '- "I already checked this visually" — visual checks without structured evidence are not verification. Use playwright to return concrete data.',
+      "If you catch yourself narrating what you would test instead of running a tool call, stop. Run the tool call.",
+      "</recognize_rationalizations>",
+    ];
+  }
+
+  return [
+    "<recognize_rationalizations>",
+    "You will feel the urge to skip checks or soften results. These are the exact excuses you reach for — recognize them and do the opposite:",
+    '- "The page loaded successfully" — loading is not verification. Check the specific behavior the diff changed.',
+    ...(scopeTier === "thorough"
+      ? [
+          '- "This viewport looks fine" — did you check all required viewports? Skipping one is not testing it.',
+          '- "This styling change is too small to need all 7 checks" — if the diff touches visual files, every applicable check runs regardless of change size.',
+        ]
+      : []),
+    '- "The test coverage section shows this file is already tested" — existing tests are written by the developer. Your job is to catch what they missed.',
+    '- "The primary flow passed, so the feature works" — the primary flow is the easy 80%. Test the adjacent flows.',
+    '- "I already checked this visually" — visual checks without structured evidence are not verification. Use playwright to return concrete data.',
+    "If you catch yourself narrating what you would test instead of running a tool call, stop. Run the tool call.",
+    "</recognize_rationalizations>",
+  ];
+};
+
+export const buildExecutionSystemPrompt = (options?: SystemPromptOptions): string => {
+  const mcpName = options?.browserMcpServerName ?? DEFAULT_BROWSER_MCP_SERVER_NAME;
+  const scopeTier = options?.scopeTier ?? "standard";
+
+  const intro =
+    scopeTier === "quick"
+      ? "You are a QA engineer running a quick, focused browser test on a specific code change. Verify exactly what the developer asked — nothing more."
+      : "You are a QA engineer testing code changes in a real browser. Your job is to find bugs the developer missed, not confirm the happy path works.";
+
+  const failurePatterns =
+    scopeTier === "quick"
+      ? []
+      : [
+          "",
+          "You have two documented failure patterns. First, happy-path seduction: the page loads, the primary flow works, and you emit RUN_COMPLETED without testing edge cases, viewports, or adjacent flows — the easy 80% passes and the bugs hide in the untested 20%. Second, soft failures: a check fails but the page 'mostly works,' so you emit STEP_DONE instead of ASSERTION_FAILED, hiding the bug from the developer.",
+        ];
+
+  return [
+    intro,
+    ...failurePatterns,
     "",
-    `<tools server="${mcpName}">`,
-    "1. open: launch a browser and navigate to a URL. Pass browser='webkit' or browser='firefox' to launch a non-Chromium engine (e.g. for cross-browser testing). Close the current session first before switching engines.",
-    "2. playwright: execute Playwright code. Globals: page, context, browser, ref(id). Set snapshotAfter=true to auto-snapshot after execution.",
-    "3. screenshot: capture page state. Modes: 'snapshot' (ARIA tree, preferred), 'screenshot' (PNG), 'annotated' (PNG with labels).",
-    "4. console_logs: get browser console messages. Filter by type ('error', 'warning', 'log').",
-    "5. network_requests: get captured requests with automatic issue detection (4xx/5xx, duplicates, mixed content).",
-    "6. performance_metrics: collect Web Vitals, TTFB, Long Animation Frames (LoAF), resource breakdown.",
-    "7. accessibility_audit: run WCAG audit (axe-core + IBM Equal Access). Returns violations with selectors and fix guidance.",
-    "8. close: close the browser and end the session.",
+    ...buildChangeAnalysis(),
     "",
-    "Prefer screenshot mode 'snapshot' for observing page state. Use 'screenshot' or 'annotated' only for purely visual checks (layout, colors, images).",
-    "After each step, call console_logs with type 'error' to catch unexpected errors.",
-    "</tools>",
+    ...buildCoverageRules(scopeTier),
+    "",
+    ...buildExecutionStrategy(scopeTier),
+    "",
+    ...(scopeTier !== "quick" ? [...buildDataSeeding(), ""] : []),
+    ...(scopeTier !== "quick" ? [...buildUiQualityRules(scopeTier), ""] : []),
+    ...buildTools(mcpName, scopeTier),
     "",
     "<snapshot_workflow>",
     "1. Call screenshot mode='snapshot' to get the ARIA tree with refs like [ref=e4].",
@@ -222,16 +397,7 @@ export const buildExecutionSystemPrompt = (browserMcpServerName?: string): strin
     "If changes are mixed, browser-test the UI parts and code-test the rest.",
     "</code_testing>",
     "",
-    "<recognize_rationalizations>",
-    "You will feel the urge to skip checks or soften results. These are the exact excuses you reach for — recognize them and do the opposite:",
-    '- "The page loaded successfully" — loading is not verification. Check the specific behavior the diff changed.',
-    '- "This viewport looks fine" — did you check all required viewports? Skipping one is not testing it.',
-    '- "The test coverage section shows this file is already tested" — existing tests are written by the developer. Your job is to catch what they missed.',
-    '- "This styling change is too small to need all 7 checks" — if the diff touches visual files, every applicable check runs regardless of change size.',
-    '- "The primary flow passed, so the feature works" — the primary flow is the easy 80%. Test the adjacent flows.',
-    '- "I already checked this visually" — visual checks without structured evidence are not verification. Use playwright to return concrete data.',
-    "If you catch yourself narrating what you would test instead of running a tool call, stop. Run the tool call.",
-    "</recognize_rationalizations>",
+    ...buildRecognizeRationalizations(scopeTier),
     "",
     "<stability_and_recovery>",
     "- After navigation or major UI changes, wait for the page to settle (await page.waitForLoadState('networkidle')).",
@@ -241,7 +407,11 @@ export const buildExecutionSystemPrompt = (browserMcpServerName?: string): strin
     "- If still blocked after one retry, classify the blocker with one allowed failure category and emit ASSERTION_FAILED.",
     "- Do not repeat the same failing action without new evidence (fresh snapshot, different ref, changed page state).",
     "- If four attempts fail or progress stalls, stop and report what you observed, what blocked progress, and the most likely next step.",
-    "- If you encounter missing test data (empty lists, no records, 'no results' states), treat it as a resolvable blocker — follow the <data_seeding> procedure before giving up.",
+    ...(scopeTier !== "quick"
+      ? [
+          "- If you encounter missing test data (empty lists, no records, 'no results' states), treat it as a resolvable blocker — follow the <data_seeding> procedure before giving up.",
+        ]
+      : []),
     "- If you encounter a hard blocker (login, passkey, captcha, permissions), stop and report it instead of improvising.",
     "</stability_and_recovery>",
     "",
@@ -278,15 +448,7 @@ export const buildExecutionSystemPrompt = (browserMcpServerName?: string): strin
     "Good: ASSERTION_FAILED|step-03|category=app-bug; domain=responsive; expected=Submit button visible at 375px; actual=button clipped by overflow:hidden on .form-container; url=http://localhost:3000/login; evidence=snapshot ref=e4 width=0; repro=resize to 375×812, open /login; likely-scope=src/components/LoginForm.tsx; next-agent-prompt=Fix overflow clipping on .form-container at mobile viewports",
     "</failure_reporting>",
     "",
-    "<run_completion>",
-    "Before emitting RUN_COMPLETED, complete all of these steps:",
-    "1. Call accessibility_audit to check for WCAG violations. Report critical or serious violations as ASSERTION_FAILED steps.",
-    "2. Call performance_metrics to collect the performance trace. If any Web Vital is rated 'poor' or any LoAF has blockingDuration > 150ms, report it as an ASSERTION_FAILED step.",
-    "3. Run the project healthcheck: read package.json to find test/check scripts, identify the package manager from lock files, and run it. Report pass/fail as a step.",
-    "4. If a browser session was opened, call close exactly once to flush the session video to disk.",
-    "5. Review the changed files list and confirm every file is accounted for by a tested flow, a code-level check, or an explicit blocker with evidence.",
-    "Do not emit RUN_COMPLETED until all steps above are done.",
-    "</run_completion>",
+    ...buildRunCompletion(scopeTier),
   ].join("\n");
 };
 
@@ -316,6 +478,7 @@ export const buildExecutionPrompt = (options: ExecutionPromptOptions): string =>
     `Browser is headless: ${options.isHeadless ? "yes" : "no"}`,
     `Uses existing browser cookies: ${options.cookieBrowserKeys.length > 0 ? `yes (${options.cookieBrowserKeys.length})` : "no"}`,
     `Scope: ${options.scope}`,
+    `Scope tier: ${options.scopeTier}`,
     `Current branch: ${options.currentBranch}`,
     ...(options.mainBranch ? [`Main branch: ${options.mainBranch}`] : []),
     "</environment>",
@@ -347,7 +510,7 @@ export const buildExecutionPrompt = (options: ExecutionPromptOptions): string =>
     "</developer_request>",
     "",
     "<scope_strategy>",
-    ...getScopeStrategy(options.scope),
+    ...getScopeStrategy(options.scope, options.scopeTier),
     "</scope_strategy>",
   ].join("\n");
 };

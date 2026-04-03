@@ -36,6 +36,42 @@ const imageResult = (base64: string) => ({
   content: [{ type: "image" as const, data: base64, mimeType: "image/png" }],
 });
 
+const AUTH_PAGE_INDICATORS = [
+  "login",
+  "signin",
+  "sign-in",
+  "sign_in",
+  "auth",
+  "authenticate",
+  "sso",
+  "oauth",
+];
+
+const buildAuthRedirectWarning = (requestedUrl: string, currentUrl: string): string => {
+  try {
+    const requestedOrigin = new URL(requestedUrl).origin;
+    const currentOrigin = new URL(currentUrl).origin;
+    const currentPath = new URL(currentUrl).pathname.toLowerCase();
+
+    const redirectedToAuthPage =
+      currentOrigin !== requestedOrigin ||
+      AUTH_PAGE_INDICATORS.some(
+        (indicator) => currentPath.includes(indicator) && !requestedUrl.includes(indicator),
+      );
+
+    if (!redirectedToAuthPage) return "";
+
+    return (
+      `\n\n⚠️ AUTH REDIRECT DETECTED: Page redirected to ${currentUrl} instead of staying at ${requestedUrl}. ` +
+      `This likely means authentication is required. ` +
+      `If tests need authenticated access, re-run with cookie injection (--cookies) or ensure the dev server allows unauthenticated access. ` +
+      `You should emit STEP_SKIPPED with category=auth-blocked for any steps that require authentication.`
+    );
+  } catch {
+    return "";
+  }
+};
+
 const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
 
 // Tool annotations (readOnlyHint, destructiveHint) enable parallel execution in the Claude Agent SDK.
@@ -106,13 +142,24 @@ export const createBrowserMcpServer = <E>(
             cdpUrl,
             browserType,
           });
+
+          const page = yield* session.requirePage();
+          const authWarning = buildAuthRedirectWarning(url, page.url());
+          if (authWarning) {
+            yield* Effect.logWarning("Auth redirect detected", {
+              requestedUrl: url,
+              currentUrl: page.url(),
+            });
+          }
+
           const engineSuffix = browserType && browserType !== "chromium" ? ` [${browserType}]` : "";
           const cdpSuffix = cdpUrl ? ` (connected via CDP: ${cdpUrl})` : "";
+          const cookieSuffix =
+            result.injectedCookieCount > 0
+              ? ` (${result.injectedCookieCount} cookies synced from local browser)`
+              : "";
           return textResult(
-            `Opened ${url}${engineSuffix}${cdpSuffix}` +
-              (result.injectedCookieCount > 0
-                ? ` (${result.injectedCookieCount} cookies synced from local browser)`
-                : ""),
+            `Opened ${url}${engineSuffix}${cdpSuffix}${cookieSuffix}${authWarning}`,
           );
         }).pipe(Effect.withSpan(`mcp.tool.open`)),
       ),

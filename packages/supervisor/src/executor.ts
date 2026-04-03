@@ -25,6 +25,7 @@ import {
   buildExecutionSystemPrompt,
   type DevServerHint,
 } from "@expect/shared/prompts";
+import type { ScopeTier } from "@expect/shared/models";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Git } from "./git/git";
 import {
@@ -59,6 +60,7 @@ export interface ExecuteOptions {
   readonly instruction: string;
   readonly isHeadless: boolean;
   readonly cookieBrowserKeys: readonly string[];
+  readonly scopeTier?: ScopeTier;
   readonly baseUrl?: string;
   readonly savedFlow?: SavedFlow;
   readonly learnings?: string;
@@ -132,11 +134,14 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
 
       const context = yield* gatherContext(options.changesFor);
 
-      const systemPrompt = buildExecutionSystemPrompt();
+      const scopeTier = options.scopeTier ?? "standard";
+
+      const systemPrompt = buildExecutionSystemPrompt({ scopeTier });
 
       const prompt = buildExecutionPrompt({
         userInstruction: options.instruction,
         scope: options.changesFor._tag,
+        scopeTier,
         currentBranch: context.currentBranch,
         mainBranch: context.mainBranch,
         changedFiles: context.changedFiles,

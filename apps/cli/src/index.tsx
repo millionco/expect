@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { Option } from "effect";
 import { Command } from "commander";
 import { ChangesFor } from "@expect/supervisor";
+import type { ScopeTier } from "@expect/shared/models";
 import { runHeadless } from "./utils/run-test";
 import { runInit } from "./commands/init";
 import { runAddGithubAction } from "./commands/add-github-action";
@@ -34,12 +35,15 @@ const TARGETS: readonly Target[] = ["unstaged", "branch", "changes"];
 
 type OutputFormat = "text" | "json";
 
+const SCOPE_TIERS: readonly ScopeTier[] = ["quick", "standard", "thorough"];
+
 interface CommanderOpts {
   message?: string;
   flow?: string;
   yes?: boolean;
   agent?: AgentBackend;
   target?: Target;
+  scope?: ScopeTier;
   verbose?: boolean;
   headed?: boolean;
   noCookies?: boolean;
@@ -63,6 +67,11 @@ const program = new Command()
     "agent provider to use (claude, codex, copilot, gemini, cursor, opencode, or droid)",
   )
   .option("-t, --target <target>", "what to test: unstaged, branch, or changes", "changes")
+  .option(
+    "-s, --scope <tier>",
+    "test depth: quick (one check, ~30s), standard (primary + follow-ups), thorough (full audit)",
+    "standard",
+  )
   .option("--verbose", "enable verbose logging")
   .option("--headed", "show a visible browser window during tests")
   .option("--no-cookies", "skip system browser cookie extraction")
@@ -80,7 +89,8 @@ Examples:
   $ expect --headed -m "smoke test" -y              run with a visible browser
   $ expect --target branch                          test all branch changes
   $ expect --target unstaged                        test unstaged changes
-  $ expect --no-cookies -m "test" -y                skip system browser cookie extraction
+  $ expect --scope quick -m "check the button" -y   fast focused test (~30s)
+  $ expect --scope thorough --target branch         full audit before merge
   $ expect -u http://localhost:3000 -m "test" -y    specify dev server URL directly
   $ expect watch -m "test the login flow"           watch mode`,
   );
@@ -113,6 +123,12 @@ const runHeadlessForTarget = async (target: Target, opts: CommanderOpts) => {
       ? Option.some(CI_EXECUTION_TIMEOUT_MS)
       : Option.none();
 
+  const scopeTier = opts.scope ?? "standard";
+  if (!SCOPE_TIERS.includes(scopeTier)) {
+    console.error(`Unknown scope tier: ${scopeTier}. Use ${SCOPE_TIERS.join(", ")}.`);
+    process.exit(1);
+  }
+
   const { changesFor } = await resolveChangesFor(target);
   return runHeadless({
     changesFor,
@@ -123,6 +139,7 @@ const runHeadlessForTarget = async (target: Target, opts: CommanderOpts) => {
     ci: ciMode,
     timeoutMs,
     output: opts.output ?? "text",
+    scopeTier,
     baseUrl: opts.url?.join(", "),
   });
 };

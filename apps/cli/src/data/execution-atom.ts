@@ -11,6 +11,10 @@ import { startReplayProxy } from "../utils/replay-proxy-server";
 import { toViewerRunState, pushStepState } from "../utils/push-step-state";
 import { extractCloseArtifacts } from "../utils/extract-close-artifacts";
 import { loadReplayEvents } from "../utils/load-replay-events";
+import { writeRunResult } from "../utils/write-run-result";
+import { CiResultOutput, CiStepResult } from "@expect/shared/models";
+import { VERSION } from "../constants";
+import { getStepElapsedMs, getTotalElapsedMs } from "../utils/step-elapsed";
 
 const LIVE_VIEW_PORT_MIN = 50000;
 const LIVE_VIEW_PORT_RANGE = 10000;
@@ -174,6 +178,36 @@ const executeCore = (input: ExecuteInput) =>
     if (report.status === "passed") {
       yield* git.saveTestedFingerprint();
     }
+
+    const statuses = report.stepStatuses;
+    const stepResults = report.steps.map((step) => {
+      const entry = statuses.get(step.id);
+      const stepStatus = entry?.status ?? ("not-run" as const);
+      const elapsed = getStepElapsedMs(step);
+      return new CiStepResult({
+        title: step.title,
+        status: stepStatus,
+        ...(elapsed !== undefined ? { duration_ms: elapsed } : {}),
+        ...(stepStatus === "failed" && entry?.summary ? { error: entry.summary } : {}),
+      });
+    });
+
+    const totalDurationMs = getTotalElapsedMs(report.steps) || durationMs;
+    const summaryParts = [`${passedCount} passed`, `${failedCount} failed`];
+    const resultOutput = new CiResultOutput({
+      version: VERSION,
+      status: report.status,
+      title: report.title,
+      duration_ms: totalDurationMs,
+      steps: stepResults,
+      artifacts: {
+        ...(artifacts.videoUrl ? { video: artifacts.videoUrl } : {}),
+        ...(artifacts.localReplayUrl ? { replay: artifacts.localReplayUrl } : {}),
+      },
+      summary: `${summaryParts.join(", ")} out of ${report.steps.length} step${report.steps.length === 1 ? "" : "s"}`,
+    });
+
+    yield* writeRunResult(finalExecuted.id ?? crypto.randomUUID(), resultOutput);
 
     return {
       executedPlan: finalExecuted,
