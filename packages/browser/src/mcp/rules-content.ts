@@ -11,23 +11,23 @@ const stripFrontmatter = (content: string): string => content.replace(STRIP_FRON
 
 const rewriteSubRuleRefs = (content: string, slug: string): string =>
   content
-    .replace(/`rules\/([^`]+)\.md`/g, (_, name) => `\`expect-cli rules ${slug} ${name}\``)
-    .replace(/`references\/([^`]+)\.md`/g, (_, name) => `\`expect-cli rules ${slug} ${name}\``)
+    .replace(/`rules\/([^`]+)\.md`/g, (_, name) => `\`expect://rules/${slug}/${name}\``)
+    .replace(/`references\/([^`]+)\.md`/g, (_, name) => `\`expect://rules/${slug}/${name}\``)
     .replace(
       /See `rules\/` for detailed guides[^.]*\./g,
-      `Run \`expect-cli rules ${slug} <sub-rule>\` for detailed guides.`,
+      `Fetch \`expect://rules/${slug}/<sub-rule>\` for detailed guides.`,
     )
     .replace(
       /Read individual rule files in `rules\/`[^.]*/g,
-      `Run \`expect-cli rules ${slug} <sub-rule>\` for detailed rule content`,
+      `Fetch \`expect://rules/${slug}/<sub-rule>\` for detailed rule content`,
     )
     .replace(
       /Read individual rule files for detailed explanations and code examples:/g,
-      "Run individual sub-rule commands for detailed explanations and code examples:",
+      "Fetch individual sub-rule resources for detailed explanations and code examples:",
     )
     .replace(/^rules\/[\w-]+\.md$/gm, (match) => {
       const name = match.replace(/^rules\//, "").replace(/\.md$/, "");
-      return `expect-cli rules ${slug} ${name}`;
+      return `expect://rules/${slug}/${name}`;
     });
 
 export interface RuleDefinition {
