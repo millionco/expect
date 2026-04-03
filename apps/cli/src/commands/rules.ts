@@ -7,6 +7,27 @@ const STRIP_FRONTMATTER = /^---[\s\S]*?---\n+/;
 
 const stripFrontmatter = (content: string): string => content.replace(STRIP_FRONTMATTER, "");
 
+const rewriteSubRuleRefs = (content: string, slug: string): string =>
+  content
+    .replace(/`rules\/([^`]+)\.md`/g, (_, name) => `\`expect-cli rules ${slug} ${name}\``)
+    .replace(/`references\/([^`]+)\.md`/g, (_, name) => `\`expect-cli rules ${slug} ${name}\``)
+    .replace(
+      /See `rules\/` for detailed guides[^.]*\./g,
+      `Run \`expect-cli rules ${slug} <sub-rule>\` for detailed guides.`,
+    )
+    .replace(
+      /Read individual rule files in `rules\/`[^.]*/g,
+      `Run \`expect-cli rules ${slug} <sub-rule>\` for detailed rule content`,
+    )
+    .replace(
+      /Read individual rule files for detailed explanations and code examples:/g,
+      "Run individual sub-rule commands for detailed explanations and code examples:",
+    )
+    .replace(/^rules\/[\w-]+\.md$/gm, (match) => {
+      const name = match.replace(/^rules\//, "").replace(/\.md$/, "");
+      return `expect-cli rules ${slug} ${name}`;
+    });
+
 interface RuleDefinition {
   readonly slug: string;
   readonly description: string;
@@ -93,7 +114,8 @@ const getSkillContent = (rule: RuleDefinition): string | undefined => {
     if (content) parts.push(stripFrontmatter(content));
   }
   if (parts.length === 0) return undefined;
-  return parts.join("\n\n---\n\n");
+  const merged = parts.join("\n\n---\n\n");
+  return rule.subRuleDir ? rewriteSubRuleRefs(merged, rule.slug) : merged;
 };
 
 const getSubRules = (rule: RuleDefinition): ReadonlyArray<string> => {

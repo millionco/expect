@@ -6,6 +6,16 @@ import type { Plugin } from "rolldown";
 import { defineConfig } from "vite-plus";
 import { reactCompilerPlugin } from "./react-compiler-plugin";
 
+const isRelevantMdFile = (relPath: string): boolean => {
+  if (relPath.endsWith("/SKILL.md") || relPath === "SKILL.md") return true;
+  const parts = relPath.split("/");
+  if (parts.length >= 2) {
+    const parentDir = parts[parts.length - 2];
+    if (parentDir === "rules" || parentDir === "references") return true;
+  }
+  return false;
+};
+
 const collectMdFiles = (
   baseDir: string,
   dir: string,
@@ -17,7 +27,7 @@ const collectMdFiles = (
     const relPath = prefix ? `${prefix}/${entry}` : entry;
     if (statSync(fullPath).isDirectory()) {
       Object.assign(result, collectMdFiles(baseDir, join(dir, entry), relPath));
-    } else if (entry.endsWith(".md") && !entry.startsWith("_")) {
+    } else if (entry.endsWith(".md") && !entry.startsWith("_") && isRelevantMdFile(relPath)) {
       result[relPath] = readFileSync(fullPath, "utf-8");
     }
   }
