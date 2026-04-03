@@ -11,7 +11,6 @@ export type {
   ExpectConfig,
   ExpectSession,
   SessionConfig,
-  SessionHooks,
   SessionTestInput,
   StepResult,
   Test,

@@ -44,24 +44,24 @@ describe("Expect.test input validation", () => {
     expect(run).toBeDefined();
   });
 
-  it("throws when function setup has no page", () => {
+  it("throws when function before has no page", () => {
     expect(() =>
       Expect.test({
         url: "http://localhost:3000",
         tests: ["something"],
-        setup: async () => {},
+        before: async () => {},
       }),
-    ).toThrow("Function setup requires a page");
+    ).toThrow("Function before requires a page");
   });
 
-  it("throws when function teardown has no page", () => {
+  it("throws when function after has no page", () => {
     expect(() =>
       Expect.test({
         url: "http://localhost:3000",
         tests: ["something"],
-        teardown: async () => {},
+        after: async () => {},
       }),
-    ).toThrow("Function teardown requires a page");
+    ).toThrow("Function after requires a page");
   });
 
   it("throws when tools are provided", () => {
@@ -102,15 +102,6 @@ describe("Expect.session", () => {
   it("session.close resolves", async () => {
     const session = Expect.session({ url: "http://localhost:3000" });
     await expect(session.close()).resolves.toBeUndefined();
-  });
-
-  it("throws when hooks are provided", () => {
-    expect(() =>
-      Expect.session({
-        url: "http://localhost:3000",
-        hooks: { beforeAll: "seed data" },
-      }),
-    ).toThrow("Session hooks are not yet supported");
   });
 
   it("throws when browserContext is provided", () => {

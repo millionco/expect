@@ -51,18 +51,11 @@ export interface TestInput {
   readonly cookies?: CookieInput;
   readonly tools?: Tool[];
   readonly tests: Test[];
-  readonly setup?: Action;
-  readonly teardown?: Action;
+  readonly before?: Action;
+  readonly after?: Action;
   readonly mode?: "headed" | "headless";
   readonly timeout?: number;
   readonly isRecording?: boolean;
-}
-
-export interface SessionHooks {
-  readonly beforeAll?: Action;
-  readonly afterAll?: Action;
-  readonly beforeEach?: Action;
-  readonly afterEach?: Action;
 }
 
 export interface SessionConfig {
@@ -70,7 +63,6 @@ export interface SessionConfig {
   readonly browserContext?: BrowserContext;
   readonly cookies?: CookieInput;
   readonly tools?: Tool[];
-  readonly hooks?: SessionHooks;
   readonly mode?: "headed" | "headless";
   readonly timeout?: number;
   readonly isRecording?: boolean;
@@ -79,8 +71,8 @@ export interface SessionConfig {
 export interface SessionTestInput {
   readonly url?: string;
   readonly tests: Test[];
-  readonly setup?: Action;
-  readonly teardown?: Action;
+  readonly before?: Action;
+  readonly after?: Action;
   readonly mode?: "headed" | "headless";
   readonly timeout?: number;
   readonly isRecording?: boolean;

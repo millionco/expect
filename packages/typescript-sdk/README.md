@@ -343,6 +343,7 @@ if (result.status === "failed") {
 
 ## Compare to other testing tools
 
+
 |                | expect-sdk                      | Playwright / Cypress     | Manual QA      |
 | -------------- | ------------------------------- | ------------------------ | -------------- |
 | Test authoring | Plain English                   | Selectors + assertions   | Click around   |
@@ -350,6 +351,7 @@ if (result.status === "failed") {
 | Setup          | `npm install expect-sdk`        | Page objects, fixtures   | Hire people    |
 | Flakiness      | AI retries intelligently        | Explicit waits           | Human judgment |
 | Best for       | Behavior verification           | Pixel-precise assertions | Exploratory    |
+
 
 Use expect-sdk when you care about **what** the app does. Use Playwright when you care about **how** it renders.
 

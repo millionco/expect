@@ -5,11 +5,8 @@ Published as `expect-sdk` on npm. Used by coding agents (Claude Code, Codex, Gem
 ## Design Principles
 
 1. **Within distribution** - Agents should one-shot the SDK without additional documentation. APIs use familiar shapes from Playwright and the Claude Agent SDK so models generate correct code from training data alone. Strong types enforce correct usage at compile time.
-
 2. **Interoperable with Playwright** - Setup and teardown accept `string` (AI-driven) or `(page: Page) => Promise<void | string>` (Playwright callback). `Cookie` is re-exported directly from Playwright. Use Playwright for deterministic setup, AI for fuzzy verification. Incrementally adoptable alongside existing test suites.
-
 3. **Composable primitives** - `Expect.test()`, `Expect.session()`, and `Expect.cookies()` compose into arbitrarily complex test scenarios through plain JavaScript. Sessions persist browser state. Cookies extract and merge via arrays. No DSL, composition is just code.
-
 4. **Effect inside, promises outside** - The SDK is written in Effect internally (`Effect.fn`, `Stream`, proper error handling) but exposes a plain `Promise`/`AsyncIterable` API to external consumers. The `expect-sdk/effect` subpath export gives Effect-native access for the CLI.
 
 ---
@@ -18,8 +15,8 @@ Published as `expect-sdk` on npm. Used by coding agents (Claude Code, Codex, Gem
 
 The SDK ships two subpath exports:
 
-- **`expect-sdk`** (`src/index.ts`) - Public API for external consumers. `Expect.test()`, `Expect.session()`, `Expect.cookies()`, `tool()`, `defineConfig`, `configure`, `ExpectConfigError`. No Effect types in the public surface. `Expect` is also the default export.
-- **`expect-sdk/effect`** (`src/effect.ts`) - Effect-native API for internal consumers (the CLI). Exposes `layerSdk`, `ExpectTimeoutError`, `ExpectConfigError`, `resolveUrl`, `buildInstruction`, `buildTestResult`, `buildStepResult`, `diffEvents`, and re-exports key types.
+- `**expect-sdk`** (`src/index.ts`) - Public API for external consumers. `Expect.test()`, `Expect.session()`, `Expect.cookies()`, `tool()`, `defineConfig`, `configure`, `ExpectConfigError`. No Effect types in the public surface. `Expect` is also the default export.
+- `**expect-sdk/effect`** (`src/effect.ts`) - Effect-native API for internal consumers (the CLI). Exposes `layerSdk`, `ExpectTimeoutError`, `ExpectConfigError`, `resolveUrl`, `buildInstruction`, `buildTestResult`, `buildStepResult`, `diffEvents`, and re-exports key types.
 
 ```ts
 // External consumer
@@ -304,8 +301,8 @@ interface ExpectConfig {
 
 ### Error types
 
-- **`ExpectConfigError`** (extends `Error`) - Thrown synchronously for invalid input (missing URL, empty tests, relative URL without baseUrl). Includes a `Fix:` line in the message with suggested corrections.
-- **`ExpectTimeoutError`** (`Schema.ErrorClass`) - Thrown when a test exceeds its timeout. Has `timeoutMs` field.
+- `**ExpectConfigError**` (extends `Error`) - Thrown synchronously for invalid input (missing URL, empty tests, relative URL without baseUrl). Includes a `Fix:` line in the message with suggested corrections.
+- `**ExpectTimeoutError**` (`Schema.ErrorClass`) - Thrown when a test exceeds its timeout. Has `timeoutMs` field.
 
 ---
 
@@ -328,20 +325,22 @@ expect-sdk (packages/typescript-sdk)
 
 ### Internal structure
 
-| File | Responsibility |
-|---|---|
-| `src/index.ts` | Public entry point (`expect-sdk`). Exports `Expect`, `tool`, `configure`, `defineConfig`, types. |
-| `src/effect.ts` | Effect entry point (`expect-sdk/effect`). Exports `layerSdk`, errors, result builders. |
-| `src/expect.ts` | Core `Expect.test()`, `Expect.session()`, `Expect.cookies()` implementations. Effect inside, Promise outside. |
-| `src/types.ts` | All public TypeScript types. `Cookie` re-exported from Playwright, `Tool` extends MCP `Tool`. |
-| `src/config.ts` | `defineConfig`, `configure`, `getGlobalConfig`, `resetGlobalConfig`. Pure state management. |
-| `src/tool.ts` | `tool()` factory. Extracts `toJsonSchema()` if available. |
-| `src/layers.ts` | `layerSdk` - composes Executor + Git + Agent layers for Effect consumers. |
-| `src/result-builder.ts` | Maps `ExecutedTestPlan` events to `TestResult`/`StepResult`/`TestEvent`. Pure functions. |
-| `src/test-run.ts` | `createTestRun` - dual `PromiseLike` + `AsyncIterable` wrapper. |
-| `src/build-instruction.ts` | `resolveUrl` and `buildInstruction` - URL resolution and prompt construction. |
-| `src/errors.ts` | `ExpectConfigError` and `ExpectTimeoutError`. |
-| `src/constants.ts` | `DEFAULT_TIMEOUT_MS` (5 min), `DEFAULT_AGENT_BACKEND` ("claude"). |
+
+| File                       | Responsibility                                                                                                |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `src/index.ts`             | Public entry point (`expect-sdk`). Exports `Expect`, `tool`, `configure`, `defineConfig`, types.              |
+| `src/effect.ts`            | Effect entry point (`expect-sdk/effect`). Exports `layerSdk`, errors, result builders.                        |
+| `src/expect.ts`            | Core `Expect.test()`, `Expect.session()`, `Expect.cookies()` implementations. Effect inside, Promise outside. |
+| `src/types.ts`             | All public TypeScript types. `Cookie` re-exported from Playwright, `Tool` extends MCP `Tool`.                 |
+| `src/config.ts`            | `defineConfig`, `configure`, `getGlobalConfig`, `resetGlobalConfig`. Pure state management.                   |
+| `src/tool.ts`              | `tool()` factory. Extracts `toJsonSchema()` if available.                                                     |
+| `src/layers.ts`            | `layerSdk` - composes Executor + Git + Agent layers for Effect consumers.                                     |
+| `src/result-builder.ts`    | Maps `ExecutedTestPlan` events to `TestResult`/`StepResult`/`TestEvent`. Pure functions.                      |
+| `src/test-run.ts`          | `createTestRun` - dual `PromiseLike` + `AsyncIterable` wrapper.                                               |
+| `src/build-instruction.ts` | `resolveUrl` and `buildInstruction` - URL resolution and prompt construction.                                 |
+| `src/errors.ts`            | `ExpectConfigError` and `ExpectTimeoutError`.                                                                 |
+| `src/constants.ts`         | `DEFAULT_TIMEOUT_MS` (5 min), `DEFAULT_AGENT_BACKEND` ("claude").                                             |
+
 
 ### Ownership
 
@@ -497,13 +496,14 @@ Runs via `bun` against `tests/fixtures/fixture-server.ts` (static HTML server on
 ## Decisions
 
 - **Two functions, two responsibilities.** `Expect.test()` runs tests (one-shot, auto-closes browser). `Expect.session()` manages browser lifecycle (persistent, manual close). No overloads, no dual modes.
-- **`Cookie` is Playwright's type.** Re-exported directly from `playwright`, not a custom interface. Ensures full compatibility.
-- **`Tool` extends MCP `Tool`.** Uses `Pick<McpTool, "name" | "description" | "inputSchema">` from `@modelcontextprotocol/sdk` plus a `handler`. Schema shape comes from the MCP spec.
+- `**Cookie` is Playwright's type.** Re-exported directly from `playwright`, not a custom interface. Ensures full compatibility.
+- `**Tool` extends MCP `Tool`.** Uses `Pick<McpTool, "name" | "description" | "inputSchema">` from `@modelcontextprotocol/sdk` plus a `handler`. Schema shape comes from the MCP spec.
 - **Effect inside, promises outside.** Internal code uses `Effect.fn`, `Stream.tap`, `Effect.forEach`. Public API is `Promise`/`AsyncIterable`. The `expect-sdk/effect` subpath gives Effect-native access for the CLI.
-- **`errors` is derived.** Always `steps.filter(s => s.status === "failed")`.
-- **`TestRun` is both promise and async iterable.** `await` gives `TestResult`. `for await` streams `TestEvent`s.
+- `**errors` is derived.** Always `steps.filter(s => s.status === "failed")`.
+- `**TestRun` is both promise and async iterable.** `await` gives `TestResult`. `for await` streams `TestEvent`s.
 - **CLI composes on `layerSdk`.** The CLI uses `layerSdk` as the base of `layerCli` instead of manually wiring Executor + Git + Agent layers. Avoids duplicate service construction.
 - **Plan generation stays in supervisor.** The SDK doesn't know about plans or diffs.
 - **Parallel execution.** Sequential by default. Parallel via `Promise.all` on the caller side.
 - **Unimplemented features throw early.** Tools, hooks, and browserContext are accepted in types but throw `ExpectConfigError` at runtime until implemented. This prevents silent no-ops.
-- **`BrowserName` is a plain union.** Not derived from `@expect/cookies` `BrowserKey`. The SDK's 6 well-known browser names are the public surface.
+- `**BrowserName` is a plain union.** Not derived from `@expect/cookies` `BrowserKey`. The SDK's 6 well-known browser names are the public surface.
+

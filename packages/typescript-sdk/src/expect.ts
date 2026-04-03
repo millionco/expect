@@ -69,16 +69,16 @@ const validateTestInput = (input: TestInput): void => {
       `Remove the tools field for now. Tool support is coming in a future release.`,
     );
   }
-  if (typeof input.setup === "function" && !input.page) {
+  if (typeof input.before === "function" && !input.page) {
     throw new ExpectConfigError(
-      "Function setup requires a page.",
-      `Pass a Playwright Page: Expect.test({ page, setup: async (page) => { ... }, tests: [...] })`,
+      "Function before requires a page.",
+      `Pass a Playwright Page: Expect.test({ page, before: async (page) => { ... }, tests: [...] })`,
     );
   }
-  if (typeof input.teardown === "function" && !input.page) {
+  if (typeof input.after === "function" && !input.page) {
     throw new ExpectConfigError(
-      "Function teardown requires a page.",
-      `Pass a Playwright Page: Expect.test({ page, teardown: async (page) => { ... }, tests: [...] })`,
+      "Function after requires a page.",
+      `Pass a Playwright Page: Expect.test({ page, after: async (page) => { ... }, tests: [...] })`,
     );
   }
 };
@@ -88,12 +88,6 @@ const validateSessionConfig = (config: SessionConfig): void => {
     throw new ExpectConfigError(
       "External browserContext is not yet supported.",
       `Remove the browserContext field. The SDK manages browser lifecycle internally.`,
-    );
-  }
-  if (config.hooks) {
-    throw new ExpectConfigError(
-      "Session hooks are not yet supported.",
-      `Remove the hooks field. Hook support is coming in a future release.`,
     );
   }
   if (config.tools && config.tools.length > 0) {
@@ -128,21 +122,21 @@ const resolveCookies = (cookies: TestInput["cookies"]): ResolvedCookies => {
 const buildInstructionWithActions = (
   url: string,
   tests: readonly Test[],
-  setup: TestInput["setup"],
-  setupContext: string | undefined,
-  teardown: TestInput["teardown"],
+  before: TestInput["before"],
+  beforeContext: string | undefined,
+  after: TestInput["after"],
 ): string => {
   const prompts = normalizeTestPrompts(tests);
   let instruction = buildInstruction(url, prompts);
 
-  if (typeof setup === "string") {
-    instruction = `Setup: ${setup}\n\n${instruction}`;
+  if (typeof before === "string") {
+    instruction = `Before: ${before}\n\n${instruction}`;
   }
-  if (setupContext) {
-    instruction = `Context from setup: ${setupContext}\n\n${instruction}`;
+  if (beforeContext) {
+    instruction = `Context from before: ${beforeContext}\n\n${instruction}`;
   }
-  if (typeof teardown === "string") {
-    instruction = `${instruction}\n\nTeardown: ${teardown}`;
+  if (typeof after === "string") {
+    instruction = `${instruction}\n\nAfter: ${after}`;
   }
 
   return instruction;
@@ -280,8 +274,8 @@ const runExecution = (
     mode?: "headed" | "headless";
     timeout?: number;
     isRecording?: boolean;
-    setup?: TestInput["setup"];
-    teardown?: TestInput["teardown"];
+    before?: TestInput["before"];
+    after?: TestInput["after"];
     page?: Page;
   },
 ): { promise: Promise<TestResult>; subscribe: () => AsyncIterableIterator<TestEvent> } => {
@@ -297,21 +291,15 @@ const runExecution = (
   let executionError: unknown;
 
   const startExecution = async (): Promise<TestResult> => {
-    let setupContext: string | undefined;
-    if (typeof input.setup === "function" && input.page) {
-      const setupResult = await input.setup(input.page);
-      if (typeof setupResult === "string") {
-        setupContext = setupResult;
+    let beforeContext: string | undefined;
+    if (typeof input.before === "function" && input.page) {
+      const beforeResult = await input.before(input.page);
+      if (typeof beforeResult === "string") {
+        beforeContext = beforeResult;
       }
     }
 
-    const instruction = buildInstructionWithActions(
-      url,
-      tests,
-      input.setup,
-      setupContext,
-      input.teardown,
-    );
+    const instruction = buildInstructionWithActions(url, tests, input.before, beforeContext, input.after);
 
     const executeOptions: ExecuteOptions = {
       changesFor: ChangesFor.makeUnsafe({ _tag: "WorkingTree" }),
@@ -339,8 +327,8 @@ const runExecution = (
 
     const result = await Effect.runPromise(program);
 
-    if (typeof input.teardown === "function" && input.page) {
-      await input.teardown(input.page);
+    if (typeof input.after === "function" && input.page) {
+      await input.after(input.page);
     }
 
     return result;
@@ -404,8 +392,8 @@ const session = (config: SessionConfig): ExpectSession => {
       mode: input.mode ?? config.mode,
       timeout: input.timeout ?? config.timeout,
       isRecording: input.isRecording ?? config.isRecording,
-      setup: input.setup,
-      teardown: input.teardown,
+      before: input.before,
+      after: input.after,
     });
 
     return createTestRun({ promise, subscribe });
