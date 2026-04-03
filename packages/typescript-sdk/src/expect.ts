@@ -12,7 +12,7 @@ import { resolveUrl, buildInstruction } from "./build-instruction";
 import { getGlobalConfig } from "./config";
 import { layerSdk } from "./layers";
 import { createTestRun } from "./test-run";
-import { buildTestResult, diffEvents } from "./result-builder";
+import { buildTestResult, diffEvents, extractArtifacts } from "./result-builder";
 import { DEFAULT_TIMEOUT_MS, DEFAULT_AGENT_BACKEND } from "./constants";
 import type { Page } from "playwright";
 import type {
@@ -69,6 +69,18 @@ const validateTestInput = (input: TestInput): void => {
       `Remove the tools field for now. Tool support is coming in a future release.`,
     );
   }
+  if (typeof input.setup === "function" && !input.page) {
+    throw new ExpectConfigError(
+      "Function setup requires a page.",
+      `Pass a Playwright Page: Expect.test({ page, setup: async (page) => { ... }, tests: [...] })`,
+    );
+  }
+  if (typeof input.teardown === "function" && !input.page) {
+    throw new ExpectConfigError(
+      "Function teardown requires a page.",
+      `Pass a Playwright Page: Expect.test({ page, teardown: async (page) => { ... }, tests: [...] })`,
+    );
+  }
 };
 
 const validateSessionConfig = (config: SessionConfig): void => {
@@ -92,20 +104,32 @@ const validateSessionConfig = (config: SessionConfig): void => {
   }
 };
 
-const resolveCookieBrowserKeys = (cookies: TestInput["cookies"]): readonly string[] => {
-  if (cookies === undefined) return [];
-  if (cookies === true) return ["chrome"];
-  if (typeof cookies === "string") return [cookies];
-  if (Array.isArray(cookies) && cookies.length > 0 && typeof cookies[0] === "string") {
-    return cookies as readonly string[];
+interface ResolvedCookies {
+  readonly browserKeys: readonly string[];
+  readonly explicitCookies: readonly Cookie[];
+}
+
+const isBrowserNameArray = (cookies: readonly unknown[]): cookies is readonly string[] =>
+  cookies.length > 0 && typeof cookies[0] === "string";
+
+const resolveCookies = (cookies: TestInput["cookies"]): ResolvedCookies => {
+  if (cookies === undefined) return { browserKeys: [], explicitCookies: [] };
+  if (cookies === true) return { browserKeys: ["chrome"], explicitCookies: [] };
+  if (typeof cookies === "string") return { browserKeys: [cookies], explicitCookies: [] };
+  if (Array.isArray(cookies)) {
+    if (isBrowserNameArray(cookies)) {
+      return { browserKeys: cookies, explicitCookies: [] };
+    }
+    return { browserKeys: [], explicitCookies: cookies };
   }
-  return [];
+  return { browserKeys: [], explicitCookies: [] };
 };
 
 const buildInstructionWithActions = (
   url: string,
   tests: readonly Test[],
   setup: TestInput["setup"],
+  setupContext: string | undefined,
   teardown: TestInput["teardown"],
 ): string => {
   const prompts = normalizeTestPrompts(tests);
@@ -113,6 +137,9 @@ const buildInstructionWithActions = (
 
   if (typeof setup === "string") {
     instruction = `Setup: ${setup}\n\n${instruction}`;
+  }
+  if (setupContext) {
+    instruction = `Context from setup: ${setupContext}\n\n${instruction}`;
   }
   if (typeof teardown === "string") {
     instruction = `${instruction}\n\nTeardown: ${teardown}`;
@@ -158,10 +185,17 @@ const executeTests = Effect.fn("Sdk.executeTests")(function* (
       }),
     ),
     Stream.runLast,
-    Effect.map((option) => Option.getOrThrow(option).finalizeTextBlock().synthesizeRunFinished()),
+    Effect.flatMap((option) =>
+      Option.match(option, {
+        onNone: () =>
+          Effect.fail(new ExpectTimeoutError({ timeoutMs: 0 })),
+        onSome: (executed) => Effect.succeed(executed.finalizeTextBlock().synthesizeRunFinished()),
+      }),
+    ),
   );
 
-  const result = buildTestResult(finalExecuted, context.url, context.startedAt);
+  const artifacts = extractArtifacts(finalExecuted.events);
+  const result = buildTestResult(finalExecuted, context.url, context.startedAt, artifacts);
 
   if (!context.eventBuffer.some((event) => event.type === "completed")) {
     context.eventBuffer.push({ type: "completed", result });
@@ -246,48 +280,68 @@ const runExecution = (
     cookies?: TestInput["cookies"];
     mode?: "headed" | "headless";
     timeout?: number;
+    isRecording?: boolean;
     setup?: TestInput["setup"];
     teardown?: TestInput["teardown"];
+    page?: Page;
   },
 ): { promise: Promise<TestResult>; subscribe: () => AsyncIterableIterator<TestEvent> } => {
   const config = getGlobalConfig();
   const timeoutMs = input.timeout ?? config.timeout ?? DEFAULT_TIMEOUT_MS;
   const isHeadless = (input.mode ?? config.mode ?? "headless") === "headless";
-  const cookieBrowserKeys = resolveCookieBrowserKeys(input.cookies ?? config.cookies);
+  const resolved = resolveCookies(input.cookies ?? config.cookies);
   const rootDir = config.rootDir ?? process.cwd();
 
-  const instruction = buildInstructionWithActions(url, tests, input.setup, input.teardown);
-
   const eventBuffer: TestEvent[] = [];
-  const resolveWaiter = { current: undefined as (() => void) | undefined };
+  const resolveWaiter: { current: (() => void) | undefined } = { current: undefined };
   let finished = false;
   let executionError: unknown;
 
-  const executeOptions: ExecuteOptions = {
-    changesFor: ChangesFor.makeUnsafe({ _tag: "WorkingTree" }),
-    instruction,
-    isHeadless,
-    cookieBrowserKeys: [...cookieBrowserKeys],
-    baseUrl: url,
+  const startExecution = async (): Promise<TestResult> => {
+    let setupContext: string | undefined;
+    if (typeof input.setup === "function" && input.page) {
+      const setupResult = await input.setup(input.page);
+      if (typeof setupResult === "string") {
+        setupContext = setupResult;
+      }
+    }
+
+    const instruction = buildInstructionWithActions(url, tests, input.setup, setupContext, input.teardown);
+
+    const executeOptions: ExecuteOptions = {
+      changesFor: ChangesFor.makeUnsafe({ _tag: "WorkingTree" }),
+      instruction,
+      isHeadless,
+      cookieBrowserKeys: [...resolved.browserKeys],
+      baseUrl: url,
+    };
+
+    const context: ExecutionContext = {
+      url,
+      startedAt: Date.now(),
+      eventBuffer,
+      resolveWaiter,
+    };
+
+    const program = executeTests(executeOptions, context).pipe(
+      Effect.timeoutOrElse({
+        duration: `${timeoutMs} millis`,
+        onTimeout: () => Effect.fail(new ExpectTimeoutError({ timeoutMs })),
+      }),
+      Effect.provide(layerSdk(DEFAULT_AGENT_BACKEND, rootDir)),
+      Effect.provide(NodeServices.layer),
+    );
+
+    const result = await Effect.runPromise(program);
+
+    if (typeof input.teardown === "function" && input.page) {
+      await input.teardown(input.page);
+    }
+
+    return result;
   };
 
-  const context: ExecutionContext = {
-    url,
-    startedAt: Date.now(),
-    eventBuffer,
-    resolveWaiter,
-  };
-
-  const program = executeTests(executeOptions, context).pipe(
-    Effect.timeoutOrElse({
-      duration: `${timeoutMs} millis`,
-      onTimeout: () => Effect.fail(new ExpectTimeoutError({ timeoutMs })),
-    }),
-    Effect.provide(layerSdk(DEFAULT_AGENT_BACKEND, rootDir)),
-    Effect.provide(NodeServices.layer),
-  );
-
-  const promise = Effect.runPromise(program).then(
+  const promise = startExecution().then(
     (result) => {
       finished = true;
       resolveWaiter.current?.();
@@ -315,25 +369,7 @@ const test = (input: TestInput): TestRun => {
   validateTestInput(input);
   const url = resolveInputUrl(input);
   const { promise, subscribe } = runExecution(url, input.tests, input);
-
-  const hasPlaywrightSetup = typeof input.setup === "function";
-  const hasPlaywrightTeardown = typeof input.teardown === "function";
-
-  const effectivePromise =
-    hasPlaywrightSetup || hasPlaywrightTeardown
-      ? (async (): Promise<TestResult> => {
-          if (hasPlaywrightSetup) {
-            await (input.setup as (page: Page) => Promise<void | string>)(input.page!);
-          }
-          const result = await promise;
-          if (hasPlaywrightTeardown) {
-            await (input.teardown as (page: Page) => Promise<void | string>)(input.page!);
-          }
-          return result;
-        })()
-      : promise;
-
-  return createTestRun({ promise: effectivePromise, subscribe });
+  return createTestRun({ promise, subscribe });
 };
 
 const session = (config: SessionConfig): ExpectSession => {
@@ -344,22 +380,25 @@ const session = (config: SessionConfig): ExpectSession => {
     const testUrl = input.url ?? config.url;
     const globalCfg = getGlobalConfig();
 
-    if (testUrl === undefined && globalCfg.baseUrl === undefined) {
+    let resolvedUrl: string;
+    if (testUrl !== undefined) {
+      resolvedUrl = resolveUrl(testUrl, globalCfg.baseUrl ?? config.url);
+    } else if (config.url) {
+      resolvedUrl = config.url;
+    } else if (globalCfg.baseUrl) {
+      resolvedUrl = globalCfg.baseUrl;
+    } else {
       throw new ExpectConfigError(
         "No URL provided for session test and no baseUrl configured.",
         `session.test({ url: "/page", tests: [...] })`,
       );
     }
 
-    const resolvedUrl =
-      testUrl !== undefined
-        ? resolveUrl(testUrl, globalCfg.baseUrl ?? config.url)
-        : (config.url ?? globalCfg.baseUrl!);
-
     const { promise, subscribe } = runExecution(resolvedUrl, input.tests, {
       cookies: config.cookies,
       mode: input.mode ?? config.mode,
       timeout: input.timeout ?? config.timeout,
+      isRecording: input.isRecording ?? config.isRecording,
       setup: input.setup,
       teardown: input.teardown,
     });

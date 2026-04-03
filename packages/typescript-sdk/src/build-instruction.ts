@@ -11,7 +11,7 @@ export const resolveUrl = (url: unknown, baseUrl: string | undefined): string =>
   try {
     return new URL(url).href;
   } catch {
-    // relative URL - needs baseUrl
+    /* relative URL — falls through to baseUrl resolution */
   }
 
   if (!baseUrl) {

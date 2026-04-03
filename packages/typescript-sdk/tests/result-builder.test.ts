@@ -15,7 +15,14 @@ import {
   RunFinished,
   ToolResult,
 } from "@expect/shared/models";
-import { buildStepResult, buildTestResult, diffEvents } from "../src/result-builder";
+import {
+  buildStepResult,
+  buildTestResult,
+  diffEvents,
+  extractArtifacts,
+} from "../src/result-builder";
+
+const NO_ARTIFACTS = { recordingPath: undefined, screenshotPaths: [] as string[] };
 
 const makeStep = (
   overrides: Partial<{
@@ -65,7 +72,7 @@ const makeExecuted = (
 describe("buildStepResult", () => {
   it("maps passed step", () => {
     const step = makeStep({ status: "passed", summary: "All good" });
-    const result = buildStepResult(step);
+    const result = buildStepResult(step, [], 0);
     expect(result.status).toBe("passed");
     expect(result.summary).toBe("All good");
     expect(result.title).toBe("test step");
@@ -73,28 +80,34 @@ describe("buildStepResult", () => {
 
   it("maps failed step", () => {
     const step = makeStep({ status: "failed", summary: "Something broke" });
-    const result = buildStepResult(step);
+    const result = buildStepResult(step, [], 0);
     expect(result.status).toBe("failed");
     expect(result.summary).toBe("Something broke");
   });
 
   it("maps skipped step to failed", () => {
     const step = makeStep({ status: "skipped", summary: "Not applicable" });
-    const result = buildStepResult(step);
+    const result = buildStepResult(step, [], 0);
     expect(result.status).toBe("failed");
   });
 
   it("maps pending step", () => {
     const step = makeStep({ status: "pending" });
-    const result = buildStepResult(step);
+    const result = buildStepResult(step, [], 0);
     expect(result.status).toBe("pending");
     expect(result.summary).toBe("");
   });
 
   it("maps active step to pending", () => {
     const step = makeStep({ status: "active" });
-    const result = buildStepResult(step);
+    const result = buildStepResult(step, [], 0);
     expect(result.status).toBe("pending");
+  });
+
+  it("associates screenshot path by index", () => {
+    const step = makeStep({ status: "passed", summary: "ok" });
+    const result = buildStepResult(step, ["/tmp/s0.png", "/tmp/s1.png"], 1);
+    expect(result.screenshotPath).toBe("/tmp/s1.png");
   });
 });
 
@@ -104,7 +117,7 @@ describe("buildTestResult", () => {
       makeStep({ id: "s1", status: "passed", summary: "ok" }),
       makeStep({ id: "s2", status: "passed", summary: "ok" }),
     ]);
-    const result = buildTestResult(executed, "http://localhost:3000", Date.now() - 1000);
+    const result = buildTestResult(executed, "http://localhost:3000", Date.now() - 1000, NO_ARTIFACTS);
     expect(result.status).toBe("passed");
     expect(result.errors).toHaveLength(0);
   });
@@ -114,7 +127,7 @@ describe("buildTestResult", () => {
       makeStep({ id: "s1", status: "passed", summary: "ok" }),
       makeStep({ id: "s2", status: "failed", summary: "broken" }),
     ]);
-    const result = buildTestResult(executed, "http://localhost:3000", Date.now());
+    const result = buildTestResult(executed, "http://localhost:3000", Date.now(), NO_ARTIFACTS);
     expect(result.status).toBe("failed");
     expect(result.errors).toHaveLength(1);
     expect(result.errors[0].summary).toBe("broken");
@@ -125,13 +138,13 @@ describe("buildTestResult", () => {
       makeStep({ id: "s1", status: "passed", summary: "ok" }),
       makeStep({ id: "s2", status: "pending" }),
     ]);
-    const result = buildTestResult(executed, "http://localhost:3000", Date.now());
+    const result = buildTestResult(executed, "http://localhost:3000", Date.now(), NO_ARTIFACTS);
     expect(result.status).toBe("pending");
   });
 
   it("returns pending when no steps exist", () => {
     const executed = makeExecuted();
-    const result = buildTestResult(executed, "http://localhost:3000", Date.now());
+    const result = buildTestResult(executed, "http://localhost:3000", Date.now(), NO_ARTIFACTS);
     expect(result.status).toBe("pending");
   });
 
@@ -141,15 +154,45 @@ describe("buildTestResult", () => {
       makeStep({ id: "s2", status: "failed", summary: "err1" }),
       makeStep({ id: "s3", status: "failed", summary: "err2" }),
     ]);
-    const result = buildTestResult(executed, "http://localhost:3000", Date.now());
+    const result = buildTestResult(executed, "http://localhost:3000", Date.now(), NO_ARTIFACTS);
     expect(result.errors).toHaveLength(2);
     expect(result.errors.map((error) => error.summary)).toEqual(["err1", "err2"]);
   });
 
   it("includes url", () => {
     const executed = makeExecuted();
-    const result = buildTestResult(executed, "http://localhost:3000/login", Date.now());
+    const result = buildTestResult(executed, "http://localhost:3000/login", Date.now(), NO_ARTIFACTS);
     expect(result.url).toBe("http://localhost:3000/login");
+  });
+
+  it("includes recordingPath from artifacts", () => {
+    const executed = makeExecuted();
+    const result = buildTestResult(executed, "http://localhost:3000", Date.now(), {
+      recordingPath: "/tmp/replay.ndjson",
+      screenshotPaths: [],
+    });
+    expect(result.recordingPath).toBe("/tmp/replay.ndjson");
+  });
+});
+
+describe("extractArtifacts", () => {
+  it("returns empty when no close event", () => {
+    const result = extractArtifacts([]);
+    expect(result.recordingPath).toBeUndefined();
+    expect(result.screenshotPaths).toHaveLength(0);
+  });
+
+  it("extracts recording path from close result", () => {
+    const events = [
+      new ToolResult({
+        toolName: "close",
+        result: "rrweb replay: /tmp/session.ndjson\nScreenshot: /tmp/s0.png",
+        isError: false,
+      }),
+    ];
+    const result = extractArtifacts(events);
+    expect(result.recordingPath).toBe("/tmp/session.ndjson");
+    expect(result.screenshotPaths).toEqual(["/tmp/s0.png"]);
   });
 });
 

@@ -44,6 +44,26 @@ describe("Expect.test input validation", () => {
     expect(run).toBeDefined();
   });
 
+  it("throws when function setup has no page", () => {
+    expect(() =>
+      Expect.test({
+        url: "http://localhost:3000",
+        tests: ["something"],
+        setup: async () => {},
+      }),
+    ).toThrow("Function setup requires a page");
+  });
+
+  it("throws when function teardown has no page", () => {
+    expect(() =>
+      Expect.test({
+        url: "http://localhost:3000",
+        tests: ["something"],
+        teardown: async () => {},
+      }),
+    ).toThrow("Function teardown requires a page");
+  });
+
   it("throws when tools are provided", () => {
     expect(() =>
       Expect.test({

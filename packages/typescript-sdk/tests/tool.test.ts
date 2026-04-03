@@ -43,11 +43,18 @@ describe("tool", () => {
     expect(combined[1].name).toBe("b");
   });
 
-  it("extracts toJsonSchema if available", () => {
-    const schemaWithMethod = {
-      toJsonSchema: () => ({ type: "object", properties: { id: { type: "string" } } }),
+  it("extracts JSON Schema from StandardJSONSchemaV1", () => {
+    const standardSchema = {
+      "~standard": {
+        version: 1 as const,
+        vendor: "test",
+        jsonSchema: {
+          input: () => ({ type: "object", properties: { id: { type: "string" } } }),
+          output: () => ({ type: "object", properties: { id: { type: "string" } } }),
+        },
+      },
     };
-    const result = tool("test", "test tool", schemaWithMethod as never, async () => "ok");
+    const result = tool("test", "test tool", standardSchema, async () => "ok");
     expect(result.inputSchema).toEqual({ type: "object", properties: { id: { type: "string" } } });
   });
 });
