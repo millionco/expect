@@ -25,7 +25,7 @@ type Context = string | Record<string, unknown>;
 type SetupFn = string | ((page: import("playwright").Page) => Promise<void>);
 type BrowserEngine = "chromium" | "firefox" | "webkit";
 type BrowserName = "chrome" | "firefox" | "safari" | "edge" | "brave" | "arc";
-type CookieInput = BrowserName | Cookie[];
+type CookieInput = true | BrowserName | BrowserName[] | Cookie[];
 type Test = string | { title: string; context?: Context };
 
 interface Cookie {
@@ -55,22 +55,37 @@ interface StepResult {
   screenshotPath?: string;
   duration: number;
 }
+
+type TestEvent =
+  | { type: "run:started"; title: string; baseUrl?: string }
+  | { type: "step:started"; title: string }
+  | { type: "step:passed"; step: StepResult }
+  | { type: "step:failed"; step: StepResult }
+  | { type: "step:skipped"; title: string; reason: string }
+  | { type: "screenshot"; title: string; path: string }
+  | { type: "completed"; result: TestResult };
+
+interface TestRun extends PromiseLike<TestResult> {
+  [Symbol.asyncIterator](): AsyncIterator<TestEvent>;
+}
 ```
 
 ### `Expect`
 
 ```ts
 interface Expect {
-  test(input: TestInput): Promise<TestResult>;
+  test(input: TestInput): TestRun;
   session(config: SessionConfig): Promise<ExpectSession>;
   withSession<T>(config: SessionConfig, fn: (session: ExpectSession) => Promise<T>): Promise<T>;
-  cookies(browser: BrowserName): Promise<Cookie[]>;
+  cookies(browser: true | BrowserName | BrowserName[]): Promise<Cookie[]>;
 }
 ```
 
-### `Expect.test(input): Promise<TestResult>`
+### `Expect.test(input): TestRun`
 
-One-shot test. Creates an ephemeral browser session, runs tests, closes.
+One-shot test. Creates an ephemeral browser session, runs tests, closes. Returns a `TestRun` - both a `PromiseLike<TestResult>` and an `AsyncIterable<TestEvent>`.
+
+`await` for simple usage. `for await` for streaming progress.
 
 ```ts
 interface TestInput {
@@ -87,6 +102,8 @@ interface TestInput {
 }
 ```
 
+Simple - just await the result:
+
 ```ts
 const result = await Expect.test({
   url: "http://localhost:3000/login",
@@ -95,6 +112,25 @@ const result = await Expect.test({
     "invalid credentials show an error message",
   ],
 });
+```
+
+Streaming - iterate progress events:
+
+```ts
+const run = Expect.test({
+  url: "http://localhost:3000/login",
+  tests: [
+    "signing in with valid credentials redirects to the dashboard",
+    "invalid credentials show an error message",
+  ],
+});
+
+for await (const event of run) {
+  if (event.type === "step:passed") console.log(`PASS: ${event.step.title}`);
+  if (event.type === "step:failed") console.log(`FAIL: ${event.step.title}`);
+}
+
+const result = await run;
 ```
 
 With shared context:
@@ -195,7 +231,7 @@ interface SessionHooks {
 }
 
 interface ExpectSession {
-  test(input: SessionTestInput): Promise<TestResult>;
+  test(input: SessionTestInput): TestRun;
   close(): Promise<void>;
   [Symbol.asyncDispose](): Promise<void>;
 }
@@ -306,14 +342,25 @@ await Expect.withSession({ url: "http://localhost:3000" }, async (session) => {
 Extracts cookies from a local browser profile. Returns a Playwright-compatible `Cookie[]` for composition via spread.
 
 ```ts
-const chrome = await Expect.cookies("chrome");
-const custom = [{ name: "api_token", value: "xyz", domain: ".example.com" }];
+// Auto-detect any available browser
+await Expect.test({ url: "/dashboard", cookies: true, tests: ["dashboard loads"] });
 
+// Specific browser
+await Expect.test({ url: "/dashboard", cookies: "chrome", tests: ["dashboard loads"] });
+
+// Multiple browsers merged
+await Expect.test({ url: "/dashboard", cookies: ["chrome", "safari"], tests: ["dashboard loads"] });
+
+// Compose extracted + custom
+const chrome = await Expect.cookies("chrome");
 await Expect.test({
   url: "/dashboard",
-  cookies: [...chrome, ...custom],
+  cookies: [...chrome, { name: "api_token", value: "xyz", domain: ".example.com" }],
   tests: ["dashboard loads with auth"],
 });
+
+// Auto-detect extraction
+const all = await Expect.cookies(true);
 ```
 
 ### `defineConfig(config): ExpectConfig`
@@ -360,9 +407,13 @@ configure({ baseUrl: "http://localhost:3000" });
 
 ## Architecture
 
-Package at `packages/typescript-sdk/`, published as `expect-sdk`. Thin wrapper - no business logic.
+Package at `packages/typescript-sdk/`, published as `expect-sdk`. The SDK is the core API layer. The CLI builds on top of it.
 
 ```
+expect-cli (apps/cli)
+  ├─ expect-sdk (test execution via Expect.test / Expect.session)
+  └─ @expect/supervisor (plan generation, flow storage, watch mode, git)
+
 expect-sdk (packages/typescript-sdk)
   └─ @expect/supervisor (Executor)
        ├─ @expect/agent (LLM)
@@ -371,7 +422,54 @@ expect-sdk (packages/typescript-sdk)
        └─ @expect/shared (models)
 ```
 
-Does NOT depend on the CLI or Ink. Public API is pure promises. Effect is an internal implementation detail.
+The SDK does not depend on the CLI or Ink. `TestRun` is both `PromiseLike<TestResult>` and `AsyncIterable<TestEvent>`. Effect is an internal implementation detail.
+
+### Ownership
+
+What the SDK owns:
+
+- Test execution (wraps `Executor.execute` stream internally)
+- Config resolution (`defineConfig`, `configure`, `baseUrl`)
+- URL resolution, instruction building
+- Timeout handling
+- Cookie resolution (preset string to `Cookie[]`)
+- Result building (`TestResult` from execution events)
+- `TestEvent` stream (maps internal `ExecutedTestPlan` snapshots to `TestEvent` union)
+
+What the CLI owns (uses supervisor directly):
+
+- Plan generation from git diffs (`Git.getChangedFiles`, `buildExecutionPrompt`)
+- Flow storage and caching (`FlowStorage`)
+- Watch mode (`Watch`)
+- Interactive TUI (Ink rendering of `TestEvent` stream)
+- Replay proxy, live view push
+- Analytics / telemetry
+- Video generation (`RrVideo`)
+- GitHub Actions integration (PR comments, outputs)
+- `Reporter.report` (post-execution summary)
+
+What supervisor provides to both:
+
+- `Executor` (consumed by SDK, not CLI directly)
+- `Git` (consumed by CLI for diffs, by SDK internally for repo root)
+- `Reporter` (consumed by CLI after execution)
+- `FlowStorage`, `Watch`, `Github` (consumed by CLI only)
+
+### CLI migration path
+
+The CLI currently consumes `executor.execute()` as an Effect `Stream<ExecutedTestPlan>` in two files:
+
+- `apps/cli/src/data/execution-atom.ts` (interactive TUI)
+- `apps/cli/src/utils/run-test.ts` (headless/CI)
+
+Both use `Stream.tap` to react to each `ExecutedTestPlan` snapshot, then `Stream.runLast` to get the final plan. To migrate:
+
+1. Replace `executor.execute(options)` with `Expect.test(input)` (returns `TestRun`)
+2. Replace `Stream.tap` with `for await (const event of run)` iterating `TestEvent`s
+3. The CLI builds its own UI state from `TestEvent`s instead of receiving full `ExecutedTestPlan` snapshots
+4. `Reporter.report`, analytics, replay proxy, video generation stay in the CLI and run after `await run` completes
+
+The `ExecutedTestPlan` snapshot (full plan object on every event) is richer than `TestEvent` (lightweight discriminated union). The CLI loses direct access to tool call events and the full step/event arrays on each tick. If the TUI needs these for rendering (e.g. active step tool rows), the SDK would need to expose them as additional `TestEvent` variants or the CLI reconstructs state from the event stream.
 
 ### CLI Runner
 
@@ -454,15 +552,19 @@ const result = await Expect.test({
 });
 ```
 
+`await` for the result. `for await` for real-time progress.
+
 **Always check `result.isSuccess`.** Do not assume the test passed. Read `result.errors` for failed steps with AI summaries.
 
 **Bad - fire and forget:**
+
 ```ts
 await Expect.test({ url: "/login", tests: ["login works"] });
 console.log("done"); // you don't know if it passed
 ```
 
 **Good - check results, act on failures:**
+
 ```ts
 const result = await Expect.test({ url: "/login", tests: ["login works"] });
 if (!result.isSuccess) {
@@ -511,18 +613,18 @@ await Expect.test({
 
 ### All fields
 
-| Field | Type | Default |
-|---|---|---|
-| `url` | `string` | - |
-| `page` | `Page` | - |
-| `context` | `string \| object` | - |
-| `cookies` | `BrowserName \| Cookie[]` | - |
-| `tests` | `(string \| { title, context? })[]` | **required** |
-| `setup` | `string \| (page) => Promise<void>` | - |
-| `teardown` | `string \| (page) => Promise<void>` | - |
-| `mode` | `"headed" \| "headless"` | `"headless"` |
-| `timeout` | `number` | `300000` |
-| `isRecording` | `boolean` | `false` |
+| Field         | Type                                               | Default      |
+| ------------- | -------------------------------------------------- | ------------ |
+| `url`         | `string`                                           | -            |
+| `page`        | `Page`                                             | -            |
+| `context`     | `string \| object`                                 | -            |
+| `cookies`     | `true \| BrowserName \| BrowserName[] \| Cookie[]` | -            |
+| `tests`       | `(string \| { title, context? })[]`                | **required** |
+| `setup`       | `string \| (page) => Promise<void>`                | -            |
+| `teardown`    | `string \| (page) => Promise<void>`                | -            |
+| `mode`        | `"headed" \| "headless"`                           | `"headless"` |
+| `timeout`     | `number`                                           | `300000`     |
+| `isRecording` | `boolean`                                          | `false`      |
 
 Config file is optional: `defineConfig({ baseUrl, cookies })` in `expect.config.ts` enables relative URLs.
 ````
@@ -538,9 +640,122 @@ Config file is optional: `defineConfig({ baseUrl, cookies })` in `expect.config.
 - **`url` vs `page`/`browserContext` precedence.** When `page` is provided on `TestInput`, the SDK uses it directly and `url` is ignored. When `browserContext` is provided on `SessionConfig`, the SDK creates pages from it and `url` is only used for navigation. If neither `page`/`browserContext` nor `url` (with `baseUrl`) is provided, throws `ExpectConfigError`.
 - **Hook + setup ordering.** Execution order: `beforeEach` → `setup` → tests → `teardown` → `afterEach`. Session hooks wrap per-test setup/teardown. `beforeAll` runs once on session creation, `afterAll` on session close.
 - **`errors` is derived.** `errors` is always `steps.filter(s => s.status === "failed")`. It's a convenience field, not independent data.
+- **`TestRun` is both promise and async iterable.** `await` gives `TestResult`. `for await` streams `TestEvent`s. One primitive, two consumption modes. The CLI streams events to the TUI; external consumers just `await`.
+- **`TestEvent` is lighter than `ExecutedTestPlan`.** The SDK maps internal `ExecutedTestPlan` snapshots (full plan object on every agent event) to the `TestEvent` discriminated union. The CLI loses access to tool call details and the full step/event arrays per tick. If the TUI needs these for rendering (active step tool rows), either add `TestEvent` variants or have the CLI reconstruct state from events.
+- **CLI builds on the SDK.** The CLI uses `Expect.test()` for execution (streaming events to the TUI) and supervisor directly for plan generation, flow caching, watch mode, and git. The SDK owns test execution, config resolution, timeouts, and result building. Reporter, analytics, replay proxy, and video generation stay in the CLI.
+- **Plan generation stays in supervisor.** The CLI flow is: supervisor scans git diffs, CLI calls `Expect.test()` with the instruction, streams `TestEvent`s to the TUI. The SDK doesn't know about plans or diffs.
 - **Parallel execution.** Sequential by default. Parallel via `Promise.all` on the caller side - not optimized for v1.
 - **Dev server lifecycle.** The SDK does not manage dev servers. The caller ensures the URL is reachable.
 - **Working tree only.** v1 validates against the working tree. Branch diff is a future addition.
+
+---
+
+## Test Coverage
+
+### URL resolution (`build-instruction.ts`)
+
+- Absolute URLs pass through unchanged (http, https)
+- Relative URLs resolve against baseUrl (with/without leading slash)
+- Trailing slash on baseUrl is normalized
+- baseUrl ignored for absolute URLs
+- Non-string URL throws with `Fix:` line
+- Relative URL without baseUrl throws with `Fix:` line
+
+### Instruction building (`build-instruction.ts`)
+
+- Single and multiple tests numbered correctly
+- Shared string/object context included as `Context:` line
+- Per-test context replaces shared context
+- Falls back to shared context when per-test context is undefined
+- No `Context:` line when no context at either level
+- Mixed string and object tests
+
+### Config (`config.ts`)
+
+- `defineConfig` returns same reference
+- `configure` merges successive calls
+- Later values override earlier ones
+- `resetGlobalConfig` clears all values
+
+### Input validation (`expect.ts`)
+
+- `Expect.test` is a function
+- Throws for empty tests array
+- Throws for relative URL without baseUrl
+- Does not throw for absolute URL with valid tests
+- Throws when neither `url` nor `page` is provided (and no baseUrl)
+
+### Result building
+
+- `StepCompleted` events map to `"passed"`
+- `StepFailed` and `StepSkipped` events map to `"failed"`
+- Steps with no matching event default to `"failed"`
+- `isSuccess` is true only when all steps passed
+- `isSuccess` is false when steps array is empty
+- `errors` equals `steps.filter(s => s.status === "failed")`
+- Screenshots associated with steps via event stream
+- Duration calculated correctly
+
+### TestRun streaming
+
+- `await run` resolves to `TestResult`
+- `for await (const event of run)` yields `TestEvent`s in order
+- `run:started` fires first with plan title and optional baseUrl
+- `step:started` fires before each step executes
+- `step:passed` fires with `StepResult` when step passes
+- `step:failed` fires with `StepResult` when step fails
+- `step:skipped` fires with title and reason when step is skipped
+- `completed` fires last with final `TestResult`
+- `screenshot` fires with path when screenshot is taken
+- Iterating and awaiting the same `TestRun` both work
+- `TestRun` can be awaited without iterating (simple mode)
+- `TestRun` can be iterated without awaiting (stream-only mode)
+
+### Timeout and error recovery
+
+- Timeout produces empty plan with "Timed out" rationale
+- `ExecutionError` produces empty plan with error message
+- Execution always resolves, never rejects (after validation)
+
+### Sessions
+
+- `session.test()` creates a fresh page per call
+- Cookies persist across `session.test()` calls
+- `session.close()` destroys the browser context
+- `Expect.withSession()` calls `close()` even when callback throws
+- `Expect.withSession()` returns the callback's return value
+- `Symbol.asyncDispose` calls `close()`
+- `beforeAll` runs once on session creation
+- `afterAll` runs once on session close
+- `beforeEach` runs before each `session.test()` setup
+- `afterEach` runs after each `session.test()` teardown
+- Hook ordering: `beforeEach` -> `setup` -> tests -> `teardown` -> `afterEach`
+
+### Setup and teardown
+
+- String setup is passed to the AI as an instruction
+- Function setup receives the Playwright page
+- String teardown is passed to the AI
+- Function teardown receives the Playwright page
+- Teardown runs even when tests fail
+
+### Cookies
+
+- `Expect.cookies("chrome")` returns `Cookie[]`
+- `Expect.cookies(true)` auto-detects available browser and extracts
+- `Expect.cookies(["chrome", "safari"])` extracts from multiple, merges
+- `cookies: true` auto-detects and injects
+- `cookies: "chrome"` preset extracts and injects
+- `cookies: ["chrome", "safari"]` extracts from multiple, merges and injects
+- `cookies: Cookie[]` injects raw cookies
+- Spread composition works: `[...extracted, ...custom]`
+
+### Playwright interop
+
+- `page` field uses existing page, skips browser creation
+- `url` is ignored when `page` is provided
+- `browserContext` field uses existing context for sessions
+- SDK does not close externally-provided page/context
 
 ---
 
