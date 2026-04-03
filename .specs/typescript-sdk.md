@@ -126,7 +126,8 @@ const result = await Expect.test({
     "sidebar navigation works",
     {
       title: "dashboard loads correctly",
-      prompt: "verify the user's name appears in the header, sidebar shows Settings/Projects/Team, no loading spinners remain after 3 seconds, no console errors",
+      prompt:
+        "verify the user's name appears in the header, sidebar shows Settings/Projects/Team, no loading spinners remain after 3 seconds, no console errors",
     },
   ],
 });
@@ -382,7 +383,26 @@ expect-sdk (packages/typescript-sdk)
        |- @expect/shared (models)
 ```
 
-The SDK does not depend on the CLI or Ink. `TestRun` is both `PromiseLike<TestResult>` and `AsyncIterable<TestEvent>`. Effect is an internal implementation detail.
+The SDK does not depend on the CLI or Ink. `TestRun` is both `PromiseLike<TestResult>` and `AsyncIterable<TestEvent>`. Effect is an internal implementation detail for external consumers.
+
+### Two entry points
+
+The SDK ships two subpath exports:
+
+- **`expect-sdk`** — Public API for external consumers. `Expect.test()`, `Expect.session()`, `Expect.cookies()`, `tool()`, `defineConfig`, `configure`. No Effect types in the public surface.
+- **`expect-sdk/effect`** — Effect-native API for internal consumers (the CLI). Exposes `layerSdk`, `ExpectTimeoutError`, `ExpectConfigError`, `resolveUrl`, `buildInstruction`, and re-exports key types. The CLI composes `layerSdk` as the base of `layerCli` instead of manually wiring Executor + Git + Agent layers.
+
+```ts
+// External consumer — no Effect knowledge needed
+import { Expect } from "expect-sdk";
+const result = await Expect.test({ url: "http://localhost:3000", tests: ["login works"] });
+
+// Internal consumer (CLI) — Effect-native
+import { layerSdk, ExpectTimeoutError } from "expect-sdk/effect";
+const cliLayer = Layer.mergeAll(layerSdk(agent, rootDir), Reporter.layer, Watch.layer, ...);
+```
+
+This lets the CLI use the SDK as its layer foundation without the Promise/AsyncIterable abstraction barrier. The CLI gets the same Executor, Git, and Agent layers the SDK uses internally, avoiding double construction.
 
 ### Ownership
 
@@ -391,13 +411,14 @@ What the SDK owns:
 - Test execution (wraps `Executor.execute` stream internally)
 - Config resolution (`defineConfig`, `configure`, `baseUrl`)
 - URL resolution, instruction building
-- Timeout handling
+- Timeout handling (`ExpectTimeoutError`)
 - Cookie resolution (preset string to `Cookie[]`)
 - Result building (`TestResult` from execution events)
 - `TestEvent` stream (maps internal `ExecutedTestPlan` snapshots to `TestEvent` union)
 - Browser lifecycle (one-shot auto-close, session manual close)
+- Layer composition for Effect consumers (`layerSdk` via `expect-sdk/effect`)
 
-What the CLI owns (uses supervisor directly):
+What the CLI owns (uses supervisor directly, composes on `layerSdk`):
 
 - Plan generation from git diffs
 - Flow storage and caching (`FlowStorage`)

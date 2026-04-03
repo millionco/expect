@@ -142,6 +142,9 @@ importers:
       babel-plugin-react-compiler:
         specifier: ^1.0.0
         version: 1.0.0
+      expect-sdk:
+        specifier: workspace:*
+        version: link:../../packages/typescript-sdk
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
@@ -422,18 +425,24 @@ importers:
 
   packages/typescript-sdk:
     dependencies:
+      '@effect/platform-node':
+        specifier: 4.0.0-beta.35
+        version: 4.0.0-beta.35(effect@4.0.0-beta.35)(ioredis@5.10.0)
       '@expect/agent':
         specifier: workspace:*
         version: link:../agent
-      '@expect/browser':
+      '@expect/cookies':
         specifier: workspace:*
-        version: link:../browser
+        version: link:../cookies
       '@expect/shared':
         specifier: workspace:*
         version: link:../shared
       '@expect/supervisor':
         specifier: workspace:*
         version: link:../supervisor
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.27.1
+        version: 1.27.1(zod@4.3.6)
       effect:
         specifier: 4.0.0-beta.35
         version: 4.0.0-beta.35

@@ -1,8 +1,9 @@
-import { Config, Effect, Option, Stream, Schema } from "effect";
+import { Config, Effect, Option, Schema, Stream } from "effect";
 import { type ChangesFor, CiResultOutput, CiStepResult } from "@expect/shared/models";
 import { Executor, ExecutedTestPlan, Reporter, Github } from "@expect/supervisor";
 import { Analytics } from "@expect/shared/observability";
 import type { AgentBackend } from "@expect/agent";
+import { ExpectTimeoutError } from "expect-sdk/effect";
 import { VERSION, CI_HEARTBEAT_INTERVAL_MS } from "../constants";
 import { layerCli } from "../layers";
 import { playSound } from "./play-sound";
@@ -13,15 +14,6 @@ import { createCiReporter } from "./ci-reporter";
 import { writeGhaOutputs, writeGhaStepSummary } from "./gha-output";
 import { getStepElapsedMs, getTotalElapsedMs } from "./step-elapsed";
 import { formatElapsedTime } from "./format-elapsed-time";
-
-class ExecutionTimeoutError extends Schema.ErrorClass<ExecutionTimeoutError>(
-  "ExecutionTimeoutError",
-)({
-  _tag: Schema.tag("ExecutionTimeoutError"),
-  timeoutMs: Schema.Number,
-}) {
-  message = `expect execution timed out after ${this.timeoutMs}ms`;
-}
 
 const COMMENT_MARKER = "<!-- expect-ci-result -->";
 
@@ -168,7 +160,7 @@ export const runHeadless = (options: HeadlessRunOptions) =>
               ? executeStream.pipe(
                   Effect.timeoutOrElse({
                     duration: `${timeoutMs} millis`,
-                    onTimeout: () => Effect.fail(new ExecutionTimeoutError({ timeoutMs })),
+                    onTimeout: () => Effect.fail(new ExpectTimeoutError({ timeoutMs })),
                   }),
                 )
               : executeStream;
@@ -179,7 +171,7 @@ export const runHeadless = (options: HeadlessRunOptions) =>
                 if (!isJsonOutput) ciReporter.groupClose();
               }),
             ),
-            Effect.catchTag("ExecutionTimeoutError", (error) => {
+            Effect.catchTag("ExpectTimeoutError", (error) => {
               if (isJsonOutput) {
                 const resultOutput = new CiResultOutput({
                   version: VERSION,

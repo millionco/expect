@@ -90,6 +90,7 @@
     "@types/prompts": "^2.4.9",
     "@types/react": "^19.2.14",
     "babel-plugin-react-compiler": "^1.0.0",
+    "expect-sdk": "workspace:*",
     "typescript": "^5.7.0"
   },
   "optionalDependencies": {

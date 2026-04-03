@@ -4,23 +4,31 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/expect-api.ts"
+    ".": "./src/index.ts",
+    "./effect": "./src/effect.ts"
   },
   "scripts": {
     "lint": "vp lint && tsc --noEmit",
     "format": "vp fmt",
     "format:check": "vp fmt --check",
     "check": "vp check",
-    "test": "vp test run",
-    "test:watch": "vp test",
+    "test": "vp test run --exclude tests/e2e.test.ts",
+    "test:e2e": "vp test run tests/e2e.test.ts --testTimeout 0",
+    "test:watch": "vp test --exclude tests/e2e.test.ts",
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
+    "@effect/platform-node": "4.0.0-beta.35",
     "@expect/agent": "workspace:*",
-    "@expect/browser": "workspace:*",
+    "@expect/cookies": "workspace:*",
     "@expect/shared": "workspace:*",
     "@expect/supervisor": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "effect": "4.0.0-beta.35"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "typescript": "^5.7.0"
   },
   "peerDependencies": {
     "playwright": ">=1.50.0"
@@ -29,9 +37,5 @@
     "playwright": {
       "optional": true
     }
-  },
-  "devDependencies": {
-    "@types/node": "^22.15.0",
-    "typescript": "^5.7.0"
   }
 }

@@ -4,10 +4,11 @@ import { Agent, type AgentBackend } from "@expect/agent";
 
 export const layerSdk = (agentBackend: AgentBackend, rootDir: string) => {
   const gitLayer = Git.withRepoRoot(rootDir);
+  const agentLayer = Agent.layerFor(agentBackend);
   const executorLayer = Executor.layer.pipe(Layer.provide(gitLayer));
 
   return Layer.mergeAll(executorLayer, gitLayer).pipe(
-    Layer.provide(Agent.layerFor(agentBackend)),
+    Layer.provideMerge(agentLayer),
     Layer.provideMerge(Layer.succeed(References.MinimumLogLevel, "Error")),
   );
 };

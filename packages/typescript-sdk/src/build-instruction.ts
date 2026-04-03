@@ -24,10 +24,7 @@ export const resolveUrl = (url: unknown, baseUrl: string | undefined): string =>
   return new URL(url, baseUrl).href;
 };
 
-export const buildInstruction = (
-  url: string,
-  tests: readonly string[],
-): string => {
+export const buildInstruction = (url: string, tests: readonly string[]): string => {
   const lines = [`Navigate to ${url} and verify the following requirements:`, ""];
 
   for (const [index, title] of tests.entries()) {
