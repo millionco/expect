@@ -202,6 +202,24 @@ program
     await runAuditCommand();
   });
 
+program
+  .command("watch")
+  .description("watch for file changes and auto-run browser tests")
+  .option("-m, --message <instruction>", "natural language instruction for what to test")
+  .option(
+    "-a, --agent <provider>",
+    "agent provider to use (claude, codex, copilot, gemini, cursor, opencode, or droid)",
+  )
+  .option("-t, --target <target>", "what to test: unstaged, branch, or changes", "changes")
+  .option("--verbose", "enable verbose logging")
+  .option("--headed", "show a visible browser window during tests")
+  .option("--no-cookies", "skip system browser cookie extraction")
+  .option("-u, --url <urls...>", "base URL(s) for the dev server")
+  .option("--replay-host <url>", "website host for live replay viewer", "https://expect.dev")
+  .action(async (opts: CommanderOpts) => {
+    await runWatchCommand(opts);
+  });
+
 program.action(async () => {
   const opts = program.opts<CommanderOpts>();
   const target = opts.target ?? "changes";
