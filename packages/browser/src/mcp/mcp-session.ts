@@ -21,6 +21,7 @@ import {
   EXPECT_COOKIE_BROWSERS_ENV_NAME,
   EXPECT_REPLAY_OUTPUT_ENV_NAME,
   EXPECT_CDP_URL_ENV_NAME,
+  EXPECT_BASE_URL_ENV_NAME,
 } from "./constants";
 import { McpSessionNotOpenError } from "./errors";
 import { startLiveViewServer, type LiveViewHandle } from "./live-view-server";
@@ -118,6 +119,8 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
     );
     const cdpUrlConfig = yield* Config.option(Config.string(EXPECT_CDP_URL_ENV_NAME));
     const defaultCdpUrl = Option.getOrUndefined(cdpUrlConfig);
+    const baseUrlConfig = yield* Config.option(Config.string(EXPECT_BASE_URL_ENV_NAME));
+    const configuredBaseUrl = Option.getOrUndefined(baseUrlConfig);
     const cookieBrowserKeys = Option.match(cookieBrowsersConfig, {
       onNone: () => [] as string[],
       onSome: (value) => value.split(",").filter(Boolean),
@@ -165,6 +168,17 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       );
     }
 
+    const resolveUrl = (url: string): string => {
+      if (configuredBaseUrl && !url.startsWith("http://") && !url.startsWith("https://")) {
+        try {
+          return new URL(url, configuredBaseUrl).toString();
+        } catch {
+          return url;
+        }
+      }
+      return url;
+    };
+
     const requireSession = Effect.fn("McpSession.requireSession")(function* () {
       const session = yield* Ref.get(sessionRef);
       if (!session) return yield* new McpSessionNotOpenError();
@@ -179,12 +193,13 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       url: string,
       options: { waitUntil?: "load" | "domcontentloaded" | "networkidle" | "commit" } = {},
     ) {
+      const resolved = resolveUrl(url);
       const sessionData = yield* requireSession();
       yield* Effect.tryPromise({
-        try: () => sessionData.page.goto(url, { waitUntil: options.waitUntil ?? "load" }),
+        try: () => sessionData.page.goto(resolved, { waitUntil: options.waitUntil ?? "load" }),
         catch: (cause) =>
           new NavigationError({
-            url,
+            url: resolved,
             cause: cause instanceof Error ? cause.message : String(cause),
           }),
       });
@@ -198,7 +213,8 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       }
     });
 
-    const open = Effect.fn("McpSession.open")(function* (url: string, options: OpenOptions = {}) {
+    const open = Effect.fn("McpSession.open")(function* (rawUrl: string, options: OpenOptions = {}) {
+      const url = resolveUrl(rawUrl);
       yield* Effect.annotateCurrentSpan({ url });
       yield* Ref.set(savedScreenshotPathsRef, []);
 
@@ -561,6 +577,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       open,
       navigate,
       hasSession: () => Boolean(Ref.getUnsafe(sessionRef)),
+      getBaseUrl: () => configuredBaseUrl,
       requirePage,
       requireSession,
       snapshot,
