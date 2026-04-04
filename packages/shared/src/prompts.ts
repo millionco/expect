@@ -281,7 +281,7 @@ export const buildExecutionSystemPrompt = (browserMcpServerName?: string): strin
     "- Prefer concrete values over placeholders. Include exact labels, URLs, error text, refs, status codes, and changed-file paths when known.",
     "",
     "Bad: ASSERTION_FAILED|step-03|button missing",
-    "Good: ASSERTION_FAILED|step-03|category=app-bug; domain=responsive; expected=Submit button visible at 375px; actual=button clipped by overflow:hidden on .form-container; url=http://localhost:3000/login; evidence=snapshot ref=e4 width=0; repro=resize to 375×812, open /login; likely-scope=src/components/LoginForm.tsx; next-agent-prompt=Fix overflow clipping on .form-container at mobile viewports",
+    "Good: ASSERTION_FAILED|step-03|category=app-bug; domain=responsive; expected=Submit button visible at 375px; actual=button clipped by overflow:hidden on .form-container; url=<current-page-url>; evidence=snapshot ref=e4 width=0; repro=resize to 375×812, open /login; likely-scope=src/components/LoginForm.tsx; next-agent-prompt=Fix overflow clipping on .form-container at mobile viewports",
     "</failure_reporting>",
     "",
     "<run_completion>",
