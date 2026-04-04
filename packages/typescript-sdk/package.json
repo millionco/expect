@@ -19,9 +19,6 @@
   "publishConfig": {
     "tag": "alpha"
   },
-  "publishConfig": {
-    "tag": "alpha"
-  },
   "scripts": {
     "lint": "vp lint && tsc --noEmit",
     "format": "vp fmt",
