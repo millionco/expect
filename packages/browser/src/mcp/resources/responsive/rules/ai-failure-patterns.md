@@ -10,7 +10,9 @@ Scan AI-generated responsive code against this list before shipping.
 
 ```css
 /* AI generates this almost universally */
-.hero { height: 100vh; }
+.hero {
+  height: 100vh;
+}
 ```
 
 `100vh` is calculated against the largest viewport (browser UI collapsed). On load with address bar visible, content overflows.
@@ -18,8 +20,8 @@ Scan AI-generated responsive code against this list before shipping.
 ```css
 /* Correct */
 .hero {
-  height: 100vh;   /* fallback */
-  height: 100svh;  /* modern browsers */
+  height: 100vh; /* fallback */
+  height: 100svh; /* modern browsers */
 }
 ```
 
@@ -31,9 +33,20 @@ Use `svh` for ~90% of cases. Use `dvh` only for elements that must track the exa
 
 ```css
 /* AI trained on older code defaults to max-width */
-.container { width: 1200px; display: flex; }
-@media (max-width: 1024px) { .container { width: 100%; } }
-@media (max-width: 768px) { .container { flex-direction: column; } }
+.container {
+  width: 1200px;
+  display: flex;
+}
+@media (max-width: 1024px) {
+  .container {
+    width: 100%;
+  }
+}
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+  }
+}
 ```
 
 Mobile loads all desktop styles then overrides. At intermediate widths, rules fight.
@@ -45,8 +58,18 @@ Mobile loads all desktop styles then overrides. At intermediate widths, rules fi
   display: flex;
   flex-direction: column;
 }
-@media (min-width: 768px) { .container { flex-direction: row; padding: 2rem; } }
-@media (min-width: 1024px) { .container { max-width: 1200px; margin: 0 auto; } }
+@media (min-width: 768px) {
+  .container {
+    flex-direction: row;
+    padding: 2rem;
+  }
+}
+@media (min-width: 1024px) {
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+}
 ```
 
 ---
@@ -55,15 +78,19 @@ Mobile loads all desktop styles then overrides. At intermediate widths, rules fi
 
 ```css
 /* AI output — long text overflows */
-.card { display: flex; }
-.card__title { overflow-wrap: break-word; }
+.card {
+  display: flex;
+}
+.card__title {
+  overflow-wrap: break-word;
+}
 ```
 
 Default flex item `min-width` is `auto` (content size), not `0`. Long text won't shrink below its content width.
 
 ```css
 .card__title {
-  min-width: 0;  /* allows flex item to shrink below content size */
+  min-width: 0; /* allows flex item to shrink below content size */
   overflow-wrap: break-word;
 }
 ```
@@ -76,15 +103,22 @@ This is invisible in DevTools unless content is dynamic (long usernames, URLs, t
 
 ```css
 /* AI adds overflow: hidden for visual clipping */
-.page-wrapper { overflow: hidden; }
-.sticky-header { position: sticky; top: 0; }  /* silently broken */
+.page-wrapper {
+  overflow: hidden;
+}
+.sticky-header {
+  position: sticky;
+  top: 0;
+} /* silently broken */
 ```
 
 Any ancestor with `overflow: hidden/scroll/auto` creates a scroll container, intercepting sticky.
 
 ```css
 /* Use overflow: clip instead — clips without creating scroll container */
-.page-wrapper { overflow: clip; }
+.page-wrapper {
+  overflow: clip;
+}
 ```
 
 ---
@@ -93,8 +127,14 @@ Any ancestor with `overflow: hidden/scroll/auto` creates a scroll container, int
 
 ```css
 /* AI adds transform for animation */
-.animated-section { transform: translateY(0); transition: transform 0.3s; }
-.sticky-cta { position: fixed; bottom: 2rem; }  /* now fixed to .animated-section, not viewport */
+.animated-section {
+  transform: translateY(0);
+  transition: transform 0.3s;
+}
+.sticky-cta {
+  position: fixed;
+  bottom: 2rem;
+} /* now fixed to .animated-section, not viewport */
 ```
 
 Any `transform`, `filter`, `backdrop-filter`, `perspective`, `will-change: transform` on an ancestor creates a new containing block for `position: fixed` children.
@@ -105,13 +145,18 @@ Any `transform`, `filter`, `backdrop-filter`, `perspective`, `will-change: trans
 
 ```css
 /* AI generates this — triggers auto-zoom on iOS Safari */
-input, textarea { font-size: 14px; }
+input,
+textarea {
+  font-size: 14px;
+}
 ```
 
 iOS Safari auto-zooms the viewport when focusing an input with font-size below 16px. The page stays zoomed after leaving the field.
 
 ```css
-input, textarea, select {
+input,
+textarea,
+select {
   font-size: max(16px, 1rem);
 }
 ```
@@ -124,13 +169,19 @@ Don't suppress with `maximum-scale=1` in viewport meta — that prevents user-in
 
 ```css
 /* AI forgets notch/Dynamic Island/home indicator */
-.fixed-header { position: fixed; top: 0; }
-.bottom-nav { position: fixed; bottom: 0; }
+.fixed-header {
+  position: fixed;
+  top: 0;
+}
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+}
 ```
 
 ```html
 <!-- Required for env() to return non-zero values -->
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 ```
 
 ```css
@@ -152,17 +203,27 @@ Landscape orientation: notch moves to the side. `safe-area-inset-left/right` bec
 
 ```css
 /* AI generates escalating values */
-.modal { z-index: 99999; }
-.tooltip { z-index: 999999; }
+.modal {
+  z-index: 99999;
+}
+.tooltip {
+  z-index: 999999;
+}
 ```
 
 This signals misunderstanding of stacking contexts. Properties that silently create stacking contexts (trapping z-index): `opacity < 1`, any `transform`, `filter`, `will-change`, `position: sticky/fixed`, `mix-blend-mode`, `clip-path`, `isolation: isolate`.
 
 ```css
 /* Use isolation: isolate to deliberately contain stacking */
-.modal { isolation: isolate; }
-.modal-overlay { z-index: 1; }
-.modal-content { z-index: 2; }
+.modal {
+  isolation: isolate;
+}
+.modal-overlay {
+  z-index: 1;
+}
+.modal-content {
+  z-index: 2;
+}
 ```
 
 ---
@@ -171,7 +232,10 @@ This signals misunderstanding of stacking contexts. Properties that silently cre
 
 ```css
 /* AI output — chat input disappears under keyboard */
-.chat-input { position: fixed; bottom: 0; }
+.chat-input {
+  position: fixed;
+  bottom: 0;
+}
 ```
 
 When the mobile keyboard opens, the visual viewport shrinks. Fixed elements at `bottom: 0` get pushed off-screen or overlap the keyboard.
@@ -179,17 +243,20 @@ When the mobile keyboard opens, the visual viewport shrinks. Fixed elements at `
 ```javascript
 // iOS-compatible approach
 if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', () => {
+  window.visualViewport.addEventListener("resize", () => {
     document.documentElement.style.setProperty(
-      '--keyboard-height',
-      `${window.innerHeight - window.visualViewport.height}px`
+      "--keyboard-height",
+      `${window.innerHeight - window.visualViewport.height}px`,
     );
   });
 }
 ```
 
 ```css
-.chat-input { position: fixed; bottom: var(--keyboard-height, 0); }
+.chat-input {
+  position: fixed;
+  bottom: var(--keyboard-height, 0);
+}
 ```
 
 ---
@@ -205,8 +272,15 @@ if (window.visualViewport) {
 Duplicate content: double the DOM, double the downloads. Screen readers may read both. Use one component that adapts:
 
 ```css
-.nav { display: flex; flex-direction: column; }
-@media (min-width: 768px) { .nav { flex-direction: row; } }
+.nav {
+  display: flex;
+  flex-direction: column;
+}
+@media (min-width: 768px) {
+  .nav {
+    flex-direction: row;
+  }
+}
 ```
 
 ---
@@ -215,13 +289,13 @@ Duplicate content: double the DOM, double the downloads. Screen readers may read
 
 ```html
 <!-- AI omits width/height — browser can't reserve space -->
-<img src="product.jpg" alt="Product" class="w-full">
+<img src="product.jpg" alt="Product" class="w-full" />
 ```
 
 Without explicit width/height, the browser can't compute aspect ratio before load. Content shifts when the image appears.
 
 ```html
-<img src="product.jpg" alt="Product" width="800" height="600" class="w-full h-auto">
+<img src="product.jpg" alt="Product" width="800" height="600" class="w-full h-auto" />
 ```
 
 Don't use `width: auto` in CSS when HTML width/height attributes are set — it overrides the browser's aspect ratio calculation.
@@ -232,7 +306,10 @@ Don't use `width: auto` in CSS when HTML width/height attributes are set — it 
 
 ```css
 /* AI puts sticky on a grid/flex child without this */
-.sidebar { position: sticky; top: 0; }
+.sidebar {
+  position: sticky;
+  top: 0;
+}
 ```
 
 In flex/grid containers, children stretch to fill their row by default. The sidebar becomes as tall as the content — sticky has no room to "stick."
@@ -241,7 +318,7 @@ In flex/grid containers, children stretch to fill their row by default. The side
 .sidebar {
   position: sticky;
   top: 0;
-  align-self: start;  /* required */
+  align-self: start; /* required */
 }
 ```
 
@@ -266,8 +343,12 @@ AI generates code that looks perfect at 1440px and breaks everywhere else:
 }
 
 /* Fluid values prevent in-between breakage */
-h1 { font-size: clamp(1.5rem, 4vw, 3rem); }
-.section { padding: clamp(1rem, 5vw, 4rem); }
+h1 {
+  font-size: clamp(1.5rem, 4vw, 3rem);
+}
+.section {
+  padding: clamp(1rem, 5vw, 4rem);
+}
 ```
 
 ---

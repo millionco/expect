@@ -41,7 +41,7 @@ Use CSS custom properties so `top` offsets auto-update at breakpoints:
 .sidebar {
   position: sticky;
   top: calc(var(--header-height) + 1rem);
-  align-self: start;  /* CRITICAL — see below */
+  align-self: start; /* CRITICAL — see below */
   height: fit-content;
 }
 ```
@@ -72,7 +72,7 @@ Use CSS custom properties so `top` offsets auto-update at breakpoints:
 .sidebar {
   position: sticky;
   top: var(--header-height);
-  align-self: start;  /* required */
+  align-self: start; /* required */
 }
 ```
 
@@ -120,14 +120,14 @@ Use a tiered scale — don't escalate arbitrarily:
   display: flex;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  overscroll-behavior-x: contain;  /* prevents triggering browser back gesture */
+  overscroll-behavior-x: contain; /* prevents triggering browser back gesture */
   scrollbar-width: none;
 }
 
 .carousel-item {
-  flex: 0 0 85%;       /* each item takes 85% of container */
+  flex: 0 0 85%; /* each item takes 85% of container */
   scroll-snap-align: start;
-  scroll-snap-stop: always;  /* prevents swiping through multiple */
+  scroll-snap-stop: always; /* prevents swiping through multiple */
 }
 ```
 
@@ -138,7 +138,7 @@ html {
   scroll-snap-type: y mandatory;
 }
 section {
-  height: 100dvh;  /* dvh, not vh, for mobile */
+  height: 100dvh; /* dvh, not vh, for mobile */
   scroll-snap-align: start;
 }
 ```
@@ -206,12 +206,22 @@ body {
   grid-template-columns: 260px 1fr;
   height: 100dvh;
   margin: 0;
-  overflow: hidden;  /* all scrolling is within regions */
+  overflow: hidden; /* all scrolling is within regions */
 }
 
-header   { grid-area: header; }
-.sidebar { grid-area: sidebar; overflow-y: auto; overscroll-behavior: contain; }
-.main    { grid-area: main;    overflow-y: auto; overscroll-behavior: contain; }
+header {
+  grid-area: header;
+}
+.sidebar {
+  grid-area: sidebar;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.main {
+  grid-area: main;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 ```
 
 **`overscroll-behavior: contain`** is critical — without it, reaching the end of one scroll region chains to the parent (body scroll).
@@ -226,7 +236,7 @@ body {
   margin: 0;
 }
 .sidebar {
-  display: none;  /* replaced by drawer/bottom-nav on mobile */
+  display: none; /* replaced by drawer/bottom-nav on mobile */
 }
 
 /* Desktop: multi-region dashboard */
@@ -261,7 +271,7 @@ Elements that are sticky on desktop but flow normally on mobile.
 
 ```css
 .toc {
-  position: relative;  /* mobile: flows normally */
+  position: relative; /* mobile: flows normally */
 }
 
 @media (min-width: 1024px) {
@@ -283,12 +293,24 @@ Elements that are sticky on desktop but flow normally on mobile.
 ### Header That Changes Height Across Breakpoints
 
 ```css
-:root { --header-height: 52px; }
-@media (min-width: 768px) { :root { --header-height: 72px; } }
-@media (min-width: 1200px) { :root { --header-height: 80px; } }
+:root {
+  --header-height: 52px;
+}
+@media (min-width: 768px) {
+  :root {
+    --header-height: 72px;
+  }
+}
+@media (min-width: 1200px) {
+  :root {
+    --header-height: 80px;
+  }
+}
 
 /* All elements that account for header height auto-update */
-[id] { scroll-margin-top: calc(var(--header-height) + 1rem); }
+[id] {
+  scroll-margin-top: calc(var(--header-height) + 1rem);
+}
 ```
 
 ### Sidebar Becomes Top Bar on Mobile
@@ -362,14 +384,14 @@ CSS has no `:stuck` pseudo-class. Use a zero-height sentinel element:
 ```
 
 ```javascript
-const sentinel = document.querySelector('.sticky-sentinel');
-const header = document.querySelector('.site-header');
+const sentinel = document.querySelector(".sticky-sentinel");
+const header = document.querySelector(".site-header");
 
 const observer = new IntersectionObserver(
   ([entry]) => {
-    header.classList.toggle('is-stuck', !entry.isIntersecting);
+    header.classList.toggle("is-stuck", !entry.isIntersecting);
   },
-  { threshold: 0 }
+  { threshold: 0 },
 );
 observer.observe(sentinel);
 ```
@@ -480,5 +502,7 @@ Use `showModal()` — provides built-in focus trap, Esc to close, `aria-modal="t
   overflow-y: auto;
   overscroll-behavior: contain;
 }
-.drawer.is-open { transform: translateX(0); }
+.drawer.is-open {
+  transform: translateX(0);
+}
 ```

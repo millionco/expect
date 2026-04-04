@@ -14,15 +14,15 @@ Treat module scope on the server as process-wide shared memory, not request-loca
 **Incorrect (request data leaks across concurrent renders):**
 
 ```tsx
-let currentUser: User | null = null
+let currentUser: User | null = null;
 
 export default async function Page() {
-  currentUser = await auth()
-  return <Dashboard />
+  currentUser = await auth();
+  return <Dashboard />;
 }
 
 async function Dashboard() {
-  return <div>{currentUser?.name}</div>
+  return <div>{currentUser?.name}</div>;
 }
 ```
 
@@ -32,12 +32,12 @@ If two requests overlap, request A can set `currentUser`, then request B overwri
 
 ```tsx
 export default async function Page() {
-  const user = await auth()
-  return <Dashboard user={user} />
+  const user = await auth();
+  return <Dashboard user={user} />;
 }
 
 function Dashboard({ user }: { user: User | null }) {
-  return <div>{user?.name}</div>
+  return <div>{user?.name}</div>;
 }
 ```
 

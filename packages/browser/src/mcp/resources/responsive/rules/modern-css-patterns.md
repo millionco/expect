@@ -45,12 +45,12 @@ font-size: clamp(1.5rem, 0.857rem + 2.857vw, 3rem);
 
 ```css
 :root {
-  --step--1: clamp(0.83rem, 0.78rem + 0.29vw, 1.00rem);
-  --step-0:  clamp(1.00rem, 0.91rem + 0.43vw, 1.25rem);
-  --step-1:  clamp(1.20rem, 1.07rem + 0.63vw, 1.56rem);
-  --step-2:  clamp(1.44rem, 1.26rem + 0.89vw, 1.95rem);
-  --step-3:  clamp(1.73rem, 1.48rem + 1.24vw, 2.44rem);
-  --step-4:  clamp(2.07rem, 1.73rem + 1.70vw, 3.05rem);
+  --step--1: clamp(0.83rem, 0.78rem + 0.29vw, 1rem);
+  --step-0: clamp(1rem, 0.91rem + 0.43vw, 1.25rem);
+  --step-1: clamp(1.2rem, 1.07rem + 0.63vw, 1.56rem);
+  --step-2: clamp(1.44rem, 1.26rem + 0.89vw, 1.95rem);
+  --step-3: clamp(1.73rem, 1.48rem + 1.24vw, 2.44rem);
+  --step-4: clamp(2.07rem, 1.73rem + 1.7vw, 3.05rem);
 }
 ```
 
@@ -58,10 +58,10 @@ font-size: clamp(1.5rem, 0.857rem + 2.857vw, 3rem);
 
 ```css
 :root {
-  --space-s:   clamp(0.75rem, 0.69rem + 0.29vw, 0.875rem);
-  --space-m:   clamp(1rem, 0.93rem + 0.38vw, 1.25rem);
-  --space-l:   clamp(1.5rem, 1.38rem + 0.57vw, 1.75rem);
-  --space-xl:  clamp(2rem, 1.86rem + 0.71vw, 2.5rem);
+  --space-s: clamp(0.75rem, 0.69rem + 0.29vw, 0.875rem);
+  --space-m: clamp(1rem, 0.93rem + 0.38vw, 1.25rem);
+  --space-l: clamp(1.5rem, 1.38rem + 0.57vw, 1.75rem);
+  --space-xl: clamp(2rem, 1.86rem + 0.71vw, 2.5rem);
   --space-section: clamp(3rem, 8vw, 6rem);
 }
 ```
@@ -69,6 +69,7 @@ font-size: clamp(1.5rem, 0.857rem + 2.857vw, 3rem);
 **Accessibility rule:** Always combine `rem + vw` in the preferred value — never pure `vw`. The `rem` component respects browser zoom; pure `vw` doesn't scale when users zoom to 200%. If `max / min <= 2.5`, it passes WCAG SC 1.4.4.
 
 **When NOT to use clamp():**
+
 - Button labels and UI chrome (should be consistent, not scaling)
 - Text in containers where predictable wrapping matters
 - Legal/compliance copy requiring fixed sizing
@@ -88,6 +89,7 @@ font-size: clamp(1.5rem, 0.857rem + 2.857vw, 3rem);
 The `min(280px, 100%)` prevents overflow on viewports narrower than 280px.
 
 **`auto-fit` vs `auto-fill`** — Claude frequently confuses these:
+
 - `auto-fit` — collapses empty tracks, stretching items to fill the row. Use when you want items to grow into available space.
 - `auto-fill` — keeps empty tracks, leaving gaps at the end. Use when you want consistent item widths even with few items.
 
@@ -142,22 +144,22 @@ When container is too narrow for both, they wrap naturally.
 
 ### container-type Values
 
-| Value | Enables | Use when |
-|-------|---------|----------|
-| `inline-size` | Width queries | **Default choice** — 95% of cases |
-| `size` | Width + height queries | Dashboard widgets with fixed dimensions |
-| `normal` | Style queries only | CSS custom property-based queries |
+| Value         | Enables                | Use when                                |
+| ------------- | ---------------------- | --------------------------------------- |
+| `inline-size` | Width queries          | **Default choice** — 95% of cases       |
+| `size`        | Width + height queries | Dashboard widgets with fixed dimensions |
+| `normal`      | Style queries only     | CSS custom property-based queries       |
 
 Avoid `size` unless you need height queries — it requires explicit height and can create layout loops.
 
 ### Container Query Units
 
-| Unit | Definition |
-|------|-----------|
-| `cqi` | 1% of container's inline size (width in LTR) |
-| `cqb` | 1% of container's block size |
-| `cqmin` | Smaller of cqi or cqb |
-| `cqmax` | Larger of cqi or cqb |
+| Unit    | Definition                                   |
+| ------- | -------------------------------------------- |
+| `cqi`   | 1% of container's inline size (width in LTR) |
+| `cqb`   | 1% of container's block size                 |
+| `cqmin` | Smaller of cqi or cqb                        |
+| `cqmax` | Larger of cqi or cqb                         |
 
 Prefer `cqi`/`cqb` over `cqw`/`cqh` — they're writing-mode aware.
 
@@ -171,12 +173,12 @@ Prefer `cqi`/`cqb` over `cqw`/`cqh` — they're writing-mode aware.
 
 ### Container Queries vs Media Queries
 
-| Use case | Tool |
-|----------|------|
-| Component layout (card, widget, nav item) | Container query |
-| Page structure (grid columns, sidebar visibility) | Media query |
-| Device orientation, user preferences, print | Media query |
-| Reusable component in different contexts | Container query |
+| Use case                                          | Tool            |
+| ------------------------------------------------- | --------------- |
+| Component layout (card, widget, nav item)         | Container query |
+| Page structure (grid columns, sidebar visibility) | Media query     |
+| Device orientation, user preferences, print       | Media query     |
+| Reusable component in different contexts          | Container query |
 
 **Tailwind container queries** (built-in, no plugin):
 
@@ -196,17 +198,23 @@ Tailwind's `@` breakpoints are smaller than viewport breakpoints (`@md` = 448px 
 
 ```css
 /* INVALID */
-.card { container-type: inline-size; padding: 10cqi; }
+.card {
+  container-type: inline-size;
+  padding: 10cqi;
+}
 
 /* VALID — on children */
-.card > * { padding: 10cqi; }
+.card > * {
+  padding: 10cqi;
+}
 ```
 
 **Custom properties don't work in container query conditions:**
 
 ```css
 /* Does NOT work */
-@container (min-width: var(--breakpoint)) { }
+@container (min-width: var(--breakpoint)) {
+}
 ```
 
 **Flex items that are also containers may collapse** without explicit sizing. Set `min-width: 0` or `flex: 1`.
@@ -224,6 +232,7 @@ Style queries (`@container style(--var: val)`): Chrome/Edge only. Use as progres
 ## Layer 3: Viewport Media Queries (Page-Level)
 
 Still the right tool for:
+
 - Global layout shifts (sidebar appears/disappears, column count changes)
 - `prefers-color-scheme`, `prefers-reduced-motion`, `prefers-contrast`
 - Print stylesheets
@@ -235,17 +244,25 @@ Still the right tool for:
 ### Input Method Detection
 
 ```css
-@media (pointer: fine) { /* mouse/trackpad */ }
-@media (pointer: coarse) { /* touch/stylus */ }
-@media (hover: hover) { /* device supports hover */ }
-@media (hover: none) { /* touch devices — never gate functionality on hover */ }
+@media (pointer: fine) {
+  /* mouse/trackpad */
+}
+@media (pointer: coarse) {
+  /* touch/stylus */
+}
+@media (hover: hover) {
+  /* device supports hover */
+}
+@media (hover: none) {
+  /* touch devices — never gate functionality on hover */
+}
 ```
 
 ### Safe Areas (Notched Devices)
 
 ```html
 <!-- Required in <head> -->
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 ```
 
 ```css
@@ -276,7 +293,7 @@ Don't make mobile load a 2400px desktop hero image. Use `srcset` for resolution 
   width="2400"
   height="1200"
   loading="lazy"
->
+/>
 ```
 
 `sizes` tells the browser how wide the image will display at each viewport, so it picks the smallest `srcset` that covers that width at the device's pixel density.
@@ -285,15 +302,16 @@ Don't make mobile load a 2400px desktop hero image. Use `srcset` for resolution 
 
 ```html
 <picture>
-  <source media="(max-width: 640px)" srcset="hero-mobile.jpg">
-  <source media="(max-width: 1024px)" srcset="hero-tablet.jpg">
-  <img src="hero-desktop.jpg" alt="Hero" width="2400" height="1200">
+  <source media="(max-width: 640px)" srcset="hero-mobile.jpg" />
+  <source media="(max-width: 1024px)" srcset="hero-tablet.jpg" />
+  <img src="hero-desktop.jpg" alt="Hero" width="2400" height="1200" />
 </picture>
 ```
 
 Use `<picture>` when the mobile image should be a different crop or composition — not just a smaller version.
 
 **Always include:**
+
 - `width` and `height` attributes (prevents layout shift)
 - `loading="lazy"` on below-fold images
 - `alt` text
@@ -310,18 +328,18 @@ Mobile browsers have dynamic UI (address bar). `100vh` is calculated against the
 
 ### The Three Families
 
-| Unit | Sized with browser UI... | Use for |
-|------|--------------------------|---------|
-| `svh` | Fully expanded (smallest) | **Default** — hero sections, modals, anything that must fit on load |
-| `lvh` | Fully retracted (largest) | Backgrounds, decorative elements |
-| `dvh` | Dynamic — updates on scroll | Sparingly — chat interfaces, overlays that must fill exact space |
+| Unit  | Sized with browser UI...    | Use for                                                             |
+| ----- | --------------------------- | ------------------------------------------------------------------- |
+| `svh` | Fully expanded (smallest)   | **Default** — hero sections, modals, anything that must fit on load |
+| `lvh` | Fully retracted (largest)   | Backgrounds, decorative elements                                    |
+| `dvh` | Dynamic — updates on scroll | Sparingly — chat interfaces, overlays that must fill exact space    |
 
 **Always provide a `vh` fallback:**
 
 ```css
 .hero {
-  height: 100vh;   /* fallback */
-  height: 100svh;  /* modern browsers */
+  height: 100vh; /* fallback */
+  height: 100svh; /* modern browsers */
 }
 ```
 
@@ -343,7 +361,7 @@ Solves cross-component alignment in grids. Before subgrid, nested elements could
 }
 
 .card {
-  grid-row: span 3;           /* span all row tracks */
+  grid-row: span 3; /* span all row tracks */
   display: grid;
   grid-template-rows: subgrid; /* inherit parent's row tracks */
 }
@@ -373,7 +391,9 @@ Style elements based on their descendants or state — without JavaScript.
 }
 
 /* Form row highlights when input is invalid */
-.form-row:has(input:invalid) { border-color: red; }
+.form-row:has(input:invalid) {
+  border-color: red;
+}
 ```
 
 **:has() responds to content/state. Container queries respond to available space.** They solve different problems and complement each other.
@@ -394,8 +414,12 @@ Drive CSS animations with scroll position instead of time. No JavaScript scroll 
   animation-timeline: scroll(root block);
 }
 @keyframes grow {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 ```
 
@@ -408,8 +432,14 @@ Drive CSS animations with scroll position instead of time. No JavaScript scroll 
   animation-range: entry 0% entry 40%;
 }
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(2rem); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(2rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 ```
 
@@ -420,7 +450,10 @@ Drive CSS animations with scroll position instead of time. No JavaScript scroll 
 ```css
 @media (prefers-reduced-motion: no-preference) {
   @supports (animation-timeline: scroll()) {
-    .element { animation: my-anim linear both; animation-timeline: view(); }
+    .element {
+      animation: my-anim linear both;
+      animation-timeline: view();
+    }
   }
 }
 ```
@@ -447,7 +480,9 @@ Co-locate responsive styles with their component:
     grid-template-columns: 200px 1fr;
   }
 
-  &:hover { transform: translateY(-2px); }
+  &:hover {
+    transform: translateY(-2px);
+  }
 }
 ```
 
@@ -471,9 +506,13 @@ Later layers win over earlier ones. Unlayered styles always beat layered styles.
 
 ```css
 @layer components {
-  .nav { flex-direction: column; }
+  .nav {
+    flex-direction: column;
+  }
   @media (width >= 900px) {
-    .nav { flex-direction: row; }
+    .nav {
+      flex-direction: row;
+    }
   }
 }
 ```
@@ -486,16 +525,16 @@ Browser support: Chrome 99+, Firefox 97+, Safari 15.4+. ~97% coverage.
 
 Layout in terms of content flow (inline/block) rather than physical direction (left/right/top/bottom). Automatically adapts to RTL and vertical writing modes.
 
-| Physical | Logical |
-|----------|---------|
-| `width` | `inline-size` |
-| `height` | `block-size` |
-| `margin-left/right` | `margin-inline` |
-| `margin-top/bottom` | `margin-block` |
-| `padding-left/right` | `padding-inline` |
-| `top/bottom` | `inset-block` |
-| `left/right` | `inset-inline` |
-| `text-align: left` | `text-align: start` |
+| Physical             | Logical             |
+| -------------------- | ------------------- |
+| `width`              | `inline-size`       |
+| `height`             | `block-size`        |
+| `margin-left/right`  | `margin-inline`     |
+| `margin-top/bottom`  | `margin-block`      |
+| `padding-left/right` | `padding-inline`    |
+| `top/bottom`         | `inset-block`       |
+| `left/right`         | `inset-inline`      |
+| `text-align: left`   | `text-align: start` |
 
 ```css
 .article {
