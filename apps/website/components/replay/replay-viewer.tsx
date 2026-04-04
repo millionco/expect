@@ -660,6 +660,14 @@ export const ReplayViewer = ({
     });
     replayerRef.current = replayer;
 
+    const replayIframe = replayer.iframe;
+    if (replayIframe) {
+      const currentSandbox = replayIframe.getAttribute("sandbox") ?? "";
+      if (!currentSandbox.includes("allow-scripts")) {
+        replayIframe.setAttribute("sandbox", `${currentSandbox} allow-scripts`.trim());
+      }
+    }
+
     const startTime = liveRef.current ? replayDuration : Math.min(currentTime, replayDuration);
     setCurrentTime(startTime);
     replayer.play(startTime);
