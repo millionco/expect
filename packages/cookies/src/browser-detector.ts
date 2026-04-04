@@ -1,8 +1,8 @@
 import { Effect, identity, Layer, Option, ServiceMap, Array as Arr } from "effect";
-import getDefaultBrowser from "default-browser";
 import { configByBundleId, configByDesktopFile } from "./browser-config";
-import { ListBrowsersError } from "./errors";
+import { detectDefaultBrowserId } from "./default-browser-id";
 import type { Browser } from "./types";
+import { ListBrowsersError } from "./errors";
 
 export class Browsers extends ServiceMap.Service<Browsers>()("@cookies/Browsers", {
   make: Effect.gen(function* () {
@@ -18,10 +18,7 @@ export class Browsers extends ServiceMap.Service<Browsers>()("@cookies/Browsers"
     }).pipe(Effect.map(Arr.flatten), Effect.withSpan("Browsers.list"));
 
     const defaultBrowser = Effect.fn("Browsers.defaultBrowser")(function* () {
-      const result = yield* Effect.tryPromise({
-        try: () => getDefaultBrowser(),
-        catch: (cause) => new ListBrowsersError({ cause: String(cause) }),
-      }).pipe(
+      const browserId = yield* detectDefaultBrowserId().pipe(
         Effect.catchTag("ListBrowsersError", (error) =>
           Effect.logWarning("Default browser detection failed", { cause: error.cause }).pipe(
             Effect.as(undefined),
@@ -29,9 +26,9 @@ export class Browsers extends ServiceMap.Service<Browsers>()("@cookies/Browsers"
         ),
       );
 
-      if (!result) return Option.none<Browser>();
+      if (!browserId) return Option.none<Browser>();
 
-      const normalizedId = result.id.toLowerCase();
+      const normalizedId = browserId.toLowerCase();
       const desktopKey = normalizedId.replace(/\.desktop$/, "");
       const config = configByBundleId(normalizedId) ?? configByDesktopFile(desktopKey);
       if (!config) return Option.none<Browser>();

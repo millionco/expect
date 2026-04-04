@@ -332,9 +332,6 @@ importers:
       '@effect/platform-node':
         specifier: 4.0.0-beta.35
         version: 4.0.0-beta.35(effect@4.0.0-beta.35)(ioredis@5.10.0)
-      default-browser:
-        specifier: ^5.5.0
-        version: 5.5.0
       effect:
         specifier: 4.0.0-beta.35
         version: 4.0.0-beta.35
