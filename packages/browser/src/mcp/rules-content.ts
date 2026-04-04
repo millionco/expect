@@ -1,9 +1,9 @@
 declare const __RULES_CONTENT__: Record<string, string> | undefined;
 
-export const rulesAvailable = (): boolean => typeof __RULES_CONTENT__ !== "undefined";
-
-const contentMap = (): Record<string, string> =>
+const resolvedContent: Record<string, string> =
   typeof __RULES_CONTENT__ !== "undefined" ? __RULES_CONTENT__ : {};
+
+export const rulesAvailable = (): boolean => Object.keys(resolvedContent).length > 0;
 
 const FRONTMATTER_PATTERN = /^---\n([\s\S]*?)\n---\n/;
 
@@ -25,7 +25,7 @@ export interface RuleDefinition {
 }
 
 const discoverRules = (): ReadonlyArray<RuleDefinition> => {
-  const map = contentMap();
+  const map = resolvedContent;
   const slugs = new Set<string>();
 
   for (const key of Object.keys(map)) {
@@ -68,7 +68,7 @@ export const getRules = (): ReadonlyArray<RuleDefinition> => {
 };
 
 export const getRuleContent = (rule: RuleDefinition): string | undefined => {
-  const content = contentMap()[`${rule.slug}/rule.md`];
+  const content = resolvedContent[`${rule.slug}/rule.md`];
   if (!content) return undefined;
   return stripFrontmatter(content);
 };
@@ -78,7 +78,7 @@ export const getSubRuleContent = (
   subRuleName: string,
 ): string | undefined => {
   if (!rule.subRuleDir) return undefined;
-  const content = contentMap()[`${rule.slug}/${rule.subRuleDir}/${subRuleName}.md`];
+  const content = resolvedContent[`${rule.slug}/${rule.subRuleDir}/${subRuleName}.md`];
   if (content) return stripFrontmatter(content);
   return undefined;
 };
