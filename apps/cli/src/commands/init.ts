@@ -29,21 +29,13 @@ const logUsageGuide = () => {
   logger.break();
   logger.log("  Here's how to get started:");
   logger.break();
-  logger.log(`  1. ${highlighter.info("cd")} into your project directory`);
-  logger.log(`  2. Start your dev server (e.g. ${highlighter.dim("npm run dev")})`);
-  logger.log(`  3. Run ${highlighter.info("expect-cli")} to open the interactive test runner`);
-  logger.break();
-  logger.log(`  Or run headlessly from your coding agent:`);
-  logger.break();
+  logger.log(`  1. Start your dev server (e.g. ${highlighter.dim("npm run dev")})`);
   logger.log(
-    `     ${highlighter.dim("$")} ${highlighter.info('expect-cli -m "test the login flow" -y')}`,
+    `  2. Use the ${highlighter.info("/expect")} skill in your coding agent to test changes`,
   );
   logger.break();
-  logger.log(`  Use ${highlighter.info("-u")} to set a custom base URL:`);
-  logger.break();
-  logger.log(
-    `     ${highlighter.dim("$")} ${highlighter.info('expect-cli -u http://localhost:5173 -m "test the homepage" -y')}`,
-  );
+  logger.log(`  The skill will automatically run ${highlighter.info("expect-cli")} for you.`);
+  logger.log(`  Just ask your agent to test, verify, or QA your code changes.`);
   logger.break();
 };
 
