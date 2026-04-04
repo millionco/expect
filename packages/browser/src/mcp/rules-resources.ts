@@ -71,12 +71,7 @@ export const registerRulesResources = (server: McpServer) => {
         if (!content)
           return { contents: [{ uri: uri.href, text: `Rule not found: ${rule.slug}` }] };
 
-        const appendix =
-          rule.subRules.length > 0
-            ? `\n\n## Available Sub-Rules\n\n${rule.subRules.map((name) => `- expect://rules/${rule.slug}/${name}`).join("\n")}\n`
-            : "";
-
-        return { contents: [{ uri: uri.href, text: content + appendix }] };
+        return { contents: [{ uri: uri.href, text: content }] };
       },
     );
 
