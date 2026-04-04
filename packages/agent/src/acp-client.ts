@@ -801,7 +801,8 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
         update.sessionUpdate === "agent_message_chunk" ||
         update.sessionUpdate === "agent_thought_chunk" ||
         update.sessionUpdate === "tool_call" ||
-        update.sessionUpdate === "tool_call_update";
+        update.sessionUpdate === "tool_call_update" ||
+        update.sessionUpdate === "plan";
 
       return Stream.fromQueue(updatesQueue).pipe(
         Stream.tap((update) =>
