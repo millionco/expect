@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "paper-flex": {
+      "source": "ben-million/skills/paper-flex",
+      "sourceType": "github",
+      "computedHash": "88c0c61a0fa2ae09fb5490e25d3b43e35f796584bad630a787e92769bac5dc85"
+    }
+  }
+}
