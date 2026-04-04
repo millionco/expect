@@ -4,7 +4,7 @@ import { isCommandAvailable } from "@expect/shared/is-command-available";
 import { Effect } from "effect";
 import figures from "figures";
 import pc from "picocolors";
-import { PLAYWRIGHT_INSTALL_TIMEOUT_MS, VERSION } from "../constants";
+import { GLOBAL_INSTALL_COMMANDS, PLAYWRIGHT_INSTALL_TIMEOUT_MS, VERSION } from "../constants";
 import { highlighter } from "../utils/highlighter";
 import { logger } from "../utils/logger";
 import { prompts, setOnCancel } from "../utils/prompts";
@@ -20,20 +20,6 @@ import {
 } from "./init-utils";
 
 export { detectAvailableAgents };
-
-interface InstallCommand {
-  binary: string;
-  args: readonly string[];
-}
-
-const GLOBAL_INSTALL_COMMANDS: Record<PackageManager, InstallCommand> = {
-  npm: { binary: "npm", args: ["install", "-g", "expect-cli@latest"] },
-  pnpm: { binary: "pnpm", args: ["add", "-g", "expect-cli@latest"] },
-  yarn: { binary: "yarn", args: ["global", "add", "expect-cli@latest"] },
-  bun: { binary: "bun", args: ["add", "-g", "expect-cli@latest"] },
-  deno: { binary: "deno", args: ["install", "-g", "npm:expect-cli@latest"] },
-  vp: { binary: "vp", args: ["install", "-g", "expect-cli@latest"] },
-};
 
 interface InitOptions {
   yes?: boolean;

@@ -1,5 +1,12 @@
 # @expect/shared
 
+## 0.0.25
+
+### Patch Changes
+
+- fix
+- fix
+
 ## 0.0.24
 
 ### Patch Changes

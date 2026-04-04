@@ -17,8 +17,9 @@ import { usePlanExecutionStore } from "../stores/use-plan-execution-store";
 import { useGitState } from "../hooks/use-git-state";
 import { useUpdateCheck } from "../hooks/use-update-check";
 import { clearInkDisplay } from "../utils/clear-ink-display";
+import { detectGlobalPackageManager } from "../utils/auto-update";
 import { useStdoutDimensions } from "../hooks/use-stdout-dimensions";
-import { ALT_SCREEN_OFF, NPM_PACKAGE_NAME } from "../constants";
+import { ALT_SCREEN_OFF, GLOBAL_INSTALL_COMMANDS, NPM_PACKAGE_NAME } from "../constants";
 import { AgentBackend } from "@expect/agent";
 import { useAtomSet } from "@effect/atom-react";
 import { agentProviderAtom } from "../data/runtime";
@@ -73,9 +74,8 @@ export const App = ({ agent }: { agent: AgentBackend }) => {
     if (key.ctrl && input === "u" && updateAvailable) {
       exit();
       process.stdout.write(ALT_SCREEN_OFF);
-      spawnSync("npm", ["install", "-g", `${NPM_PACKAGE_NAME}@latest`], {
-        stdio: "inherit",
-      });
+      const { binary, args } = GLOBAL_INSTALL_COMMANDS[detectGlobalPackageManager()];
+      spawnSync(binary, [...args], { stdio: "inherit" });
       return;
     }
     if (key.escape && screen._tag !== "Main") {

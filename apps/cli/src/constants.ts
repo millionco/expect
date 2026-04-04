@@ -57,6 +57,20 @@ export const GLOBAL_INSTALL_TIMEOUT_MS = 60_000;
 
 export type PackageManager = "npm" | "pnpm" | "yarn" | "bun" | "deno" | "vp";
 
+interface InstallCommand {
+  binary: string;
+  args: readonly string[];
+}
+
+export const GLOBAL_INSTALL_COMMANDS: Record<PackageManager, InstallCommand> = {
+  npm: { binary: "npm", args: ["install", "-g", "expect-cli@latest"] },
+  pnpm: { binary: "pnpm", args: ["add", "-g", "expect-cli@latest"] },
+  yarn: { binary: "yarn", args: ["global", "add", "expect-cli@latest"] },
+  bun: { binary: "bun", args: ["add", "-g", "expect-cli@latest"] },
+  deno: { binary: "deno", args: ["install", "-g", "npm:expect-cli@latest"] },
+  vp: { binary: "vp", args: ["install", "-g", "expect-cli@latest"] },
+};
+
 export const LOCK_FILE_TO_AGENT: Record<string, PackageManager> = {
   "pnpm-lock.yaml": "pnpm",
   "pnpm-workspace.yaml": "pnpm",
