@@ -2503,7 +2503,10 @@ let cookieCache: Record<string, string> | null = null
 function getCookie(name: string) {
   if (!cookieCache) {
     cookieCache = Object.fromEntries(
-      document.cookie.split('; ').map(c => c.split('='))
+      document.cookie.split('; ').map(c => {
+        const [name, ...rest] = c.split('=')
+        return [name, rest.join('=')]
+      })
     )
   }
   return cookieCache[name]
@@ -2520,6 +2523,7 @@ window.addEventListener('storage', (e) => {
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     storageCache.clear()
+    cookieCache = null
   }
 })
 ```
