@@ -1,0 +1,101 @@
+apps/cli/src/utils/detect-projects.ts
+  1d23c32bbf8f5107 1-2,71-72,74,128-129,133,135,153,168-169,171,218,220,223,227-228,231,233,240-241,266,271,276,293-294,300,305-306,326,332
+packages/cookies/src/cookies.ts
+  1d23c32bbf8f5107 1
+packages/cookies/src/cdp-client.ts
+  1d23c32bbf8f5107 2
+packages/cookies/tests/services.test.ts
+  1d23c32bbf8f5107 3
+packages/agent/tests/build-session-meta.test.ts
+  41809003e4403701 24-41,50-58,71-74,93-96
+packages/cookies/src/safari.ts
+  1d23c32bbf8f5107 1
+apps/website/scripts/record-demo.ts
+  1d23c32bbf8f5107 2-3,8-9,20,38,229-230
+packages/supervisor/src/github.ts
+  1d23c32bbf8f5107 5,115,158
+packages/supervisor/src/detect-project.ts
+  1d23c32bbf8f5107 2,69,104
+packages/agent/src/acp-client.ts
+  1d23c32bbf8f5107 1,3,184,195
+packages/browser/src/cdp-discovery.ts
+  1d23c32bbf8f5107 1,3
+packages/browser/src/accessibility.ts
+  1d23c32bbf8f5107 1,69
+.github/scripts/e2e-website.ts
+  1d23c32bbf8f5107 3,13-14,18-19
+packages/cookies/src/chromium.ts
+  1d23c32bbf8f5107 1
+packages/shared/src/observability/agent-logger.ts
+  1d23c32bbf8f5107 3
+packages/cookies/src/sqlite-client.ts
+  1d23c32bbf8f5107 1
+apps/cli/src/commands/add-skill.ts
+  1d23c32bbf8f5107 1-2,60-62,78,110-113,116-117,119-120,123-124,139
+apps/cli/vite.config.ts
+  1d23c32bbf8f5107 2-3,27,29,54,56,66
+packages/cookies/src/firefox.ts
+  1d23c32bbf8f5107 1
+apps/cli/tests/add-skill.test.ts
+  1d23c32bbf8f5107 63,67,78-79,90,99,106
+apps/cli/src/commands/add-github-action.ts
+  1d23c32bbf8f5107 201-202,204,223-224
+apps/cli/tests/load-replay-events.test.ts
+  1d23c32bbf8f5107 2,4,60,66-67,72
+apps/cli/src/index.tsx
+  1d23c32bbf8f5107 1-2,131,134
+packages/cookies/src/chromium-sqlite.ts
+  1d23c32bbf8f5107 4
+packages/supervisor/tests/detect-project.test.ts
+  1d23c32bbf8f5107 4-5,15,19,23,27
+packages/browser/tests/rrvideo.test.ts
+  1d23c32bbf8f5107 1-2,76-77,106,111,114,119,123,126,131,135,138,148,152,155,173,176,186,192-193,208-211,223-226,238,244,256,258,270,276,288,294,307,310,320,322,326
+packages/agent/src/build-session-meta.ts
+  41809003e4403701 4,21-22,25,27-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "e7c6426c603172b7ae4d9fc41d558793172428e6",
+  "prompts": {
+    "1d23c32bbf8f5107": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1d8da079-1825-4dc4-8342-5f125d5999de",
+        "model": "composer-2"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 184,
+      "total_deletions": 192,
+      "accepted_lines": 162,
+      "overriden_lines": 0
+    },
+    "41809003e4403701": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d82db176-35ca-4665-9686-b5ecdaae9afd",
+        "model": "composer-2"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 49,
+      "total_deletions": 5,
+      "accepted_lines": 43,
+      "overriden_lines": 2
+    },
+    "d1523448e7456e3a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4014085c-7d87-4d3e-9517-42dbd25f001a",
+        "model": "composer-2"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 50,
+      "total_deletions": 5,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    }
+  }
+}
