@@ -84,12 +84,14 @@ export const PortPickerScreen = ({
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isEnteringCustomUrl, setIsEnteringCustomUrl] = useState(false);
-  const [customUrlValue, setCustomUrlValue] = useState("");
+
+  const lastBaseUrlPort = lastBaseUrl?.match(/:(\d+)/)?.[1];
+  const lastCustomUrl = lastBaseUrl && !lastBaseUrlPort ? lastBaseUrl : undefined;
+
+  const [customUrlValue, setCustomUrlValue] = useState(lastCustomUrl ?? "");
   const [selectedPorts, setSelectedPorts] = useState<Set<number>>(() => {
-    if (!lastBaseUrl) return new Set();
-    const urlMatch = lastBaseUrl.match(/:(\d+)/);
-    if (urlMatch) return new Set([Number(urlMatch[1])]);
-    return new Set();
+    if (!lastBaseUrlPort) return new Set();
+    return new Set([Number(lastBaseUrlPort)]);
   });
   const [customUrls, setCustomUrls] = useState<Set<string>>(new Set());
 
@@ -329,7 +331,9 @@ export const PortPickerScreen = ({
       </Box>
 
       <Box marginTop={1} flexDirection="column">
-        <Text color={COLORS.DIM}>Pick the dev server the agent should open in the browser.</Text>
+        <Text color={COLORS.DIM}>
+          Pick a dev server or enter a custom URL for the agent to open.
+        </Text>
         {!hasRunningPorts && detectedEntries.length > 0 && (
           <Text color={COLORS.YELLOW}>
             {figures.warning} No running servers found. Showing detected projects:
@@ -351,6 +355,11 @@ export const PortPickerScreen = ({
               {figures.arrowRight} {portEntryToUrl(highlightedEntry)}
             </Text>
           )}
+        {allSelectedUrls.length === 0 && isCustomUrlHighlighted && !isEnteringCustomUrl && (
+          <Text color={COLORS.DIM}>
+            {figures.arrowRight} {customUrlValue ? customUrlValue : "Press enter to type a URL"}
+          </Text>
+        )}
         {allSelectedUrls.length === 0 && isSkipHighlighted && (
           <Text color={COLORS.YELLOW}>
             {figures.warning} No base URL. The agent won{"'"}t know where your dev server is.

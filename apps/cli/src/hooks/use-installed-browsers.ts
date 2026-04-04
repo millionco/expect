@@ -3,6 +3,7 @@ import { Effect, Option } from "effect";
 import { Browsers, layerLive, browserKeyOf, browserDisplayName } from "@expect/cookies";
 import type { BrowserKey } from "@expect/cookies";
 import * as NodeServices from "@effect/platform-node/NodeServices";
+import { BROWSER_DETECTION_TIMEOUT_MS } from "../constants";
 
 export interface DetectedBrowser {
   key: BrowserKey;
@@ -16,13 +17,17 @@ export const useInstalledBrowsers = () =>
     queryFn: (): Promise<DetectedBrowser[]> =>
       Effect.gen(function* () {
         const browsers = yield* Browsers;
-        const allBrowsers = yield* browsers.list.pipe(
-          Effect.catchTag("ListBrowsersError", () => Effect.succeed([])),
-        );
-        const maybeDefault = yield* browsers.defaultBrowser().pipe(
-          Effect.map(Option.map(browserKeyOf)),
-          Effect.map(Option.getOrUndefined),
-          Effect.catchTag("ListBrowsersError", () => Effect.succeed(undefined)),
+
+        const [allBrowsers, maybeDefault] = yield* Effect.all(
+          [
+            browsers.list.pipe(Effect.catchTag("ListBrowsersError", () => Effect.succeed([]))),
+            browsers.defaultBrowser().pipe(
+              Effect.map(Option.map(browserKeyOf)),
+              Effect.map(Option.getOrUndefined),
+              Effect.catchTag("ListBrowsersError", () => Effect.succeed(undefined)),
+            ),
+          ],
+          { concurrency: "unbounded" },
         );
 
         const seen = new Set<string>();
@@ -39,6 +44,7 @@ export const useInstalledBrowsers = () =>
         }
         return result;
       }).pipe(
+        Effect.timeout(BROWSER_DETECTION_TIMEOUT_MS),
         Effect.provide(layerLive),
         Effect.provide(NodeServices.layer),
         Effect.tapCause((cause) => Effect.logWarning("Browser detection failed", { cause })),
