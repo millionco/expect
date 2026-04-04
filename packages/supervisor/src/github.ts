@@ -184,6 +184,28 @@ export class Github extends ServiceMap.Service<Github>()("@supervisor/GitHub", {
       yield* Effect.logInfo("PR comment upserted", { prNumber: pullRequest.number });
     });
 
+    const createPullRequest = Effect.fn("GitHub.createPullRequest")(function* (
+      cwd: string,
+      options: {
+        readonly title: string;
+        readonly body: string;
+        readonly base?: string;
+        readonly draft?: boolean;
+      },
+    ) {
+      yield* Effect.annotateCurrentSpan({ title: options.title, draft: options.draft });
+      const args = ["pr", "create", "--title", options.title, "--body", options.body];
+      if (options.base) {
+        args.push("--base", options.base);
+      }
+      if (options.draft) {
+        args.push("--draft");
+      }
+      const output = yield* runGhCommand(cwd, args);
+      yield* Effect.logInfo("Pull request created", { url: output });
+      return output;
+    });
+
     return {
       findPullRequest,
       listPullRequests,
@@ -191,6 +213,7 @@ export class Github extends ServiceMap.Service<Github>()("@supervisor/GitHub", {
       findComment,
       updateComment,
       upsertComment,
+      createPullRequest,
     } as const;
   }),
 }) {
