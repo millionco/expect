@@ -14,10 +14,15 @@ Many browsers don't have hardware acceleration for CSS3 animations on SVG elemen
 ```tsx
 function LoadingSpinner() {
   return (
-    <svg className="animate-spin" width="24" height="24" viewBox="0 0 24 24">
+    <svg 
+      className="animate-spin"
+      width="24" 
+      height="24" 
+      viewBox="0 0 24 24"
+    >
       <circle cx="12" cy="12" r="10" stroke="currentColor" />
     </svg>
-  );
+  )
 }
 ```
 
@@ -27,12 +32,16 @@ function LoadingSpinner() {
 function LoadingSpinner() {
   return (
     <div className="animate-spin">
-      <svg width="24" height="24" viewBox="0 0 24 24">
+      <svg 
+        width="24" 
+        height="24" 
+        viewBox="0 0 24 24"
+      >
         <circle cx="12" cy="12" r="10" stroke="currentColor" />
       </svg>
     </div>
-  );
+  )
 }
 ```
 
-This applies to all CSS properties commonly hardware-accelerated by the GPU (`transform`, `opacity`) and their individual transform functions (`translate`, `scale`, `rotate`). The wrapper div allows browsers to composite these properties on the GPU for smoother animations.
+This applies to all CSS transforms and transitions (`transform`, `opacity`, `translate`, `scale`, `rotate`). The wrapper div allows browsers to use GPU acceleration for smoother animations.

@@ -18,7 +18,7 @@ function ProjectList({ projects }: { projects: Project[] }) {
       {projects.map(project => {
         // slugify() called 100+ times for same project names
         const slug = slugify(project.name)
-
+        
         return <ProjectCard key={project.id} slug={slug} />
       })}
     </div>
@@ -37,7 +37,6 @@ function cachedSlugify(text: string): string {
     return slugifyCache.get(text)!
   }
   const result = slugify(text)
-  if (slugifyCache.size >= 1000) slugifyCache.delete(slugifyCache.keys().next().value!)
   slugifyCache.set(text, result)
   return result
 }
@@ -48,7 +47,7 @@ function ProjectList({ projects }: { projects: Project[] }) {
       {projects.map(project => {
         // Computed only once per unique project name
         const slug = cachedSlugify(project.name)
-
+        
         return <ProjectCard key={project.id} slug={slug} />
       })}
     </div>
@@ -59,20 +58,20 @@ function ProjectList({ projects }: { projects: Project[] }) {
 **Simpler pattern for single-value functions:**
 
 ```typescript
-let isLoggedInCache: boolean | null = null;
+let isLoggedInCache: boolean | null = null
 
 function isLoggedIn(): boolean {
   if (isLoggedInCache !== null) {
-    return isLoggedInCache;
+    return isLoggedInCache
   }
-
-  isLoggedInCache = document.cookie.includes("auth=");
-  return isLoggedInCache;
+  
+  isLoggedInCache = document.cookie.includes('auth=')
+  return isLoggedInCache
 }
 
 // Clear cache when auth changes
 function onAuthChange() {
-  isLoggedInCache = null;
+  isLoggedInCache = null
 }
 ```
 

@@ -13,18 +13,16 @@ Cache object property lookups in hot paths.
 
 ```typescript
 for (let i = 0; i < arr.length; i++) {
-  process(obj.config.settings.value);
+  process(obj.config.settings.value)
 }
 ```
 
 **Correct (1 lookup total):**
 
 ```typescript
-const value = obj.config.settings.value;
-const len = arr.length;
+const value = obj.config.settings.value
+const len = arr.length
 for (let i = 0; i < len; i++) {
-  process(value);
+  process(value)
 }
 ```
-
-> **Note:** This assumes `arr.length` and `obj.config.settings.value` do not change during the loop. If the loop body mutates the array or the accessed property, cache the values inside the loop or use the original uncached form.
