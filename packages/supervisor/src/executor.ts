@@ -30,6 +30,7 @@ import { Git } from "./git/git";
 import {
   EXPECT_LIVE_VIEW_URL_ENV_NAME,
   EXPECT_COOKIE_BROWSERS_ENV_NAME,
+  EXPECT_BASE_URL_ENV_NAME,
 } from "@expect/browser/mcp";
 import {
   ALL_STEPS_TERMINAL_GRACE_MS,
@@ -181,6 +182,9 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
       });
 
       const mcpEnv = [{ name: EXPECT_REPLAY_OUTPUT_ENV_NAME, value: replayOutputPath }];
+      if (options.baseUrl) {
+        mcpEnv.push({ name: EXPECT_BASE_URL_ENV_NAME, value: options.baseUrl });
+      }
       if (options.liveViewUrl) {
         mcpEnv.push({
           name: EXPECT_LIVE_VIEW_URL_ENV_NAME,
