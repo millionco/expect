@@ -43,13 +43,12 @@ expect-cli -m "[INSTRUCTION] on [URL]" -y --cookies
 
 ## Parallel Execution
 
-`expect-cli` takes 1-30 minutes. Never block your main thread.
+`expect-cli` takes 1-30 minutes. Your main thread MUST never idle while it runs.
 
 1. **Set shell timeout to at least 1800 seconds** — the default will kill it
-2. **Launch each `expect-cli` call in a subagent** (Task/Agent tool or background shell with timeout 0 / `&`) and continue working
-3. **When testing multiple features, run separate invocations concurrently** - one subagent per feature
-
-Do not skip parallel execution because "it's simpler to wait." Do not skip subagent usage because "it's just one test."
+2. **ALWAYS spawn `expect-cli` in a subagent** (Task/Agent tool or background shell with timeout 0 / `&`).
+3. **After spawning, immediately continue working.** Start the next feature, run type-checking and linting in parallel, write docs — whatever is next. Never wait for the subagent to return.
+4. **When testing multiple features, spawn one subagent per feature concurrently.**
 
 ## Writing Instructions
 
@@ -78,9 +77,20 @@ Do not guess at workarounds for tool bugs. Diagnose with `--verbose`, report wit
 
 You MUST complete every step. A skipped step is a failed task.
 
-1. Run `expect-cli -m "[instruction] on [URL]" -y --cookies` with a fresh, adversarial instruction
-2. Read the full output — check exit code, count failures, read accessibility and performance results
-3. If ANY failure: fix it, then re-run from step 1. Accessibility violations and performance regressions are failures.
-4. Only after exit 0 with 0 failures: state the claim WITH the evidence
+1. Spawn `expect-cli -m "[instruction] on [URL]" -y --cookies` in a subagent with an adversarial instruction
+2. Continue working on other tasks while it runs
+3. When the subagent returns, read the full output — check exit code, count failures, read accessibility and performance results
+4. If ANY failure: fix the code, then immediately spawn a NEW `expect-cli` subagent to re-verify. Do not ask. Do not wait. Continue working on other tasks.
+5. Repeat 3-4 until exit 0 with 0 failures
+6. Only then: state the claim WITH the passing evidence
 
-Skip any step = lying, not verifying. No exceptions for "just this once", "it's simple enough", or "I already checked manually".
+Every re-run is a subagent spawn, not a blocking foreground command. Skip any step = lying, not verifying. No exceptions for "just this once", "it's simple enough", or "I already checked manually".
+
+## Rationalizations
+
+You will reach for these — recognize them and do the opposite:
+- "I'll just wait for this one test" — No. Spawn a subagent. Always.
+- "It'll be quick" — No. Even 30 seconds blocks your main thread. Subagent.
+- "I need the result before I can continue" — No. Continue with other tasks. Read the result when the subagent returns.
+- "I'll run it in the foreground so I can watch" — No. Background it. Read the output when done.
+- "Let me re-run manually to be sure" — No. Spawn a new subagent for the re-run.
