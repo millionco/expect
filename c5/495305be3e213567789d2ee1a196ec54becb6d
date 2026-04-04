@@ -1,0 +1,49 @@
+apps/cli/src/utils/is-headless.ts
+  38f65b29ef385440 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "c5495305be3e213567789d2ee1a196ec54becb6d",
+  "prompts": {
+    "0dd330e5feabb76f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "dc1120b8-fc21-46c8-bd8d-fa536baf76de",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 105,
+      "total_deletions": 0,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    },
+    "38f65b29ef385440": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "7d1f5d87-8e9f-4d67-ade3-8360799e9334",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "d851f96d194a7609": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "da891000-1176-43de-98f5-4bd5676c39b9",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 8,
+      "total_deletions": 7,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    }
+  }
+}
