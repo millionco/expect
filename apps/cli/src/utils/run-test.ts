@@ -24,6 +24,7 @@ interface HeadlessRunOptions {
   verbose: boolean;
   headed: boolean;
   ci: boolean;
+  noCookies: boolean;
   timeoutMs: Option.Option<number>;
   output: "text" | "json";
   baseUrl?: string;

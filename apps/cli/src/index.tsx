@@ -121,6 +121,7 @@ const runHeadlessForTarget = async (target: Target, opts: CommanderOpts) => {
     verbose: opts.verbose ?? false,
     headed: ciMode ? false : (opts.headed ?? false),
     ci: ciMode,
+    noCookies: opts.noCookies ?? ciMode,
     timeoutMs,
     output: opts.output ?? "text",
     baseUrl: opts.url?.join(", "),
@@ -242,6 +243,9 @@ program.action(async () => {
       browserHeaded: opts.headed ?? false,
       replayHost: opts.replayHost ?? "https://expect.dev",
     });
+    if (opts.url) {
+      usePreferencesStore.setState({ cliBaseUrls: opts.url });
+    }
     await waitForHydration();
     const persistedAgent = usePreferencesStore.getState().agentBackend;
     renderApp(opts.agent ?? persistedAgent ?? "claude");
