@@ -1,0 +1,50 @@
+packages/cookies/tests/cdp-client.test.ts
+  4904f352d4157b9b 76-80
+  502c0e04129ac4da 81,84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "af2f7c68ac3fceb5c2d99e3ec269bd7954d98f54",
+  "prompts": {
+    "1628000167a5831b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5d7a3bec-2f45-4ed0-bb36-a21123ea1209",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 13,
+      "total_deletions": 5,
+      "accepted_lines": 0,
+      "overriden_lines": 1
+    },
+    "4904f352d4157b9b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "49222fae-596e-4ae5-a84c-8d8b33e1e2ea",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 16,
+      "total_deletions": 11,
+      "accepted_lines": 5,
+      "overriden_lines": 0
+    },
+    "502c0e04129ac4da": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "00c71e07-4303-4673-aa91-05887a8afb3e",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 28,
+      "total_deletions": 31,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}
