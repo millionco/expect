@@ -15,6 +15,46 @@ const WATCH_POLL_INTERVAL_MS = 2000;
 const WATCH_SETTLE_DELAY_MS = 3000;
 const ASSESSMENT_BACKOFF_LIMIT = 2;
 
+const ALWAYS_SKIP_EXTENSIONS = new Set([
+  ".md",
+  ".txt",
+  ".mdx",
+  ".gitignore",
+  ".prettierrc",
+  ".prettierignore",
+  ".eslintignore",
+  ".editorconfig",
+]);
+
+const ALWAYS_SKIP_PATTERNS = [
+  /\.lock$/,
+  /lock\.json$/,
+  /lock\.yaml$/,
+  /\.github\/(?!copilot)/,
+  /\.husky\//,
+  /\.vscode\//,
+  /\.cursor\//,
+  /\.idea\//,
+  /LICENSE/,
+  /CHANGELOG/,
+  /\.env\.example$/,
+];
+
+const classifyDeterministically = (
+  changedFiles: readonly ChangedFile[],
+): WatchDecision | undefined => {
+  if (changedFiles.length === 0) return "skip";
+
+  const allSkippable = changedFiles.every((file) => {
+    const extension = file.path.slice(file.path.lastIndexOf("."));
+    if (ALWAYS_SKIP_EXTENSIONS.has(extension)) return true;
+    return ALWAYS_SKIP_PATTERNS.some((pattern) => pattern.test(file.path));
+  });
+
+  if (allSkippable) return "skip";
+  return undefined;
+};
+
 export type WatchDecision = "run" | "skip";
 
 export type WatchEvent = Data.TaggedEnum<{
@@ -148,6 +188,19 @@ export class Watch extends ServiceMap.Service<Watch>()("@supervisor/Watch", {
 
         const changedFiles = yield* git.getChangedFiles(options.changesFor);
         const diffPreview = yield* git.getDiffPreview(options.changesFor);
+
+        const deterministicDecision = classifyDeterministically(changedFiles);
+        if (deterministicDecision === "skip") {
+          yield* Effect.logInfo("Watch assessment skipped deterministically", {
+            fileCount: changedFiles.length,
+          });
+          options.onEvent(WatchEvent.Skipped({ fingerprint }));
+          yield* Ref.update(stateRef, (current) => ({
+            ...current,
+            lastTestedFingerprint: fingerprint,
+          }));
+          return;
+        }
 
         const shouldResetBackoff = state.lastAssessedFingerprint !== fingerprint;
 
