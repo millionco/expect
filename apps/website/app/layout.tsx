@@ -72,7 +72,7 @@ export default function RootLayout({
         >
           <TooltipProvider>{children}</TooltipProvider>
         </ThemeProvider>
-        <Analytics />
+        {process.env.VERCEL && <Analytics />}
       </body>
     </html>
   );
