@@ -234,6 +234,7 @@ export const MainMenu = ({ gitState }: MainMenuProps) => {
         if (cookieBrowserKeys.length > 0) {
           clearCookieBrowserKeys();
           trackEvent("cookies:cleared");
+          trackEvent("cookies:toggled", { enabled: false });
         } else {
           setScreen(Screen.CookieSyncConfirm({}));
         }

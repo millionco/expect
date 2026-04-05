@@ -61,10 +61,16 @@ export const CookieSyncConfirmScreen = ({
   const confirm = () => {
     const keys = [...selectedKeys];
     setCookieBrowserKeys(keys);
-    trackEvent("cookies:browser_selection", {
-      selected_count: keys.length,
-      browsers: keys.join(","),
+    trackEvent("cookies:sync_choice", {
+      choice: keys.length > 0 ? "use_cookies" : "skip_cookies",
     });
+    if (keys.length > 0) {
+      trackEvent("cookies:browser_selection", {
+        selected_count: keys.length,
+        browsers: keys.join(","),
+      });
+      trackEvent("cookies:toggled", { enabled: true });
+    }
     if (changesFor && instruction) {
       setScreen(
         screenForTestingOrPortPicker({

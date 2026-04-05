@@ -189,7 +189,12 @@ export const executeFn = cliAtomRuntime.fn<ExecuteInput>()((input) =>
     Effect.tapError((error) =>
       Effect.gen(function* () {
         const analytics = yield* Analytics;
-        const errorTag = error instanceof Error ? error.constructor.name : "UnknownError";
+        const errorTag =
+          "_tag" in error && typeof error._tag === "string"
+            ? error._tag
+            : error instanceof Error
+              ? error.constructor.name
+              : "UnknownError";
         yield* analytics.capture("run:failed", {
           plan_id: "direct",
           error_tag: errorTag,
