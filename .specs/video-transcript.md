@@ -81,7 +81,7 @@ const { text } = await generateText({
   messages: [{
     role: "user",
     content: [
-      { type: "file", data: readFileSync(videoPath), mimeType: "video/mp4" },
+      { type: "file", data: readFileSync(videoPath), mediaType: "video/mp4" },
       { type: "text", text: transcriptPrompt },
     ],
   }],
