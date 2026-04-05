@@ -65,6 +65,8 @@ on:
 
 jobs:
   expect:
+    # Prevents forks and external contributors from consuming CI credits or accessing secrets.
+    if: github.event.sender.permissions.write == true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
