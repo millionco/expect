@@ -48,7 +48,9 @@ Any drag action must have a single-pointer alternative (buttons, inputs).
 
 ```html
 <!-- BAD — drag-only -->
-<ul draggable="true"><li>Item 1</li></ul>
+<ul draggable="true">
+  <li>Item 1</li>
+</ul>
 
 <!-- GOOD — drag + button alternatives -->
 <ul>
@@ -74,7 +76,7 @@ Don't force users to re-enter information they already provided in the same sess
 <fieldset>
   <legend>Shipping address</legend>
   <label>
-    <input type="checkbox" id="same-as-billing" checked>
+    <input type="checkbox" id="same-as-billing" checked />
     Same as billing address
   </label>
 </fieldset>
@@ -83,12 +85,13 @@ Don't force users to re-enter information they already provided in the same sess
 ## Accessible Authentication (3.3.8 — AA)
 
 Login must not rely on cognitive function tests unless:
+
 - Copy-paste or autofill is available
 - An alternative method exists (passkey, SSO, email link)
 
 ```html
 <!-- Allow paste in password fields -->
-<input type="password" autocomplete="current-password">
+<input type="password" autocomplete="current-password" />
 
 <!-- Offer alternatives -->
 <button type="button">Sign in with passkey</button>

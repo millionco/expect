@@ -8,14 +8,18 @@
 <div id="header"></div>
 
 <!-- BAD — invalid child -->
-<ul><div>Item</div></ul>
+<ul>
+  <div>Item</div>
+</ul>
 
 <!-- BAD — invalid nesting (interactive inside interactive) -->
 <a href="/"><button>Click</button></a>
 
 <!-- GOOD -->
 <header id="site-header"></header>
-<ul><li>Item</li></ul>
+<ul>
+  <li>Item</li>
+</ul>
 <a href="/" class="button">Click</a>
 ```
 
@@ -42,23 +46,23 @@ Landmarks: `<header>`, `<nav>`, `<main>`, `<article>`, `<section>`, `<aside>`, `
 
 ```html
 <!-- BAD — distorted (actual ratio is 4:3) -->
-<img src="photo.jpg" width="300" height="100">
+<img src="photo.jpg" width="300" height="100" />
 
 <!-- GOOD — matches actual ratio -->
-<img src="photo.jpg" width="300" height="225">
+<img src="photo.jpg" width="300" height="225" />
 
 <!-- GOOD — CSS object-fit for flexible containers -->
-<img src="photo.jpg" style="width: 300px; height: 200px; object-fit: cover;">
+<img src="photo.jpg" style="width: 300px; height: 200px; object-fit: cover;" />
 ```
 
 ## Error Handling
 
 ```javascript
-window.addEventListener('error', (event) => {
+window.addEventListener("error", (event) => {
   errorTracker.captureException(event.error);
 });
 
-window.addEventListener('unhandledrejection', (event) => {
+window.addEventListener("unhandledrejection", (event) => {
   errorTracker.captureException(event.reason);
 });
 ```

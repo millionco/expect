@@ -6,16 +6,26 @@ The parent rule covers format preference (AVIF > WebP > PNG/SVG), LCP priority a
 
 ```html
 <picture>
-  <source type="image/avif"
+  <source
+    type="image/avif"
     srcset="hero-400.avif 400w, hero-800.avif 800w, hero-1200.avif 1200w"
-    sizes="(max-width: 600px) 100vw, 50vw">
-  <source type="image/webp"
+    sizes="(max-width: 600px) 100vw, 50vw"
+  />
+  <source
+    type="image/webp"
     srcset="hero-400.webp 400w, hero-800.webp 800w, hero-1200.webp 1200w"
-    sizes="(max-width: 600px) 100vw, 50vw">
-  <img src="hero-800.jpg"
+    sizes="(max-width: 600px) 100vw, 50vw"
+  />
+  <img
+    src="hero-800.jpg"
     srcset="hero-400.jpg 400w, hero-800.jpg 800w, hero-1200.jpg 1200w"
     sizes="(max-width: 600px) 100vw, 50vw"
-    width="1200" height="600" alt="Hero" loading="lazy" decoding="async">
+    width="1200"
+    height="600"
+    alt="Hero"
+    loading="lazy"
+    decoding="async"
+  />
 </picture>
 ```
 
@@ -24,7 +34,7 @@ The parent rule covers format preference (AVIF > WebP > PNG/SVG), LCP priority a
 When exact dimensions are unknown, use CSS `aspect-ratio` instead of `width`/`height`:
 
 ```html
-<img src="photo.jpg" style="aspect-ratio: 4/3; width: 100%;" alt="Photo">
+<img src="photo.jpg" style="aspect-ratio: 4/3; width: 100%;" alt="Photo" />
 ```
 
 ## Embed Space Reservation

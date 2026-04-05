@@ -22,7 +22,9 @@ The parent rule covers keyboard reachability, Tab/Escape behavior, focus trappin
   padding: 8px 16px;
   z-index: 100;
 }
-.skip-link:focus { top: 0; }
+.skip-link:focus {
+  top: 0;
+}
 ```
 
 ## Focus Not Obscured (WCAG 2.2)
@@ -31,7 +33,7 @@ Focused elements must not be hidden behind sticky headers/footers:
 
 ```css
 :focus {
-  scroll-margin-top: 80px;  /* height of sticky header */
+  scroll-margin-top: 80px; /* height of sticky header */
   scroll-margin-bottom: 60px; /* height of sticky footer */
 }
 ```
@@ -41,10 +43,12 @@ Focused elements must not be hidden behind sticky headers/footers:
 Announce dynamic content without moving focus:
 
 ```javascript
-const announce = (message, type = 'polite') => {
+const announce = (message, type = "polite") => {
   const container = document.getElementById(`${type}-announcer`);
-  container.textContent = '';
-  requestAnimationFrame(() => { container.textContent = message; });
+  container.textContent = "";
+  requestAnimationFrame(() => {
+    container.textContent = message;
+  });
 };
 ```
 
@@ -53,6 +57,7 @@ Clear the container before writing to ensure repeated identical messages trigger
 ## SPA Route Change Focus
 
 On client-side navigation:
+
 1. Move focus to the main content heading or `<main>`
 2. Update `document.title`
 3. Announce the navigation via live region

@@ -19,9 +19,9 @@ Input `font-size` must be at least 16px — below 16px triggers Safari viewport 
 ## Hreflang for Multi-Language Sites
 
 ```html
-<link rel="alternate" hreflang="en" href="https://example.com/page">
-<link rel="alternate" hreflang="es" href="https://example.com/es/page">
-<link rel="alternate" hreflang="x-default" href="https://example.com/page">
+<link rel="alternate" hreflang="en" href="https://example.com/page" />
+<link rel="alternate" hreflang="es" href="https://example.com/es/page" />
+<link rel="alternate" hreflang="x-default" href="https://example.com/page" />
 ```
 
 - Only add alternates for pages that actually exist

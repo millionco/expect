@@ -20,16 +20,18 @@ Cache-Control: private, max-age=0, must-revalidate
 
 ```javascript
 // Cache-first for static assets
-self.addEventListener('fetch', (event) => {
-  if (['image', 'style', 'script'].includes(event.request.destination)) {
+self.addEventListener("fetch", (event) => {
+  if (["image", "style", "script"].includes(event.request.destination)) {
     event.respondWith(
-      caches.match(event.request).then((cached) =>
-        cached || fetch(event.request).then((response) => {
-          const clone = response.clone();
-          caches.open('static-v1').then((cache) => cache.put(event.request, clone));
-          return response;
-        })
-      )
+      caches.match(event.request).then(
+        (cached) =>
+          cached ||
+          fetch(event.request).then((response) => {
+            const clone = response.clone();
+            caches.open("static-v1").then((cache) => cache.put(event.request, clone));
+            return response;
+          }),
+      ),
     );
   }
 });

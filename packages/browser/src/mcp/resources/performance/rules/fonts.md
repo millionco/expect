@@ -8,8 +8,8 @@ One file replaces multiple weight files:
 
 ```css
 @font-face {
-  font-family: 'Inter';
-  src: url('/fonts/Inter-Variable.woff2') format('woff2-variations');
+  font-family: "Inter";
+  src: url("/fonts/Inter-Variable.woff2") format("woff2-variations");
   font-weight: 100 900;
   font-display: swap;
 }
@@ -21,8 +21,8 @@ Only load characters you need:
 
 ```css
 @font-face {
-  font-family: 'Custom Font';
-  src: url('/fonts/custom.woff2') format('woff2');
+  font-family: "Custom Font";
+  src: url("/fonts/custom.woff2") format("woff2");
   font-display: swap;
   unicode-range: U+0000-00FF; /* Latin only */
 }
@@ -38,8 +38,8 @@ Font swap causes layout shift when custom and fallback fonts have different metr
 
 ```css
 @font-face {
-  font-family: 'Custom';
-  src: url('custom.woff2') format('woff2');
+  font-family: "Custom";
+  src: url("custom.woff2") format("woff2");
   font-display: swap;
   size-adjust: 105%;
   ascent-override: 95%;
