@@ -1,5 +1,11 @@
 # expect-sdk
 
+## 0.0.26
+
+### Patch Changes
+
+- 69486bb: Add canary releases and publishing guide improvements
+
 ## 0.0.25
 
 ### Patch Changes

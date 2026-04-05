@@ -1,6 +1,6 @@
 {
   "name": "expect-cli",
-  "version": "0.0.25",
+  "version": "0.0.26",
   "description": "Let agents test your code in a real browser",
   "keywords": [
     "agents",
