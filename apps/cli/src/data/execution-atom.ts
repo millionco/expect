@@ -190,7 +190,10 @@ export const executeFn = cliAtomRuntime.fn<ExecuteInput>()((input) =>
       Effect.gen(function* () {
         const analytics = yield* Analytics;
         const errorTag =
-          "_tag" in error && typeof error._tag === "string"
+          typeof error === "object" &&
+          error !== null &&
+          "_tag" in error &&
+          typeof error._tag === "string"
             ? error._tag
             : error instanceof Error
               ? error.constructor.name
