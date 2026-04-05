@@ -1,0 +1,27 @@
+apps/cli/src/components/screens/main-menu-screen.tsx
+  f6a91d68dc81c672 237
+apps/cli/src/data/execution-atom.ts
+  f6a91d68dc81c672 192-197
+apps/cli/src/components/screens/cookie-sync-confirm-screen.tsx
+  f6a91d68dc81c672 64-65,67-73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "6e3a6255c3120850d659cb2120bb24ebe5106e73",
+  "prompts": {
+    "f6a91d68dc81c672": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "01e5828a-80c7-43b9-9642-71a65ab5345e",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 16,
+      "total_deletions": 4,
+      "accepted_lines": 16,
+      "overriden_lines": 0
+    }
+  }
+}
