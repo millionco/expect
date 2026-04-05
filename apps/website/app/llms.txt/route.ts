@@ -2,6 +2,8 @@ import { readFileSync } from "fs";
 import { NextResponse } from "next/server";
 import { join } from "path";
 
+export const dynamic = "force-static";
+
 const skill = readFileSync(
   join(process.cwd(), "..", "..", "packages", "expect-skill", "SKILL.md"),
   "utf-8",

@@ -4,7 +4,7 @@ import { Effect, Layer } from "effect";
 import { Browsers } from "../src/browser-detector";
 import { Cookies } from "../src/cookies";
 import { layerLive } from "../src/layers";
-import type { Cookie } from "../src/types";
+import type { Cookie } from "@expect/shared/models";
 
 const FIVE_MINUTES_MS = 300_000;
 

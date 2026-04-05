@@ -37,7 +37,8 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    }
+    },
+    "./browser-mcp": "./dist/browser-mcp.js"
   },
   "scripts": {
     "build": "vp pack",
@@ -92,8 +93,10 @@
     "@types/node-notifier": "^8.0.5",
     "@types/prompts": "^2.4.9",
     "@types/react": "^19.2.14",
+    "@types/serve-handler": "^6.1.4",
     "babel-plugin-react-compiler": "^1.0.0",
     "expect-sdk": "workspace:*",
+    "serve-handler": "^6.1.7",
     "typescript": "^5.7.0"
   },
   "optionalDependencies": {

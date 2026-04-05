@@ -1,8 +1,37 @@
-import { Effect } from "effect";
+import { Effect, Layer, Option } from "effect";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import * as http from "node:http";
-import { runBrowser } from "../src/browser";
-import type { BrowserEngine } from "../src/types";
+import { Playwright } from "../src/playwright";
+import { Artifacts } from "../src/artifacts";
+
+const playwrightLayer = Playwright.layer.pipe(Layer.provide(Artifacts.layerTest(() => {})));
+
+const run = <A>(effect: Effect.Effect<A, unknown, Playwright>) =>
+  Effect.runPromise(effect.pipe(Effect.provide(playwrightLayer)));
+
+const withSession = <A>(
+  url: string,
+  fn: (pw: typeof Playwright.Service) => Effect.Effect<A, unknown>,
+) =>
+  run(
+    Effect.gen(function* () {
+      const pw = yield* Playwright;
+      yield* pw.open({
+        headless: true,
+        browserProfile: Option.none(),
+        initialNavigation: Option.some({ url, waitUntil: "domcontentloaded" as const }),
+        cdpUrl: Option.none(),
+      });
+      return yield* fn(pw);
+    }).pipe(
+      Effect.ensuring(
+        Effect.gen(function* () {
+          const pw = yield* Playwright;
+          if (pw.hasSession()) yield* pw.close();
+        }),
+      ),
+    ),
+  );
 
 interface RecordedRequest {
   method: string;
@@ -132,264 +161,145 @@ describe("browser e2e", () => {
   });
 
   it("creates a real page and snapshots interactive content", async () => {
-    const session = await runBrowser((browser) =>
-      browser.createPage(origin, { waitUntil: "domcontentloaded" }),
+    await withSession(origin, (pw) =>
+      Effect.gen(function* () {
+        const snapshot = yield* pw.snapshot({ interactive: true });
+        expect(snapshot.tree).toContain(`textbox "Workspace name"`);
+        expect(snapshot.tree).toContain(`button "Open"`);
+        expect(snapshot.tree).toContain(`button "Save settings"`);
+        expect(snapshot.tree).toContain(`button "Continue"`);
+        expect(snapshot.stats.interactiveRefs).toBeGreaterThanOrEqual(5);
+      }),
     );
-
-    try {
-      expect(session.page.url()).toBe(`${origin}/`);
-
-      const snapshot = await runBrowser((browser) =>
-        browser.snapshot(session.page, { interactive: true }),
-      );
-
-      expect(snapshot.tree).toContain(`textbox "Workspace name"`);
-      expect(snapshot.tree).toContain(`button "Open"`);
-      expect(snapshot.tree).toContain(`button "Save settings"`);
-      expect(snapshot.tree).toContain(`button "Continue"`);
-      expect(snapshot.stats.interactiveRefs).toBeGreaterThanOrEqual(5);
-    } finally {
-      await session.browser.close();
-    }
   });
 
-  it("fills state through Browser.act and preserves the updated value in snapshots", async () => {
-    const session = await runBrowser((browser) => browser.createPage(origin));
+  it("fills state through act and preserves the updated value in snapshots", async () => {
+    await withSession(origin, (pw) =>
+      Effect.gen(function* () {
+        const before = yield* pw.snapshot({ interactive: true });
+        const nameRef = Object.keys(before.refs).find(
+          (key) =>
+            before.refs[key].role === "textbox" && before.refs[key].name === "Workspace name",
+        );
+        expect(nameRef).toBeDefined();
 
-    try {
-      const before = await runBrowser((browser) =>
-        browser.snapshot(session.page, { interactive: true }),
-      );
-      const nameRef = Object.keys(before.refs).find(
-        (key) => before.refs[key].role === "textbox" && before.refs[key].name === "Workspace name",
-      );
-
-      expect(nameRef).toBeDefined();
-
-      const after = await runBrowser((browser) =>
-        browser.act(session.page, nameRef!, (locator) => locator.fill("Browser smoke"), {
+        const after = yield* pw.act(nameRef!, (locator) => locator.fill("Browser smoke"), {
           interactive: true,
-        }),
-      );
+        });
+        expect(after.tree).toContain("Browser smoke");
 
-      expect(after.tree).toContain("Browser smoke");
-      expect(await session.page.locator("#workspace-name").inputValue()).toBe("Browser smoke");
-    } finally {
-      await session.browser.close();
-    }
+        const page = yield* pw.getPage;
+        expect(yield* Effect.tryPromise(() => page.locator("#workspace-name").inputValue())).toBe(
+          "Browser smoke",
+        );
+      }),
+    );
   });
 
   it("resolves duplicate refs and saves settings through a real network roundtrip", async () => {
     requests.length = 0;
 
-    const session = await runBrowser((browser) => browser.createPage(origin));
+    await withSession(origin, (pw) =>
+      Effect.gen(function* () {
+        const page = yield* pw.getPage;
+        yield* Effect.tryPromise(() => page.locator("#workspace-name").fill("Browser smoke"));
 
-    try {
-      await session.page.locator("#workspace-name").fill("Browser smoke");
+        const snapshot = yield* pw.snapshot({ interactive: true });
 
-      const snapshot = await runBrowser((browser) =>
-        browser.snapshot(session.page, { interactive: true }),
-      );
+        const openRefs = Object.entries(snapshot.refs).filter(
+          ([, entry]) => entry.role === "button" && entry.name === "Open",
+        );
+        expect(openRefs).toHaveLength(2);
+        expect(openRefs.map(([, entry]) => entry.nth)).toEqual([0, 1]);
 
-      const openRefs = Object.entries(snapshot.refs).filter(
-        ([, entry]) => entry.role === "button" && entry.name === "Open",
-      );
-      expect(openRefs).toHaveLength(2);
-      expect(openRefs.map(([, entry]) => entry.nth)).toEqual([0, 1]);
+        const betaOpenLocator = yield* snapshot.locator(openRefs[1][0]);
+        yield* Effect.tryPromise(() => betaOpenLocator.click());
 
-      const betaOpenLocator = await Effect.runPromise(snapshot.locator(openRefs[1][0]));
-      await betaOpenLocator.click();
+        expect(
+          yield* Effect.tryPromise(() => page.locator("#active-workspace").textContent()),
+        ).toBe("beta");
 
-      expect(await session.page.locator("#active-workspace").textContent()).toBe("beta");
+        const saveRef = Object.keys(snapshot.refs).find(
+          (key) =>
+            snapshot.refs[key].role === "button" && snapshot.refs[key].name === "Save settings",
+        );
+        expect(saveRef).toBeDefined();
 
-      const saveRef = Object.keys(snapshot.refs).find(
-        (key) =>
-          snapshot.refs[key].role === "button" && snapshot.refs[key].name === "Save settings",
-      );
-      expect(saveRef).toBeDefined();
+        const saveLocator = yield* snapshot.locator(saveRef!);
+        yield* Effect.tryPromise(() => saveLocator.click());
 
-      const saveLocator = await Effect.runPromise(snapshot.locator(saveRef!));
-      await saveLocator.click();
+        yield* Effect.tryPromise(() =>
+          page.waitForFunction(
+            () => document.getElementById("status")?.textContent === "Saved Browser smoke for beta",
+          ),
+        );
+        expect(yield* Effect.tryPromise(() => page.locator("#status").textContent())).toBe(
+          "Saved Browser smoke for beta",
+        );
 
-      await session.page.waitForFunction(
-        () => document.getElementById("status")?.textContent === "Saved Browser smoke for beta",
-      );
-      expect(await session.page.locator("#status").textContent()).toBe(
-        "Saved Browser smoke for beta",
-      );
+        const apiRequest = requests.find((request) => request.path === "/api/settings");
+        expect(apiRequest).toBeDefined();
+        expect(apiRequest?.method).toBe("POST");
+        expect(apiRequest?.body).toContain(`"workspaceName":"Browser smoke"`);
+        expect(apiRequest?.body).toContain(`"activeWorkspace":"beta"`);
 
-      const apiRequest = requests.find((request) => request.path === "/api/settings");
-      expect(apiRequest).toBeDefined();
-      expect(apiRequest?.method).toBe("POST");
-      expect(apiRequest?.body).toContain(`"workspaceName":"Browser smoke"`);
-      expect(apiRequest?.body).toContain(`"activeWorkspace":"beta"`);
-
-      const savedSnapshot = await runBrowser((browser) => browser.snapshot(session.page));
-      expect(savedSnapshot.tree).toContain(`paragraph: beta`);
-      expect(savedSnapshot.tree).toContain(`paragraph: Saved Browser smoke for beta`);
-    } finally {
-      await session.browser.close();
-    }
+        const savedSnapshot = yield* pw.snapshot({});
+        expect(savedSnapshot.tree).toContain(`paragraph: beta`);
+        expect(savedSnapshot.tree).toContain(`paragraph: Saved Browser smoke for beta`);
+      }),
+    );
   });
 
   it("supports selector-scoped snapshots for a focused part of the page", async () => {
-    const session = await runBrowser((browser) => browser.createPage(origin));
-
-    try {
-      const result = await runBrowser((browser) =>
-        browser.snapshot(session.page, {
+    await withSession(origin, (pw) =>
+      Effect.gen(function* () {
+        const result = yield* pw.snapshot({
           selector: 'section[aria-label="Available workspaces"]',
           interactive: true,
           compact: true,
-        }),
-      );
+        });
 
-      expect(result.tree).toContain(`button "Open"`);
-      expect(result.tree).not.toContain(`textbox "Workspace name"`);
-      expect(result.stats.interactiveRefs).toBe(2);
-    } finally {
-      await session.browser.close();
-    }
+        expect(result.tree).toContain(`button "Open"`);
+        expect(result.tree).not.toContain(`textbox "Workspace name"`);
+        expect(result.stats.interactiveRefs).toBe(2);
+      }),
+    );
   });
 
-  it("returns annotated screenshots for interactive elements after building the runtime", async () => {
-    const session = await runBrowser((browser) => browser.createPage(origin));
+  it("returns annotated screenshots for interactive elements", async () => {
+    await withSession(origin, (pw) =>
+      Effect.gen(function* () {
+        const result = yield* pw.annotatedScreenshot({
+          interactive: true,
+          fullPage: true,
+        });
 
-    try {
-      const result = await runBrowser((browser) =>
-        browser.annotatedScreenshot(session.page, { interactive: true, fullPage: true }),
-      );
-
-      expect(result.screenshot.byteLength).toBeGreaterThan(0);
-      expect(result.annotations.length).toBeGreaterThanOrEqual(5);
-      expect(result.annotations.some((annotation) => annotation.name === "Workspace name")).toBe(
-        true,
-      );
-      expect(result.annotations.filter((annotation) => annotation.name === "Open")).toHaveLength(2);
-    } finally {
-      await session.browser.close();
-    }
+        expect(result.screenshot.byteLength).toBeGreaterThan(0);
+        expect(result.annotations.length).toBeGreaterThanOrEqual(5);
+        expect(result.annotations.some((annotation) => annotation.name === "Workspace name")).toBe(
+          true,
+        );
+        expect(result.annotations.filter((annotation) => annotation.name === "Open")).toHaveLength(
+          2,
+        );
+      }),
+    );
   });
 
   it("waits for client-side navigation to settle after a click", async () => {
-    const session = await runBrowser((browser) => browser.createPage(origin));
+    await withSession(origin, (pw) =>
+      Effect.gen(function* () {
+        const page = yield* pw.getPage;
+        const urlBefore = page.url();
 
-    try {
-      const urlBefore = session.page.url();
+        yield* Effect.tryPromise(() => page.getByRole("button", { name: "Continue" }).click());
+        yield* pw.waitForNavigationSettle(urlBefore);
 
-      await session.page.getByRole("button", { name: "Continue" }).click();
-      await runBrowser((browser) => browser.waitForNavigationSettle(session.page, urlBefore));
+        expect(page.url()).toBe(`${origin}/done`);
 
-      expect(session.page.url()).toBe(`${origin}/done`);
-
-      const snapshot = await runBrowser((browser) => browser.snapshot(session.page));
-      expect(snapshot.tree).toContain(`heading "Setup complete"`);
-    } finally {
-      await session.browser.close();
-    }
-  });
-});
-
-const tryLaunchEngine = async (engineName: BrowserEngine, testOrigin: string) => {
-  try {
-    const session = await runBrowser((browser) =>
-      browser.createPage(testOrigin, { browserType: engineName, waitUntil: "domcontentloaded" }),
+        const snapshot = yield* pw.snapshot({});
+        expect(snapshot.tree).toContain(`heading "Setup complete"`);
+      }),
     );
-    return session;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (message.includes("Executable doesn't exist")) return undefined;
-    throw error;
-  }
-};
-
-describe("cross-browser engine support", () => {
-  let server: http.Server;
-  let origin: string;
-
-  beforeAll(async () => {
-    const app = await startBrowserApp();
-    server = app.server;
-    origin = app.origin;
-  });
-
-  afterAll(async () => {
-    await new Promise<void>((resolve) => {
-      server.close(() => resolve());
-    });
-  });
-
-  it("launches webkit and snapshots the page", async () => {
-    const session = await tryLaunchEngine("webkit", origin);
-    if (!session) return;
-
-    try {
-      expect(session.page.url()).toBe(`${origin}/`);
-
-      const snapshot = await runBrowser((browser) => browser.snapshot(session.page));
-      expect(snapshot.tree).toContain(`heading "Workspace setup"`);
-      expect(snapshot.tree).toContain(`button "Save settings"`);
-    } finally {
-      await session.browser.close();
-    }
-  });
-
-  it("launches firefox and snapshots the page", async () => {
-    const session = await tryLaunchEngine("firefox", origin);
-    if (!session) return;
-
-    try {
-      expect(session.page.url()).toBe(`${origin}/`);
-
-      const snapshot = await runBrowser((browser) => browser.snapshot(session.page));
-      expect(snapshot.tree).toContain(`heading "Workspace setup"`);
-      expect(snapshot.tree).toContain(`button "Save settings"`);
-    } finally {
-      await session.browser.close();
-    }
-  });
-
-  it("webkit session supports interaction via act", async () => {
-    const session = await tryLaunchEngine("webkit", origin);
-    if (!session) return;
-
-    try {
-      const snapshot = await runBrowser((browser) =>
-        browser.snapshot(session.page, { interactive: true }),
-      );
-      const nameRef = Object.keys(snapshot.refs).find(
-        (key) =>
-          snapshot.refs[key].role === "textbox" && snapshot.refs[key].name === "Workspace name",
-      );
-      expect(nameRef).toBeDefined();
-
-      const after = await runBrowser((browser) =>
-        browser.act(session.page, nameRef!, (locator) => locator.fill("WebKit test"), {
-          interactive: true,
-        }),
-      );
-      expect(after.tree).toContain("WebKit test");
-    } finally {
-      await session.browser.close();
-    }
-  });
-
-  it("can switch between chromium and webkit sessions", async () => {
-    const chromiumSession = await runBrowser((browser) =>
-      browser.createPage(origin, { waitUntil: "domcontentloaded" }),
-    );
-    const chromiumSnapshot = await runBrowser((browser) => browser.snapshot(chromiumSession.page));
-    expect(chromiumSnapshot.tree).toContain(`heading "Workspace setup"`);
-    await chromiumSession.browser.close();
-
-    const webkitSession = await tryLaunchEngine("webkit", origin);
-    if (!webkitSession) return;
-
-    try {
-      const webkitSnapshot = await runBrowser((browser) => browser.snapshot(webkitSession.page));
-      expect(webkitSnapshot.tree).toContain(`heading "Workspace setup"`);
-    } finally {
-      await webkitSession.browser.close();
-    }
   });
 });

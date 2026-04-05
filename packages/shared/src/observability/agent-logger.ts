@@ -1,6 +1,6 @@
 import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem";
 import { Effect, FileSystem, Layer, Logger } from "effect";
-import path from "node:path";
+import * as path from "node:path";
 
 const LOG_FILE = path.join(process.cwd(), ".expect", "logs.md");
 
@@ -15,7 +15,7 @@ const EnsureDebugLogDirectoryLayer = Layer.effectDiscard(
   }),
 );
 
-export const DebugFileLoggerLayer = Logger.layer([DebugFileLogger]).pipe(
+export const DebugFileLoggerLayer = Logger.layer([DebugFileLogger, Logger.consolePretty()]).pipe(
   Layer.provide(EnsureDebugLogDirectoryLayer),
   Layer.provide(NodeFileSystem.layer),
 );

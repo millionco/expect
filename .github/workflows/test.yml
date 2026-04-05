@@ -1,0 +1,322 @@
+name: Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      # ---- SHARED SETUP ----
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build all packages
+        run: pnpm build
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit firefox
+
+      - name: Install Claude Code
+        run: pnpm add -g @anthropic-ai/claude-code
+
+      - name: Smoke test Claude Code CLI
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          claude --version
+          echo "What is 1+1?" | claude -p --max-turns 1
+
+      - name: Install ttyd
+        run: sudo apt-get update && sudo apt-get install -y ttyd
+
+      # ---- WEBSITE TEST ----
+      - name: Run website test
+        id: website
+        continue-on-error: true
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TEST_CASE: website
+        run: pnpm tsx .github/scripts/e2e.ts
+
+      - name: Cleanup website state
+        if: always()
+        run: rm -rf .expect/
+
+      # ---- DOGFOOD TEST (PR / dispatch only) ----
+      - name: Start CLI in web terminal
+        if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          fuser -k 7681/tcp 2>/dev/null || true
+          sleep 1
+          ttyd -p 7681 --writable node apps/cli/dist/index.js > /tmp/ttyd.log 2>&1 &
+          TTYD_PID=$!
+          sleep 3
+          if ! kill -0 $TTYD_PID 2>/dev/null; then
+            echo "::error::ttyd crashed on startup:"
+            cat /tmp/ttyd.log
+            exit 1
+          fi
+          curl -sf http://localhost:7681 > /dev/null || {
+            echo "::error::ttyd failed to start. Logs:"
+            cat /tmp/ttyd.log
+            exit 1
+          }
+
+      - name: Run dogfood test
+        id: dogfood
+        if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+        continue-on-error: true
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_ACTIONS: ""
+          TEST_CASE: dogfood
+        run: pnpm tsx .github/scripts/e2e.ts
+
+      - name: Cleanup dogfood state
+        if: always() && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
+        run: rm -rf .expect/
+
+      # ---- ARTIFACTS ----
+      - name: Upload session recordings
+        id: recording
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: session-recordings
+          path: /tmp/test-artifacts/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: /tmp/expect-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      # ---- VIDEO UPLOAD ----
+      - name: Upload video to release
+        id: video
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VIDEO_FILE=$(find /tmp/test-artifacts -name "*.mp4" | head -1)
+          if [ -z "$VIDEO_FILE" ]; then
+            VIDEO_FILE=$(find /tmp/test-artifacts -name "*.webm" | head -1)
+          fi
+
+          if [ -z "$VIDEO_FILE" ]; then
+            echo "No video file found"
+            exit 0
+          fi
+
+          TAG="ci-pr-${{ github.event.pull_request.number }}"
+          FILENAME=$(basename "$VIDEO_FILE")
+
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+
+          gh release create "$TAG" \
+            --title "CI Recording — PR #${{ github.event.pull_request.number }}" \
+            --notes "Session recording from CI. Auto-deleted when the PR is closed." \
+            --prerelease \
+            "$VIDEO_FILE"
+
+          echo "url=https://github.com/${{ github.repository }}/releases/download/${TAG}/${FILENAME}" >> "$GITHUB_OUTPUT"
+
+      # ---- PR COMMENT ----
+      - name: Comment on PR
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          ARTIFACT_ID="${{ steps.recording.outputs.artifact-id }}"
+          VIDEO_URL="${{ steps.video.outputs.url }}"
+          COMMENT_MARKER="<!-- expect-test-result -->"
+
+          build_scenario_section() {
+            local JSON_FILE="$1"
+            local LABEL="$2"
+            local OUTCOME="$3"
+
+            if [ ! -f "$JSON_FILE" ] || ! jq -e . "$JSON_FILE" > /dev/null 2>&1; then
+              if [ "$OUTCOME" = "success" ]; then
+                echo "### ⚠️ ${LABEL}: completed but no valid JSON output"
+              else
+                echo "### ❌ ${LABEL}: failed"
+              fi
+              return
+            fi
+
+            local STATUS=$(jq -r '.status' "$JSON_FILE")
+            local SUMMARY=$(jq -r '.summary // empty' "$JSON_FILE")
+
+            local STATUS_ICON="❌"
+            if [ "$STATUS" = "passed" ]; then STATUS_ICON="✅"; fi
+
+            local SECTION="### ${STATUS_ICON} ${LABEL}: ${STATUS}"
+            if [ -n "$SUMMARY" ]; then
+              SECTION+=$'\n\n'"${SUMMARY}"
+            fi
+            SECTION+=$'\n\n'"| Step | Status |"
+            SECTION+=$'\n'"| --- | --- |"
+
+            local STEP_COUNT=$(jq '.steps | length' "$JSON_FILE")
+            for i in $(seq 0 $((STEP_COUNT - 1))); do
+              local STEP_TITLE=$(jq -r ".steps[$i].title" "$JSON_FILE")
+              local STEP_STATUS=$(jq -r ".steps[$i].status" "$JSON_FILE")
+              case "$STEP_STATUS" in
+                passed)  local STEP_ICON="✅" ;;
+                failed)  local STEP_ICON="❌" ;;
+                skipped) local STEP_ICON="⏭️" ;;
+                *)       local STEP_ICON="⬜" ;;
+              esac
+              SECTION+=$'\n'"| ${STEP_TITLE} | ${STEP_ICON} ${STEP_STATUS} |"
+            done
+
+            echo "$SECTION"
+          }
+
+          BODY="${COMMENT_MARKER}"
+          BODY+=$'\n'"## Test Results"
+
+          WEBSITE_SECTION=$(build_scenario_section /tmp/expect-results/website.json "Website Test" "${{ steps.website.outcome }}")
+          BODY+=$'\n\n'"${WEBSITE_SECTION}"
+
+          if [ "${{ steps.dogfood.outcome }}" != "" ] && [ "${{ steps.dogfood.outcome }}" != "skipped" ]; then
+            DOGFOOD_SECTION=$(build_scenario_section /tmp/expect-results/dogfood.json "Dogfood Test" "${{ steps.dogfood.outcome }}")
+            BODY+=$'\n\n'"${DOGFOOD_SECTION}"
+          fi
+
+          if [ -n "$VIDEO_URL" ]; then
+            BODY+=$'\n\n'"### Session Recording"
+            BODY+=$'\n\n'"${VIDEO_URL}"
+          fi
+
+          BODY+=$'\n\n'"---"
+          BODY+=$'\n'"[Workflow run #${{ github.run_number }}](${RUN_URL})"
+
+          if [ -n "$ARTIFACT_ID" ]; then
+            BODY+=" | 📎 [Download all recordings](${RUN_URL}/artifacts/${ARTIFACT_ID})"
+          fi
+
+          EXISTING_COMMENT=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            --jq ".[] | select(.body | contains(\"${COMMENT_MARKER}\")) | .id" | head -1)
+
+          if [ -n "$EXISTING_COMMENT" ]; then
+            gh api "repos/${{ github.repository }}/issues/comments/${EXISTING_COMMENT}" \
+              -X PATCH -f body="$BODY"
+          else
+            gh pr comment "${{ github.event.pull_request.number }}" --body "$BODY"
+          fi
+
+      # ---- COMMIT COMMENT (push only) ----
+      - name: Comment on commit
+        if: always() && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ steps.website.outcome }}" = "success" ]; then
+            STATUS="✅ Expect tests passed"
+          else
+            STATUS="❌ Expect tests failed"
+          fi
+
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          BODY="${STATUS}"
+          BODY+=$'\n\n'"[Workflow run #${{ github.run_number }}](${RUN_URL})"
+
+          ARTIFACT_ID="${{ steps.recording.outputs.artifact-id }}"
+          if [ -n "$ARTIFACT_ID" ]; then
+            BODY+=$'\n\n'"📎 [Download session recording](${RUN_URL}/artifacts/${ARTIFACT_ID})"
+          fi
+
+          gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" \
+            -f body="$BODY"
+
+      # ---- DEBUG LOGS ----
+      - name: Print ttyd logs
+        if: always()
+        run: |
+          echo "=== ttyd logs ==="
+          if [ -f /tmp/ttyd.log ]; then cat /tmp/ttyd.log; else echo "No ttyd logs"; fi
+
+      - name: Print expect debug logs
+        if: always()
+        run: |
+          if [ -f .expect/logs.md ]; then
+            tail -n 240 .expect/logs.md
+          else
+            echo "No .expect/logs.md file found"
+          fi
+
+      - name: Print stderr
+        if: always()
+        run: |
+          for f in /tmp/expect-results/*.stderr.txt; do
+            if [ -f "$f" ]; then
+              echo "=== $(basename "$f") ==="
+              cat "$f"
+            fi
+          done
+
+      # ---- FAIL CHECK ----
+      - name: Fail if tests failed
+        if: always()
+        run: |
+          FAILED=0
+          if [ "${{ steps.website.outcome }}" = "failure" ]; then
+            echo "::error::Website test failed"
+            FAILED=1
+          fi
+          if [ "${{ steps.dogfood.outcome }}" = "failure" ]; then
+            echo "::error::Dogfood test failed"
+            FAILED=1
+          fi
+          if [ "$FAILED" = "1" ]; then
+            exit 1
+          fi
+
+      # ---- CLEANUP OLD CI RELEASES ----
+      - name: Cleanup old CI releases
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release list --json tagName,createdAt --limit 50 2>/dev/null | \
+            jq -r '.[] | select(.tagName | startswith("ci-pr-")) | .tagName' | \
+            while read -r TAG; do
+              PR_NUM="${TAG#ci-pr-}"
+              PR_STATE=$(gh pr view "$PR_NUM" --json state --jq '.state' 2>/dev/null || echo "UNKNOWN")
+              if [ "$PR_STATE" = "MERGED" ] || [ "$PR_STATE" = "CLOSED" ]; then
+                gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+              fi
+            done

@@ -1,3 +1,4 @@
+import type { Browser } from "@expect/cookies";
 import type {
   ChangedFile,
   ChangesFor,
@@ -27,7 +28,7 @@ export interface ExecutionPromptOptions {
   readonly diffPreview: string;
   readonly baseUrl: string | undefined;
   readonly isHeadless: boolean;
-  readonly cookieBrowserKeys: readonly string[];
+  readonly cookieImportProfiles: readonly Browser[];
   readonly browserMcpServerName?: string;
   readonly savedFlow?: SavedFlow;
   readonly learnings?: string;
@@ -320,7 +321,7 @@ export const buildExecutionPrompt = (options: ExecutionPromptOptions): string =>
     ...(options.baseUrl ? [`Base URL: ${options.baseUrl}`] : []),
     ...devServerLines,
     `Browser is headless: ${options.isHeadless ? "yes" : "no"}`,
-    `Uses existing browser cookies: ${options.cookieBrowserKeys.length > 0 ? `yes (${options.cookieBrowserKeys.length})` : "no"}`,
+    `Uses existing browser cookies: ${options.cookieImportProfiles.length > 0 ? `yes (${options.cookieImportProfiles.map((profile) => profile._tag).join(", ")})` : "no"}`,
     `Scope: ${options.scope}`,
     `Current branch: ${options.currentBranch}`,
     ...(options.mainBranch ? [`Main branch: ${options.mainBranch}`] : []),

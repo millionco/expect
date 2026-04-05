@@ -35,4 +35,30 @@ describe("Browsers", () => {
         );
       }
     }).pipe(Effect.provide(layerLive), Effect.runPromise));
+
+  it("findById returns a browser matching the given id", () =>
+    Effect.gen(function* () {
+      const browsers = yield* Browsers;
+      const allBrowsers = yield* browsers.list;
+      const first = allBrowsers[0];
+      const found = yield* browsers.findById(first.id);
+      assert.strictEqual(found.id, first.id);
+      assert.strictEqual(found.displayName, first.displayName);
+    }).pipe(Effect.provide(layerLive), Effect.runPromise));
+
+  it("findById fails with available profile ids when profile does not exist", () =>
+    Effect.gen(function* () {
+      const browsers = yield* Browsers;
+      const allBrowsers = yield* browsers.list;
+      const error = yield* browsers.findById("nonexistent/profile").pipe(Effect.flip);
+      if (error._tag === "ListBrowsersError") throw new Error(`Invalid error returned`);
+      assert.strictEqual(error._tag, "BrowserProfileNotFoundError");
+      assert.strictEqual(error.profileId, "nonexistent/profile");
+      assert.deepStrictEqual(
+        error.availableProfileIds,
+        allBrowsers.map((browser) => browser.id),
+      );
+      assert.include(error.message, "nonexistent/profile");
+      assert.include(error.message, "Available profiles:");
+    }).pipe(Effect.provide(layerLive), Effect.runPromise));
 });

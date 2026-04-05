@@ -11,7 +11,7 @@ import {
   type AcpStreamError,
   type SessionId,
 } from "./acp-client";
-import { AcpSessionUpdate, type AcpConfigOption } from "@expect/shared/models";
+import { AcpSessionUpdate, type AcpConfigOption, CurrentPlanId } from "@expect/shared/models";
 import { AgentStreamOptions } from "./types";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { PlatformError } from "effect/PlatformError";
@@ -95,8 +95,8 @@ export class Agent extends ServiceMap.Service<
   static layerOpencode = Agent.layerAcp.pipe(Layer.provide(AcpAdapter.layerOpencode));
   static layerDroid = Agent.layerAcp.pipe(Layer.provide(AcpAdapter.layerDroid));
 
-  static layerFor = (backend: AgentBackend): Layer.Layer<Agent, AgentLayerError> => {
-    const layers: Record<AgentBackend, Layer.Layer<Agent, AgentLayerError>> = {
+  static layerFor = (backend: AgentBackend): Layer.Layer<Agent, AgentLayerError, CurrentPlanId> => {
+    const layers: Record<AgentBackend, Layer.Layer<Agent, AgentLayerError, CurrentPlanId>> = {
       claude: Agent.layerClaude,
       codex: Agent.layerCodex,
       copilot: Agent.layerCopilot,

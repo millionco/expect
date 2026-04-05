@@ -1,7 +1,7 @@
 import { createServer, type Server } from "node:http";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import * as fs from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import * as path from "node:path";
 import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem";
 import { Effect } from "effect";
 import { afterEach, describe, expect, it } from "vite-plus/test";
@@ -57,19 +57,19 @@ describe("loadReplayEvents", () => {
     }
 
     if (tempDir) {
-      rmSync(tempDir, { recursive: true, force: true });
+      fs.rmSync(tempDir, { recursive: true, force: true });
       tempDir = undefined;
     }
   });
 
   it("prefers finalized replay artifacts over the live endpoint", async () => {
-    tempDir = mkdtempSync(join(tmpdir(), TEMP_DIR_PREFIX));
-    const replaySessionPath = join(tempDir, "session.ndjson");
+    tempDir = fs.mkdtempSync(path.join(tmpdir(), TEMP_DIR_PREFIX));
+    const replaySessionPath = path.join(tempDir, "session.ndjson");
     const finalizedEvents = [
       { type: 2, timestamp: 1000, data: { href: "https://expect.dev" } },
       { type: 3, timestamp: 2000, data: { source: 0 } },
     ];
-    writeFileSync(
+    fs.writeFileSync(
       replaySessionPath,
       finalizedEvents.map((event) => JSON.stringify(event)).join("\n") + "\n",
     );

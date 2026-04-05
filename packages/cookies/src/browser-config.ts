@@ -1,4 +1,4 @@
-import type { BrowserKey, ChromiumBrowserKey } from "./types";
+import type { BrowserKey, ChromiumBrowserKey } from "@expect/shared/models";
 
 interface PlatformPaths {
   readonly darwin: string;

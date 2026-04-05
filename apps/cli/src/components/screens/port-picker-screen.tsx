@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Box, Text, useInput } from "ink";
 import figures from "figures";
 import type { ChangesFor, SavedFlow } from "@expect/shared/models";
+import type { Browser } from "@expect/cookies";
 import { PORT_PICKER_VISIBLE_COUNT } from "../../constants";
 import { useColors } from "../theme-context";
 import { useNavigationStore, Screen, type DevServerHint } from "../../stores/use-navigation";
@@ -18,7 +19,7 @@ interface PortPickerScreenProps {
   changesFor: ChangesFor;
   instruction: string;
   savedFlow?: SavedFlow;
-  cookieBrowserKeys?: readonly string[];
+  cookieImportProfiles?: readonly Browser[];
 }
 
 interface PortEntry {
@@ -72,7 +73,7 @@ export const PortPickerScreen = ({
   changesFor,
   instruction,
   savedFlow,
-  cookieBrowserKeys,
+  cookieImportProfiles,
 }: PortPickerScreenProps) => {
   const COLORS = useColors();
   const setScreen = useNavigationStore((state) => state.setScreen);
@@ -172,7 +173,7 @@ export const PortPickerScreen = ({
         changesFor,
         instruction,
         savedFlow,
-        cookieBrowserKeys,
+        cookieImportProfiles,
         baseUrls: allUrls.length > 0 ? allUrls : undefined,
         devServerHints: devServerHints.length > 0 ? devServerHints : undefined,
       }),

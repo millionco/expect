@@ -1,6 +1,6 @@
-import fs from "node:fs/promises";
+import * as fs from "node:fs/promises";
 import os from "node:os";
-import path from "node:path";
+import * as path from "node:path";
 import net from "node:net";
 import { Effect, Option } from "effect";
 import { CDP_DISCOVERY_TIMEOUT_MS, CDP_COMMON_PORTS, CDP_PORT_PROBE_TIMEOUT_MS } from "./constants";

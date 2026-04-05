@@ -26,7 +26,9 @@ import cliTruncate from "cli-truncate";
 import { formatElapsedTime } from "../../utils/format-elapsed-time";
 import { Image } from "../ui/image";
 import { ErrorMessage } from "../ui/error-message";
-import { executeFn, screenshotPathsAtom } from "../../data/execution-atom";
+import { LIVE_VIEWER_STATIC_URL } from "@expect/shared";
+import type { Browser } from "@expect/cookies";
+import { executeAtomFn, screenshotPathsAtom } from "../../data/execution-atom";
 import { agentConfigOptionsAtom } from "../../data/config-options";
 import { agentProviderAtom } from "../../data/runtime";
 import { trackEvent } from "../../utils/session-analytics";
@@ -40,7 +42,7 @@ interface TestingScreenProps {
   changesFor: ChangesFor;
   instruction: string;
   savedFlow?: SavedFlow;
-  cookieBrowserKeys?: readonly string[];
+  cookieImportProfiles?: readonly Browser[];
   baseUrls?: readonly string[];
   devServerHints?: readonly DevServerHint[];
 }
@@ -262,7 +264,7 @@ export const TestingScreen = ({
   changesFor,
   instruction,
   savedFlow,
-  cookieBrowserKeys = [],
+  cookieImportProfiles = [],
   baseUrls,
   devServerHints,
 }: TestingScreenProps) => {
@@ -280,13 +282,11 @@ export const TestingScreen = ({
     (state) => state.modelPreferences[agentBackend]?.value,
   );
   const browserHeaded = usePreferencesStore((state) => state.browserHeaded);
-  const replayHost = usePreferencesStore((state) => state.replayHost);
   const toggleNotifications = usePreferencesStore((state) => state.toggleNotifications);
-  const [executionResult, triggerExecute] = useAtom(executeFn, {
+  const [executionResult, triggerExecute] = useAtom(executeAtomFn, {
     mode: "promiseExit",
   });
   const screenshotPaths = useAtomValue(screenshotPathsAtom);
-  const [liveReplayUrl, setLiveReplayUrl] = useState<string | undefined>(undefined);
 
   const isExecuting = AsyncResult.isWaiting(executionResult);
   const isExecutionComplete = AsyncResult.isSuccess(executionResult);
@@ -421,7 +421,7 @@ export const TestingScreen = ({
         changesFor,
         instruction,
         isHeadless: !browserHeaded,
-        cookieBrowserKeys: [...cookieBrowserKeys],
+        cookieImportProfiles: [...cookieImportProfiles],
         savedFlow,
         baseUrl,
         devServerHints: devServerHints ? [...devServerHints] : undefined,
@@ -431,9 +431,7 @@ export const TestingScreen = ({
             : undefined,
       },
       agentBackend,
-      replayHost,
       onUpdate: setExecutedPlan,
-      onReplayUrl: setLiveReplayUrl,
       onConfigOptions: (configOptions) => {
         setConfigOptions((previous) => ({
           ...previous,
@@ -452,25 +450,21 @@ export const TestingScreen = ({
     changesFor,
     instruction,
     savedFlow,
-    cookieBrowserKeys,
+    cookieImportProfiles,
     baseUrls,
-    devServerHints,
-    replayHost,
     modelPreferenceConfigId,
     modelPreferenceValue,
     setConfigOptions,
   ]);
 
   const replayUrl = isExecutionComplete ? executionResult.value.replayUrl : undefined;
-  const localReplayUrl = isExecutionComplete ? executionResult.value.localReplayUrl : undefined;
-  const videoUrl = isExecutionComplete ? executionResult.value.videoUrl : undefined;
 
   useEffect(() => {
     if (isExecutionComplete && executedPlan && report) {
       usePlanExecutionStore.getState().setExecutedPlan(executedPlan);
-      setScreen(Screen.Results({ report, replayUrl, localReplayUrl, videoUrl }));
+      setScreen(Screen.Results({ report, replayUrl }));
     }
-  }, [isExecutionComplete, executedPlan, report, replayUrl, localReplayUrl, videoUrl, setScreen]);
+  }, [isExecutionComplete, executedPlan, report, replayUrl, setScreen]);
 
   const goToMain = () => {
     usePlanExecutionStore.getState().setExecutedPlan(undefined);
@@ -502,10 +496,10 @@ export const TestingScreen = ({
       return;
     }
 
-    if (normalizedInput === "o" && !key.ctrl && !key.meta && liveReplayUrl) {
+    if (normalizedInput === "o" && !key.ctrl && !key.meta && executedPlan?.id) {
       const { exec } = require("node:child_process") as typeof import("node:child_process");
-      const escapedUrl = liveReplayUrl.replace(/"/g, '\\"');
-      exec(`open "${escapedUrl}"`);
+      const url = `${LIVE_VIEWER_STATIC_URL}/replay/?testId=${executedPlan.id}`;
+      exec(`open "${url}"`);
       trackEvent("live_preview:opened");
       return;
     }
@@ -540,7 +534,7 @@ export const TestingScreen = ({
       }
       if (executedPlan && report) {
         usePlanExecutionStore.getState().setExecutedPlan(executedPlan);
-        setScreen(Screen.Results({ report, replayUrl, localReplayUrl, videoUrl }));
+        setScreen(Screen.Results({ report, replayUrl }));
         return;
       }
       goToMain();
@@ -572,7 +566,7 @@ export const TestingScreen = ({
             </Text>
           </Box>
 
-          {liveReplayUrl && isExecuting && (
+          {executedPlan?.id && isExecuting && (
             <Box marginTop={0}>
               <Text color={COLORS.PRIMARY} bold>
                 {"  "}Press{" "}

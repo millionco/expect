@@ -3,6 +3,7 @@ import { Box, Text, useInput } from "ink";
 import figures from "figures";
 import { Effect, Fiber, Option } from "effect";
 import type { ChangesFor, ExecutedTestPlan, TestPlanStep } from "@expect/shared/models";
+import type { Browser } from "@expect/cookies";
 import type { WatchEvent } from "@expect/supervisor";
 import { Watch } from "@expect/supervisor";
 import { useMountEffect } from "../../hooks/use-mount-effect";
@@ -28,7 +29,7 @@ import { stripUndefinedRequirement } from "../../utils/strip-undefined-requireme
 interface WatchScreenProps {
   changesFor: ChangesFor;
   instruction: string;
-  cookieBrowserKeys?: readonly string[];
+  cookieImportProfiles?: readonly Browser[];
   baseUrl?: string;
 }
 
@@ -37,7 +38,7 @@ type WatchPhase = "polling" | "settling" | "assessing" | "running" | "idle" | "e
 export const WatchScreen = ({
   changesFor,
   instruction,
-  cookieBrowserKeys = [],
+  cookieImportProfiles = [],
   baseUrl,
 }: WatchScreenProps) => {
   const COLORS = useColors();
@@ -120,7 +121,7 @@ export const WatchScreen = ({
         changesFor,
         instruction,
         isHeadless: !browserHeaded,
-        cookieBrowserKeys: [...cookieBrowserKeys],
+        cookieImportProfiles: [...cookieImportProfiles],
         baseUrl,
         onEvent: handleEvent,
       });

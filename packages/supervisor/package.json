@@ -23,8 +23,11 @@
     "@expect/browser": "workspace:*",
     "@expect/shared": "workspace:*",
     "effect": "4.0.0-beta.35",
+    "figures": "^6.1.0",
     "oxc-resolver": "^11.19.1",
     "pathe": "^2.0.3",
+    "picocolors": "^1.1.1",
+    "pretty-ms": "^9.3.0",
     "simple-git": "^3.33.0"
   },
   "devDependencies": {

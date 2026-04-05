@@ -1,5 +1,5 @@
 import { Effect, FileSystem, Schema } from "effect";
-import { join } from "node:path";
+import * as path from "node:path";
 import { FRAMEWORK_DEFAULT_PORTS } from "./constants";
 
 type Framework =
@@ -66,7 +66,7 @@ const detectFramework = (packageJson: PackageJson | undefined): Framework => {
 
 const readPackageJson = Effect.fn("detectProject.readPackageJson")(function* (projectRoot: string) {
   const fileSystem = yield* FileSystem.FileSystem;
-  const packageJsonPath = join(projectRoot, "package.json");
+  const packageJsonPath = path.join(projectRoot, "package.json");
 
   const content = yield* fileSystem
     .readFileString(packageJsonPath)
@@ -101,7 +101,7 @@ const detectPortFromViteConfig = Effect.fn("detectProject.detectPortFromViteConf
   if (!viteConfig) return undefined;
 
   const content = yield* fileSystem
-    .readFileString(join(projectRoot, viteConfig))
+    .readFileString(path.join(projectRoot, viteConfig))
     .pipe(Effect.catchTag("PlatformError", () => Effect.succeed(undefined)));
 
   if (!content) return undefined;

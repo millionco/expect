@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Effect } from "effect";
 import { Agent, type AgentBackend } from "@expect/agent";
 import type { AcpConfigOption } from "@expect/shared/models";
-import * as NodeServices from "@effect/platform-node/NodeServices";
+import { layerCli } from "../layers";
 
 export const useConfigOptions = (agent: AgentBackend | undefined) =>
   useQuery({
@@ -15,8 +15,8 @@ export const useConfigOptions = (agent: AgentBackend | undefined) =>
           const agentService = yield* Agent;
           return yield* agentService.fetchConfigOptions(process.cwd());
         }).pipe(
-          Effect.provide(Agent.layerFor(agent)),
-          Effect.provide(NodeServices.layer),
+          Effect.provide(layerCli({ verbose: false, agent })),
+          Effect.scoped,
           Effect.catchTags({
             AcpSessionCreateError: () => Effect.succeed([] as readonly AcpConfigOption[]),
             AcpProviderUnauthenticatedError: () => Effect.succeed([] as readonly AcpConfigOption[]),

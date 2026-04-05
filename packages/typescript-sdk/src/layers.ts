@@ -1,6 +1,7 @@
 import { Layer, References } from "effect";
-import { Executor, Git } from "@expect/supervisor";
+import { Executor, Git, OutputReporter } from "@expect/supervisor";
 import { Agent, type AgentBackend } from "@expect/agent";
+import { CurrentPlanId, PlanId } from "@expect/shared/models";
 
 export const layerSdk = (agentBackend: AgentBackend, rootDir: string) => {
   const gitLayer = Git.withRepoRoot(rootDir);
@@ -10,5 +11,7 @@ export const layerSdk = (agentBackend: AgentBackend, rootDir: string) => {
   return Layer.mergeAll(executorLayer, gitLayer).pipe(
     Layer.provideMerge(agentLayer),
     Layer.provideMerge(Layer.succeed(References.MinimumLogLevel, "Error")),
+    Layer.provide(Layer.succeed(CurrentPlanId, PlanId.makeUnsafe(crypto.randomUUID()))),
+    Layer.provide(OutputReporter.layerNoop),
   );
 };

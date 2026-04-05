@@ -1,6 +1,7 @@
 import type { Page } from "playwright";
 import { Effect } from "effect";
 import type { ExpectRuntime } from "../generated/runtime-types";
+import { BrowserLaunchError } from "../errors";
 
 // HACK: page.evaluate erases types across the serialization boundary; casts are confined here
 export const evaluateRuntime = <K extends keyof ExpectRuntime>(
@@ -8,8 +9,8 @@ export const evaluateRuntime = <K extends keyof ExpectRuntime>(
   method: K,
   ...args: Parameters<ExpectRuntime[K]>
 ) =>
-  Effect.promise(
-    () =>
+  Effect.tryPromise({
+    try: () =>
       page.evaluate(
         ({ method, args }: { method: string; args: unknown[] }) => {
           const runtime = Reflect.get(globalThis, "__EXPECT_RUNTIME__");
@@ -26,4 +27,5 @@ export const evaluateRuntime = <K extends keyof ExpectRuntime>(
         },
         { method, args: args as unknown[] },
       ) as Promise<ReturnType<ExpectRuntime[K]>>,
-  );
+    catch: (cause) => new BrowserLaunchError({ cause }),
+  });

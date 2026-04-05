@@ -1,5 +1,6 @@
 import { Data, Effect, Layer, Option, Ref, Schedule, Schema, ServiceMap, Stream } from "effect";
 import { Agent, AgentStreamOptions } from "@expect/agent";
+import type { Browser } from "@expect/cookies";
 import {
   AcpAgentMessageChunk,
   type ChangedFile,
@@ -64,7 +65,10 @@ export type WatchEvent = Data.TaggedEnum<{
   Assessing: {};
   RunStarting: { readonly fingerprint: string };
   RunUpdate: { readonly executedPlan: ExecutedTestPlan };
-  RunCompleted: { readonly executedPlan: ExecutedTestPlan; readonly fingerprint: string };
+  RunCompleted: {
+    readonly executedPlan: ExecutedTestPlan;
+    readonly fingerprint: string;
+  };
   Skipped: { readonly fingerprint: string };
   Error: { readonly error: unknown };
   Stopped: {};
@@ -90,7 +94,7 @@ export interface WatchOptions {
   readonly changesFor: ChangesFor;
   readonly instruction: string;
   readonly isHeadless: boolean;
-  readonly cookieBrowserKeys: readonly string[];
+  readonly cookieImportProfiles: readonly Browser[];
   readonly baseUrl?: string;
   readonly onEvent: (event: WatchEvent) => void;
 }
@@ -124,7 +128,11 @@ export class Watch extends ServiceMap.Service<Watch>()("@supervisor/Watch", {
       instruction: string,
     ) {
       const repoRoot = yield* GitRepoRoot;
-      const prompt = buildWatchAssessmentPrompt({ diffPreview, changedFiles, instruction });
+      const prompt = buildWatchAssessmentPrompt({
+        diffPreview,
+        changedFiles,
+        instruction,
+      });
 
       const streamOptions = new AgentStreamOptions({
         cwd: repoRoot,
@@ -258,7 +266,7 @@ export class Watch extends ServiceMap.Service<Watch>()("@supervisor/Watch", {
           changesFor: options.changesFor,
           instruction: options.instruction,
           isHeadless: options.isHeadless,
-          cookieBrowserKeys: options.cookieBrowserKeys,
+          cookieImportProfiles: options.cookieImportProfiles,
           baseUrl: options.baseUrl,
         };
 
@@ -308,5 +316,8 @@ export class Watch extends ServiceMap.Service<Watch>()("@supervisor/Watch", {
     return { assess, run } as const;
   }),
 }) {
-  static layer = Layer.effect(this)(this.make);
+  static layer = Layer.effect(this)(this.make).pipe(
+    Layer.provide(Git.layer),
+    Layer.provide(Executor.layer),
+  );
 }

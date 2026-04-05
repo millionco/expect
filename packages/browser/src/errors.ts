@@ -3,7 +3,7 @@ import { Schema } from "effect";
 export class BrowserLaunchError extends Schema.ErrorClass<BrowserLaunchError>("BrowserLaunchError")(
   {
     _tag: Schema.tag("BrowserLaunchError"),
-    cause: Schema.String,
+    cause: Schema.Unknown,
   },
 ) {
   message = `Failed to launch browser: ${this.cause}`;
@@ -77,9 +77,50 @@ export class ActionUnknownError extends Schema.ErrorClass<ActionUnknownError>("A
 export class NavigationError extends Schema.ErrorClass<NavigationError>("NavigationError")({
   _tag: Schema.tag("NavigationError"),
   url: Schema.String,
-  cause: Schema.String,
+  cause: Schema.Unknown,
 }) {
   message = `Navigation to "${this.url}" failed: ${this.cause}`;
+}
+
+export class BrowserAlreadyOpenError extends Schema.ErrorClass<BrowserAlreadyOpenError>(
+  "BrowserAlreadyOpenError",
+)({
+  _tag: Schema.tag("BrowserAlreadyOpenError"),
+}) {
+  message = "A browser is already open. Use the close tool first, then open a new session.";
+}
+
+export class BrowserNotOpenError extends Schema.ErrorClass<BrowserNotOpenError>(
+  "BrowserNotOpenError",
+)({
+  _tag: Schema.tag("BrowserNotOpenError"),
+}) {
+  message = "No browser is open. Use the open tool with a URL to start a browser session first.";
+}
+
+export class NoSnapshotError extends Schema.ErrorClass<NoSnapshotError>("NoSnapshotError")({
+  _tag: Schema.tag("NoSnapshotError"),
+}) {
+  message =
+    "No snapshot taken yet. Use the screenshot tool with mode 'snapshot' first to capture element refs.";
+}
+
+export class PlaywrightExecutionError extends Schema.ErrorClass<PlaywrightExecutionError>(
+  "PlaywrightExecutionError",
+)({
+  _tag: Schema.tag("PlaywrightExecutionError"),
+  cause: Schema.Unknown,
+}) {
+  message = `Playwright code execution failed: ${this.cause}`;
+}
+
+export class McpServerStartError extends Schema.ErrorClass<McpServerStartError>(
+  "McpServerStartError",
+)({
+  _tag: Schema.tag("McpServerStartError"),
+  cause: Schema.String,
+}) {
+  message = `Failed to start MCP server: ${this.cause}. Check that no other browser MCP server is running on the same transport.`;
 }
 
 export class RecorderInjectionError extends Schema.ErrorClass<RecorderInjectionError>(

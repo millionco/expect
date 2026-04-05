@@ -1,12 +1,12 @@
 import { chromium, type Locator, type Page } from "playwright";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { DEMO_STEP_DEFINITIONS, DEMO_TARGET_URL } from "../lib/demo/constants";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const RUNTIME_SCRIPT_PATH = join(
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const RUNTIME_SCRIPT_PATH = path.join(
   __dirname,
   "..",
   "..",
@@ -17,7 +17,7 @@ const RUNTIME_SCRIPT_PATH = join(
   "generated",
   "runtime-script.ts",
 );
-const RUNTIME_MODULE = readFileSync(RUNTIME_SCRIPT_PATH, "utf-8");
+const RUNTIME_MODULE = fs.readFileSync(RUNTIME_SCRIPT_PATH, "utf-8");
 const inlineExportPrefix = "export const RUNTIME_SCRIPT = ";
 const multilineExportPrefix = "export const RUNTIME_SCRIPT =\n  ";
 const runtimeScriptPrefix = RUNTIME_MODULE.startsWith(inlineExportPrefix)
@@ -35,7 +35,7 @@ const RUNTIME_SCRIPT: string = new Function(
 )();
 
 const MANUAL_FLAG = "--manual";
-const OUTPUT_PATH = join(__dirname, "..", "lib", "recorded-demo-events.json");
+const OUTPUT_PATH = path.join(__dirname, "..", "lib", "recorded-demo-events.json");
 const POLL_INTERVAL_MS = 500;
 const DEFAULT_VIEWPORT_WIDTH_PX = 1280;
 const DEFAULT_VIEWPORT_HEIGHT_PX = 720;
@@ -226,8 +226,8 @@ const run = async () => {
     return;
   }
 
-  mkdirSync(dirname(OUTPUT_PATH), { recursive: true });
-  writeFileSync(OUTPUT_PATH, JSON.stringify(allEvents, undefined, 2));
+  fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
+  fs.writeFileSync(OUTPUT_PATH, JSON.stringify(allEvents, undefined, 2));
   console.log(`Saved to: ${OUTPUT_PATH}`);
 };
 

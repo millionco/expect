@@ -1,5 +1,5 @@
-import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, it, beforeEach, afterEach } from "vite-plus/test";
 import { extractTarEntries, readNullTerminated } from "../src/commands/add-skill";
@@ -60,11 +60,11 @@ describe("extractTarEntries", () => {
   let destDir: string;
 
   beforeEach(() => {
-    destDir = mkdtempSync(join(tmpdir(), "tar-test-"));
+    destDir = fs.mkdtempSync(path.join(tmpdir(), "tar-test-"));
   });
 
   afterEach(() => {
-    rmSync(destDir, { recursive: true, force: true });
+    fs.rmSync(destDir, { recursive: true, force: true });
   });
 
   it("extracts files matching the prefix", () => {
@@ -75,8 +75,8 @@ describe("extractTarEntries", () => {
 
     extractTarEntries(tar, "repo-main/packages/skill/", destDir);
 
-    expect(readFileSync(join(destDir, "README.md"), "utf8")).toBe("# Skill");
-    expect(readFileSync(join(destDir, "SKILL.md"), "utf8")).toBe("skill content");
+    expect(fs.readFileSync(path.join(destDir, "README.md"), "utf8")).toBe("# Skill");
+    expect(fs.readFileSync(path.join(destDir, "SKILL.md"), "utf8")).toBe("skill content");
   });
 
   it("skips files outside the prefix", () => {
@@ -87,7 +87,7 @@ describe("extractTarEntries", () => {
 
     extractTarEntries(tar, "repo-main/packages/skill/", destDir);
 
-    const files = readdirSync(destDir, { recursive: true });
+    const files = fs.readdirSync(destDir, { recursive: true });
     expect(files).toEqual(["keep.txt"]);
   });
 
@@ -96,13 +96,13 @@ describe("extractTarEntries", () => {
 
     extractTarEntries(tar, "prefix/", destDir);
 
-    expect(readFileSync(join(destDir, "sub", "dir", "file.txt"), "utf8")).toBe("nested");
+    expect(fs.readFileSync(path.join(destDir, "sub", "dir", "file.txt"), "utf8")).toBe("nested");
   });
 
   it("handles empty tar archive", () => {
     const tar = Buffer.alloc(TAR_HEADER_SIZE * 2);
     extractTarEntries(tar, "prefix/", destDir);
 
-    expect(readdirSync(destDir)).toEqual([]);
+    expect(fs.readdirSync(destDir)).toEqual([]);
   });
 });

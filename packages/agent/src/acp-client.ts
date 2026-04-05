@@ -1,7 +1,6 @@
-import { existsSync, readFileSync } from "node:fs";
+import * as fs from "node:fs";
 import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import * as path from "node:path";
 import * as acp from "@agentclientprotocol/sdk";
 import {
   Cause,
@@ -29,6 +28,7 @@ import {
 } from "@expect/shared/models";
 import { hasStringMessage } from "@expect/shared/utils";
 import { detectLaunchedFrom } from "@expect/shared/launched-from";
+import { CurrentPlanId } from "@expect/shared/models";
 import { buildSessionMeta } from "./build-session-meta";
 
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
@@ -175,13 +175,13 @@ const makeRequire = () =>
 
 const resolvePackageDir = (require: NodeRequire, packageName: string): string => {
   try {
-    return dirname(require.resolve(`${packageName}/package.json`));
+    return path.dirname(require.resolve(`${packageName}/package.json`));
   } catch {
     const paths = require.resolve.paths(packageName) ?? [];
     for (const searchPath of paths) {
-      const candidate = join(searchPath, packageName);
+      const candidate = path.join(searchPath, packageName);
       try {
-        const content = JSON.parse(readFileSync(join(candidate, "package.json"), "utf-8"));
+        const content = JSON.parse(fs.readFileSync(path.join(candidate, "package.json"), "utf-8"));
         if (content.name === packageName) return candidate;
       } catch {}
     }
@@ -192,17 +192,17 @@ const resolvePackageDir = (require: NodeRequire, packageName: string): string =>
 const resolvePackageBin = (packageName: string): string => {
   const require = makeRequire();
   const packageDir = resolvePackageDir(require, packageName);
-  const packageJson = JSON.parse(readFileSync(join(packageDir, "package.json"), "utf-8"));
+  const packageJson = JSON.parse(fs.readFileSync(path.join(packageDir, "package.json"), "utf-8"));
 
   if (typeof packageJson.bin === "string") {
-    return join(packageDir, packageJson.bin);
+    return path.join(packageDir, packageJson.bin);
   }
   if (typeof packageJson.bin === "object" && packageJson.bin !== null) {
     const firstBinPath = String(Object.values(packageJson.bin)[0]);
-    return join(packageDir, firstBinPath);
+    return path.join(packageDir, firstBinPath);
   }
   if (packageJson.main) {
-    return join(packageDir, packageJson.main);
+    return path.join(packageDir, packageJson.main);
   }
   throw new Error(`Cannot resolve bin entry for ${packageName}`);
 };
@@ -288,10 +288,14 @@ export class AcpAdapter extends ServiceMap.Service<
         Effect.flatMap((token) =>
           token.trim().length > 0
             ? Effect.void
-            : new AcpProviderUnauthenticatedError({ provider: "copilot" }).asEffect(),
+            : new AcpProviderUnauthenticatedError({
+                provider: "copilot",
+              }).asEffect(),
         ),
         Effect.catchTag("PlatformError", () =>
-          new AcpProviderUnauthenticatedError({ provider: "copilot" }).asEffect(),
+          new AcpProviderUnauthenticatedError({
+            provider: "copilot",
+          }).asEffect(),
         ),
       );
 
@@ -331,7 +335,9 @@ export class AcpAdapter extends ServiceMap.Service<
         Effect.flatMap(({ active }) =>
           active.length > 0
             ? Effect.void
-            : new AcpProviderUnauthenticatedError({ provider: "gemini" }).asEffect(),
+            : new AcpProviderUnauthenticatedError({
+                provider: "gemini",
+              }).asEffect(),
         ),
         Effect.catchReason("PlatformError", "NotFound", () =>
           new AcpProviderUnauthenticatedError({ provider: "gemini" }).asEffect(),
@@ -386,11 +392,16 @@ export class AcpAdapter extends ServiceMap.Service<
         Effect.flatMap((output) =>
           output.trim().length > 0
             ? Effect.void
-            : new AcpProviderUnauthenticatedError({ provider: "cursor" }).asEffect(),
+            : new AcpProviderUnauthenticatedError({
+                provider: "cursor",
+              }).asEffect(),
         ),
         Effect.timeoutOrElse({
           duration: ACP_AUTH_CHECK_TIMEOUT,
-          onTimeout: () => new AcpProviderUnauthenticatedError({ provider: "cursor" }).asEffect(),
+          onTimeout: () =>
+            new AcpProviderUnauthenticatedError({
+              provider: "cursor",
+            }).asEffect(),
         }),
         Effect.catchTag("PlatformError", () =>
           new AcpProviderUnauthenticatedError({ provider: "cursor" }).asEffect(),
@@ -426,7 +437,9 @@ export class AcpAdapter extends ServiceMap.Service<
 
       const apiKeyOption = yield* Config.option(Config.string("FACTORY_API_KEY"));
       if (!Option.isSome(apiKeyOption) || apiKeyOption.value.trim().length === 0) {
-        return yield* new AcpProviderUnauthenticatedError({ provider: "droid" });
+        return yield* new AcpProviderUnauthenticatedError({
+          provider: "droid",
+        });
       }
 
       return AcpAdapter.of({
@@ -446,7 +459,10 @@ export class AcpAdapter extends ServiceMap.Service<
         spawner.string,
         Effect.timeoutOrElse({
           duration: ACP_AUTH_CHECK_TIMEOUT,
-          onTimeout: () => new AcpProviderNotInstalledError({ provider: "opencode" }).asEffect(),
+          onTimeout: () =>
+            new AcpProviderNotInstalledError({
+              provider: "opencode",
+            }).asEffect(),
         }),
         Effect.catchReason("PlatformError", "NotFound", () =>
           new AcpProviderNotInstalledError({ provider: "opencode" }).asEffect(),
@@ -461,14 +477,21 @@ export class AcpAdapter extends ServiceMap.Service<
         Effect.flatMap((output) =>
           output.trim().length > 0
             ? Effect.void
-            : new AcpProviderUnauthenticatedError({ provider: "opencode" }).asEffect(),
+            : new AcpProviderUnauthenticatedError({
+                provider: "opencode",
+              }).asEffect(),
         ),
         Effect.timeoutOrElse({
           duration: ACP_AUTH_CHECK_TIMEOUT,
-          onTimeout: () => new AcpProviderUnauthenticatedError({ provider: "opencode" }).asEffect(),
+          onTimeout: () =>
+            new AcpProviderUnauthenticatedError({
+              provider: "opencode",
+            }).asEffect(),
         }),
         Effect.catchTag("PlatformError", () =>
-          new AcpProviderUnauthenticatedError({ provider: "opencode" }).asEffect(),
+          new AcpProviderUnauthenticatedError({
+            provider: "opencode",
+          }).asEffect(),
         ),
       );
 
@@ -485,6 +508,7 @@ export class AcpAdapter extends ServiceMap.Service<
 export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClient", {
   make: Effect.gen(function* () {
     const adapter = yield* AcpAdapter;
+    const planId = yield* CurrentPlanId;
     yield* Effect.annotateLogsScoped({ adapter: adapter.args[0] });
     yield* Effect.logInfo(`Initializing AcpClient`);
     const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
@@ -602,11 +626,7 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
 
     const connection = new acp.ClientSideConnection((_agent) => client, ndJsonStream);
 
-    const browserMcpBinPath = (() => {
-      const colocated = fileURLToPath(new URL("./browser-mcp.js", import.meta.url));
-      if (existsSync(colocated)) return colocated;
-      return fileURLToPath(new URL("../../../apps/cli/dist/browser-mcp.js", import.meta.url));
-    })();
+    const browserMcpBinPath = makeRequire().resolve("expect-cli/browser-mcp");
 
     const buildMcpServers = (
       env: ReadonlyArray<{ name: string; value: string }>,
@@ -614,7 +634,7 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
       {
         command: process.execPath,
         args: [browserMcpBinPath],
-        env: [...env],
+        env: [{ name: "EXPECT_PLAN_ID", value: planId as string }, ...env],
         name: "browser",
       },
     ];
@@ -696,6 +716,7 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
             }
 
             yield* Effect.logInfo("ACP session created", { sessionId });
+            yield* Effect.logInfo(`Resume this session: claude --resume ${sessionId}`);
 
             if (response.configOptions && response.configOptions.length > 0) {
               const decoded = yield* decodeConfigOptions(response.configOptions);
@@ -800,11 +821,15 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
           while: (stalled) => !stalled,
         });
         if (isStalled) {
-          yield* Effect.logWarning("ACP stream inactivity timeout", { sessionId });
+          yield* Effect.logWarning("ACP stream inactivity timeout", {
+            sessionId,
+          });
           yield* Queue.fail(
             updatesQueue,
             new AcpStreamError({
-              cause: `Agent produced no output for ${ACP_STREAM_INACTIVITY_TIMEOUT_MS / 1000}s — the agent may be stalled`,
+              cause: `Agent produced no output for ${
+                ACP_STREAM_INACTIVITY_TIMEOUT_MS / 1000
+              }s — the agent may be stalled`,
             }),
           );
         }

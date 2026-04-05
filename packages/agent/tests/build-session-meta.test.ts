@@ -21,6 +21,24 @@ describe("buildSessionMeta", () => {
     expect(sessionMeta).toEqual({ systemPrompt: "Test prompt" });
   });
 
+  it("restricts Claude Code to built-in tools and the browser MCP server", () => {
+    const sessionMeta = buildSessionMeta({
+      provider: "claude",
+      metadata: { isGitHubActions: false },
+    });
+
+    expect(sessionMeta).toEqual({
+      claudeCode: {
+        options: {
+          tools: { type: "preset", preset: "claude_code" },
+          settings: {
+            allowedMcpServers: [{ serverName: "browser" }],
+          },
+        },
+      },
+    });
+  });
+
   it("keeps the system prompt for claude outside GitHub Actions", () => {
     const sessionMeta = buildSessionMeta({
       provider: "claude",
@@ -28,7 +46,17 @@ describe("buildSessionMeta", () => {
       metadata: { isGitHubActions: false },
     });
 
-    expect(sessionMeta).toEqual({ systemPrompt: "Test prompt" });
+    expect(sessionMeta).toEqual({
+      systemPrompt: "Test prompt",
+      claudeCode: {
+        options: {
+          tools: { type: "preset", preset: "claude_code" },
+          settings: {
+            allowedMcpServers: [{ serverName: "browser" }],
+          },
+        },
+      },
+    });
   });
 
   it("sets Claude effort to high in GitHub Actions", () => {
@@ -40,6 +68,10 @@ describe("buildSessionMeta", () => {
     expect(sessionMeta).toEqual({
       claudeCode: {
         options: {
+          tools: { type: "preset", preset: "claude_code" },
+          settings: {
+            allowedMcpServers: [{ serverName: "browser" }],
+          },
           effort: "high",
           thinking: { type: "adaptive" },
         },
@@ -58,6 +90,10 @@ describe("buildSessionMeta", () => {
       systemPrompt: "Test prompt",
       claudeCode: {
         options: {
+          tools: { type: "preset", preset: "claude_code" },
+          settings: {
+            allowedMcpServers: [{ serverName: "browser" }],
+          },
           effort: "high",
           thinking: { type: "adaptive" },
         },

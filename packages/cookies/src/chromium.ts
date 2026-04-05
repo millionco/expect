@@ -1,11 +1,11 @@
-import path from "node:path";
+import * as path from "node:path";
 import * as os from "node:os";
 import { Array as Arr, Effect, Layer, Option, Predicate, Schema, ServiceMap } from "effect";
 import * as FileSystem from "effect/FileSystem";
 import { ChildProcess } from "effect/unstable/process";
 import { ChildProcessSpawner } from "effect/unstable/process/ChildProcessSpawner";
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import { ChromiumBrowser, type ChromiumBrowserKey } from "./types";
+import { ChromiumBrowser, type ChromiumBrowserKey } from "@expect/shared/models";
 import { CHROMIUM_CONFIGS, type ChromiumConfig } from "./browser-config";
 import { ListBrowsersError } from "./errors";
 import { Browsers } from "./browser-detector";

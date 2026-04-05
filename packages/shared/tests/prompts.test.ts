@@ -22,7 +22,7 @@ const makeDefaultOptions = (
   diffPreview: "diff --git a/src/auth/login.ts\n+export const login = () => {}",
   baseUrl: "http://localhost:3000",
   isHeadless: false,
-  cookieBrowserKeys: [],
+  cookieImportProfiles: [],
   ...overrides,
 });
 

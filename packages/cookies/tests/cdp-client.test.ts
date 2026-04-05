@@ -1,53 +1,95 @@
-import * as fs from "node:fs";
-import { assert, describe, it } from "vite-plus/test";
-import { Effect } from "effect";
-import { CdpClient } from "../src/cdp-client";
+import { describe, it, assert } from "vite-plus/test";
+import { Effect, Layer, Option } from "effect";
+import { Browsers } from "../src/browser-detector";
+import { Cookies } from "../src/cookies";
+import { layerLive } from "../src/layers";
 
-const CHROME_PROFILE_PATH = "/Users/rasmus/Library/Application Support/Google/Chrome/Default";
-const CHROME_EXECUTABLE_PATH = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+const FIVE_MINUTES_MS = 300_000;
 
-const CdpTestLayer = CdpClient.layer;
+const TestLayer = Layer.mergeAll(layerLive, Cookies.layer);
 
-const hasChrome = fs.existsSync(CHROME_PROFILE_PATH) && fs.existsSync(CHROME_EXECUTABLE_PATH);
+const run = <A, E>(effect: Effect.Effect<A, E, Browsers | Cookies>) =>
+  Effect.runPromise(effect.pipe(Effect.scoped, Effect.provide(TestLayer)));
 
-describe.skipIf(!hasChrome)("CdpClient", () => {
-  it("extracts cookies from a Chrome profile via CDP", { timeout: 30_000 }, () =>
-    Effect.gen(function* () {
-      const cdpClient = yield* CdpClient;
-      const cookies = yield* cdpClient.extractCookies({
-        key: "chrome",
-        profilePath: CHROME_PROFILE_PATH,
-        executablePath: CHROME_EXECUTABLE_PATH,
-      });
-
-      assert.isArray(cookies);
-      assert.isAbove(cookies.length, 0);
-
-      const first = cookies[0];
-      assert.isString(first.name);
-      assert.isString(first.value);
-      assert.isString(first.domain);
-      assert.isString(first.path);
-      assert.isBoolean(first.secure);
-      assert.isBoolean(first.httpOnly);
-    }).pipe(Effect.scoped, Effect.provide(CdpTestLayer), Effect.runPromise),
+describe("CdpClient", () => {
+  it(
+    "default system browser is detected",
+    () =>
+      run(
+        Effect.gen(function* () {
+          const browsers = yield* Browsers;
+          const defaultBrowser = yield* browsers.defaultBrowser();
+          assert.isTrue(Option.isSome(defaultBrowser));
+        }),
+      ),
+    FIVE_MINUTES_MS,
   );
 
-  it("returns cookies with stripped leading dots on domains", { timeout: 30_000 }, () =>
-    Effect.gen(function* () {
-      const cdpClient = yield* CdpClient;
-      const cookies = yield* cdpClient.extractCookies({
-        key: "chrome",
-        profilePath: CHROME_PROFILE_PATH,
-        executablePath: CHROME_EXECUTABLE_PATH,
-      });
+  it(
+    "all profiles are listed",
+    () =>
+      run(
+        Effect.gen(function* () {
+          const browsers = yield* Browsers;
+          const allBrowsers = yield* browsers.list;
+          assert.isAbove(allBrowsers.length, 0);
+        }),
+      ),
+    FIVE_MINUTES_MS,
+  );
 
-      for (const cookie of cookies) {
-        assert.isFalse(
-          cookie.domain.startsWith("."),
-          `domain should not start with dot: ${cookie.domain}`,
-        );
-      }
-    }).pipe(Effect.scoped, Effect.provide(CdpTestLayer), Effect.runPromise),
+  it(
+    "no profile named System Profile",
+    () =>
+      run(
+        Effect.gen(function* () {
+          const browsers = yield* Browsers;
+          const allBrowsers = yield* browsers.list;
+          const systemProfiles = allBrowsers.filter(
+            (browser) =>
+              browser._tag === "ChromiumBrowser" && browser.profileName === "System Profile",
+          );
+          assert.strictEqual(systemProfiles.length, 0, "System Profile should be filtered out");
+        }),
+      ),
+    FIVE_MINUTES_MS,
+  );
+
+  it(
+    "each profile has at least 5 cookies",
+    () =>
+      run(
+        Effect.gen(function* () {
+          const browsers = yield* Browsers;
+          const cookies = yield* Cookies;
+          const allBrowsers = yield* browsers.list;
+
+          for (const browser of allBrowsers) {
+            const label =
+              browser._tag === "ChromiumBrowser"
+                ? `${browser.key}/${browser.profileName}`
+                : browser._tag === "FirefoxBrowser"
+                  ? `firefox/${browser.profileName}`
+                  : "safari";
+            if (browser._tag === "SafariBrowser") {
+              /* Safari's cookie file requires Full Disk Access (System Settings → Privacy & Security → Full Disk Access) for the terminal/IDE running the test. */
+              const result = yield* Effect.suspend(() => cookies.extract(browser)).pipe(
+                Effect.catchTag("ExtractionError", () => Effect.succeed(undefined)),
+                Effect.catchTag("PlatformError", () => Effect.succeed(undefined)),
+              );
+              if (result === undefined) continue;
+            }
+
+            const result = yield* cookies.extract(browser);
+
+            assert.isAbove(
+              result.length,
+              4,
+              `${label}: expected > 4 cookies, got ${result.length}`,
+            );
+          }
+        }),
+      ),
+    FIVE_MINUTES_MS,
   );
 });

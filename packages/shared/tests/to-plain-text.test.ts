@@ -46,7 +46,7 @@ const makePlan = (steps: TestPlanStep[]): TestPlan =>
     instruction: "test",
     baseUrl: Option.none(),
     isHeadless: false,
-    cookieBrowserKeys: [],
+    cookieImportProfiles: [],
     testCoverage: Option.none(),
   });
 

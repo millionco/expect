@@ -1,5 +1,5 @@
 import os from "node:os";
-import path from "node:path";
+import * as path from "node:path";
 import {
   Effect,
   Layer,
@@ -21,7 +21,7 @@ import {
   ExtractionError,
   UnknownError,
 } from "./errors";
-import { Cookie } from "./types";
+import { Cookie } from "@expect/shared/models";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import { HttpClient } from "effect/unstable/http/HttpClient";
 import { HttpClientResponse } from "effect/unstable/http";
@@ -138,7 +138,9 @@ export class CdpClient extends ServiceMap.Service<CdpClient>()("@cookies/CdpClie
       const port = yield* Effect.tryPromise({
         try: () => getPort(),
         catch: (cause) =>
-          new ExtractionError({ reason: new UnknownError({ cause: String(cause) }) }),
+          new ExtractionError({
+            reason: new UnknownError({ cause: String(cause) }),
+          }),
       });
 
       yield* Effect.annotateCurrentSpan({
