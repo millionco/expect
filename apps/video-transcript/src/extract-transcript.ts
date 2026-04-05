@@ -1,10 +1,12 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { google } from "@ai-sdk/google";
+import { gateway } from "@ai-sdk/gateway";
 import { generateText } from "ai";
 import { SUPPORTED_MIME_TYPES } from "./constants";
 import { buildTranscriptPrompt } from "./transcript-prompt";
 import type { ActivityTimeline } from "./types";
+
+const MODEL = "google/gemini-2.5-flash";
 
 const getMimeType = (videoPath: string): string => {
   const extension = path.extname(videoPath).toLowerCase();
@@ -20,7 +22,7 @@ export const extractTranscript = async (
   const prompt = buildTranscriptPrompt(timeline);
 
   const { text } = await generateText({
-    model: google("gemini-2.5-flash"),
+    model: gateway(MODEL),
     messages: [
       {
         role: "user",

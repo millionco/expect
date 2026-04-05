@@ -52,7 +52,7 @@ const extractFrames = async (videoPath: string, outputDir: string): Promise<numb
   return files.length;
 };
 
-const computeFrameDiff = (frameA: Buffer, frameB: Buffer): number => {
+export const computeFrameDiff = (frameA: Buffer, frameB: Buffer): number => {
   const length = Math.min(frameA.length, frameB.length);
   if (length === 0) return 0;
 
@@ -64,7 +64,7 @@ const computeFrameDiff = (frameA: Buffer, frameB: Buffer): number => {
   return totalDiff / length;
 };
 
-const classifySegments = (diffs: readonly number[]): ActivityTimeline => {
+export const classifySegments = (diffs: readonly number[]): ActivityTimeline => {
   const rawClassification: Array<"active" | "idle" | "scene_change"> = [];
 
   for (const diff of diffs) {

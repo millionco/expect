@@ -26,7 +26,7 @@
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/google": "^3.0.53",
+    "@ai-sdk/gateway": "^3.0.88",
     "ai": "^6.0.146",
     "commander": "^13.1.0",
     "effect": "4.0.0-beta.35",
@@ -34,7 +34,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "*"
   },
   "engines": {
     "node": ">=18"

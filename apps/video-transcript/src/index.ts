@@ -51,10 +51,10 @@ program.action(
       process.exit(1);
     }
 
-    if (!options.timelineOnly && !process.env["GOOGLE_GENERATIVE_AI_API_KEY"]) {
+    if (!options.timelineOnly && !process.env["AI_GATEWAY_API_KEY"]) {
       console.error(
         pc.red(
-          "Error: GOOGLE_GENERATIVE_AI_API_KEY environment variable is required for transcript extraction.",
+          "Error: AI_GATEWAY_API_KEY environment variable is required for transcript extraction.",
         ),
       );
       process.exit(1);
@@ -112,7 +112,7 @@ program.action(
       }
     }
 
-    console.error(pc.cyan("Extracting transcript via Gemini 2.5 Flash..."));
+    console.error(pc.cyan("Extracting transcript via Vercel AI Gateway (Gemini 2.5 Flash)..."));
 
     const transcript = await extractTranscript(processedVideoPath, timeline);
 
