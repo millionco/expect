@@ -5,20 +5,32 @@
  */
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 export default function () {
   const [copied, setCopied] = useState(false);
+  const [openFaqs, setOpenFaqs] = useState<Set<number>>(new Set());
+  const commandRef = useRef<HTMLDivElement>(null);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText("npx -y expect-cli@latest init");
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
+
+  const handleSelectCommand = () => {
+    if (!commandRef.current) return;
+    const selection = window.getSelection();
+    if (!selection) return;
+    const range = document.createRange();
+    range.selectNodeContents(commandRef.current);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  };
   return (
-    <div className="[font-synthesis:none] overflow-clip antialiased min-h-screen bg-white flex justify-center">
+    <div className="[font-synthesis:none] overflow-x-clip antialiased min-h-screen bg-white flex justify-center">
       <div className="relative w-112.75 pt-10.25 pb-20">
-        <div className="flex items-center justify-center bg-white">
+        <div className="flex items-center bg-white">
           <div className="relative w-107.25 h-67.5 shrink-0">
             <div className="left-0 top-0 w-107.25 h-67.5 rounded-[11px] absolute bg-white [box-shadow:#B0B0B038_0px_0px_0px_0.5px,#95959533_0px_1px_3px]" />
             <div className="left-0 top-58.75 w-107.25 h-[0.5px] absolute bg-[#E5E5E5]" />
@@ -26,20 +38,20 @@ export default function () {
             <div className="left-23.75 top-8.5 w-83.5 h-[0.5px] absolute bg-[#E5E5E5]" />
             <div className="left-5.5 top-0 w-67.5 h-[0.5px] absolute origin-top-left bg-[#E5E5E5]" style={{ rotate: '90deg' }} />
             <div className="left-102 top-0 w-67.5 h-[0.5px] absolute origin-top-left bg-[#E5E5E5]" style={{ rotate: '90deg' }} />
-            <div className="left-5.5 top-3.5 w-96.5 tracking-[-0.02em] [white-space-collapse:preserve] absolute font-['NewYork-Regular','New_York',system-ui,sans-serif] text-[21px]/9.5 text-[#8A8A8A] filter-[grayscale(100%)]">
-              expect
+            <div className="left-5.5 top-3.5 w-96.5 tracking-[-0.02em] [white-space-collapse:preserve] absolute font-['NewYork-Regular','New_York',system-ui,sans-serif] text-[21px]/9.5 text-[#8A8A8A]">
+              Expect
             </div>
-            <div className="left-2.75 top-53.5 rounded-full absolute size-11 filter-[grayscale(100%)] [box-shadow:#FFFFFF_0px_0px_9px_inset,#85858538_0px_0px_0px_0.5px,#6F6F6F38_0px_1px_3px]" style={{ backgroundImage: 'linear-gradient(in oklab 180deg, oklab(100% 0 0) 0%, oklab(98.1% 0 0) 100%)' }} />
+            <div className="left-2.75 top-53.5 rounded-full absolute size-11 [box-shadow:#FFFFFF_0px_0px_9px_inset,#85858538_0px_0px_0px_0.5px,#6F6F6F38_0px_1px_3px]" style={{ backgroundImage: 'linear-gradient(in oklab 180deg, oklab(100% 0 0) 0%, oklab(98.1% 0 0) 100%)' }} />
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ left: '24px', top: '227px', width: '18px', height: 'auto', position: 'absolute' }}>
               <path fillRule="evenodd" clipRule="evenodd" d="M4.055 1.102C3.39 0.659 2.5 1.136 2.5 1.934V10.066C2.5 10.864 3.39 11.341 4.055 10.898L10.153 6.832C10.747 6.436 10.747 5.564 10.153 5.168L4.055 1.102Z" fill="#5F5F5F" />
             </svg>
           </div>
         </div>
-        <div className="flex flex-col gap-4.25 mt-11.5">
-          <div className="w-112.75 tracking-[-0.02em] [white-space-collapse:preserve] font-['NewYork-Regular','New_York',system-ui,sans-serif] text-[27px]/9.5 text-[#1E1E1E] filter-[grayscale(100%)]">
+        <div className="flex flex-col gap-2.5 mt-11.5">
+          <div className="w-112.75 tracking-[-0.03em] [white-space-collapse:preserve] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[22px]/9.5 text-[color(display-p3_0.248_0.248_0.248)]">
             Expect verifies what your agent built
           </div>
-          <div className="[letter-spacing:0em] w-102 [white-space-collapse:preserve] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[15px]/5.75 text-[#707070] filter-[grayscale(100%)]">
+          <div className="[letter-spacing:0em] w-102 [white-space-collapse:preserve] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[15px]/5.75 text-[#707070]">
             Expect is an agent skill that tests your app in a browser so you don't have to. It checks for:
           </div>
         </div>
@@ -99,21 +111,21 @@ export default function () {
           </div>
         </div>
         <div className="flex flex-col gap-2.75 mt-8">
-          <div className="[letter-spacing:0em] [white-space-collapse:preserve] w-max font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[15px]/5.75 text-[#454545] filter-[grayscale(100%)]">
+          <div className="[letter-spacing:0em] [white-space-collapse:preserve] w-max font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[15px]/5.75 text-[#454545]">
             Install the skill to get started
           </div>
-          <div className="items-center flex [font-synthesis-small-caps:none] [font-synthesis-style:none] [font-synthesis-weight:none] justify-between w-107.25 rounded-[11px] pt-2.75 pr-3 pb-2.75 pl-3.5 overflow-clip [box-shadow:#C9C9C933_0px_2px_3px,#E9E9E9_0px_0px_0px_0.75px]" style={{ backgroundImage: 'linear-gradient(in oklab 180deg, oklab(100% 0 0) 0%, oklab(100% 0 0 / 0%) 100%)' }}>
+          <div onClick={handleSelectCommand} className="items-center flex [font-synthesis-small-caps:none] [font-synthesis-style:none] [font-synthesis-weight:none] justify-between w-107.25 rounded-[11px] pt-2.75 pr-3 pb-2.75 pl-3.5 overflow-clip cursor-text [box-shadow:#C9C9C933_0px_2px_3px,#E9E9E9_0px_0px_0px_0.75px] transition-colors hover:bg-[color(display-p3_0.991_0.991_0.991)]" style={{ backgroundImage: 'linear-gradient(in oklab 180deg, oklab(100% 0 0) 0%, oklab(100% 0 0 / 0%) 100%)' }}>
             <div className="items-start flex min-w-0 gap-1">
               <div className="shrink-0 [letter-spacing:0px] w-3.75 font-['GeistMono-Medium','Geist_Mono',system-ui,sans-serif] font-medium text-sm/4.5 text-[#5C5C5C]">
                 $
               </div>
-              <div className="min-w-0 relative overflow-clip">
-                <div className="[letter-spacing:0px] w-max font-['GeistMono-Medium','Geist_Mono',system-ui,sans-serif] font-medium text-sm/4.5 text-[#323232]">
+              <div className="min-w-0 relative">
+                <div ref={commandRef} className="[letter-spacing:0px] w-max font-['GeistMono-Medium','Geist_Mono',system-ui,sans-serif] font-medium text-sm/4.5 text-[#323232]">
                   npx -y expect-cli@latest init
                 </div>
               </div>
             </div>
-            <button onClick={handleCopy} className="cursor-pointer shrink-0 group" aria-label="Copy command">
+            <button onClick={(event) => { event.stopPropagation(); handleCopy(); }} className="cursor-pointer shrink-0 group" aria-label="Copy command">
               {copied && (
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '17px', height: 'auto' }}>
                   <path fillRule="evenodd" clipRule="evenodd" d="M10.28 3.22a.75.75 0 0 1 0 1.06l-5 5a.75.75 0 0 1-1.06 0l-2.5-2.5a.75.75 0 1 1 1.06-1.06L4.75 7.69l4.47-4.47a.75.75 0 0 1 1.06 0Z" fill="#00C8B3" />
@@ -129,30 +141,32 @@ export default function () {
         </div>
         <div className="flex flex-col gap-5.5 w-107.25 mt-8">
           <div className="h-[0.5px] self-stretch shrink-0 bg-[#DDDDDD]" />
-          <div className="flex justify-between items-center">
-            <div className="[letter-spacing:0em] [white-space-collapse:preserve] w-max font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[15px]/5.75 text-[#5A5A5A] filter-[grayscale(100%)]">
-              What makes Expect different from Playwright?
+          {[
+            { question: "How is this different from Puppeteer / Playwright / Cypress?", answer: "Instead of writing scripts, maintaining selectors, and wiring up assertions, Expect reads your code changes and tests them in a real browser automatically. It's like giving your agent QA superpowers." },
+            { question: "How is this different from coding agents or computer-use tools?", answer: "Your agent needs to verify its work, and general-purpose browser tools rely on screenshots and mouse coordinates.\n\nExpect is purpose-built for testing: it uses Playwright for fast DOM automation, reads your code changes, generates a test plan, and runs it with your real cookies, then reports back what's broken so the agent can fix it." },
+            { question: "How does it fit into my workflow?", answer: "Your coding agent calls /expect as a skill whenever it needs to validate its work in a real browser. You can also trigger it from CI by adding the GitHub Action to test every PR automatically before merge." },
+            { question: "Does it work in CI?", answer: "Yes. Use --ci or the add github-action command to set up a workflow that tests every PR. In CI mode it runs headless, skips cookie extraction, auto-approves the plan, and enforces a 30-minute timeout." },
+            { question: "Can this do mobile / desktop testing?", answer: "Coming soon." },
+            { question: "Is there a cloud or enterprise version?", answer: "Coming soon. Email aiden@million.dev if you have questions or ideas." },
+          ].map((faq, index) => (
+            <div key={index}>
+              <div onClick={() => setOpenFaqs((previous) => { const next = new Set(previous); if (next.has(index)) { next.delete(index); } else { next.add(index); } return next; })} className="flex justify-between items-start cursor-pointer group/faq transition-colors hover:text-[#1E1E1E]">
+                <div className={`[letter-spacing:0em] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[15px]/5.75 transition-colors group-hover/faq:text-[#1E1E1E] ${openFaqs.has(index) ? "text-[#1E1E1E]" : "text-[#5A5A5A]"}`}>
+                  {faq.question}
+                </div>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '20px', height: 'auto', flexShrink: '0' }} className={`group-hover/faq:text-[#1E1E1E] transition-all duration-200 ${openFaqs.has(index) ? "text-[#1E1E1E] rotate-45" : "text-[#5A5A5A]"}`}>
+                  <path fillRule="evenodd" clipRule="evenodd" d="M6.5 3C6.5 2.724 6.276 2.5 6 2.5C5.724 2.5 5.5 2.724 5.5 3V5.5H3C2.724 5.5 2.5 5.724 2.5 6C2.5 6.276 2.724 6.5 3 6.5H5.5V9C5.5 9.276 5.724 9.5 6 9.5C6.276 9.5 6.5 9.276 6.5 9V6.5H9C9.276 6.5 9.5 6.276 9.5 6C9.5 5.724 9.276 5.5 9 5.5H6.5V3Z" fill="currentColor" />
+                </svg>
+              </div>
+              <div className={`grid transition-[grid-template-rows,opacity] duration-200 ${openFaqs.has(index) ? "grid-rows-[1fr] opacity-100 mt-2" : "grid-rows-[0fr] opacity-0"}`}>
+                <div className="overflow-hidden">
+                  <div className="[letter-spacing:0em] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[14px]/5.5 text-[#858585] whitespace-pre-line">
+                    {faq.answer}
+                  </div>
+                </div>
+              </div>
             </div>
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '20px', height: 'auto', flexShrink: '0' }}>
-              <path fillRule="evenodd" clipRule="evenodd" d="M6.5 3C6.5 2.724 6.276 2.5 6 2.5C5.724 2.5 5.5 2.724 5.5 3V5.5H3C2.724 5.5 2.5 5.724 2.5 6C2.5 6.276 2.724 6.5 3 6.5H5.5V9C5.5 9.276 5.724 9.5 6 9.5C6.276 9.5 6.5 9.276 6.5 9V6.5H9C9.276 6.5 9.5 6.276 9.5 6C9.5 5.724 9.276 5.5 9 5.5H6.5V3Z" fill="#5A5A5A" />
-            </svg>
-          </div>
-          <div className="flex justify-between items-center">
-            <div className="[letter-spacing:0em] [white-space-collapse:preserve] w-max font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[15px]/5.75 text-[#5A5A5A] filter-[grayscale(100%)]">
-              Is Effect a TUI or a Skill?
-            </div>
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '20px', height: 'auto', flexShrink: '0' }}>
-              <path fillRule="evenodd" clipRule="evenodd" d="M6.5 3C6.5 2.724 6.276 2.5 6 2.5C5.724 2.5 5.5 2.724 5.5 3V5.5H3C2.724 5.5 2.5 5.724 2.5 6C2.5 6.276 2.724 6.5 3 6.5H5.5V9C5.5 9.276 5.724 9.5 6 9.5C6.276 9.5 6.5 9.276 6.5 9V6.5H9C9.276 6.5 9.5 6.276 9.5 6C9.5 5.724 9.276 5.5 9 5.5H6.5V3Z" fill="#5A5A5A" />
-            </svg>
-          </div>
-          <div className="flex justify-between items-center">
-            <div className="[letter-spacing:0em] [white-space-collapse:preserve] w-max font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[15px]/5.75 text-[#5A5A5A] filter-[grayscale(100%)]">
-              Some other question?
-            </div>
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '20px', height: 'auto', flexShrink: '0' }}>
-              <path fillRule="evenodd" clipRule="evenodd" d="M6.5 3C6.5 2.724 6.276 2.5 6 2.5C5.724 2.5 5.5 2.724 5.5 3V5.5H3C2.724 5.5 2.5 5.724 2.5 6C2.5 6.276 2.724 6.5 3 6.5H5.5V9C5.5 9.276 5.724 9.5 6 9.5C6.276 9.5 6.5 9.276 6.5 9V6.5H9C9.276 6.5 9.5 6.276 9.5 6C9.5 5.724 9.276 5.5 9 5.5H6.5V3Z" fill="#5A5A5A" />
-            </svg>
-          </div>
+          ))}
         </div>
       </div>
     </div>
