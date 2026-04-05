@@ -1155,6 +1155,7 @@ export class ExecutedTestPlan extends TestPlan.extend<ExecutedTestPlan>(
       .split("\n")
       .map(parseMarker)
       .filter(Predicate.isNotUndefined);
+    console.log([lastEvent._tag === "AgentThinking" ? `🧠` : `🎙️`, lastEvent.text].join(" "));
     if (foundMarkers.length === 0) return this;
     let result: ExecutedTestPlan = new ExecutedTestPlan({
       ...this,

@@ -305,4 +305,5 @@ const printSummary = (write: (text: string) => Effect.Effect<void>, report: Test
       ` ${pc.bold("Tests")}  ${parts.join(pc.dim(" | "))} ${pc.dim(`(${report.steps.length})`)}`,
     );
     yield* write(` ${pc.bold("Time")}   ${formatElapsed(report.totalDurationMs)}`);
+    yield* write("\n" + report.toPlainText);
   });

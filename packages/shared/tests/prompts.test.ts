@@ -192,6 +192,7 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("<coverage_rules>");
     expect(prompt).toContain("<execution_strategy>");
     expect(prompt).toContain("<ui_quality_rules>");
+    expect(prompt).toContain("<burden_of_proof>");
     expect(prompt).toContain("<tools");
     expect(prompt).toContain("<snapshot_workflow>");
     expect(prompt).toContain("<status_markers>");

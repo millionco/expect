@@ -18,7 +18,7 @@ export const buildSessionMeta = ({ provider, systemPrompt, metadata }: BuildSess
       ? {
           claudeCode: {
             options: {
-              tools: { type: "preset", preset: "claude_code" },
+              tools: [],
               settings: {
                 allowedMcpServers: [{ serverName: BROWSER_MCP_SERVER_NAME }],
               },

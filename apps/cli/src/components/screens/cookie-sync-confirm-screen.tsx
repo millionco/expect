@@ -29,7 +29,7 @@ export const CookieSyncConfirmScreen = ({
   const COLORS = useColors();
   const setScreen = useNavigationStore((state) => state.setScreen);
   const setCookieImportProfiles = useProjectPreferencesStore(
-    (state) => state.setCookieImportProfiles
+    (state) => state.setCookieImportProfiles,
   );
   const { data, isLoading } = useInstalledBrowsers();
 
@@ -41,8 +41,7 @@ export const CookieSyncConfirmScreen = ({
   const itemCount = items.length;
 
   useEffect(() => {
-    if (defaultsInitialized.current || !data || data.browsers.length === 0)
-      return;
+    if (defaultsInitialized.current || !data || data.browsers.length === 0) return;
     defaultsInitialized.current = true;
     if (Option.isSome(data.default)) {
       setSelectedIds(new Set([data.default.value.id]));
@@ -62,15 +61,11 @@ export const CookieSyncConfirmScreen = ({
   };
 
   const confirm = () => {
-    const selectedProfiles = items.filter((browser) =>
-      selectedIds.has(browser.id)
-    );
+    const selectedProfiles = items.filter((browser) => selectedIds.has(browser.id));
     setCookieImportProfiles(selectedProfiles);
     trackEvent("cookies:browser_selection", {
       selected_count: selectedProfiles.length,
-      browsers: selectedProfiles
-        .map((browser) => browser.displayName)
-        .join(", "),
+      browsers: selectedProfiles.map((browser) => browser.displayName).join(", "),
     });
     if (selectedProfiles.length > 0) {
       trackEvent("cookies:browser_selection", {
@@ -86,7 +81,7 @@ export const CookieSyncConfirmScreen = ({
           instruction,
           savedFlow,
           cookieImportProfiles: selectedProfiles,
-        })
+        }),
       );
     } else {
       setScreen(Screen.Main());
@@ -135,24 +130,20 @@ export const CookieSyncConfirmScreen = ({
         <Text wrap="truncate">
           {" "}
           <Text color={COLORS.DIM}>{figures.pointerSmall}</Text>{" "}
-          <Text color={COLORS.TEXT}>
-            {instruction ?? "Select browsers for cookie sync"}
-          </Text>
+          <Text color={COLORS.TEXT}>{instruction ?? "Select browsers for cookie sync"}</Text>
         </Text>
       </Box>
 
       <Box marginTop={1}>
         {selectedCount > 0 && (
           <Text color={COLORS.GREEN}>
-            {figures.tick} Your signed-in session will be synced from{" "}
-            {selectedCount} browser
+            {figures.tick} Your signed-in session will be synced from {selectedCount} browser
             {selectedCount === 1 ? "" : "s"}
           </Text>
         )}
         {selectedCount === 0 && (
           <Text color={COLORS.YELLOW}>
-            {figures.warning} No browsers selected — tests run without
-            authentication
+            {figures.warning} No browsers selected — tests run without authentication
           </Text>
         )}
       </Box>
@@ -169,8 +160,7 @@ export const CookieSyncConfirmScreen = ({
             const id = browser.id;
             const isHighlighted = index === highlightedIndex;
             const isSelected = selectedIds.has(id);
-            const isDefault =
-              Option.isSome(data!.default) && data!.default.value.id === id;
+            const isDefault = Option.isSome(data!.default) && data!.default.value.id === id;
 
             return (
               <Box key={id}>
@@ -180,10 +170,7 @@ export const CookieSyncConfirmScreen = ({
                 <Text color={isSelected ? COLORS.PRIMARY : COLORS.DIM}>
                   {isSelected ? figures.checkboxOn : figures.checkboxOff}{" "}
                 </Text>
-                <Text
-                  color={isHighlighted ? COLORS.PRIMARY : COLORS.TEXT}
-                  bold={isHighlighted}
-                >
+                <Text color={isHighlighted ? COLORS.PRIMARY : COLORS.TEXT} bold={isHighlighted}>
                   {browser.displayName}
                 </Text>
                 {isDefault && <Text color={COLORS.DIM}> (default)</Text>}

@@ -8,7 +8,7 @@ import { layerCli } from "../layers";
 import { playSound } from "./play-sound";
 
 class ExecutionTimeoutError extends Schema.ErrorClass<ExecutionTimeoutError>(
-  "ExecutionTimeoutError"
+  "ExecutionTimeoutError",
 )({
   _tag: Schema.tag("ExecutionTimeoutError"),
   timeoutMs: Schema.Number,
@@ -42,9 +42,7 @@ export const runHeadless = (options: HeadlessRunOptions) =>
     const cookieImportProfiles =
       options.noCookies || options.browserProfileIds.length === 0
         ? []
-        : yield* Effect.forEach(options.browserProfileIds, (id) =>
-            browsers.findById(id)
-          );
+        : yield* Effect.forEach(options.browserProfileIds, (id) => browsers.findById(id));
 
     const sessionStartedAt = Date.now();
     yield* analytics.capture("session:started", {
@@ -70,16 +68,13 @@ export const runHeadless = (options: HeadlessRunOptions) =>
         ? executeStream.pipe(
             Effect.timeoutOrElse({
               duration: `${timeoutMs} millis`,
-              onTimeout: () =>
-                Effect.fail(new ExecutionTimeoutError({ timeoutMs })),
-            })
+              onTimeout: () => Effect.fail(new ExecutionTimeoutError({ timeoutMs })),
+            }),
           )
         : executeStream;
 
     const finalExecuted = yield* executeWithTimeout.pipe(
-      Effect.flatMap((executedTestPlanOption) =>
-        executedTestPlanOption.asEffect()
-      )
+      Effect.flatMap((executedTestPlanOption) => executedTestPlanOption.asEffect()),
     );
 
     const report = yield* reporter.report(finalExecuted);
@@ -111,11 +106,11 @@ export const runHeadless = (options: HeadlessRunOptions) =>
         timeoutMs: Option.getOrUndefined(options.timeoutMs),
         replayHost: options.replayHost,
         testId: options.testId,
-      })
+      }),
     ),
     Effect.catchCause((cause) =>
-      Cause.hasInterruptsOnly(cause) ? Effect.void : Effect.die(cause)
+      Cause.hasInterruptsOnly(cause) ? Effect.void : Effect.die(cause),
     ),
     Effect.tapCause((cause) => Effect.logFatal(cause)),
-    Effect.runPromise
+    Effect.runPromise,
   );

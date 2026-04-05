@@ -38,11 +38,7 @@ import {
   type TestCoverageReport,
   TestPlan,
 } from "@expect/shared/models";
-import {
-  buildExecutionPrompt,
-  buildExecutionSystemPrompt,
-  type DevServerHint,
-} from "@expect/shared/prompts";
+import { buildExecutionPrompt, type DevServerHint } from "@expect/shared/prompts";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Git } from "./git/git";
 import { EXPECT_BASE_URL_ENV_NAME } from "@expect/browser/mcp";
@@ -157,8 +153,6 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
 
       const context = yield* gatherContext(options.changesFor);
 
-      const systemPrompt = buildExecutionSystemPrompt();
-
       const prompt = buildExecutionPrompt({
         userInstruction: options.instruction,
         scope: options.changesFor._tag,
@@ -175,6 +169,9 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
         testCoverage: options.testCoverage,
         devServerHints: options.devServerHints,
       });
+
+      console.log("USER PROMPT: ");
+      console.log(prompt);
 
       const syntheticPlan = new TestPlan({
         id: planId,
@@ -229,7 +226,7 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
         cwd: process.cwd(),
         sessionId: Option.none(),
         prompt,
-        systemPrompt: Option.some(systemPrompt),
+        systemPrompt: Option.none(),
         mcpEnv,
         modelPreference: options.modelPreference,
       });
