@@ -1,5 +1,11 @@
 # expect-cli
 
+## 0.0.25
+
+### Patch Changes
+
+- a8e0b46: Add automated release workflow with changesets, GitHub App bot, and npm Trusted Publishing
+
 ## 0.0.24
 
 ### Patch Changes
