@@ -52,9 +52,12 @@
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
+    "accessibility-checker-engine": "^4.0.16",
     "@agentclientprotocol/claude-agent-acp": "^0.24.2",
     "@effect/atom-react": "4.0.0-beta.35",
     "@effect/platform-node": "4.0.0-beta.35",
+    "@github/copilot": "^1.0.12",
+    "@google/gemini-cli": "^0.35.3",
     "@hono/node-server": "^1.19.11",
     "@tanstack/react-query": "^5.80.7",
     "@zed-industries/codex-acp": "^0.10.0",
