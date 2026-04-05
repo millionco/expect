@@ -1,0 +1,36 @@
+apps/cli/src/commands/add-github-action.ts
+  9a9096bdcbe090eb 68-69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "5daed9357a98c631335ffb910c6f0485f8bd5a82",
+  "prompts": {
+    "9a9096bdcbe090eb": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "580437e8-7273-4e23-ad35-1649b9a42f91",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 0,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    },
+    "f6a91d68dc81c672": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "01e5828a-80c7-43b9-9642-71a65ab5345e",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 43,
+      "total_deletions": 10,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    }
+  }
+}
