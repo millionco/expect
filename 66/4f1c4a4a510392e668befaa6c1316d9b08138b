@@ -1,0 +1,25 @@
+apps/cli/src/data/execution-atom.ts
+  dd8ec1bb7b3e2c66 185
+apps/cli/src/utils/run-test.ts
+  dd8ec1bb7b3e2c66 408
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "664f1c4a4a510392e668befaa6c1316d9b08138b",
+  "prompts": {
+    "dd8ec1bb7b3e2c66": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "890a8cc1-a573-4394-9bc2-0aeff2645d67",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 8,
+      "total_deletions": 8,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}
