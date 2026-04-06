@@ -9,6 +9,7 @@ import { runAddGithubAction } from "./commands/add-github-action";
 import { runAddSkill } from "./commands/add-skill";
 import { runAuditCommand } from "./commands/audit";
 import { runWatchCommand } from "./commands/watch";
+import { runUpdateCommand } from "./commands/update";
 import { isRunningInAgent } from "@expect/shared/launched-from";
 import { isHeadless } from "./utils/is-headless";
 import { type AgentBackend, detectAvailableAgents } from "@expect/agent";
@@ -80,6 +81,8 @@ Examples:
   $ expect --headed -m "smoke test" -y              run with a visible browser
   $ expect --target branch                          test all branch changes
   $ expect --target unstaged                        test unstaged changes
+  $ expect update                                   update to the latest CLI release
+  $ expect update 0.0.30                            install a specific CLI version
   $ expect --no-cookies -m "test" -y                skip system browser cookie extraction
   $ expect -u http://localhost:3000 -m "test" -y    specify dev server URL directly
   $ expect watch -m "test the login flow"           watch mode`,
@@ -219,6 +222,14 @@ program
   .option("--replay-host <url>", "website host for live replay viewer", "https://expect.dev")
   .action(async (opts: CommanderOpts) => {
     await runWatchCommand(opts);
+  });
+
+program
+  .command("update")
+  .description("update expect-cli globally")
+  .argument("[version]", "version or dist-tag to install")
+  .action(async (version?: string) => {
+    await runUpdateCommand(version);
   });
 
 program.action(async () => {

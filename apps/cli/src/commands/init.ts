@@ -12,28 +12,13 @@ import { spinner } from "../utils/spinner";
 import { runAddSkill } from "./add-skill";
 import { runAddGithubAction } from "./add-github-action";
 import {
-  type PackageManager,
   detectNonInteractive,
   detectPackageManager,
   hasGitHubRemote,
-  tryRun,
 } from "./init-utils";
+import { formatInstallCommand, getGlobalInstallCommand, runInstallCommand } from "./update";
 
 export { detectAvailableAgents };
-
-interface InstallCommand {
-  binary: string;
-  args: readonly string[];
-}
-
-const GLOBAL_INSTALL_COMMANDS: Record<PackageManager, InstallCommand> = {
-  npm: { binary: "npm", args: ["install", "-g", "expect-cli@latest"] },
-  pnpm: { binary: "pnpm", args: ["add", "-g", "expect-cli@latest"] },
-  yarn: { binary: "yarn", args: ["global", "add", "expect-cli@latest"] },
-  bun: { binary: "bun", args: ["add", "-g", "expect-cli@latest"] },
-  deno: { binary: "deno", args: ["install", "-g", "npm:expect-cli@latest"] },
-  vp: { binary: "vp", args: ["install", "-g", "expect-cli@latest"] },
-};
 
 interface InitOptions {
   yes?: boolean;
@@ -64,7 +49,7 @@ const logUsageGuide = () => {
 export const runInit = async (options: InitOptions = {}) => {
   const nonInteractive = detectNonInteractive(options.yes ?? false);
   const packageManager = detectPackageManager();
-  const { binary: installBinary, args: installArgs } = GLOBAL_INSTALL_COMMANDS[packageManager];
+  const installCommand = getGlobalInstallCommand(packageManager);
 
   setOnCancel(() => {
     logger.break();
@@ -114,7 +99,7 @@ export const runInit = async (options: InitOptions = {}) => {
   }
 
   const globalSpinner = spinner("Installing expect-cli globally...").start();
-  const globalSuccess = await tryRun(installBinary, installArgs);
+  const globalSuccess = await runInstallCommand(installCommand);
 
   if (globalSuccess) {
     if (isCommandAvailable("expect-cli")) {
@@ -137,7 +122,7 @@ export const runInit = async (options: InitOptions = {}) => {
     }
   } else {
     globalSpinner.fail("Failed to install globally.");
-    logger.dim(`  Run manually: ${highlighter.info(`${installBinary} ${installArgs.join(" ")}`)}`);
+    logger.dim(`  Run manually: ${highlighter.info(formatInstallCommand(installCommand))}`);
   }
 
   const playwrightSpinner = spinner(
