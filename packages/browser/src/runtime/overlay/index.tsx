@@ -292,8 +292,8 @@ const AgentOverlay = () => {
           {!isExpanded && <SpiralSpinner visible />}
 
           {isExpanded && (
-            <div className="flex items-center text-sm font-medium">
-              <div className="flex items-center gap-2.5 pl-2.5 pr-1">
+            <div className="flex items-center text-sm font-medium h-full">
+              <div className="flex items-center gap-2 pl-3 pr-1">
                 <SpiralSpinner visible={hasLabel} />
                 <span
                   className="overflow-hidden text-ellipsis whitespace-nowrap max-w-60 bg-clip-text text-transparent animate-[expect-text-shimmer_3s_linear_infinite]"
