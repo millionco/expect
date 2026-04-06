@@ -11,7 +11,7 @@ import { ClaudeSpinner } from "./claude-spinner";
 
 const CODING_DURATION_MS = 2000;
 const SLIDE_DELAY_MS = 500;
-const DIFF_DURATION_MS = 2500;
+const DIFF_DURATION_MS = 1500;
 
 type AnimationPhase = "coding" | "diff" | "expect";
 
@@ -53,7 +53,7 @@ function TerminalContent({ phase }: { phase: AnimationPhase }) {
     <motion.div
       className="flex flex-col items-start w-61 text-xs/4 gap-1"
       animate={{ y: showExpect ? -180 : showDiff ? -70 : 0 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
       <div className="h-7 shrink-0" />
       <div className="flex items-start shrink-0 gap-2.5">
@@ -71,14 +71,14 @@ function TerminalContent({ phase }: { phase: AnimationPhase }) {
           </div>
         </div>
         <div className="h-2.25 shrink-0" />
-        {!showDiff && <ClaudeSpinner message="Coalescing..." />}
+        {!showDiff && <ClaudeSpinner message="coalescing..." />}
         {showDiff && (
           <div className="flex items-center shrink-0 gap-1.25">
             <div className="inline-block [white-space-collapse:preserve] w-max text-[color(display-p3_0.249_0.701_0.193)] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
               ⏺
             </div>
             <div className="[letter-spacing:-0.125px] inline-block [white-space-collapse:preserve] w-max text-[#1F1F1F] font-['GeistMono-SemiBold','Geist_Mono',system-ui,sans-serif] font-semibold shrink-0 text-[12.5px]/4.5">
-              Update
+              update
             </div>
             <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[#1F1F1F] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
               (signup.tsx)
@@ -89,66 +89,120 @@ function TerminalContent({ phase }: { phase: AnimationPhase }) {
       {showDiff && (
         <>
           <div className="h-0.5 shrink-0" />
-          <TerminalLine>
-            <div className="flex flex-col w-full rounded-[3px] pt-1.25 pb-1.5 bg-[#D7F2D3] px-2">
-              <div className="flex items-center gap-1.75">
-                <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.040_0.361_0)] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
-                  12 +
-                </div>
-                <div className="w-42.5 h-3.25 rounded-xs bg-[#B1E4AC] shrink-0" />
+          <div className="flex flex-col w-full rounded-[3px] pt-1.25 pb-1.5 bg-[#D7F2D3] px-2">
+            <div className="flex items-center gap-1.75">
+              <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.040_0.361_0)] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+                12 +
               </div>
-              <div className="flex items-center gap-1.75">
-                <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.040_0.361_0)] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
-                  13 +
-                </div>
-                <div className="w-23.75 h-3.25 rounded-xs bg-[#B1E4AC] shrink-0" />
-              </div>
+              <div className="w-42.5 h-3.25 rounded-xs bg-[#B1E4AC] shrink-0" />
             </div>
-          </TerminalLine>
-          <TerminalLine delay={0.08}>
-            <div className="flex items-center w-full rounded-[3px] py-0.75 px-2 gap-1.75 bg-[color(display-p3_1_0.879_0.854)]">
-              <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.625_0_0)] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
-                61 -
+            <div className="flex items-center gap-1.75">
+              <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.040_0.361_0)] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+                13 +
               </div>
-              <div className="w-34 h-3.25 rounded-xs bg-[#F9BFB5] shrink-0" />
+              <div className="w-23.75 h-3.25 rounded-xs bg-[#B1E4AC] shrink-0" />
             </div>
-          </TerminalLine>
+          </div>
+          <div className="flex items-center w-full rounded-[3px] py-0.75 px-2 gap-1.75 bg-[color(display-p3_1_0.879_0.854)]">
+            <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.625_0_0)] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+              61 -
+            </div>
+            <div className="w-34 h-3.25 rounded-xs bg-[#F9BFB5] shrink-0" />
+          </div>
         </>
       )}
       {showExpect && (
         <div className="flex flex-col pl-0.5 gap-1.25 mt-4">
-          <TerminalLine>
-            <div className="flex items-center gap-1.25">
-              <div className="inline-block text-[color(display-p3_0.663_0.522_1)] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
-                ⏺
-              </div>
-              <div className="inline-block text-[color(display-p3_0.454_0.250_0.783)] font-['GeistMono-SemiBold','Geist_Mono',system-ui,sans-serif] font-semibold shrink-0 text-[12.5px]/4.5">
-                Expect Skill
-              </div>
+          <div className="flex items-center gap-1.25">
+            <div className="inline-block text-[color(display-p3_0.663_0.522_1)] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+              ⏺
             </div>
-          </TerminalLine>
-          <TerminalLine delay={0.06}>
-            <div className="flex items-center pl-3.75 gap-1.5">
-              <div className="inline-block text-[#1F1F1F] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
-                ◯
-              </div>
-              <div className="inline-block text-[#1F1F1F] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
-                Security & Perf
-              </div>
+            <div className="inline-block text-[color(display-p3_0.454_0.250_0.783)] font-['GeistMono-SemiBold','Geist_Mono',system-ui,sans-serif] font-semibold shrink-0 text-[12.5px]/4.5">
+              expect skill
             </div>
-          </TerminalLine>
-          <TerminalLine delay={0.12}>
-            <div className="flex items-center pl-3.75 gap-1.5">
-              <div className="inline-block text-[#1F1F1F] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
-                ◯
-              </div>
-              <div className="inline-block text-[#1F1F1F] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
-                Responsiveness
-              </div>
+          </div>
+          <div className="flex items-center pl-3.75 gap-1.5">
+            <div className="inline-block text-[#1F1F1F] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+              ◯
             </div>
-          </TerminalLine>
+            <div className="inline-block text-[#1F1F1F] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+              security & perf
+            </div>
+          </div>
+          <div className="flex items-center pl-3.75 gap-1.5">
+            <div className="inline-block text-[#1F1F1F] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+              ◯
+            </div>
+            <div className="inline-block text-[#1F1F1F] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+              responsiveness
+            </div>
+          </div>
         </div>
       )}
+    </motion.div>
+  );
+}
+
+function BrowserPreview({ slid }: { slid: boolean }) {
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!slid) return;
+    const timer = setTimeout(() => setLoaded(true), 900);
+    return () => clearTimeout(timer);
+  }, [slid]);
+
+  return (
+    <motion.div
+      className="absolute top-0 left-0 z-0"
+      animate={slid ? { x: -100, y: -8 } : { x: -12, y: -8 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+    >
+      <div className="flex flex-col w-68.5 h-46 rounded-2xl pt-2.5 pr-2.25 pb-6.75 pl-4.75 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]">
+        <div className="flex items-center -ml-1">
+          <div className="flex items-center gap-1.5">
+            <div className="rounded-full bg-[#FF726A] shrink-0 size-2.5" />
+            <div className="rounded-full bg-[#FEBC2E] shrink-0 size-2.5" />
+            <div className="rounded-full bg-[#EAEAEA] shrink-0 size-2.5" />
+          </div>
+          <div className="w-3.5 shrink-0" />
+          <div className="relative w-36.25 h-6.5 rounded-full shrink-0 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#A4A4A452_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] overflow-hidden">
+            {slid && !loaded && (
+              <motion.div
+                className="absolute bottom-0 left-0 h-[2.5px] bg-[#007AFF]"
+                initial={{ width: "0%" }}
+                animate={{ width: "85%" }}
+                transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
+              />
+            )}
+            {slid && loaded && (
+              <motion.div
+                className="absolute bottom-0 left-0 h-[2.5px] bg-[#007AFF]"
+                initial={{ width: "85%" }}
+                animate={{ width: "100%", opacity: 0 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+              />
+            )}
+          </div>
+          <div className="w-2 shrink-0" />
+          <div className="w-10.5 h-6.5 rounded-full shrink-0 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#A4A4A452_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]" />
+        </div>
+        <AnimatePresence>
+          {loaded && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              <div className="tracking-[-0.03em] [white-space-collapse:preserve] mt-4.5 w-max text-[#474747] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-lg/10">
+                sign up
+              </div>
+              <div className="w-52.75 h-7 rounded-lg bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696952_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] shrink-0" />
+              <div className="w-19.5 h-6.25 rounded-lg mt-2.5 bg-[#FBFBFB] [box-shadow:#69696952_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] shrink-0" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </motion.div>
   );
 }
@@ -159,41 +213,18 @@ function TerminalIllustration() {
   return (
     <div className="flex flex-col items-center justify-center gap-4 text-xs/4 mt-11.5 p-3">
       <div className="relative w-68.5 h-46 shrink-0 overflow-visible">
-        <motion.div
-          className="absolute top-0 left-0 z-0"
-          animate={slid ? { x: -100, y: -8 } : { x: -12, y: -8 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-        >
-          <div className="flex flex-col w-68.5 h-46 rounded-2xl pt-2.5 pr-2.25 pb-6.75 pl-4.75 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]">
-            <div className="flex items-center -ml-1">
-              <div className="flex items-center gap-1.5">
-                <div className="rounded-full bg-[#FF726A] shrink-0 size-2.5" />
-                <div className="rounded-full bg-[#FEBC2E] shrink-0 size-2.5" />
-                <div className="rounded-full bg-[#EAEAEA] shrink-0 size-2.5" />
-              </div>
-              <div className="w-3.5 shrink-0" />
-              <div className="w-36.25 h-6.5 rounded-full shrink-0 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#A4A4A452_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]" />
-              <div className="w-2 shrink-0" />
-              <div className="w-10.5 h-6.5 rounded-full shrink-0 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#A4A4A452_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]" />
-            </div>
-            <div className="tracking-[-0.03em] [white-space-collapse:preserve] mt-4.5 w-max text-[#474747] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-lg/10">
-              Sign up
-            </div>
-            <div className="w-52.75 h-7 rounded-lg bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696952_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] shrink-0" />
-            <div className="w-19.5 h-6.25 rounded-lg mt-2.5 bg-[#FBFBFB] [box-shadow:#69696952_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] shrink-0" />
-          </div>
-        </motion.div>
+        <BrowserPreview slid={slid} />
         <motion.div
           className="flex flex-col items-start w-68.5 h-46 relative z-10 rounded-2xl pt-4.5 pr-3.75 pb-6.5 pl-3.75 overflow-clip bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]"
           animate={slid ? { x: 80 } : { x: 0 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
           <div className="flex shrink-0 gap-1.5 relative z-20">
             <div className="rounded-full bg-[#FF726A] shrink-0 size-2.5" />
             <div className="rounded-full bg-[#FEBC2E] shrink-0 size-2.5" />
             <div className="rounded-full bg-[#EAEAEA] shrink-0 size-2.5" />
           </div>
-          <div className="absolute top-0 left-0 right-0 h-14 z-10 pointer-events-none rounded-t-2xl" style={{ background: 'linear-gradient(to bottom, white 30%, transparent 100%)' }} />
+          <div className="absolute top-0 left-0 right-0 h-18 z-10 pointer-events-none rounded-t-2xl" style={{ background: 'linear-gradient(to bottom, white 38%, transparent 100%)' }} />
           <div className="absolute bottom-0 left-0 right-0 h-8 z-10 pointer-events-none rounded-b-2xl" style={{ background: 'linear-gradient(to top, white 0%, transparent 100%)' }} />
           <TerminalContent phase={phase} />
         </motion.div>
