@@ -2,8 +2,8 @@ import path from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod/v4";
-import { mkdir, writeFile } from "node:fs/promises";
 import { Effect, Option, type ManagedRuntime } from "effect";
+import { FileSystem } from "effect/FileSystem";
 import { evaluateRuntime } from "../utils/evaluate-runtime";
 import { runAccessibilityAudit } from "../accessibility";
 import { formatPerformanceTrace } from "../performance-trace";
@@ -42,10 +42,11 @@ const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
 
 // HACK: tool annotations (readOnlyHint, destructiveHint) are required for parallel execution in the Claude Agent SDK
 export const createBrowserMcpServer = <E>(
-  runtime: ManagedRuntime.ManagedRuntime<McpSession | OverlayController, E>,
+  runtime: ManagedRuntime.ManagedRuntime<McpSession | OverlayController | FileSystem, E>,
 ) => {
-  const runMcp = <A>(effect: Effect.Effect<A, unknown, McpSession | OverlayController>) =>
-    runtime.runPromise(effect);
+  const runMcp = <A>(
+    effect: Effect.Effect<A, unknown, McpSession | OverlayController | FileSystem>,
+  ) => runtime.runPromise(effect);
 
   const server = new McpServer({
     name: "expect",
@@ -439,10 +440,11 @@ export const createBrowserMcpServer = <E>(
             TMP_ARTIFACT_OUTPUT_DIRECTORY,
             `performance-trace-${Date.now()}.md`,
           );
-          yield* Effect.tryPromise(() =>
-            mkdir(TMP_ARTIFACT_OUTPUT_DIRECTORY, { recursive: true }),
-          ).pipe(Effect.catchCause(() => Effect.void));
-          yield* Effect.tryPromise(() => writeFile(tracePath, traceDocument));
+          const fileSystem = yield* FileSystem;
+          yield* fileSystem
+            .makeDirectory(TMP_ARTIFACT_OUTPUT_DIRECTORY, { recursive: true })
+            .pipe(Effect.catchCause(() => Effect.void));
+          yield* fileSystem.writeFileString(tracePath, traceDocument);
 
           const summary = [`Performance trace written to: ${tracePath}`, "", "Web Vitals:"];
           const { webVitals } = trace;
@@ -550,7 +552,7 @@ export const createBrowserMcpServer = <E>(
 };
 
 export const startBrowserMcpServer = async <E>(
-  runtime: ManagedRuntime.ManagedRuntime<McpSession | OverlayController, E>,
+  runtime: ManagedRuntime.ManagedRuntime<McpSession | OverlayController | FileSystem, E>,
 ) => {
   const server = createBrowserMcpServer(runtime);
   const transport = new StdioServerTransport();

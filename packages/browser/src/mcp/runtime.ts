@@ -8,8 +8,8 @@ const StderrLoggerLayer = Layer.succeed(Logger.LogToStderr, true);
 
 export const McpRuntime = ManagedRuntime.make(
   Layer.mergeAll(McpSession.layer, OverlayController.layer).pipe(
+    Layer.provideMerge(NodeServices.layer),
     Layer.provide(StderrLoggerLayer),
     Layer.provide(Tracing.layerAxiom("expect-mcp")),
-    Layer.provide(NodeServices.layer),
   ),
 );
