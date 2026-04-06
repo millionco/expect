@@ -10,20 +10,22 @@ import { AnimatePresence, motion } from "motion/react";
 import { Calligraph } from "calligraph";
 import { ClaudeSpinner } from "./claude-spinner";
 
-const CODING_DURATION_MS = 900;
-const SLIDE_DELAY_MS = 400;
-const DIFF_DURATION_MS = 1100;
-const CURSOR_APPEAR_DELAY_MS = 0;
-const CURSOR_MOVE_DELAY_MS = 800;
-const CURSOR_CLICK_DELAY_MS = 500;
+const CODING_DURATION_MS = 1200;
+const SLIDE_DELAY_MS = 650;
+const DIFF_DURATION_MS = 1400;
+const CURSOR_APPEAR_DELAY_MS = 175;
+const CURSOR_MOVE_DELAY_MS = 1100;
+const CURSOR_CLICK_DELAY_MS = 550;
 const FOCUS_DELAY_MS = 50;
-const CURSOR_LABEL_CHANGE_MS = 900;
-const CURSOR_ALERT_DELAY_MS = 1800;
+const CURSOR_LABEL_CHANGE_MS = 750;
+const CURSOR_ALERT_DELAY_MS = 2350;
 const LABEL_DISMISS_DELAY_MS = 200;
 const CURSOR_RETURN_DELAY_MS = 100;
-const TERMINAL_CLICK_DELAY_MS = 700;
+const TERMINAL_CLICK_DELAY_MS = 750;
 const TERMINAL_FOCUS_DELAY_MS = 50;
-const RESPONSIVENESS_DELAY_MS = 1700;
+const RESPONSIVENESS_DELAY_MS = 2150;
+const REFOCUS_MOVE_DELAY_MS = 800;
+const REFOCUS_CLICK_DELAY_MS = 500;
 
 type AnimationPhase = "coding" | "diff" | "expect";
 type CursorLabelState = "expect" | "security" | "alert";
@@ -41,6 +43,10 @@ function useAnimationPhase() {
   const [clickingTerminal, setClickingTerminal] = useState(false);
   const [terminalFocused, setTerminalFocused] = useState(false);
   const [showResponsiveness, setShowResponsiveness] = useState(false);
+  const [cursorResolved, setCursorResolved] = useState(false);
+  const [cursorNudged, setCursorNudged] = useState(false);
+  const [clickingRefocus, setClickingRefocus] = useState(false);
+  const [browserRefocused, setBrowserRefocused] = useState(false);
 
   useEffect(() => {
     const expectTime = CODING_DURATION_MS + DIFF_DURATION_MS;
@@ -61,11 +67,22 @@ function useAnimationPhase() {
     const cursorMoveTimer = setTimeout(() => setCursorOnBrowser(true), cursorMoveTime);
     const clickTimer = setTimeout(() => setClicking(true), clickTime);
     const clickEndTimer = setTimeout(() => setClicking(false), clickTime + 100);
-    const labelShowTimer = setTimeout(() => setLabelVisible(true), clickTime + 500);
+    const labelShowTimer = setTimeout(() => setLabelVisible(true), clickTime);
     const focusTimer = setTimeout(() => setFocused(true), focusTime);
     const alertTimer = setTimeout(() => setCursorLabel("alert"), alertTime);
     const terminalFocusTimer = setTimeout(() => { setTerminalFocused(true); setFocused(false); }, alertTime);
-    const responsivenessTimer = setTimeout(() => setShowResponsiveness(true), alertTime + RESPONSIVENESS_DELAY_MS);
+    const responsivenessTime = alertTime + RESPONSIVENESS_DELAY_MS;
+    const responsivenessTimer = setTimeout(() => {
+      setShowResponsiveness(true);
+      setLabelVisible(false);
+      setCursorResolved(true);
+    }, responsivenessTime);
+    const nudgeTime = responsivenessTime + REFOCUS_MOVE_DELAY_MS;
+    const refocusClickTime = nudgeTime + REFOCUS_CLICK_DELAY_MS;
+    const nudgeTimer = setTimeout(() => setCursorNudged(true), nudgeTime);
+    const refocusClickTimer = setTimeout(() => setClickingRefocus(true), refocusClickTime);
+    const refocusClickEndTimer = setTimeout(() => setClickingRefocus(false), refocusClickTime + 100);
+    const refocusTimer = setTimeout(() => { setBrowserRefocused(true); setTerminalFocused(false); }, refocusClickTime + 50);
     return () => {
       clearTimeout(diffTimer);
       clearTimeout(slideTimer);
@@ -79,10 +96,14 @@ function useAnimationPhase() {
       clearTimeout(alertTimer);
       clearTimeout(terminalFocusTimer);
       clearTimeout(responsivenessTimer);
+      clearTimeout(nudgeTimer);
+      clearTimeout(refocusClickTimer);
+      clearTimeout(refocusClickEndTimer);
+      clearTimeout(refocusTimer);
     };
   }, []);
 
-  return { phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, labelVisible, cursorLabel, terminalFocused, showResponsiveness };
+  return { phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, clickingRefocus, labelVisible, cursorLabel, terminalFocused, showResponsiveness, cursorResolved, cursorNudged, browserRefocused };
 }
 
 function TerminalLine({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
@@ -105,7 +126,7 @@ function TerminalContent({ phase, alert, showResponsiveness }: { phase: Animatio
     <motion.div
       className="flex flex-col items-start w-61 text-xs/4 gap-1"
       animate={{ y: showResponsiveness ? -230 : alert ? -210 : showExpect ? -180 : showDiff ? -70 : 0 }}
-      transition={{ type: "spring", stiffness: 120, damping: 20, mass: 0.8 }}
+      transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
     >
       <div className="h-7 shrink-0" />
       <div className="flex items-start shrink-0 gap-2.5">
@@ -276,21 +297,23 @@ function BrowserPreview({ slid, focused }: { slid: boolean; focused: boolean }) 
 }
 
 
-function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerminal, labelVisible, label }: { visible: boolean; onBrowser: boolean; onTerminal: boolean; clicking: boolean; clickingTerminal: boolean; labelVisible: boolean; label: CursorLabelState }) {
-  const isAlert = label === "alert";
+function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerminal, clickingRefocus, labelVisible, label, resolved, nudged }: { visible: boolean; onBrowser: boolean; onTerminal: boolean; clicking: boolean; clickingTerminal: boolean; clickingRefocus: boolean; labelVisible: boolean; label: CursorLabelState; resolved: boolean; nudged: boolean }) {
+  const isAlert = label === "alert" && !resolved;
   return (
     <motion.div
       className="absolute z-30 pointer-events-none"
       style={{ transformOrigin: "top left" }}
       initial={{ x: 200, y: 115, opacity: 0, scale: 0 }}
       animate={
-        visible && onTerminal
-          ? { x: 210, y: 80, opacity: 1, scale: 1 }
-          : visible && onBrowser
-            ? { x: -60, y: 145, opacity: 1, scale: 1 }
-            : visible
-              ? { x: 200, y: 115, opacity: 1, scale: 1 }
-              : { x: 200, y: 115, opacity: 0, scale: 0 }
+        visible && nudged
+          ? { x: -20, y: 105, opacity: 1, scale: 1 }
+          : visible && onTerminal
+            ? { x: 210, y: 80, opacity: 1, scale: 1 }
+            : visible && onBrowser
+              ? { x: -60, y: 145, opacity: 1, scale: 1 }
+              : visible
+                ? { x: 200, y: 115, opacity: 1, scale: 1 }
+                : { x: 200, y: 115, opacity: 0, scale: 0 }
       }
       transition={
         !visible
@@ -300,7 +323,7 @@ function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerm
     >
       <motion.svg
         width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '40px', height: 'auto' }}
-        animate={{ scale: (clicking || clickingTerminal) ? 0.85 : 1 }}
+        animate={{ scale: (clicking || clickingTerminal || clickingRefocus) ? 0.85 : 1 }}
         transition={{ duration: 0.1, ease: "easeOut" }}
       >
         <g filter="url(#filter0_d_4_7)">
@@ -336,13 +359,13 @@ function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerm
 }
 
 function TerminalIllustration() {
-  const { phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, labelVisible, cursorLabel, terminalFocused, showResponsiveness } = useAnimationPhase();
+  const { phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, clickingRefocus, labelVisible, cursorLabel, terminalFocused, showResponsiveness, cursorResolved, cursorNudged, browserRefocused } = useAnimationPhase();
 
   return (
     <div className="flex flex-col items-center justify-center gap-4 text-xs/4 mt-11.5 p-3">
       <div className="relative w-68.5 h-46 shrink-0 overflow-visible">
-        <BrowserPreview slid={slid} focused={focused} />
-        <AnimatedCursor visible={cursorVisible} onBrowser={cursorOnBrowser} onTerminal={cursorOnTerminal} clicking={clicking} clickingTerminal={clickingTerminal} labelVisible={labelVisible} label={cursorLabel} />
+        <BrowserPreview slid={slid} focused={focused || browserRefocused} />
+        <AnimatedCursor visible={cursorVisible} onBrowser={cursorOnBrowser} onTerminal={cursorOnTerminal} clicking={clicking} clickingTerminal={clickingTerminal} clickingRefocus={clickingRefocus} labelVisible={labelVisible} label={cursorLabel} resolved={cursorResolved} nudged={cursorNudged} />
         <motion.div
           className="flex flex-col items-start w-68.5 h-46 relative z-10 rounded-2xl pt-4.5 pr-3.75 pb-6.5 pl-3.75 overflow-clip bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]"
           animate={slid ? { x: 80, scale: terminalFocused ? 1.04 : 1, zIndex: terminalFocused ? 20 : 10 } : { x: 0 }}
