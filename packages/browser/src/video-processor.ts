@@ -5,19 +5,21 @@ import { fileURLToPath } from "node:url";
 import { Effect, Schema } from "effect";
 import { FFMPEG_TIMEOUT_MS, FRAME_PADDING_PX } from "./constants";
 
-// HACK: resolve wallpaper relative to this file's location. The ../assets path
-// works for the standard monorepo layout; assets/ covers flat bundle output.
-export const DEFAULT_WALLPAPER_PATH: string | undefined = (() => {
+const WALLPAPER_FILENAME = "wallpaper.webp";
+
+const resolveWallpaperPath = (): string | undefined => {
   try {
     const currentDir = dirname(fileURLToPath(import.meta.url));
     return [
-      join(currentDir, "..", "assets", "wallpaper.webp"),
-      join(currentDir, "assets", "wallpaper.webp"),
+      join(currentDir, "..", "assets", WALLPAPER_FILENAME),
+      join(currentDir, "assets", WALLPAPER_FILENAME),
     ].find(existsSync);
   } catch {
     return undefined;
   }
-})();
+};
+
+export const DEFAULT_WALLPAPER_PATH = resolveWallpaperPath();
 
 const MPDECIMATE_HI = "64*1000";
 const MPDECIMATE_LO = "64*500";
