@@ -422,6 +422,13 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
 
       if (pageVideo) {
         videoPath = yield* Effect.tryPromise(() => pageVideo.path()).pipe(
+          Effect.timeoutOrElse({
+            duration: "30 seconds",
+            onTimeout: () =>
+              Effect.logWarning("Timed out waiting for Playwright video path").pipe(
+                Effect.as(undefined),
+              ),
+          }),
           Effect.catchCause((cause) =>
             Effect.logDebug("Failed to resolve Playwright video path", { cause }).pipe(
               Effect.as(undefined),
