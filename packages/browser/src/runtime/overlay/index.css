@@ -14,11 +14,6 @@
   transform: translateZ(0) !important;
 }
 
-[data-sonner-toaster],
-[data-sonner-toaster] * {
-  pointer-events: auto;
-}
-
 @keyframes expect-glow-pulse {
   0%,
   100% {

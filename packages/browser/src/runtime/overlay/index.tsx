@@ -202,7 +202,7 @@ const AgentOverlay = () => {
         <CursorIcon shape={state.cursorAction === "type" ? "text" : cursorShape} />
       </div>
 
-      <Toaster position="bottom-right" visibleToasts={3} expand={false} />
+      <Toaster position="bottom-right" visibleToasts={3} expand />
 
       {highlightRects.map((rect, index) => (
         <div
