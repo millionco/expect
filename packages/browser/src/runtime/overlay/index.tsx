@@ -14,8 +14,6 @@ const CURSOR_TRANSITION_MS = 300;
 
 const SRGB_BLUE = "30, 123, 252";
 
-const USER_CONTROL_KEY = "__expect_user_control__";
-const USER_IN_CONTROL_KEY = "__expect_user_in_control__";
 const STATE_KEY = "__expect_cursor_state__";
 
 const SPIRAL_R = 3;
@@ -43,9 +41,6 @@ interface OverlayState {
   cursorY: number;
   label: string;
   cursorPositioned: boolean;
-  userInControl: boolean;
-  userTookControl: boolean;
-  showPrompt: boolean;
   cursorAction: CursorAction;
   clickCount: number;
   highlightSelectors: string[];
@@ -93,13 +88,6 @@ const loadCursorState = (): CursorPersisted | undefined => {
 };
 
 const loadInitialState = (): OverlayState => {
-  let userTookControl = false;
-  let userInControl = false;
-  try {
-    userTookControl = sessionStorage.getItem(USER_CONTROL_KEY) === "true";
-    userInControl = sessionStorage.getItem(USER_IN_CONTROL_KEY) === "true";
-  } catch {}
-
   const saved = loadCursorState();
   const viewport = getViewport();
 
@@ -108,9 +96,6 @@ const loadInitialState = (): OverlayState => {
     cursorY: saved?.positioned ? saved.relativeY * viewport.height : -1,
     label: saved?.label ?? "",
     cursorPositioned: saved?.positioned ?? false,
-    userInControl,
-    userTookControl,
-    showPrompt: false,
     cursorAction: "idle",
     clickCount: 0,
     highlightSelectors: [],
@@ -264,34 +249,6 @@ const Glow = () => (
   <div className="fixed inset-0 pointer-events-none will-change-[box-shadow] contain-strict transform-gpu animate-[expect-glow-pulse_2s_ease-in-out_infinite]" />
 );
 
-interface GuardPromptProps {
-  onCancel: () => void;
-  onConfirm: () => void;
-}
-
-const GuardPrompt = ({ onCancel, onConfirm }: GuardPromptProps) => (
-  <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/[0.92] text-white font-sans text-sm p-5 px-7 rounded-2xl z-[2147483647] pointer-events-auto flex-col items-center gap-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.5)] text-center leading-normal flex">
-    <div className="font-semibold text-[15px]">Agent is working</div>
-    <div className="text-white/70 text-[13px]">
-      Taking control may interrupt the current test run.
-    </div>
-    <div className="flex gap-2.5 mt-1">
-      <button
-        onClick={onCancel}
-        className="px-5 py-2 rounded-[10px] border-none text-[13px] font-medium cursor-pointer font-sans bg-white/[0.12] text-white transition-opacity duration-150 hover:opacity-85"
-      >
-        Cancel
-      </button>
-      <button
-        onClick={onConfirm}
-        className="px-5 py-2 rounded-[10px] border-none text-[13px] font-medium cursor-pointer font-sans bg-expect-blue text-white transition-opacity duration-150 hover:opacity-85"
-      >
-        Take control
-      </button>
-    </div>
-  </div>
-);
-
 const AgentOverlay = () => {
   const [state, setState] = useState<OverlayState>(loadInitialState);
 
@@ -370,64 +327,6 @@ const AgentOverlay = () => {
     };
   }, []);
 
-  useEffect(() => {
-    if (state.userInControl) {
-      document.body.style.cursor = "";
-      return;
-    }
-    document.body.style.cursor = "not-allowed";
-
-    const onClickGuard = (event: MouseEvent) => {
-      if (agentActing) return;
-      if ((event.target as Element)?.closest?.(`[data-expect-overlay]`)) return;
-      event.preventDefault();
-      event.stopPropagation();
-      setState((previous) => ({ ...previous, showPrompt: !previous.showPrompt }));
-    };
-
-    document.addEventListener("click", onClickGuard, true);
-    return () => {
-      document.body.style.cursor = "";
-      document.removeEventListener("click", onClickGuard, true);
-    };
-  }, [state.userInControl]);
-
-  useEffect(() => {
-    try {
-      if (state.userTookControl) {
-        sessionStorage.setItem(USER_CONTROL_KEY, "true");
-      }
-      if (state.userInControl) {
-        sessionStorage.setItem(USER_IN_CONTROL_KEY, "true");
-      } else {
-        sessionStorage.removeItem(USER_IN_CONTROL_KEY);
-      }
-    } catch {}
-  }, [state.userInControl, state.userTookControl]);
-
-  const handleCancelPrompt = () => {
-    setState((previous) => ({ ...previous, showPrompt: false }));
-  };
-
-  const handleTakeControl = () => {
-    setState((previous) => ({
-      ...previous,
-      showPrompt: false,
-      userInControl: true,
-      userTookControl: true,
-      label: "You're in control",
-    }));
-  };
-
-  const handleReturnControl = () => {
-    setState((previous) => ({
-      ...previous,
-      userInControl: false,
-      label: "Returned to agent",
-      cursorPositioned: false,
-    }));
-  };
-
   const [highlightRects, setHighlightRects] = useState<HighlightRect[]>([]);
 
   useEffect(() => {
@@ -468,35 +367,18 @@ const AgentOverlay = () => {
     : viewport.height + CURSOR_HEIGHT_PX;
 
   useEffect(() => {
-    if (state.userInControl) {
-      toast.dismiss();
-      return;
-    }
     if (!state.label) return;
     toast(state.label, {
       duration: Infinity,
       icon: <SpiralSpinner visible />,
     });
-  }, [state.label, state.userInControl]);
+  }, [state.label]);
 
   const hasLabel = Boolean(state.label);
-  const showCursor = (hasLabel || state.cursorPositioned) && !state.userInControl;
+  const showCursor = hasLabel || state.cursorPositioned;
 
   return (
     <>
-      {state.userInControl && (
-        <button
-          onClick={handleReturnControl}
-          className="fixed bottom-4 right-4 pointer-events-auto bg-expect-blue text-white text-[13px] font-sans font-medium py-2 px-4 rounded-[10px] border-none cursor-pointer z-[2147483647] shadow-[0_4px_12px_rgba(0,0,0,0.25)] transition-opacity duration-150 hover:opacity-85"
-        >
-          Return to agent
-        </button>
-      )}
-
-      {state.showPrompt && (
-        <GuardPrompt onCancel={handleCancelPrompt} onConfirm={handleTakeControl} />
-      )}
-
       <Glow />
 
       <div
@@ -569,20 +451,6 @@ const AgentOverlay = () => {
 
 let setOverlayState: ((updater: (previous: OverlayState) => OverlayState) => void) | undefined;
 let overlayRoot: ReturnType<typeof createRoot> | undefined;
-let agentActing = false;
-let agentActingTimeout: ReturnType<typeof setTimeout> | undefined;
-const AGENT_ACTING_COOLDOWN_MS = 200;
-
-export const setAgentActing = (acting: boolean): void => {
-  clearTimeout(agentActingTimeout);
-  if (acting) {
-    agentActing = true;
-  } else {
-    agentActingTimeout = setTimeout(() => {
-      agentActing = false;
-    }, AGENT_ACTING_COOLDOWN_MS);
-  }
-};
 
 export const initAgentOverlay = (containerId: string): void => {
   if (document.getElementById(containerId)) return;
@@ -615,8 +483,6 @@ export const updateCursor = (containerId: string, x: number, y: number, label: s
   }
 
   setOverlayState((previous) => {
-    if (previous.userInControl) return previous;
-
     const hasPosition = x >= 0 && y >= 0;
     return {
       ...previous,
@@ -642,26 +508,10 @@ export const showAgentOverlay = (containerId: string): void => {
 
 export const destroyAgentOverlay = (containerId: string): void => {
   clearTimeout(saveCursorTimeout);
-  clearTimeout(agentActingTimeout);
   overlayRoot?.unmount();
   overlayRoot = undefined;
-  document.body.style.cursor = "";
   document.getElementById(containerId)?.remove();
   setOverlayState = undefined;
-};
-
-export const didUserTakeControl = (): boolean => {
-  try {
-    return sessionStorage.getItem(USER_CONTROL_KEY) === "true";
-  } catch {
-    return false;
-  }
-};
-
-export const clearUserControl = (): void => {
-  try {
-    sessionStorage.removeItem(USER_CONTROL_KEY);
-  } catch {}
 };
 
 export const highlightRefs = (containerId: string, selectors: string[]): void => {

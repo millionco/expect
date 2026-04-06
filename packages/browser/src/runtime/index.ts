@@ -19,11 +19,8 @@ export {
   hideAgentOverlay,
   showAgentOverlay,
   destroyAgentOverlay,
-  didUserTakeControl,
-  clearUserControl,
   highlightRefs,
   clearHighlights,
-  setAgentActing,
 } from "./overlay";
 
 import { finder } from "@medv/finder";

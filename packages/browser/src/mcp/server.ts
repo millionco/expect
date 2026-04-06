@@ -71,32 +71,6 @@ const moveCursorToPosition = (
     Effect.catchCause(() => Effect.void),
   );
 
-const USER_CONTROL_NOTICE =
-  "[NOTICE] The user took manual control of the browser and may have changed the page state. " +
-  "Take a fresh snapshot before continuing to ensure your refs and assumptions are up to date.";
-
-const checkUserControl = (page: import("playwright").Page) =>
-  evaluateRuntime(page, "didUserTakeControl").pipe(
-    Effect.tap((didControl) => {
-      if (didControl) {
-        return evaluateRuntime(page, "clearUserControl").pipe(Effect.catchCause(() => Effect.void));
-      }
-      return Effect.void;
-    }),
-    Effect.catchCause(() => Effect.succeed(false)),
-  );
-
-const prependUserControlNotice = <T extends { content: Array<{ type: string; text?: string }> }>(
-  result: T,
-  didControl: boolean,
-): T => {
-  if (!didControl) return result;
-  return {
-    ...result,
-    content: [{ type: "text" as const, text: USER_CONTROL_NOTICE }, ...result.content],
-  };
-};
-
 const moveCursorToRef = Effect.fn("moveCursorToRef")(function* (
   page: import("playwright").Page,
   snapshot: import("../types").SnapshotResult,
@@ -245,8 +219,6 @@ export const createBrowserMcpServer = <E>(
         Effect.gen(function* () {
           const session = yield* McpSession;
           const sessionData = yield* session.requireSession();
-          const didControl = yield* checkUserControl(sessionData.page);
-
           yield* clearRefHighlights(sessionData.page);
 
           const cursorLabel = extractCursorLabel(code);
@@ -270,35 +242,26 @@ export const createBrowserMcpServer = <E>(
             return Effect.runSync(sessionData.lastSnapshot.locator(refId));
           };
 
-          yield* evaluateRuntime(sessionData.page, "setAgentActing", true).pipe(
-            Effect.catchCause(() => Effect.void),
-          );
-
-          const codeResult = yield* Effect.ensuring(
-            Effect.promise(async () => {
-              try {
-                const userFunction = new AsyncFunction("page", "context", "browser", "ref", code);
-                const result = await userFunction(
-                  sessionData.page,
-                  sessionData.context,
-                  sessionData.browser,
-                  ref,
-                );
-                return { success: true as const, value: result };
-              } catch (error) {
-                return {
-                  success: false as const,
-                  error: error instanceof Error ? error.message : String(error),
-                };
-              }
-            }),
-            evaluateRuntime(sessionData.page, "setAgentActing", false).pipe(
-              Effect.catchCause(() => Effect.void),
-            ),
-          );
+          const codeResult = yield* Effect.promise(async () => {
+            try {
+              const userFunction = new AsyncFunction("page", "context", "browser", "ref", code);
+              const result = await userFunction(
+                sessionData.page,
+                sessionData.context,
+                sessionData.browser,
+                ref,
+              );
+              return { success: true as const, value: result };
+            } catch (error) {
+              return {
+                success: false as const,
+                error: error instanceof Error ? error.message : String(error),
+              };
+            }
+          });
 
           if (!codeResult.success) {
-            return prependUserControlNotice(textResult(`Error: ${codeResult.error}`), didControl);
+            return textResult(`Error: ${codeResult.error}`);
           }
 
           if (snapshotAfter) {
@@ -321,12 +284,11 @@ export const createBrowserMcpServer = <E>(
                       stats: snapshotResult.stats,
                     },
                   };
-            return prependUserControlNotice(jsonResult(resultPayload), didControl);
+            return jsonResult(resultPayload);
           }
 
-          if (codeResult.value === undefined)
-            return prependUserControlNotice(textResult("OK"), didControl);
-          return prependUserControlNotice(jsonResult(codeResult.value), didControl);
+          if (codeResult.value === undefined) return textResult("OK");
+          return jsonResult(codeResult.value);
         }).pipe(Effect.withSpan(`mcp.tool.playwright`)),
       ),
   );
@@ -356,7 +318,6 @@ export const createBrowserMcpServer = <E>(
         Effect.gen(function* () {
           const session = yield* McpSession;
           const page = yield* session.requirePage();
-          const didControl = yield* checkUserControl(page);
           const resolvedMode = mode ?? "screenshot";
           yield* updateCursorLabel(page, `Taking ${resolvedMode}`);
 
@@ -371,36 +332,30 @@ export const createBrowserMcpServer = <E>(
               ),
             );
             yield* session.updateLastSnapshot(result);
-            return prependUserControlNotice(
-              jsonResult({ tree: result.tree, refs: result.refs, stats: result.stats }),
-              didControl,
-            );
+            return jsonResult({ tree: result.tree, refs: result.refs, stats: result.stats });
           }
 
           if (resolvedMode === "annotated") {
             const result = yield* session.annotatedScreenshot(page, { fullPage });
             yield* session.saveScreenshot(result.screenshot);
-            return prependUserControlNotice(
-              {
-                content: [
-                  {
-                    type: "image" as const,
-                    data: result.screenshot.toString("base64"),
-                    mimeType: "image/png",
-                  },
-                  {
-                    type: "text" as const,
-                    text: result.annotations
-                      .map(
-                        (annotation) =>
-                          `[${annotation.label}] @${annotation.ref} ${annotation.role} "${annotation.name}"`,
-                      )
-                      .join("\n"),
-                  },
-                ],
-              },
-              didControl,
-            );
+            return {
+              content: [
+                {
+                  type: "image" as const,
+                  data: result.screenshot.toString("base64"),
+                  mimeType: "image/png",
+                },
+                {
+                  type: "text" as const,
+                  text: result.annotations
+                    .map(
+                      (annotation) =>
+                        `[${annotation.label}] @${annotation.ref} ${annotation.role} "${annotation.name}"`,
+                    )
+                    .join("\n"),
+                },
+              ],
+            };
           }
 
           yield* evaluateRuntime(page, "hideAgentOverlay", AGENT_OVERLAY_CONTAINER_ID).pipe(
@@ -413,7 +368,7 @@ export const createBrowserMcpServer = <E>(
             ),
           );
           yield* session.saveScreenshot(buffer);
-          return prependUserControlNotice(imageResult(buffer.toString("base64")), didControl);
+          return imageResult(buffer.toString("base64"));
         }).pipe(Effect.withSpan(`mcp.tool.screenshot`)),
       ),
   );
