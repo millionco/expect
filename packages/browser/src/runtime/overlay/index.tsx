@@ -293,11 +293,7 @@ const AgentOverlay = () => {
 
           {isExpanded && (
             <div className="flex items-center text-sm font-medium">
-              <ToolbarControls
-                overlayVisible={state.overlayVisible}
-                onToggleOverlay={toggleOverlay}
-              />
-              <div className="flex items-center gap-2.5 pr-2.5 pl-1">
+              <div className="flex items-center gap-2.5 pl-2.5 pr-1">
                 <SpiralSpinner visible={hasLabel} />
                 <span
                   className="overflow-hidden text-ellipsis whitespace-nowrap max-w-60 bg-clip-text text-transparent animate-[expect-text-shimmer_3s_linear_infinite]"
@@ -313,6 +309,10 @@ const AgentOverlay = () => {
                   {state.label || "Idle"}
                 </span>
               </div>
+              <ToolbarControls
+                overlayVisible={state.overlayVisible}
+                onToggleOverlay={toggleOverlay}
+              />
               <button
                 type="button"
                 className="flex items-center justify-center size-8 rounded-full border-none bg-transparent p-0 cursor-pointer text-white/60 hover:text-white hover:bg-white/10 transition-colors duration-150 active:scale-[0.92]"
