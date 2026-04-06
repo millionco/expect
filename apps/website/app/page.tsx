@@ -148,7 +148,7 @@ function BrowserPreview({ slid }: { slid: boolean }) {
 
   useEffect(() => {
     if (!slid) return;
-    const timer = setTimeout(() => setLoaded(true), 900);
+    const timer = setTimeout(() => setLoaded(true), 500);
     return () => clearTimeout(timer);
   }, [slid]);
 
@@ -172,7 +172,7 @@ function BrowserPreview({ slid }: { slid: boolean }) {
                 className="absolute bottom-0 left-0 h-[2.5px] bg-[#007AFF]"
                 initial={{ width: "0%" }}
                 animate={{ width: "85%" }}
-                transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
+                transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
               />
             )}
             {slid && loaded && (
