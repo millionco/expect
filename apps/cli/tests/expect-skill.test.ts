@@ -7,6 +7,7 @@ import {
   AGENTS_SKILLS_DIR,
   detectInstalledSkillAgents,
   getExpectSkillStatus,
+  hasInstalledExpectSkill,
   SKILL_NAME,
 } from "../src/utils/expect-skill";
 
@@ -94,5 +95,17 @@ describe("expect-skill", () => {
     const installedAgents = detectInstalledSkillAgents(projectRoot, ["claude", "cursor", "codex"]);
 
     expect(installedAgents).toEqual(["claude"]);
+  });
+
+  it("treats an agent-local skill install as already installed", () => {
+    const claudeSkillDir = join(projectRoot, ".claude", "skills", SKILL_NAME);
+    mkdirSync(claudeSkillDir, { recursive: true });
+    writeFileSync(join(claudeSkillDir, "SKILL.md"), makeSkillFile("2.2.0", "same skill"));
+
+    expect(hasInstalledExpectSkill(projectRoot, ["claude", "cursor"])).toBe(true);
+  });
+
+  it("reports not installed when neither shared nor agent-local skills exist", () => {
+    expect(hasInstalledExpectSkill(projectRoot, ["claude", "cursor"])).toBe(false);
   });
 });
