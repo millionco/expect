@@ -299,7 +299,7 @@ const AgentOverlay = () => {
             </div>
           )}
 
-          {!isExpanded && <SpiralSpinner visible={hasLabel} />}
+          {!isExpanded && <SpiralSpinner visible />}
 
           {isExpanded && (
             <div className="flex items-center text-sm font-medium">
