@@ -32,7 +32,7 @@ export default function () {
       <div className="relative w-112.75 pt-10.25 pb-20">
         <div className="flex items-center bg-white">
           <div className="relative w-107.25 h-67.5 shrink-0">
-            <div className="left-0 top-0 w-107.25 h-67.5 rounded-[11px] absolute bg-white [box-shadow:#B0B0B038_0px_0px_0px_0.5px,#95959533_0px_1px_3px]" />
+            <div className="left-0 top-0 w-107.25 h-67.5 rounded-[11px] absolute bg-white [box-shadow:#B0B0B038_0px_0px_0px_0.5px,#95959533_0px_1px_3px] pointer-events-none" />
             <div className="left-0 top-58.75 w-107.25 h-[0.5px] absolute bg-[#E5E5E5]" />
             <div className="left-0 top-8.5 w-5.5 h-[0.5px] absolute bg-[#E5E5E5]" />
             <div className="left-23.75 top-8.5 w-83.5 h-[0.5px] absolute bg-[#E5E5E5]" />
