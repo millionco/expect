@@ -218,6 +218,11 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       return true;
     });
 
+    const ensureOverlay = (page: import("playwright").Page) =>
+      evaluateRuntime(page, "initAgentOverlay", AGENT_OVERLAY_CONTAINER_ID).pipe(
+        Effect.catchCause(() => Effect.void),
+      );
+
     const navigate = Effect.fn("McpSession.navigate")(function* (
       url: string,
       options: { waitUntil?: "load" | "domcontentloaded" | "networkidle" | "commit" } = {},
@@ -232,6 +237,9 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
             cause: cause instanceof Error ? cause.message : String(cause),
           }),
       });
+      if (isHeadedDefault) {
+        yield* ensureOverlay(sessionData.page);
+      }
     });
 
     const open = Effect.fn("McpSession.open")(function* (
@@ -297,16 +305,20 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
           catch: () => undefined,
         }).pipe(Effect.catchCause(() => Effect.void));
 
-        yield* evaluateRuntime(
-          pageResult.page,
-          "initAgentOverlay",
-          AGENT_OVERLAY_CONTAINER_ID,
-        ).pipe(
+        yield* ensureOverlay(pageResult.page).pipe(
           Effect.tap(() => Effect.logDebug("Agent overlay injected")),
           Effect.catchCause((cause) =>
             Effect.logDebug("Agent overlay injection failed", { cause }),
           ),
         );
+
+        pageResult.page.on("load", () => {
+          pageResult.page
+            .evaluate(
+              `if(typeof globalThis.__EXPECT_RUNTIME__!=='undefined'){globalThis.__EXPECT_RUNTIME__.initAgentOverlay('${AGENT_OVERLAY_CONTAINER_ID}')}`,
+            )
+            .catch(() => {});
+        });
 
         yield* evaluateRuntime(
           pageResult.page,
