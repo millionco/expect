@@ -492,7 +492,7 @@ export const updateCursor = (
           rect.right < 0 ||
           rect.left > window.innerWidth;
         if (offScreen) {
-          element.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+          element.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
         }
       }
     } catch {}
