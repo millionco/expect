@@ -1,78 +1,58 @@
 // eslint-disable-next-line no-restricted-imports
-import { useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
-const TICK_MS = 250;
-const CELL_PX = 4;
-const GAP_PX = 2;
-const CANVAS_SIZE = 3 * CELL_PX + 2 * GAP_PX;
-const DISPLAY_SIZE = `${CANVAS_SIZE}px`;
-
-const GLIDER_FRAMES = [
-  [
-    [0, 1, 0],
-    [0, 0, 1],
-    [1, 1, 1],
-  ],
-  [
-    [1, 0, 0],
-    [0, 1, 1],
-    [1, 1, 0],
-  ],
-  [
-    [0, 1, 0],
-    [0, 0, 1],
-    [1, 1, 1],
-  ],
-  [
-    [0, 0, 1],
-    [1, 0, 1],
-    [0, 1, 1],
-  ],
-];
+const LINE_COUNT = 8;
+const TICK_MS = 100;
+const SIZE_PX = 16;
+const LINE_WIDTH = 1.5;
+const LINE_LENGTH = 3.5;
+const INNER_RADIUS = 2.5;
 
 export const SpiralSpinner = ({ visible }: { visible: boolean }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const frameRef = useRef(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval>>(undefined);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
-    if (!visible) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = undefined;
-      return;
-    }
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const render = () => {
-      const grid = GLIDER_FRAMES[frameRef.current % GLIDER_FRAMES.length];
-      frameRef.current++;
-      ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-      ctx.fillStyle = "white";
-      for (let row = 0; row < 3; row++) {
-        for (let col = 0; col < 3; col++) {
-          if (grid[row][col]) {
-            ctx.fillRect(col * (CELL_PX + GAP_PX), row * (CELL_PX + GAP_PX), CELL_PX, CELL_PX);
-          }
-        }
-      }
-    };
-
-    render();
-    intervalRef.current = setInterval(render, TICK_MS);
-    return () => clearInterval(intervalRef.current);
+    if (!visible) return;
+    const interval = setInterval(() => {
+      setActiveIndex((previous) => (previous + 1) % LINE_COUNT);
+    }, TICK_MS);
+    return () => clearInterval(interval);
   }, [visible]);
 
+  const center = SIZE_PX / 2;
+
   return (
-    <canvas
-      ref={canvasRef}
-      width={CANVAS_SIZE}
-      height={CANVAS_SIZE}
+    <svg
+      width={SIZE_PX}
+      height={SIZE_PX}
+      viewBox={`0 0 ${SIZE_PX} ${SIZE_PX}`}
       className="shrink-0"
-      style={{ width: DISPLAY_SIZE, height: DISPLAY_SIZE }}
-    />
+    >
+      {Array.from({ length: LINE_COUNT }, (_, index) => {
+        const angle = (index * 360) / LINE_COUNT - 90;
+        const rad = (angle * Math.PI) / 180;
+        const x1 = center + Math.cos(rad) * INNER_RADIUS;
+        const y1 = center + Math.sin(rad) * INNER_RADIUS;
+        const x2 = center + Math.cos(rad) * (INNER_RADIUS + LINE_LENGTH);
+        const y2 = center + Math.sin(rad) * (INNER_RADIUS + LINE_LENGTH);
+        const distance =
+          (LINE_COUNT - ((activeIndex - index + LINE_COUNT) % LINE_COUNT)) % LINE_COUNT;
+        const opacity = 0.15 + (1 - distance / LINE_COUNT) * 0.85;
+
+        return (
+          <line
+            key={index}
+            x1={x1}
+            y1={y1}
+            x2={x2}
+            y2={y2}
+            stroke="white"
+            strokeWidth={LINE_WIDTH}
+            strokeLinecap="round"
+            opacity={opacity}
+          />
+        );
+      })}
+    </svg>
   );
 };
