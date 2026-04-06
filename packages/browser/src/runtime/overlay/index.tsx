@@ -532,15 +532,16 @@ const AgentOverlay = () => {
         visibleToasts={3}
         toastOptions={{
           style: {
-            background: `rgb(${SRGB_BLUE})`,
+            background: "#1c1c1c",
             color: "white",
             border: "none",
-            fontSize: "13px",
-            fontFamily: "system-ui, sans-serif",
-            fontWeight: 450,
-            boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
+            fontSize: "14px",
+            fontFamily: '"SFProDisplay-Medium", "SF Pro Display", system-ui, sans-serif',
+            fontWeight: 500,
+            boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)",
             borderRadius: "12px",
             pointerEvents: "none",
+            maxWidth: "320px",
           },
         }}
       />
