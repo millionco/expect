@@ -467,15 +467,17 @@ const AgentOverlay = () => {
     ? clampToViewport(state.cursorY - CURSOR_HEIGHT_PX / 2, CURSOR_HEIGHT_PX, viewport.height, 0)
     : viewport.height + CURSOR_HEIGHT_PX;
 
-  const displayLabel = state.userInControl ? "You're in control" : state.label;
-
   useEffect(() => {
-    if (!displayLabel) return;
-    toast(displayLabel, {
+    if (state.userInControl) {
+      toast.dismiss();
+      return;
+    }
+    if (!state.label) return;
+    toast(state.label, {
       duration: Infinity,
       icon: <SpiralSpinner visible />,
     });
-  }, [displayLabel]);
+  }, [state.label, state.userInControl]);
 
   const hasLabel = Boolean(state.label);
   const showCursor = (hasLabel || state.cursorPositioned) && !state.userInControl;
