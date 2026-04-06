@@ -477,7 +477,10 @@ const AgentOverlay = () => {
       return;
     }
 
+    let rafId: number;
+    let running = true;
     const computeRects = () => {
+      if (!running) return;
       const rects: HighlightRect[] = [];
       for (const selector of state.highlightSelectors) {
         try {
@@ -488,14 +491,12 @@ const AgentOverlay = () => {
         } catch {}
       }
       setHighlightRects(rects);
+      rafId = requestAnimationFrame(computeRects);
     };
-
-    computeRects();
-    window.addEventListener("scroll", computeRects, true);
-    window.addEventListener("resize", computeRects);
+    rafId = requestAnimationFrame(computeRects);
     return () => {
-      window.removeEventListener("scroll", computeRects, true);
-      window.removeEventListener("resize", computeRects);
+      running = false;
+      cancelAnimationFrame(rafId);
     };
   }, [state.highlightSelectors]);
 
@@ -586,7 +587,7 @@ const AgentOverlay = () => {
       {highlightRects.map((rect, index) => (
         <div
           key={`hl-${index}`}
-          className="fixed pointer-events-none z-[2147483646] rounded-[3px]"
+          className="fixed pointer-events-none z-[2147483646] rounded-[3px] will-change-[left,top,width,height]"
           style={{
             left: `${rect.x}px`,
             top: `${rect.y}px`,
@@ -594,6 +595,7 @@ const AgentOverlay = () => {
             height: `${rect.height}px`,
             border: `2px solid rgb(${SRGB_BLUE})`,
             boxShadow: `0 0 0 1px rgba(${SRGB_BLUE}, 0.3)`,
+            transition: `left ${CURSOR_TRANSITION_MS}ms cubic-bezier(0.25, 1, 0.5, 1), top ${CURSOR_TRANSITION_MS}ms cubic-bezier(0.25, 1, 0.5, 1), width ${CURSOR_TRANSITION_MS}ms cubic-bezier(0.25, 1, 0.5, 1), height ${CURSOR_TRANSITION_MS}ms cubic-bezier(0.25, 1, 0.5, 1)`,
           }}
         />
       ))}
