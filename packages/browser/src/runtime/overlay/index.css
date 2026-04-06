@@ -24,6 +24,18 @@
   }
 }
 
+@keyframes expect-cursor-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px color(display-p3 0.118 0.481 0.988 / 0.6))
+      drop-shadow(0 0 16px color(display-p3 0.118 0.481 0.988 / 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 4px color(display-p3 0.118 0.481 0.988 / 0.3))
+      drop-shadow(0 0 8px color(display-p3 0.118 0.481 0.988 / 0.1));
+  }
+}
+
 @keyframes expect-cursor-click {
   0% {
     transform: scale(1);

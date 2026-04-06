@@ -275,7 +275,7 @@ const AgentOverlay = () => {
       {state.overlayVisible && (
         <div
           key={state.clickCount}
-          className="fixed pointer-events-none z-[2147483647] will-change-[left,top] drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]"
+          className="fixed pointer-events-none z-[2147483647] will-change-[left,top] animate-[expect-cursor-glow_2s_ease-in-out_infinite]"
           style={{
             width: `${CURSOR_SIZE_PX}px`,
             height: `${CURSOR_HEIGHT_PX}px`,
