@@ -567,7 +567,7 @@ const AgentOverlay = () => {
 
       <div
         ref={tooltipRef}
-        className="fixed pointer-events-none bg-expect-blue text-white text-[13px] font-sans font-[450] py-2 px-3.5 rounded-xl leading-[1.4] whitespace-pre-wrap break-all z-[2147483647] will-change-[left,top,opacity] shadow-[0_4px_12px_rgba(0,0,0,0.25)] flex items-start gap-2.5"
+        className="fixed pointer-events-none bg-expect-blue text-white text-[13px] font-sans font-[450] py-2 px-3.5 rounded-xl leading-[1.4] whitespace-pre-wrap break-words z-[2147483647] will-change-[left,top,opacity] shadow-[0_4px_12px_rgba(0,0,0,0.25)] flex items-start gap-2.5"
         style={{
           maxWidth: `${TOOLTIP_MAX_WIDTH_PX}px`,
           opacity: displayLabel ? 1 : 0,
