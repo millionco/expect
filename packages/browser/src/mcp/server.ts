@@ -42,6 +42,24 @@ const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
 const REF_PATTERN = /ref\s*\(\s*['"](\w+)['"]\s*\)/;
 const REF_PATTERN_GLOBAL = /ref\s*\(\s*['"](\w+)['"]\s*\)/g;
 
+const SELECTOR_PATTERNS = [
+  /querySelector\s*\(\s*['"]([^'"]+)['"]\s*\)/,
+  /querySelectorAll\s*\(\s*['"]([^'"]+)['"]\s*\)/,
+  /\$\s*\(\s*['"]([^'"]+)['"]\s*\)/,
+  /\$\$\s*\(\s*['"]([^'"]+)['"]\s*\)/,
+  /locator\s*\(\s*['"]([^'"]+)['"]\s*\)/,
+  /getByRole\s*\(\s*['"]([^'"]+)['"]\s*\)/,
+  /getByText\s*\(\s*['"]([^'"]+)['"]\s*\)/,
+];
+
+const extractCssSelector = (code: string): string | undefined => {
+  for (const pattern of SELECTOR_PATTERNS) {
+    const match = code.match(pattern);
+    if (match) return match[1];
+  }
+  return undefined;
+};
+
 const updateCursorLabel = (page: import("playwright").Page, label: string) =>
   evaluateRuntime(page, "updateCursor", AGENT_OVERLAY_CONTAINER_ID, -1, -1, label).pipe(
     Effect.catchCause(() => Effect.void),
@@ -89,6 +107,44 @@ const moveCursorToRef = Effect.fn("moveCursorToRef")(function* (
     label,
     selector ?? "",
   ).pipe(Effect.catchCause(() => Effect.void));
+});
+
+const moveCursorToSelector = Effect.fn("moveCursorToSelector")(function* (
+  page: import("playwright").Page,
+  selector: string,
+  label: string,
+) {
+  const result = yield* Effect.tryPromise(() =>
+    page.evaluate(
+      ([sel]) => {
+        const element = document.querySelector(sel);
+        if (!element) return undefined;
+        const box = element.getBoundingClientRect();
+        const runtime = (globalThis as Record<string, unknown>).__EXPECT_RUNTIME__ as
+          | { cssSelector: (element: Element) => string }
+          | undefined;
+        const cssSelector = runtime?.cssSelector ? runtime.cssSelector(element) : undefined;
+        return {
+          x: box.x + box.width / 2,
+          y: box.y + box.height / 2,
+          selector: cssSelector,
+        };
+      },
+      [selector],
+    ),
+  ).pipe(Effect.catchCause(() => Effect.succeed(undefined)));
+
+  if (result) {
+    yield* evaluateRuntime(
+      page,
+      "updateCursor",
+      AGENT_OVERLAY_CONTAINER_ID,
+      result.x,
+      result.y,
+      label,
+      result.selector ?? "",
+    ).pipe(Effect.catchCause(() => Effect.void));
+  }
 });
 
 const clearRefHighlights = (page: import("playwright").Page) =>
@@ -243,7 +299,12 @@ export const createBrowserMcpServer = <E>(
             );
             yield* highlightRefsInCode(sessionData.page, sessionData.lastSnapshot, code);
           } else {
-            yield* updateCursorLabel(sessionData.page, cursorLabel);
+            const cssSelector = extractCssSelector(code);
+            if (cssSelector) {
+              yield* moveCursorToSelector(sessionData.page, cssSelector, cursorLabel);
+            } else {
+              yield* updateCursorLabel(sessionData.page, cursorLabel);
+            }
           }
 
           const ref = (refId: string) => {
