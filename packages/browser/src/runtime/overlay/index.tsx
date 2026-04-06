@@ -592,6 +592,7 @@ export const showAgentOverlay = (containerId: string): void => {
 };
 
 export const destroyAgentOverlay = (containerId: string): void => {
+  clearTimeout(saveCursorTimeout);
   document.getElementById(containerId)?.remove();
   setOverlayState = undefined;
 };

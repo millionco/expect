@@ -1,5 +1,7 @@
 import { execFile, execFileSync } from "node:child_process";
-import { copyFileSync, existsSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, unlinkSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { Effect, Schema } from "effect";
 
 // HACK: resolve the wallpaper path using import.meta.url (works in ESM bundles)
@@ -7,16 +9,13 @@ import { Effect, Schema } from "effect";
 // step gracefully skips since existsSync("") returns false.
 export const DEFAULT_WALLPAPER_PATH = (() => {
   try {
-    const { join, dirname } = require("node:path") as typeof import("node:path");
-    const { existsSync: exists } = require("node:fs") as typeof import("node:fs");
-    const { fileURLToPath } = require("node:url") as typeof import("node:url");
     const currentDir = dirname(fileURLToPath(import.meta.url));
     const candidates = [
       join(currentDir, "..", "assets", "wallpaper.webp"),
       join(currentDir, "assets", "wallpaper.webp"),
       join(dirname(process.argv[1] ?? ""), "assets", "wallpaper.webp"),
     ];
-    return candidates.find(exists) ?? "";
+    return candidates.find(existsSync) ?? "";
   } catch {
     return "";
   }
@@ -198,7 +197,7 @@ export const concatVideos = Effect.fn("concatVideos")(function* (
 
   yield* Effect.sync(() => {
     try {
-      require("node:fs").unlinkSync(concatListPath);
+      unlinkSync(concatListPath);
     } catch {}
   });
 
