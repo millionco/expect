@@ -477,6 +477,15 @@ export const updateCursor = (
     if (!setOverlayState) return;
   }
 
+  if (selector) {
+    try {
+      const element = document.querySelector(selector);
+      if (element instanceof HTMLElement) {
+        element.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+      }
+    } catch {}
+  }
+
   setOverlayState((previous) => {
     const hasPosition = x >= 0 && y >= 0;
     return {
