@@ -10,7 +10,6 @@ import {
   SRGB_BLUE,
   CLICK_ANIMATION_RESET_MS,
   MAX_ACTION_LOG_ENTRIES,
-  TOOLTIP_FLIP_THRESHOLD_PX,
   RAF_THROTTLE_INTERVAL_MS,
   getViewport,
   clampToViewport,
@@ -22,11 +21,13 @@ import {
   loadInitialState,
   clearSaveCursorTimeout,
 } from "./state";
+import { usePolledPositions } from "./use-polled-positions";
 import { finder } from "@medv/finder";
 import { CursorIcon, detectCursorShape } from "./cursors";
 import { SpiralSpinner } from "./spiral-spinner";
 import { Glow } from "./glow";
 import { ToolbarControls } from "./toolbar-controls";
+import { ActionMarker } from "./action-marker";
 import { XMarkIcon } from "@heroicons/react/16/solid";
 
 interface MarkerPosition {
@@ -35,8 +36,14 @@ interface MarkerPosition {
   visible: boolean;
 }
 
+const INVISIBLE_MARKER: MarkerPosition = { x: 0, y: 0, visible: false };
+
 const AgentOverlay = () => {
   const [state, setState] = useState<OverlayState>(loadInitialState);
+  const [cursorShape, setCursorShape] = useState<CursorShape>("pointer");
+  const [hoveredElementRect, setHoveredElementRect] = useState<HighlightRect | undefined>(
+    undefined,
+  );
 
   useEffect(() => {
     setOverlayState = setState;
@@ -152,19 +159,9 @@ const AgentOverlay = () => {
     };
   }, []);
 
-  const [highlightRects, setHighlightRects] = useState<HighlightRect[]>([]);
-
-  useEffect(() => {
-    if (state.highlightSelectors.length === 0) {
-      setHighlightRects([]);
-      return;
-    }
-
-    let timerId: ReturnType<typeof setTimeout> | undefined;
-    let running = true;
-    let previousJson = "";
-    const computeRects = () => {
-      if (!running) return;
+  const highlightRects = usePolledPositions<HighlightRect>(
+    [state.highlightSelectors],
+    () => {
       const rects: HighlightRect[] = [];
       for (const selector of state.highlightSelectors) {
         try {
@@ -176,58 +173,28 @@ const AgentOverlay = () => {
           console.debug("[expect-overlay] highlight selector error:", error);
         }
       }
-      const json = JSON.stringify(rects);
-      if (json !== previousJson) {
-        previousJson = json;
-        setHighlightRects(rects);
-      }
-      timerId = setTimeout(computeRects, RAF_THROTTLE_INTERVAL_MS);
-    };
-    timerId = setTimeout(computeRects, 0);
-    return () => {
-      running = false;
-      clearTimeout(timerId);
-    };
-  }, [state.highlightSelectors]);
+      return rects;
+    },
+    state.highlightSelectors.length > 0,
+  );
 
-  const [markerPositions, setMarkerPositions] = useState<MarkerPosition[]>([]);
-
-  useEffect(() => {
-    if (state.actionLog.length === 0) {
-      setMarkerPositions([]);
-      return;
-    }
-
-    let timerId: ReturnType<typeof setTimeout> | undefined;
-    let running = true;
-    let previousJson = "";
-    const computeMarkers = () => {
-      if (!running) return;
-      const positions: MarkerPosition[] = state.actionLog.map((entry) => {
-        if (!entry.selector) return { x: 0, y: 0, visible: false };
+  const markerPositions = usePolledPositions<MarkerPosition>(
+    [state.actionLog],
+    () =>
+      state.actionLog.map((entry) => {
+        if (!entry.selector) return INVISIBLE_MARKER;
         try {
           const element = document.querySelector(entry.selector);
-          if (!element) return { x: 0, y: 0, visible: false };
+          if (!element) return INVISIBLE_MARKER;
           const box = element.getBoundingClientRect();
           return { x: box.x + box.width / 2, y: box.y + box.height / 2, visible: true };
         } catch (error) {
           console.debug("[expect-overlay] marker position error:", error);
-          return { x: 0, y: 0, visible: false };
+          return INVISIBLE_MARKER;
         }
-      });
-      const json = JSON.stringify(positions);
-      if (json !== previousJson) {
-        previousJson = json;
-        setMarkerPositions(positions);
-      }
-      timerId = setTimeout(computeMarkers, RAF_THROTTLE_INTERVAL_MS);
-    };
-    timerId = setTimeout(computeMarkers, 0);
-    return () => {
-      running = false;
-      clearTimeout(timerId);
-    };
-  }, [state.actionLog]);
+      }),
+    state.actionLog.length > 0,
+  );
 
   const viewport = getViewport();
   const cursorX = state.cursorPositioned
@@ -237,41 +204,10 @@ const AgentOverlay = () => {
     ? clampToViewport(state.cursorY, CURSOR_HEIGHT_PX, viewport.height, 0)
     : viewport.height + CURSOR_HEIGHT_PX;
 
-  const [cursorShape, setCursorShape] = useState<CursorShape>("pointer");
-
   useEffect(() => {
     if (!state.cursorPositioned) return;
     setCursorShape(detectCursorShape(state.cursorX, state.cursorY));
   }, [state.cursorX, state.cursorY, state.cursorPositioned]);
-
-  const [hoveredAction, setHoveredAction] = useState<number | undefined>(undefined);
-  const [hoveredElementRect, setHoveredElementRect] = useState<HighlightRect | undefined>(
-    undefined,
-  );
-
-  useEffect(() => {
-    if (hoveredAction === undefined) {
-      setHoveredElementRect(undefined);
-      return;
-    }
-    const entry = state.actionLog[hoveredAction];
-    if (!entry?.selector) {
-      setHoveredElementRect(undefined);
-      return;
-    }
-    try {
-      const element = document.querySelector(entry.selector);
-      if (element) {
-        const box = element.getBoundingClientRect();
-        setHoveredElementRect({ x: box.x, y: box.y, width: box.width, height: box.height });
-      } else {
-        setHoveredElementRect(undefined);
-      }
-    } catch (error) {
-      console.debug("[expect-overlay] hovered element lookup error:", error);
-      setHoveredElementRect(undefined);
-    }
-  }, [hoveredAction, state.actionLog]);
 
   const hasLabel = Boolean(state.label);
   const showCursor = hasLabel || state.cursorPositioned;
@@ -367,54 +303,13 @@ const AgentOverlay = () => {
           const position = markerPositions[index];
           if (!position?.visible) return undefined;
           return (
-            <div
+            <ActionMarker
               key={`action-${index}`}
-              className="fixed z-[2147483646]"
-              style={{
-                left: `${position.x}px`,
-                top: `${position.y}px`,
-                width: "22px",
-                height: "22px",
-                borderRadius: "50%",
-                background: `rgb(${SRGB_BLUE})`,
-                color: "#fff",
-                fontSize: "11px",
-                fontWeight: 600,
-                fontFamily:
-                  "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 2px 6px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(0,0,0,0.04)",
-                pointerEvents: "auto",
-                cursor: "pointer",
-                userSelect: "none",
-                transform: `translate(-50%, -50%)${hoveredAction === index ? " scale(1.1)" : ""}`,
-                transition: `left ${RAF_THROTTLE_INTERVAL_MS}ms linear, top ${RAF_THROTTLE_INTERVAL_MS}ms linear, background-color 0.15s ease, transform 0.1s ease`,
-                animation: "expect-marker-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both",
-              }}
-              onMouseEnter={() => setHoveredAction(index)}
-              onMouseLeave={() => setHoveredAction(undefined)}
-            >
-              {index + 1}
-              {hoveredAction === index &&
-                (() => {
-                  const showAbove = position.y > getViewport().height - TOOLTIP_FLIP_THRESHOLD_PX;
-                  return (
-                    <div
-                      className="absolute left-1/2 px-3 py-2 bg-[#1a1a1a] text-white text-[13px] font-normal rounded-xl whitespace-nowrap overflow-hidden text-ellipsis leading-[1.4] pointer-events-none shadow-[0_4px_20px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.08)] min-w-[120px] max-w-[280px] text-center animate-[expect-tooltip-in_0.1s_ease-out_forwards]"
-                      style={{
-                        transform: "translateX(-50%)",
-                        ...(showAbove
-                          ? { bottom: "calc(100% + 10px)" }
-                          : { top: "calc(100% + 10px)" }),
-                      }}
-                    >
-                      {action.description}
-                    </div>
-                  );
-                })()}
-            </div>
+              action={action}
+              index={index}
+              position={position}
+              onHoverRect={setHoveredElementRect}
+            />
           );
         })}
 
