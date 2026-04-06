@@ -72,10 +72,14 @@ const clampToViewport = (
   padding: number,
 ): number => Math.max(padding, Math.min(value, viewportSize - elementSize - padding));
 
+let saveCursorTimeout: ReturnType<typeof setTimeout> | undefined;
 const saveCursorState = (state: CursorPersisted): void => {
-  try {
-    sessionStorage.setItem(STATE_KEY, JSON.stringify(state));
-  } catch {}
+  clearTimeout(saveCursorTimeout);
+  saveCursorTimeout = setTimeout(() => {
+    try {
+      sessionStorage.setItem(STATE_KEY, JSON.stringify(state));
+    } catch {}
+  }, 500);
 };
 
 const loadCursorState = (): CursorPersisted | undefined => {
@@ -514,9 +518,9 @@ const AgentOverlay = () => {
         </span>
       </div>
 
-      {state.highlightRects.map((rect, index) => (
+      {state.highlightRects.map((rect) => (
         <div
-          key={index}
+          key={`${rect.x}-${rect.y}-${rect.width}-${rect.height}`}
           className="fixed pointer-events-none z-[2147483646] rounded-[3px]"
           style={{
             left: `${rect.x}px`,
