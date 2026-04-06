@@ -164,6 +164,38 @@ const AgentOverlay = () => {
     };
   }, [state.selectMode]);
 
+  const [selectedRect, setSelectedRect] = useState<HighlightRect | undefined>(undefined);
+
+  useEffect(() => {
+    if (!state.selectedSelector) {
+      setSelectedRect(undefined);
+      return;
+    }
+
+    let rafId: number;
+    let running = true;
+    const trackSelected = () => {
+      if (!running) return;
+      try {
+        const element = document.querySelector(state.selectedSelector);
+        if (element) {
+          const box = element.getBoundingClientRect();
+          setSelectedRect({ x: box.x, y: box.y, width: box.width, height: box.height });
+        } else {
+          setSelectedRect(undefined);
+        }
+      } catch {
+        setSelectedRect(undefined);
+      }
+      rafId = requestAnimationFrame(trackSelected);
+    };
+    rafId = requestAnimationFrame(trackSelected);
+    return () => {
+      running = false;
+      cancelAnimationFrame(rafId);
+    };
+  }, [state.selectedSelector]);
+
   const [highlightRects, setHighlightRects] = useState<HighlightRect[]>([]);
 
   useEffect(() => {
@@ -470,6 +502,20 @@ const AgentOverlay = () => {
             </div>
           );
         })}
+
+      {selectedRect && (
+        <div
+          className="fixed pointer-events-none z-[2147483646] rounded-[3px]"
+          style={{
+            left: `${selectedRect.x}px`,
+            top: `${selectedRect.y}px`,
+            width: `${selectedRect.width}px`,
+            height: `${selectedRect.height}px`,
+            border: `2px solid rgb(${SRGB_BLUE})`,
+            boxShadow: `0 0 0 1px rgba(${SRGB_BLUE}, 0.3), 0 0 8px rgba(${SRGB_BLUE}, 0.15)`,
+          }}
+        />
+      )}
 
       {state.overlayVisible &&
         highlightRects.map((rect, index) => (
