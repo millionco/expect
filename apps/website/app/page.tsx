@@ -10,15 +10,19 @@ import { AnimatePresence, motion } from "motion/react";
 import { Calligraph } from "calligraph";
 import { ClaudeSpinner } from "./claude-spinner";
 
-const CODING_DURATION_MS = 1250;
-const SLIDE_DELAY_MS = 500;
-const DIFF_DURATION_MS = 1500;
+const CODING_DURATION_MS = 900;
+const SLIDE_DELAY_MS = 400;
+const DIFF_DURATION_MS = 1100;
 const CURSOR_APPEAR_DELAY_MS = 0;
-const CURSOR_MOVE_DELAY_MS = 1100;
-const CURSOR_CLICK_DELAY_MS = 400;
+const CURSOR_MOVE_DELAY_MS = 800;
+const CURSOR_CLICK_DELAY_MS = 500;
 const FOCUS_DELAY_MS = 50;
-const CURSOR_LABEL_CHANGE_MS = 1200;
-const CURSOR_ALERT_DELAY_MS = 1500;
+const CURSOR_LABEL_CHANGE_MS = 900;
+const CURSOR_ALERT_DELAY_MS = 1800;
+const LABEL_DISMISS_DELAY_MS = 200;
+const CURSOR_RETURN_DELAY_MS = 100;
+const TERMINAL_CLICK_DELAY_MS = 700;
+const TERMINAL_FOCUS_DELAY_MS = 50;
 
 type AnimationPhase = "coding" | "diff" | "expect";
 type CursorLabelState = "expect" | "security" | "alert";
@@ -32,6 +36,9 @@ function useAnimationPhase() {
   const [clicking, setClicking] = useState(false);
   const [labelVisible, setLabelVisible] = useState(false);
   const [cursorLabel, setCursorLabel] = useState<CursorLabelState>("security");
+  const [cursorOnTerminal, setCursorOnTerminal] = useState(false);
+  const [clickingTerminal, setClickingTerminal] = useState(false);
+  const [terminalFocused, setTerminalFocused] = useState(false);
 
   useEffect(() => {
     const expectTime = CODING_DURATION_MS + DIFF_DURATION_MS;
@@ -39,6 +46,11 @@ function useAnimationPhase() {
     const cursorMoveTime = cursorAppearTime + CURSOR_MOVE_DELAY_MS;
     const clickTime = cursorMoveTime + CURSOR_CLICK_DELAY_MS;
     const focusTime = clickTime + FOCUS_DELAY_MS;
+    const alertTime = focusTime + CURSOR_ALERT_DELAY_MS;
+    const labelDismissTime = alertTime + LABEL_DISMISS_DELAY_MS;
+    const cursorReturnTime = labelDismissTime + CURSOR_RETURN_DELAY_MS;
+    const terminalClickTime = cursorReturnTime + TERMINAL_CLICK_DELAY_MS;
+    const terminalFocusTime = terminalClickTime + TERMINAL_FOCUS_DELAY_MS;
 
     const diffTimer = setTimeout(() => setPhase("diff"), CODING_DURATION_MS);
     const slideTimer = setTimeout(() => setSlid(true), CODING_DURATION_MS + SLIDE_DELAY_MS);
@@ -49,7 +61,8 @@ function useAnimationPhase() {
     const clickEndTimer = setTimeout(() => setClicking(false), clickTime + 100);
     const labelShowTimer = setTimeout(() => setLabelVisible(true), clickTime + 500);
     const focusTimer = setTimeout(() => setFocused(true), focusTime);
-    const alertTimer = setTimeout(() => setCursorLabel("alert"), focusTime + CURSOR_ALERT_DELAY_MS);
+    const alertTimer = setTimeout(() => setCursorLabel("alert"), alertTime);
+    const terminalFocusTimer = setTimeout(() => { setTerminalFocused(true); setFocused(false); }, alertTime);
     return () => {
       clearTimeout(diffTimer);
       clearTimeout(slideTimer);
@@ -61,10 +74,11 @@ function useAnimationPhase() {
       clearTimeout(labelShowTimer);
       clearTimeout(focusTimer);
       clearTimeout(alertTimer);
+      clearTimeout(terminalFocusTimer);
     };
   }, []);
 
-  return { phase, slid, focused, cursorVisible, cursorOnBrowser, clicking, labelVisible, cursorLabel };
+  return { phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, labelVisible, cursorLabel, terminalFocused };
 }
 
 function TerminalLine({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
@@ -79,14 +93,14 @@ function TerminalLine({ children, delay = 0 }: { children: React.ReactNode; dela
   );
 }
 
-function TerminalContent({ phase }: { phase: AnimationPhase }) {
+function TerminalContent({ phase, alert }: { phase: AnimationPhase; alert: boolean }) {
   const showDiff = phase === "diff" || phase === "expect";
   const showExpect = phase === "expect";
 
   return (
     <motion.div
       className="flex flex-col items-start w-61 text-xs/4 gap-1"
-      animate={{ y: showExpect ? -180 : showDiff ? -70 : 0 }}
+      animate={{ y: alert ? -260 : showExpect ? -180 : showDiff ? -70 : 0 }}
       transition={{ type: "spring", stiffness: 120, damping: 20, mass: 0.8 }}
     >
       <div className="h-7 shrink-0" />
@@ -160,6 +174,16 @@ function TerminalContent({ phase }: { phase: AnimationPhase }) {
           </div>
         </div>
       )}
+      {alert && (
+        <div className="flex pl-0.5 items-center gap-1.25 mt-4">
+          <div className="inline-block text-[#E5291F] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+            ✕
+          </div>
+          <div className="text-[#E5291F] font-['JetBrains_Mono',system-ui,sans-serif] font-semibold shrink-0 text-[12.5px]/4.5">
+            Security
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -185,7 +209,7 @@ function BrowserPreview({ slid, focused }: { slid: boolean; focused: boolean }) 
             ? { x: -100, y: -8, scale: 1, zIndex: 0 }
             : { x: -12, y: -8, scale: 1, zIndex: 0 }
       }
-      transition={{ type: "spring", stiffness: 100, damping: 18, mass: 0.8 }}
+      transition={{ type: "spring", stiffness: 250, damping: 22, mass: 0.6 }}
     >
       <div className="relative flex flex-col w-68.5 h-46 rounded-2xl pt-2.5 pr-2.25 pb-6.75 pl-4.75 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]">
         <div className="flex items-center -ml-1">
@@ -238,7 +262,7 @@ function BrowserPreview({ slid, focused }: { slid: boolean; focused: boolean }) 
 }
 
 
-function AnimatedCursor({ visible, onBrowser, clicking, labelVisible, label }: { visible: boolean; onBrowser: boolean; clicking: boolean; labelVisible: boolean; label: CursorLabelState }) {
+function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerminal, labelVisible, label }: { visible: boolean; onBrowser: boolean; onTerminal: boolean; clicking: boolean; clickingTerminal: boolean; labelVisible: boolean; label: CursorLabelState }) {
   const isAlert = label === "alert";
   return (
     <motion.div
@@ -246,27 +270,29 @@ function AnimatedCursor({ visible, onBrowser, clicking, labelVisible, label }: {
       style={{ transformOrigin: "top left" }}
       initial={{ x: 200, y: 115, opacity: 0, scale: 0 }}
       animate={
-        visible && onBrowser
-          ? { x: -60, y: 145, opacity: 1, scale: 1 }
-          : visible
-            ? { x: 200, y: 115, opacity: 1, scale: 1 }
-            : { x: 200, y: 115, opacity: 0, scale: 0 }
+        visible && onTerminal
+          ? { x: 210, y: 80, opacity: 1, scale: 1 }
+          : visible && onBrowser
+            ? { x: -60, y: 145, opacity: 1, scale: 1 }
+            : visible
+              ? { x: 200, y: 115, opacity: 1, scale: 1 }
+              : { x: 200, y: 115, opacity: 0, scale: 0 }
       }
       transition={
         !visible
-          ? { type: "spring", stiffness: 400, damping: 22, mass: 0.5 }
-          : { type: "spring", stiffness: 80, damping: 16, mass: 0.6 }
+          ? { type: "spring", stiffness: 500, damping: 20, mass: 0.4 }
+          : { duration: 0.7, ease: [0.22, 1, 0.36, 1] }
       }
     >
       <motion.svg
         width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '40px', height: 'auto' }}
-        animate={{ scale: clicking ? 0.85 : 1 }}
-        transition={{ type: "spring", stiffness: 600, damping: 15 }}
+        animate={{ scale: (clicking || clickingTerminal) ? 0.85 : 1 }}
+        transition={{ duration: 0.1, ease: "easeOut" }}
       >
         <g filter="url(#filter0_d_4_7)">
           <path d="M2.58591 2.58594C3.14041 2.03143 3.96783 1.85171 4.70212 2.12695L15.7021 6.25195C16.5219 6.55937 17.0468 7.36516 16.997 8.23926C16.9471 9.11309 16.3344 9.85306 15.4853 10.0654L11.1484 11.1484L10.0654 15.4854C9.85303 16.3345 9.11306 16.9471 8.23923 16.9971C7.36513 17.0469 6.55934 16.5219 6.25192 15.7021L2.12692 4.70215C1.85168 3.96786 2.0314 3.14045 2.58591 2.58594Z" fill="white" stroke="white" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"/>
         </g>
-        <motion.path fillRule="evenodd" clipRule="evenodd" d="M4.17558 3.53185C3.99199 3.463 3.7851 3.50782 3.64646 3.64646C3.50782 3.7851 3.463 3.99199 3.53185 4.17558L7.65685 15.1756C7.7337 15.3805 7.93492 15.5117 8.15345 15.4992C8.37197 15.4868 8.557 15.3336 8.61009 15.1213L9.91232 9.91232L15.1213 8.61009C15.3336 8.557 15.4868 8.37197 15.4992 8.15345C15.5117 7.93492 15.3805 7.7337 15.1756 7.65685L4.17558 3.53185Z" animate={{ fill: isAlert ? "#F5332A" : "#0074F9", stroke: isAlert ? "#F5332A" : "#0074F9" }} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" transition={{ duration: 0.5, ease: "easeInOut" }}/>
+        <motion.path fillRule="evenodd" clipRule="evenodd" d="M4.17558 3.53185C3.99199 3.463 3.7851 3.50782 3.64646 3.64646C3.50782 3.7851 3.463 3.99199 3.53185 4.17558L7.65685 15.1756C7.7337 15.3805 7.93492 15.5117 8.15345 15.4992C8.37197 15.4868 8.557 15.3336 8.61009 15.1213L9.91232 9.91232L15.1213 8.61009C15.3336 8.557 15.4868 8.37197 15.4992 8.15345C15.5117 7.93492 15.3805 7.7337 15.1756 7.65685L4.17558 3.53185Z" animate={{ fill: isAlert ? "#E5291F" : "#0074F9", stroke: isAlert ? "#E5291F" : "#0074F9" }} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" transition={{ duration: 0.3 }}/>
         <defs>
           <filter id="filter0_d_4_7" x="-0.000274658" y="-0.000244141" width="19.0005" height="19.0006" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB"><feFlood floodOpacity="0" result="BackgroundImageFix"/><feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/><feOffset/><feGaussianBlur stdDeviation="1"/><feComposite in2="hardAlpha" operator="out"/><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.22 0"/><feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_4_7"/><feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_4_7" result="shape"/></filter>
           <linearGradient id="paint0_linear_4_7" x1="9.50001" y1="3.5" x2="9.50001" y2="15.5" gradientUnits="userSpaceOnUse"><stop stopColor="#0172F4"/><stop offset="1" stopColor="#0168DF"/></linearGradient>
@@ -275,8 +301,8 @@ function AnimatedCursor({ visible, onBrowser, clicking, labelVisible, label }: {
       <motion.div
         className="absolute left-4 top-4 rounded-full px-2.5 py-1 text-white font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[13px]/4.5 whitespace-nowrap [box-shadow:0_0_0_1.5px_white,0_1px_3px_rgba(0,0,0,0.2)] flex items-center gap-1.5 origin-top-left"
         initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ backgroundColor: isAlert ? "#F5332A" : "#0074F9", opacity: labelVisible ? 1 : 0, scale: labelVisible ? 1 : 0.5 }}
-        transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.5 }}
+        animate={{ backgroundColor: isAlert ? "#E5291F" : "#0074F9", opacity: labelVisible ? 1 : 0, scale: labelVisible ? 1 : 0.5 }}
+        transition={{ duration: 0.15 }}
       >
         {label === "security" && (
           <svg className="size-3 animate-spin" viewBox="0 0 16 16" fill="none">
@@ -296,21 +322,21 @@ function AnimatedCursor({ visible, onBrowser, clicking, labelVisible, label }: {
 }
 
 function TerminalIllustration() {
-  const { phase, slid, focused, cursorVisible, cursorOnBrowser, clicking, labelVisible, cursorLabel } = useAnimationPhase();
+  const { phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, labelVisible, cursorLabel, terminalFocused } = useAnimationPhase();
 
   return (
     <div className="flex flex-col items-center justify-center gap-4 text-xs/4 mt-11.5 p-3">
       <div className="relative w-68.5 h-46 shrink-0 overflow-visible">
         <BrowserPreview slid={slid} focused={focused} />
-        <AnimatedCursor visible={cursorVisible} onBrowser={cursorOnBrowser} clicking={clicking} labelVisible={labelVisible} label={cursorLabel} />
+        <AnimatedCursor visible={cursorVisible} onBrowser={cursorOnBrowser} onTerminal={cursorOnTerminal} clicking={clicking} clickingTerminal={clickingTerminal} labelVisible={labelVisible} label={cursorLabel} />
         <motion.div
           className="flex flex-col items-start w-68.5 h-46 relative z-10 rounded-2xl pt-4.5 pr-3.75 pb-6.5 pl-3.75 overflow-clip bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]"
-          animate={slid ? { x: 80 } : { x: 0 }}
+          animate={slid ? { x: 80, scale: terminalFocused ? 1.04 : 1, zIndex: terminalFocused ? 20 : 10 } : { x: 0 }}
           transition={{ type: "spring", stiffness: 120, damping: 20, mass: 0.8 }}
         >
           <div suppressHydrationWarning className="absolute top-0 left-0 right-0 h-20 z-10 pointer-events-none select-none rounded-t-2xl" style={{ background: 'linear-gradient(to top, transparent 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.45) 75%, rgba(255,255,255,0.8) 100%)' }} />
           <div suppressHydrationWarning className="absolute bottom-0 left-0 right-0 h-12 z-10 pointer-events-none select-none rounded-b-2xl" style={{ background: 'linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.45) 75%, rgba(255,255,255,0.8) 100%)' }} />
-          <TerminalContent phase={phase} />
+          <TerminalContent phase={phase} alert={cursorLabel === "alert"} />
         </motion.div>
       </div>
     </div>
