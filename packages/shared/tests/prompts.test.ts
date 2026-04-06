@@ -64,8 +64,16 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("STEP_START|<step-id>|<step-title>");
     expect(prompt).toContain("STEP_DONE|<step-id>|<short-summary>");
     expect(prompt).toContain("ASSERTION_FAILED|<step-id>|<why-it-failed>");
-    expect(prompt).toContain("RUN_COMPLETED|passed|<final-summary>");
-    expect(prompt).toContain("RUN_COMPLETED|failed|<final-summary>");
+    expect(prompt).toContain("RUN_COMPLETED|passed|<session-summary>");
+    expect(prompt).toContain("RUN_COMPLETED|failed|<session-summary>");
+  });
+
+  it("describes session summary as a handoff to the outer agent", () => {
+    const prompt = buildExecutionSystemPrompt();
+    expect(prompt).toContain("handoff to the outer agent");
+    expect(prompt).toContain("what was verified");
+    expect(prompt).toContain("bugs found");
+    expect(prompt).toContain("anything learned");
   });
 
   it("includes changed files", () => {
