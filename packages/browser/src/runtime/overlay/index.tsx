@@ -442,31 +442,7 @@ const AgentOverlay = () => {
                     animation: "expect-tooltip-in 0.1s ease-out forwards",
                   }}
                 >
-                  <span
-                    style={{
-                      display: "block",
-                      fontSize: "12px",
-                      fontStyle: "italic",
-                      color: "rgba(255,255,255,0.6)",
-                      marginBottom: "4px",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {action.description}
-                  </span>
-                  <span
-                    style={{
-                      display: "block",
-                      fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace",
-                      fontSize: "11px",
-                      color: "rgba(255,255,255,0.8)",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {action.code.split("\n")[0]}
-                  </span>
+                  {action.description}
                 </div>
               )}
             </div>
