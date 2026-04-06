@@ -22,8 +22,6 @@ export {
   highlightRefs,
   clearHighlights,
   logAction,
-  zoomToElement,
-  resetZoom,
 } from "./overlay";
 
 import { finder } from "@medv/finder";

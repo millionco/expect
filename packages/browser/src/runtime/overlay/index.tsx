@@ -523,29 +523,6 @@ export const showAgentOverlay = (containerId: string): void => {
   if (host) host.style.display = "";
 };
 
-const ZOOM_LEVEL = 1.5;
-
-export const zoomToElement = (selector: string): void => {
-  try {
-    const element = document.querySelector(selector);
-    if (!(element instanceof HTMLElement)) return;
-    const rect = element.getBoundingClientRect();
-    const originX = rect.x + rect.width / 2;
-    const originY = rect.y + rect.height / 2 + window.scrollY;
-    const html = document.documentElement;
-    html.style.transformOrigin = `${originX}px ${originY}px`;
-    html.style.transform = `scale(${ZOOM_LEVEL})`;
-    html.style.transition = "transform 0.4s cubic-bezier(0.19, 1, 0.22, 1)";
-  } catch {}
-};
-
-export const resetZoom = (): void => {
-  const html = document.documentElement;
-  html.style.transform = "";
-  html.style.transformOrigin = "";
-  html.style.transition = "transform 0.3s cubic-bezier(0.19, 1, 0.22, 1)";
-};
-
 export const destroyAgentOverlay = (containerId: string): void => {
   clearSaveCursorTimeout();
   overlayRoot?.unmount();

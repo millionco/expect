@@ -107,12 +107,6 @@ const moveCursorToRef = Effect.fn("moveCursorToRef")(function* (
     label,
     selector ?? "",
   ).pipe(Effect.catchCause(() => Effect.void));
-
-  if (selector) {
-    yield* evaluateRuntime(page, "zoomToElement", selector).pipe(
-      Effect.catchCause(() => Effect.void),
-    );
-  }
 });
 
 const moveCursorToSelector = Effect.fn("moveCursorToSelector")(function* (
@@ -150,12 +144,6 @@ const moveCursorToSelector = Effect.fn("moveCursorToSelector")(function* (
       label,
       result.selector ?? "",
     ).pipe(Effect.catchCause(() => Effect.void));
-
-    if (result.selector) {
-      yield* evaluateRuntime(page, "zoomToElement", result.selector).pipe(
-        Effect.catchCause(() => Effect.void),
-      );
-    }
   }
 });
 
@@ -413,7 +401,6 @@ export const createBrowserMcpServer = <E>(
           yield* updateCursorLabel(page, `Taking ${resolvedMode}`);
 
           if (resolvedMode === "snapshot") {
-            yield* evaluateRuntime(page, "resetZoom").pipe(Effect.catchCause(() => Effect.void));
             yield* evaluateRuntime(page, "hideAgentOverlay", AGENT_OVERLAY_CONTAINER_ID).pipe(
               Effect.catchCause(() => Effect.void),
             );
@@ -450,7 +437,6 @@ export const createBrowserMcpServer = <E>(
             };
           }
 
-          yield* evaluateRuntime(page, "resetZoom").pipe(Effect.catchCause(() => Effect.void));
           yield* evaluateRuntime(page, "hideAgentOverlay", AGENT_OVERLAY_CONTAINER_ID).pipe(
             Effect.catchCause(() => Effect.void),
           );
