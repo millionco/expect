@@ -118,7 +118,6 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
   make: Effect.gen(function* () {
     const browserService = yield* Browser;
     const fileSystem = yield* FileSystem;
-    const wallpaperPath = yield* resolveWallpaperPath();
     const cookieBrowsersConfig = yield* Config.option(
       Config.string(EXPECT_COOKIE_BROWSERS_ENV_NAME),
     );
@@ -443,6 +442,8 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
             TMP_ARTIFACT_OUTPUT_DIRECTORY,
             `${artifactBaseName}.webm`,
           );
+
+          const wallpaperPath = resolveWallpaperPath();
 
           tmpVideoPath = yield* frameWithWallpaper(videoPath, tmpVideoFilePath, wallpaperPath).pipe(
             Effect.as(tmpVideoFilePath),
