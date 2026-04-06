@@ -132,9 +132,9 @@ export const executeFn = cliAtomRuntime.fn<ExecuteInput>()((input) =>
           "_tag" in error &&
           typeof error._tag === "string"
             ? error._tag
-            : // ignore for now
-              (error as any) instanceof Error
-              ? (error as any).constructor.name
+            : // HACK: error is typed as unknown; cast needed for instanceof check
+              (error as Error) instanceof Error
+              ? (error as Error).constructor.name
               : "UnknownError";
         yield* analytics.capture("run:failed", {
           plan_id: "direct",

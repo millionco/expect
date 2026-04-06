@@ -44,7 +44,7 @@ const generateRuntimeTypes = (exportNames) => {
 
 const emitPlugin = {
   name: "emit-runtime-script",
-  setup(build) {
+  setup: (build) => {
     build.onEnd((result) => {
       if (result.errors.length > 0) return;
       const runtimeCode =
@@ -64,7 +64,7 @@ const emitPlugin = {
 
 const cssTextPlugin = {
   name: "css-text",
-  setup(build) {
+  setup: (build) => {
     build.onResolve({ filter: /\.css$/ }, (args) => {
       const isRelative = args.path.startsWith(".") || args.path.startsWith("/");
       const resolved = isRelative

@@ -8,6 +8,9 @@ import {
   CURSOR_SIZE_PX,
   CURSOR_HEIGHT_PX,
   SRGB_BLUE,
+  CLICK_ANIMATION_RESET_MS,
+  MAX_ACTION_LOG_ENTRIES,
+  TOOLTIP_FLIP_THRESHOLD_PX,
   getViewport,
   clampToViewport,
 } from "./constants";
@@ -42,7 +45,13 @@ const AgentOverlay = () => {
 
   useEffect(() => {
     const viewport = getViewport();
-    if (state.cursorPositioned && state.cursorX >= 0 && state.cursorY >= 0) {
+    if (
+      state.cursorPositioned &&
+      state.cursorX >= 0 &&
+      state.cursorY >= 0 &&
+      viewport.width > 0 &&
+      viewport.height > 0
+    ) {
       saveCursorState({
         relativeX: state.cursorX / viewport.width,
         relativeY: state.cursorY / viewport.height,
@@ -112,7 +121,7 @@ const AgentOverlay = () => {
         setState((previous) =>
           previous.cursorAction === "click" ? { ...previous, cursorAction: "idle" } : previous,
         );
-      }, 300);
+      }, CLICK_ANIMATION_RESET_MS);
     };
 
     const onKeyDown = () => {
@@ -388,7 +397,7 @@ const AgentOverlay = () => {
               {index + 1}
               {hoveredAction === index &&
                 (() => {
-                  const showAbove = position.y > window.innerHeight - 80;
+                  const showAbove = position.y > getViewport().height - TOOLTIP_FLIP_THRESHOLD_PX;
                   return (
                     <div
                       className="absolute left-1/2 px-3 py-2 bg-[#1a1a1a] text-white text-[13px] font-normal rounded-xl whitespace-nowrap overflow-hidden text-ellipsis leading-[1.4] pointer-events-none shadow-[0_4px_20px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.08)] min-w-[120px] max-w-[280px] text-center animate-[expect-tooltip-in_0.1s_ease-out_forwards]"
@@ -442,6 +451,8 @@ const AgentOverlay = () => {
 
 let setOverlayState: ((updater: (previous: OverlayState) => OverlayState) => void) | undefined;
 let overlayRoot: ReturnType<typeof createRoot> | undefined;
+let lastCursorX = -1;
+let lastCursorY = -1;
 
 export const initAgentOverlay = (containerId: string): void => {
   if (document.getElementById(containerId)) return;
@@ -498,6 +509,11 @@ export const updateCursor = (
     } catch {}
   }
 
+  if (x >= 0 && y >= 0) {
+    lastCursorX = x;
+    lastCursorY = y;
+  }
+
   setOverlayState((previous) => {
     const hasPosition = x >= 0 && y >= 0;
     return {
@@ -515,6 +531,7 @@ export const hideAgentOverlay = (containerId: string): void => {
   const host = document.getElementById(containerId);
   if (!host) return;
   host.style.display = "none";
+  // HACK: force layout reflow so display:none takes effect before screenshot capture
   void host.offsetHeight;
 };
 
@@ -551,18 +568,20 @@ export const logAction = (containerId: string, description: string, code: string
     if (!setOverlayState) return;
   }
 
-  setOverlayState((previous) => {
-    let selector = "";
-    try {
-      const element = document.elementFromPoint(previous.cursorX, previous.cursorY);
+  let selector = "";
+  try {
+    if (lastCursorX >= 0 && lastCursorY >= 0) {
+      const element = document.elementFromPoint(lastCursorX, lastCursorY);
       if (element && !element.closest(`[data-expect-overlay]`)) {
         selector = finder(element);
       }
-    } catch {}
+    }
+  } catch {}
 
-    return {
-      ...previous,
-      actionLog: [...previous.actionLog, { description, code, selector }].slice(-50),
-    };
-  });
+  setOverlayState((previous) => ({
+    ...previous,
+    actionLog: [...previous.actionLog, { description, code, selector }].slice(
+      -MAX_ACTION_LOG_ENTRIES,
+    ),
+  }));
 };

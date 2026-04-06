@@ -37,6 +37,7 @@ const imageResult = (base64: string) => ({
   content: [{ type: "image" as const, data: base64, mimeType: "image/png" }],
 });
 
+// HACK: get AsyncFunction constructor for dynamic code evaluation in playwright tool
 const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
 
 const REF_PATTERN = /ref\s*\(\s*['"](\w+)['"]\s*\)/;
@@ -183,8 +184,7 @@ const highlightRefsInCode = Effect.fn("highlightRefsInCode")(function* (
   );
 });
 
-// Tool annotations (readOnlyHint, destructiveHint) enable parallel execution in the Claude Agent SDK.
-// See: https://platform.claude.com/docs/en/agent-sdk/agent-loop#parallel-tool-execution
+// HACK: tool annotations (readOnlyHint, destructiveHint) are required for parallel execution in the Claude Agent SDK
 export const createBrowserMcpServer = <E>(
   runtime: ManagedRuntime.ManagedRuntime<McpSession, E>,
 ) => {

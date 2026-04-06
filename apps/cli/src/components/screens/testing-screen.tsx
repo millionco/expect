@@ -557,11 +557,12 @@ export const TestingScreen = ({
             </Text>
           </Box>
 
-          {expanded ? (
+          {expanded && (
             <Box flexDirection="column" marginTop={1}>
               {visibleExpandedRows}
             </Box>
-          ) : (
+          )}
+          {!expanded && (
             <>
               {totalCount === 0 &&
                 isExecuting &&

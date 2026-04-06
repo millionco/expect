@@ -409,7 +409,8 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         );
 
         if (videoPath) {
-          yield* Ref.update(videoSegmentsRef, (segments) => [...segments, videoPath!]);
+          const confirmedVideoPath = videoPath;
+          yield* Ref.update(videoSegmentsRef, (segments) => [...segments, confirmedVideoPath]);
 
           const allSegments = yield* Ref.get(videoSegmentsRef);
 
@@ -437,7 +438,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
               }).pipe(
                 Effect.tap(() =>
                   fileSystem
-                    .copyFile(videoPath!, rawConcatPath)
+                    .copyFile(confirmedVideoPath, rawConcatPath)
                     .pipe(Effect.catchCause(() => Effect.void)),
                 ),
               ),
