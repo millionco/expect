@@ -37,16 +37,17 @@ export class VideoProcessError extends Schema.ErrorClass<VideoProcessError>("Vid
 // HACK: require() instead of import because @ffmpeg-installer/ffmpeg uses
 // CJS-only exports with a dynamic platform-specific binary path that can't
 // be statically resolved by ESM import at build time.
-let cachedFfmpegPath: string | undefined | false;
+let cachedFfmpegPath: string | undefined;
+let ffmpegProbed = false;
 const resolveFfmpegPath = (): string | undefined => {
-  if (cachedFfmpegPath !== undefined) return cachedFfmpegPath || undefined;
+  if (ffmpegProbed) return cachedFfmpegPath;
+  ffmpegProbed = true;
   try {
     const binaryPath = (require("@ffmpeg-installer/ffmpeg") as { path: string }).path;
     execFileSync(binaryPath, ["-version"], { timeout: 5_000, stdio: "ignore" });
     cachedFfmpegPath = binaryPath;
     return binaryPath;
   } catch {
-    cachedFfmpegPath = false;
     return undefined;
   }
 };
@@ -84,7 +85,7 @@ export const stripIdleFrames = Effect.fn("stripIdleFrames")(function* (
   const ffmpegBinary = resolveFfmpegPath();
   if (!ffmpegBinary) {
     yield* Effect.logDebug("ffmpeg not available, copying video without processing");
-    yield* Effect.sync(() => copyFileSync(inputPath, outputPath));
+    yield* Effect.try({ try: () => copyFileSync(inputPath, outputPath), catch: () => undefined });
     return;
   }
 
@@ -116,20 +117,18 @@ export const frameWithWallpaper = Effect.fn("frameWithWallpaper")(function* (
 
   if (!existsSync(wallpaperPath)) {
     yield* Effect.logDebug("Wallpaper not found, copying video without framing");
-    yield* Effect.sync(() => copyFileSync(inputPath, outputPath));
+    yield* Effect.try({ try: () => copyFileSync(inputPath, outputPath), catch: () => undefined });
     return;
   }
 
   const ffmpegBinary = resolveFfmpegPath();
   if (!ffmpegBinary) {
     yield* Effect.logDebug("ffmpeg not available, copying video without framing");
-    yield* Effect.sync(() => copyFileSync(inputPath, outputPath));
+    yield* Effect.try({ try: () => copyFileSync(inputPath, outputPath), catch: () => undefined });
     return;
   }
 
   yield* Effect.logInfo("Framing video with wallpaper", { inputPath });
-
-  const pad = FRAME_PADDING_PX;
 
   yield* runFfmpeg(ffmpegBinary, [
     "-i",
@@ -139,7 +138,7 @@ export const frameWithWallpaper = Effect.fn("frameWithWallpaper")(function* (
     "-i",
     wallpaperPath,
     "-filter_complex",
-    `[1:v][0:v]scale2ref=iw+${pad * 2}:ih+${pad * 2}[bg][ref];[bg][ref]overlay=(W-w)/2:(H-h)/2:shortest=1[out]`,
+    `[1:v][0:v]scale2ref=iw+${FRAME_PADDING_PX * 2}:ih+${FRAME_PADDING_PX * 2}[bg][ref];[bg][ref]overlay=(W-w)/2:(H-h)/2:shortest=1[out]`,
     "-map",
     "[out]",
     "-an",
@@ -162,14 +161,20 @@ export const concatVideos = Effect.fn("concatVideos")(function* (
   }
 
   if (validPaths.length === 1) {
-    yield* Effect.sync(() => copyFileSync(validPaths[0], outputPath));
+    yield* Effect.try({
+      try: () => copyFileSync(validPaths[0], outputPath),
+      catch: () => undefined,
+    });
     return;
   }
 
   const ffmpegBinary = resolveFfmpegPath();
   if (!ffmpegBinary) {
     yield* Effect.logDebug("ffmpeg not available, using last video segment");
-    yield* Effect.sync(() => copyFileSync(validPaths[validPaths.length - 1], outputPath));
+    yield* Effect.try({
+      try: () => copyFileSync(validPaths[validPaths.length - 1], outputPath),
+      catch: () => undefined,
+    });
     return;
   }
 
@@ -179,7 +184,10 @@ export const concatVideos = Effect.fn("concatVideos")(function* (
   const concatList = validPaths
     .map((filePath) => `file '${filePath.replaceAll("'", "'\\''")}'`)
     .join("\n");
-  yield* Effect.sync(() => writeFileSync(concatListPath, concatList));
+  yield* Effect.try({
+    try: () => writeFileSync(concatListPath, concatList),
+    catch: () => undefined,
+  });
 
   yield* runFfmpeg(ffmpegBinary, [
     "-f",
@@ -195,10 +203,9 @@ export const concatVideos = Effect.fn("concatVideos")(function* (
     outputPath,
   ]);
 
-  yield* Effect.sync(() => {
-    try {
-      unlinkSync(concatListPath);
-    } catch {}
+  yield* Effect.try({
+    try: () => unlinkSync(concatListPath),
+    catch: () => undefined,
   });
 
   yield* Effect.logInfo("Videos concatenated", { outputPath });
