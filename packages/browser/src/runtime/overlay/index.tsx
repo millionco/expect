@@ -24,6 +24,12 @@ import { SpiralSpinner } from "./spiral-spinner";
 import { Glow } from "./glow";
 import { ToolbarControls } from "./toolbar-controls";
 
+interface MarkerPosition {
+  x: number;
+  y: number;
+  visible: boolean;
+}
+
 const AgentOverlay = () => {
   const [state, setState] = useState<OverlayState>(loadInitialState);
 
@@ -169,12 +175,6 @@ const AgentOverlay = () => {
     };
   }, [state.highlightSelectors]);
 
-  interface MarkerPosition {
-    x: number;
-    y: number;
-    visible: boolean;
-  }
-
   const [markerPositions, setMarkerPositions] = useState<MarkerPosition[]>([]);
 
   useEffect(() => {
@@ -229,20 +229,32 @@ const AgentOverlay = () => {
   }, [state.cursorX, state.cursorY, state.cursorPositioned]);
 
   const [hoveredAction, setHoveredAction] = useState<number | undefined>(undefined);
+  const [hoveredElementRect, setHoveredElementRect] = useState<HighlightRect | undefined>(
+    undefined,
+  );
 
-  const hoveredElementRect = (() => {
-    if (hoveredAction === undefined) return undefined;
+  useEffect(() => {
+    if (hoveredAction === undefined) {
+      setHoveredElementRect(undefined);
+      return;
+    }
     const entry = state.actionLog[hoveredAction];
-    if (!entry?.selector) return undefined;
+    if (!entry?.selector) {
+      setHoveredElementRect(undefined);
+      return;
+    }
     try {
       const element = document.querySelector(entry.selector);
-      if (!element) return undefined;
-      const box = element.getBoundingClientRect();
-      return { x: box.x, y: box.y, width: box.width, height: box.height };
+      if (element) {
+        const box = element.getBoundingClientRect();
+        setHoveredElementRect({ x: box.x, y: box.y, width: box.width, height: box.height });
+      } else {
+        setHoveredElementRect(undefined);
+      }
     } catch {
-      return undefined;
+      setHoveredElementRect(undefined);
     }
-  })();
+  }, [hoveredAction, state.actionLog]);
 
   const hasLabel = Boolean(state.label);
   const showCursor = hasLabel || state.cursorPositioned;

@@ -6,7 +6,7 @@ export const HandCursor = () => (
     height="28"
     viewBox="0 0 19 23"
     fill="none"
-    style={{ position: "absolute", top: "4px", left: "2px" }}
+    className="absolute top-[4px] left-[2px]"
   >
     <CursorShadowFilter />
     <g filter="url(#expect-cs)">

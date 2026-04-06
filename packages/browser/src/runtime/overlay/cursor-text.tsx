@@ -1,13 +1,7 @@
 import { CursorShadowFilter } from "./cursor-shadow-filter";
 
 export const TextCursor = () => (
-  <svg
-    width="39"
-    height="39"
-    viewBox="0 0 32 32"
-    fill="none"
-    style={{ position: "absolute", top: "1px", left: 0 }}
-  >
+  <svg width="39" height="39" viewBox="0 0 32 32" fill="none" className="absolute top-px left-0">
     <CursorShadowFilter />
     <g filter="url(#expect-cs)">
       <path

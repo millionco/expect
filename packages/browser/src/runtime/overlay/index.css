@@ -36,25 +36,6 @@
   }
 }
 
-@keyframes expect-shimmer {
-  0% {
-    background-position: -200px 0;
-  }
-  100% {
-    background-position: 200px 0;
-  }
-}
-
-@keyframes expect-text-blink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
-}
-
 @keyframes expect-marker-in {
   0% {
     opacity: 0;
