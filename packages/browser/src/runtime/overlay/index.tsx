@@ -28,6 +28,28 @@ const SPIRAL_PARTICLE_COUNT = 50;
 const SPIRAL_TRAIL_SPAN = 0.34;
 
 type CursorAction = "idle" | "click" | "type";
+type CursorShape = "pointer" | "text" | "hand" | "grab";
+
+const CLICKABLE_SELECTOR =
+  'a,button,[role="button"],[role="link"],[role="tab"],[role="menuitem"],select,summary,label[for]';
+
+const detectCursorShape = (x: number, y: number): CursorShape => {
+  const element = document.elementFromPoint(x, y);
+  if (!element) return "pointer";
+
+  const computedCursor = window.getComputedStyle(element).cursor;
+  if (computedCursor === "text") return "text";
+  if (computedCursor === "grab" || computedCursor === "grabbing") return "grab";
+  if (computedCursor === "pointer") return "hand";
+
+  if (element.closest(CLICKABLE_SELECTOR)) return "hand";
+
+  const tag = element.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || (element as HTMLElement).isContentEditable)
+    return "text";
+
+  return "pointer";
+};
 
 interface HighlightRect {
   x: number;
@@ -195,39 +217,43 @@ const SpiralSpinner = ({ visible }: { visible: boolean }) => {
   );
 };
 
-const CursorSvg = () => (
+const CursorShadowFilter = () => (
+  <defs>
+    <filter
+      id="expect-cs"
+      x="-2"
+      y="-2"
+      width="36"
+      height="36"
+      filterUnits="userSpaceOnUse"
+      colorInterpolationFilters="sRGB"
+    >
+      <feFlood floodOpacity="0" result="bg" />
+      <feColorMatrix
+        in="SourceAlpha"
+        type="matrix"
+        values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+        result="ha"
+      />
+      <feOffset />
+      <feGaussianBlur stdDeviation="1" />
+      <feComposite in2="ha" operator="out" />
+      <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.22 0" />
+      <feBlend mode="normal" in2="bg" result="ds" />
+      <feBlend mode="normal" in="SourceGraphic" in2="ds" result="shape" />
+    </filter>
+  </defs>
+);
+
+const PointerCursor = () => (
   <svg
-    width={CURSOR_SIZE_PX}
-    height={CURSOR_HEIGHT_PX}
-    viewBox="0 0 32 35"
+    width="37"
+    height="41"
+    viewBox="0 0 32 33"
     fill="none"
-    xmlns="http://www.w3.org/2000/svg"
+    style={{ position: "absolute", top: 0, left: 0 }}
   >
-    <defs>
-      <filter
-        id="expect-cs"
-        x="-4"
-        y="-4"
-        width="40"
-        height="40"
-        filterUnits="userSpaceOnUse"
-        colorInterpolationFilters="sRGB"
-      >
-        <feFlood floodOpacity="0" result="bg" />
-        <feColorMatrix
-          in="SourceAlpha"
-          type="matrix"
-          values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-          result="ha"
-        />
-        <feOffset />
-        <feGaussianBlur stdDeviation="2" />
-        <feComposite in2="ha" operator="out" />
-        <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" />
-        <feBlend mode="normal" in2="bg" result="ds" />
-        <feBlend mode="normal" in="SourceGraphic" in2="ds" result="shape" />
-      </filter>
-    </defs>
+    <CursorShadowFilter />
     <g filter="url(#expect-cs)">
       <path
         fillRule="evenodd"
@@ -239,11 +265,96 @@ const CursorSvg = () => (
         fillRule="evenodd"
         clipRule="evenodd"
         d="M15.999 15.129C15.999 14.998 16.159 14.932 16.25 15.025L24.159 22.95C24.59 23.382 24.284 24.119 23.674 24.119L20.97 24.118L22.769 28.394C22.996 28.934 22.742 29.555 22.203 29.781C21.662 30.008 21.042 29.755 20.816 29.216L18.998 24.892L17.139 26.539C16.723 26.907 16.081 26.651 16.007 26.127L15.999 26.026V15.129Z"
-        fill={`rgb(${SRGB_BLUE})`}
+        fill="#000000"
       />
     </g>
   </svg>
 );
+
+const TextCursor = () => (
+  <svg
+    width="39"
+    height="39"
+    viewBox="0 0 32 32"
+    fill="none"
+    style={{ position: "absolute", top: "1px", left: 0 }}
+  >
+    <CursorShadowFilter />
+    <g filter="url(#expect-cs)">
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M20.315 7.505C20.315 8.249 19.759 8.889 19.023 8.994C18.431 9.079 17.984 9.596 17.984 10.196V20.426C17.984 21.027 18.43 21.544 19.021 21.629C19.756 21.733 20.312 22.374 20.312 23.118C20.309 23.561 20.118 23.974 19.787 24.257C19.458 24.54 19.021 24.668 18.59 24.604C17.807 24.492 17.078 24.161 16.481 23.659C15.883 24.161 15.154 24.492 14.367 24.605C13.94 24.668 13.504 24.541 13.173 24.257C12.842 23.97 12.653 23.558 12.65 23.125C12.65 22.374 13.206 21.733 13.942 21.628C14.536 21.543 14.984 21.026 14.984 20.426V10.196C14.984 9.596 14.537 9.079 13.944 8.994C13.209 8.889 12.654 8.249 12.654 7.505C12.655 7.065 12.846 6.651 13.177 6.366C13.447 6.133 13.796 6.002 14.158 6.002H14.239L14.39 6.021C15.164 6.132 15.889 6.462 16.484 6.964C17.083 6.462 17.812 6.13 18.598 6.018C19.013 5.951 19.455 6.077 19.792 6.366C20.123 6.653 20.312 7.065 20.315 7.498V7.502V7.505Z"
+        fill="#FFFFFF"
+      />
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M14.087 8.003C15.169 8.158 15.985 9.101 15.985 10.195V20.425C15.985 21.519 15.167 22.462 14.083 22.617C13.836 22.652 13.65 22.867 13.65 23.117C13.651 23.263 13.714 23.401 13.824 23.497C13.935 23.591 14.08 23.635 14.226 23.614C15.148 23.482 15.978 22.943 16.481 22.16C16.985 22.943 17.814 23.482 18.737 23.614C18.879 23.635 19.027 23.591 19.137 23.496C19.248 23.401 19.311 23.263 19.312 23.117C19.312 22.867 19.126 22.652 18.879 22.617C17.799 22.462 16.985 21.52 16.985 20.425V10.195C16.985 9.101 17.801 8.158 18.883 8.003C19.13 7.968 19.316 7.753 19.316 7.503C19.315 7.358 19.251 7.219 19.141 7.123C19.03 7.029 18.885 6.983 18.74 7.006C17.818 7.139 16.988 7.677 16.484 8.46C15.98 7.677 15.151 7.139 14.229 7.006C14.206 7.003 14.182 7.001 14.158 7.001C14.038 7.001 13.921 7.044 13.829 7.123C13.718 7.219 13.655 7.357 13.654 7.504C13.654 7.753 13.84 7.968 14.087 8.003Z"
+        fill="#000000"
+      />
+    </g>
+  </svg>
+);
+
+const HandCursor = () => (
+  <svg
+    width="23"
+    height="28"
+    viewBox="0 0 19 23"
+    fill="none"
+    style={{ position: "absolute", top: "4px", left: "2px" }}
+  >
+    <CursorShadowFilter />
+    <g filter="url(#expect-cs)">
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M10.301 19.704C11.359 19.704 12.279 19.484 13.059 19.043C13.841 18.602 14.445 17.957 14.87 17.105C15.296 16.253 15.509 15.211 15.509 13.976V12.326C15.509 11.559 15.389 10.97 15.149 10.556C14.909 10.143 14.563 9.936 14.114 9.936V11.03C14.114 11.182 14.063 11.304 13.963 11.395C13.862 11.486 13.749 11.531 13.621 11.531C13.487 11.531 13.37 11.486 13.27 11.395C13.169 11.304 13.119 11.182 13.119 11.03V9.671C13.119 9.398 13.049 9.186 12.91 9.037C12.769 8.888 12.572 8.814 12.316 8.814C12.116 8.814 11.918 8.857 11.724 8.942V10.675C11.724 10.833 11.673 10.957 11.573 11.049C11.472 11.14 11.359 11.185 11.231 11.185C11.097 11.185 10.98 11.14 10.88 11.049C10.779 10.957 10.729 10.833 10.729 10.675V8.668C10.729 8.401 10.658 8.189 10.515 8.034C10.372 7.879 10.179 7.801 9.936 7.801C9.729 7.801 9.528 7.847 9.334 7.938V10.328C9.334 10.468 9.287 10.587 9.192 10.684C9.098 10.781 8.978 10.83 8.832 10.83C8.692 10.83 8.575 10.781 8.481 10.684C8.387 10.587 8.339 10.468 8.339 10.328V3.743C8.339 3.518 8.277 3.337 8.152 3.2C8.028 3.063 7.859 2.995 7.646 2.995C7.433 2.995 7.262 3.063 7.131 3.2C7 3.337 6.935 3.518 6.935 3.743V13.019C6.935 13.214 6.877 13.373 6.762 13.498C6.646 13.622 6.5 13.684 6.324 13.684C6.165 13.684 6.024 13.645 5.9 13.566C5.775 13.487 5.67 13.341 5.585 13.128L4.363 10.337C4.211 9.972 3.982 9.79 3.679 9.79C3.484 9.79 3.326 9.852 3.204 9.977C3.082 10.101 3.022 10.252 3.022 10.428C3.022 10.574 3.049 10.72 3.104 10.866L4.737 15.463C5.271 16.953 6.014 18.031 6.962 18.701C7.911 19.37 9.024 19.704 10.301 19.704Z"
+        fill="#FFFFFF"
+      />
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M10.265 20.762C8.707 20.762 7.383 20.345 6.292 19.513C5.2 18.68 4.366 17.442 3.788 15.8L2.155 11.194C2.106 11.049 2.069 10.897 2.041 10.738C2.014 10.58 2 10.437 2 10.31C2 9.835 2.158 9.468 2.475 9.206C2.79 8.945 3.162 8.814 3.587 8.814C3.898 8.814 4.177 8.904 4.427 9.083C4.676 9.262 4.876 9.532 5.029 9.89L5.749 11.669C5.767 11.711 5.795 11.732 5.831 11.732C5.88 11.732 5.904 11.705 5.904 11.651V3.806C5.904 3.253 6.068 2.814 6.397 2.488C6.725 2.163 7.141 2 7.646 2C8.145 2 8.557 2.163 8.882 2.488C9.207 2.814 9.37 3.253 9.37 3.806V6.917C9.607 6.85 9.838 6.816 10.064 6.816C10.453 6.816 10.784 6.918 11.058 7.122C11.331 7.326 11.523 7.604 11.633 7.957C11.912 7.86 12.186 7.811 12.454 7.811C12.83 7.811 13.148 7.906 13.406 8.098C13.665 8.289 13.843 8.549 13.94 8.878C14.766 8.884 15.407 9.176 15.86 9.753C16.313 10.331 16.54 11.143 16.54 12.188V14.095C16.54 15.505 16.275 16.708 15.746 17.702C15.217 18.697 14.481 19.454 13.539 19.978C12.596 20.501 11.505 20.762 10.265 20.762Z"
+        fill="#000000"
+      />
+    </g>
+  </svg>
+);
+
+const GrabCursor = () => (
+  <svg
+    width="25"
+    height="26"
+    viewBox="0 0 21 22"
+    fill="none"
+    style={{ position: "absolute", top: "4px", left: "4px" }}
+  >
+    <CursorShadowFilter />
+    <g filter="url(#expect-cs)">
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M10.5 18.5C12.5 18.5 14 17.8 15.1 16.5C16.2 15.2 16.75 13.5 16.75 11.5V9.75C16.75 9.1 16.6 8.6 16.3 8.25C16 7.9 15.6 7.75 15.15 7.75V8.75C15.15 8.9 15.1 9.02 15 9.1C14.9 9.18 14.8 9.22 14.68 9.22C14.55 9.22 14.44 9.18 14.35 9.1C14.26 9.02 14.21 8.9 14.21 8.75V7.5C14.21 7.25 14.14 7.05 14 6.92C13.86 6.79 13.67 6.72 13.43 6.72C13.23 6.72 13.04 6.76 12.86 6.84V8.4C12.86 8.55 12.81 8.67 12.72 8.75C12.62 8.83 12.51 8.87 12.39 8.87C12.26 8.87 12.15 8.83 12.05 8.75C11.96 8.67 11.91 8.55 11.91 8.4V6.5C11.91 6.25 11.84 6.05 11.7 5.92C11.56 5.78 11.38 5.72 11.15 5.72C10.95 5.72 10.76 5.76 10.58 5.84V8.05C10.58 8.18 10.53 8.29 10.44 8.38C10.35 8.47 10.24 8.52 10.1 8.52C9.96 8.52 9.85 8.47 9.76 8.38C9.67 8.29 9.62 8.18 9.62 8.05V5.72C9.62 5.47 9.55 5.27 9.42 5.14C9.28 5 9.1 4.93 8.88 4.93C8.66 4.93 8.49 5 8.37 5.14C8.24 5.27 8.18 5.47 8.18 5.72V13C8.18 13.2 8.12 13.35 8 13.47C7.89 13.59 7.75 13.65 7.58 13.65C7.42 13.65 7.28 13.61 7.16 13.54C7.04 13.46 6.94 13.32 6.86 13.12L5.7 10.4C5.55 10.05 5.33 9.87 5.04 9.87C4.85 9.87 4.7 9.93 4.58 10.05C4.46 10.17 4.4 10.32 4.4 10.49C4.4 10.63 4.43 10.77 4.48 10.91L6 15.2C6.5 16.6 7.2 17.6 8.1 18.2C9 18.8 10 18.5 10.5 18.5Z"
+        fill="#FFFFFF"
+      />
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M10.5 18.5C12.5 18.5 14 17.8 15.1 16.5C16.2 15.2 16.75 13.5 16.75 11.5V9.75C16.75 9.1 16.6 8.6 16.3 8.25C16 7.9 15.6 7.75 15.15 7.75V8.75C15.15 8.9 15.1 9.02 15 9.1C14.9 9.18 14.8 9.22 14.68 9.22C14.55 9.22 14.44 9.18 14.35 9.1C14.26 9.02 14.21 8.9 14.21 8.75V7.5C14.21 7.25 14.14 7.05 14 6.92C13.86 6.79 13.67 6.72 13.43 6.72C13.23 6.72 13.04 6.76 12.86 6.84V8.4C12.86 8.55 12.81 8.67 12.72 8.75C12.62 8.83 12.51 8.87 12.39 8.87C12.26 8.87 12.15 8.83 12.05 8.75C11.96 8.67 11.91 8.55 11.91 8.4V6.5C11.91 6.25 11.84 6.05 11.7 5.92C11.56 5.78 11.38 5.72 11.15 5.72C10.95 5.72 10.76 5.76 10.58 5.84V8.05C10.58 8.18 10.53 8.29 10.44 8.38C10.35 8.47 10.24 8.52 10.1 8.52C9.96 8.52 9.85 8.47 9.76 8.38C9.67 8.29 9.62 8.18 9.62 8.05V5.72C9.62 5.47 9.55 5.27 9.42 5.14C9.28 5 9.1 4.93 8.88 4.93C8.66 4.93 8.49 5 8.37 5.14C8.24 5.27 8.18 5.47 8.18 5.72V13C8.18 13.2 8.12 13.35 8 13.47C7.89 13.59 7.75 13.65 7.58 13.65C7.42 13.65 7.28 13.61 7.16 13.54C7.04 13.46 6.94 13.32 6.86 13.12L5.7 10.4C5.55 10.05 5.33 9.87 5.04 9.87C4.85 9.87 4.7 9.93 4.58 10.05C4.46 10.17 4.4 10.32 4.4 10.49C4.4 10.63 4.43 10.77 4.48 10.91L6 15.2C6.5 16.6 7.2 17.6 8.1 18.2C9 18.8 10 18.5 10.5 18.5Z"
+        fill="#000000"
+      />
+    </g>
+  </svg>
+);
+
+const CursorIcon = ({ shape }: { shape: CursorShape }) => {
+  if (shape === "text") return <TextCursor />;
+  if (shape === "hand") return <HandCursor />;
+  if (shape === "grab") return <GrabCursor />;
+  return <PointerCursor />;
+};
 
 const Glow = () => (
   <div className="fixed inset-0 pointer-events-none will-change-[box-shadow] contain-strict transform-gpu animate-[expect-glow-pulse_2s_ease-in-out_infinite]" />
@@ -374,6 +485,13 @@ const AgentOverlay = () => {
     });
   }, [state.label]);
 
+  const [cursorShape, setCursorShape] = useState<CursorShape>("pointer");
+
+  useEffect(() => {
+    if (!state.cursorPositioned) return;
+    setCursorShape(detectCursorShape(state.cursorX, state.cursorY));
+  }, [state.cursorX, state.cursorY, state.cursorPositioned]);
+
   const hasLabel = Boolean(state.label);
   const showCursor = hasLabel || state.cursorPositioned;
 
@@ -395,20 +513,7 @@ const AgentOverlay = () => {
             state.cursorAction === "click" ? "expect-cursor-click 0.2s ease-out 1" : "none",
         }}
       >
-        {state.cursorAction === "type" && (
-          <div
-            className="absolute text-[20px] leading-none font-bold"
-            style={{
-              left: `${CURSOR_SIZE_PX + 2}px`,
-              top: "4px",
-              color: `rgb(${SRGB_BLUE})`,
-              animation: "expect-text-blink 1s step-end infinite",
-            }}
-          >
-            |
-          </div>
-        )}
-        <CursorSvg />
+        <CursorIcon shape={state.cursorAction === "type" ? "text" : cursorShape} />
       </div>
 
       <Toaster
