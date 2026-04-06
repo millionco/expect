@@ -131,28 +131,33 @@ const spiralPoint = (progress: number, detailScale: number) => {
 const SpiralSpinner = ({ visible }: { visible: boolean }) => {
   const groupRef = useRef<SVGGElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
-  const visibleRef = useRef(visible);
-  visibleRef.current = visible;
+  const particlesRef = useRef<SVGCircleElement[]>([]);
+  const startedAtRef = useRef(performance.now());
+  const frameIdRef = useRef<number>(0);
 
   useEffect(() => {
     const group = groupRef.current;
-    const pathEl = pathRef.current;
-    if (!group || !pathEl) return;
+    if (!group || particlesRef.current.length > 0) return;
 
     const SVG_NS = "http://www.w3.org/2000/svg";
-    const particles: SVGCircleElement[] = [];
     for (let index = 0; index < SPIRAL_PARTICLE_COUNT; index++) {
       const circle = document.createElementNS(SVG_NS, "circle");
       circle.setAttribute("fill", "white");
       group.appendChild(circle);
-      particles.push(circle);
+      particlesRef.current.push(circle);
     }
-    const startedAt = performance.now();
-    let frameId: number;
+  }, []);
+
+  useEffect(() => {
+    if (!visible) return;
+    const group = groupRef.current;
+    const pathEl = pathRef.current;
+    const particles = particlesRef.current;
+    if (!group || !pathEl || particles.length === 0) return;
+
+    const startedAt = startedAtRef.current;
 
     const render = (now: number) => {
-      frameId = requestAnimationFrame(render);
-      if (!visibleRef.current) return;
       const time = now - startedAt;
       const progress = (time % SPIRAL_DURATION_MS) / SPIRAL_DURATION_MS;
       const pulseProgress = (time % SPIRAL_PULSE_MS) / SPIRAL_PULSE_MS;
@@ -178,11 +183,13 @@ const SpiralSpinner = ({ visible }: { visible: boolean }) => {
         particles[index].setAttribute("r", (1.2 + fade * 3.5).toFixed(1));
         particles[index].setAttribute("opacity", (0.04 + fade * 0.96).toFixed(2));
       }
+
+      frameIdRef.current = requestAnimationFrame(render);
     };
 
-    frameId = requestAnimationFrame(render);
-    return () => cancelAnimationFrame(frameId);
-  }, []);
+    frameIdRef.current = requestAnimationFrame(render);
+    return () => cancelAnimationFrame(frameIdRef.current);
+  }, [visible]);
 
   return (
     <div className="w-[16px] h-[16px] shrink-0">
@@ -470,8 +477,7 @@ const AgentOverlay = () => {
       return;
     }
 
-    let rafId: number;
-    const updateRects = () => {
+    const computeRects = () => {
       const rects: HighlightRect[] = [];
       for (const selector of state.highlightSelectors) {
         try {
@@ -482,10 +488,15 @@ const AgentOverlay = () => {
         } catch {}
       }
       setHighlightRects(rects);
-      rafId = requestAnimationFrame(updateRects);
     };
-    rafId = requestAnimationFrame(updateRects);
-    return () => cancelAnimationFrame(rafId);
+
+    computeRects();
+    window.addEventListener("scroll", computeRects, true);
+    window.addEventListener("resize", computeRects);
+    return () => {
+      window.removeEventListener("scroll", computeRects, true);
+      window.removeEventListener("resize", computeRects);
+    };
   }, [state.highlightSelectors]);
 
   const viewport = getViewport();
@@ -591,6 +602,7 @@ const AgentOverlay = () => {
 };
 
 let setOverlayState: ((updater: (previous: OverlayState) => OverlayState) => void) | undefined;
+let overlayRoot: ReturnType<typeof createRoot> | undefined;
 let agentActing = false;
 let agentActingTimeout: ReturnType<typeof setTimeout> | undefined;
 const AGENT_ACTING_COOLDOWN_MS = 200;
@@ -624,7 +636,8 @@ export const initAgentOverlay = (containerId: string): void => {
 
   document.body.appendChild(host);
 
-  createRoot(container).render(<AgentOverlay />);
+  overlayRoot = createRoot(container);
+  overlayRoot.render(<AgentOverlay />);
 };
 
 export const updateCursor = (containerId: string, x: number, y: number, label: string): void => {
@@ -662,6 +675,8 @@ export const showAgentOverlay = (containerId: string): void => {
 export const destroyAgentOverlay = (containerId: string): void => {
   clearTimeout(saveCursorTimeout);
   clearTimeout(agentActingTimeout);
+  overlayRoot?.unmount();
+  overlayRoot = undefined;
   document.body.style.cursor = "";
   document.getElementById(containerId)?.remove();
   setOverlayState = undefined;

@@ -1,3 +1,5 @@
+// HACK: this barrel is the esbuild IIFE entry point for __EXPECT_RUNTIME__;
+// build-runtime.js depends on a single file exporting the full runtime API.
 export { getPerformanceMetrics, getPerformanceTrace } from "./performance";
 export type { PerformanceTrace } from "./performance";
 
