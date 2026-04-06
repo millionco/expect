@@ -16,7 +16,7 @@ const DIFF_DURATION_MS = 1500;
 const CURSOR_APPEAR_DELAY_MS = 800;
 const CURSOR_MOVE_DELAY_MS = 800;
 const CURSOR_CLICK_DELAY_MS = 400;
-const FOCUS_DELAY_MS = 200;
+const FOCUS_DELAY_MS = 50;
 const CURSOR_LABEL_CHANGE_MS = 1200;
 
 type AnimationPhase = "coding" | "diff" | "expect";
