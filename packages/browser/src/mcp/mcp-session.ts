@@ -393,20 +393,37 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       const pageVideo = activeSession.page.video();
       const artifactBaseName = `session-${Date.now()}`;
 
+      const CLOSE_TIMEOUT_MS = 10_000;
+
       if (!activeSession.page.isClosed()) {
         yield* evaluateRuntime(
           activeSession.page,
           "destroyAgentOverlay",
           AGENT_OVERLAY_CONTAINER_ID,
-        ).pipe(Effect.catchCause(() => Effect.void));
+        ).pipe(
+          Effect.timeoutOrElse({
+            duration: `${CLOSE_TIMEOUT_MS} millis`,
+            onTimeout: () => Effect.void,
+          }),
+          Effect.catchCause(() => Effect.void),
+        );
       }
 
       if (activeSession.isExternalBrowser) {
         yield* Effect.tryPromise(() => activeSession.page.close()).pipe(
+          Effect.timeoutOrElse({
+            duration: `${CLOSE_TIMEOUT_MS} millis`,
+            onTimeout: () => Effect.logWarning("Timed out closing page").pipe(Effect.as(undefined)),
+          }),
           Effect.catchCause((cause) => Effect.logDebug("Failed to close page", { cause })),
         );
       } else {
         yield* Effect.tryPromise(() => activeSession.browser.close()).pipe(
+          Effect.timeoutOrElse({
+            duration: `${CLOSE_TIMEOUT_MS} millis`,
+            onTimeout: () =>
+              Effect.logWarning("Timed out closing browser").pipe(Effect.as(undefined)),
+          }),
           Effect.catchCause((cause) => Effect.logDebug("Failed to close browser", { cause })),
         );
       }
