@@ -193,7 +193,9 @@ const AgentOverlay = () => {
           }}
         >
           <SpiralSpinner visible={Boolean(state.label)} />
-          <span className="whitespace-pre-wrap break-words">{state.label}</span>
+          <span className="whitespace-pre-wrap break-words animate-[expect-text-shimmer_2s_ease-in-out_infinite]">
+            {state.label}
+          </span>
         </div>
       </div>
 
