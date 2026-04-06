@@ -1,8 +1,21 @@
-import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import {
+  lstatSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
+import { join, relative } from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, it, beforeEach, afterEach } from "vite-plus/test";
-import { extractTarEntries, readNullTerminated } from "../src/commands/add-skill";
+import {
+  ensureAgentSymlink,
+  extractTarEntries,
+  readNullTerminated,
+} from "../src/commands/add-skill";
 
 const TAR_HEADER_SIZE = 512;
 
@@ -104,5 +117,76 @@ describe("extractTarEntries", () => {
     extractTarEntries(tar, "prefix/", destDir);
 
     expect(readdirSync(destDir)).toEqual([]);
+  });
+});
+
+describe("skill link replacement", () => {
+  let projectRoot: string;
+
+  beforeEach(() => {
+    projectRoot = mkdtempSync(join(tmpdir(), "expect-skill-link-"));
+  });
+
+  afterEach(() => {
+    rmSync(projectRoot, { recursive: true, force: true });
+  });
+
+  it("replaces an existing copied expect skill directory with a symlink", () => {
+    const sharedSkillDir = join(projectRoot, ".agents", "skills", "expect");
+    const codexSkillsDir = join(projectRoot, ".codex", "skills");
+    const legacySkillDir = join(codexSkillsDir, "expect");
+
+    mkdirSync(sharedSkillDir, { recursive: true });
+    mkdirSync(legacySkillDir, { recursive: true });
+    writeFileSync(join(sharedSkillDir, "SKILL.md"), "---\nname: expect\n---\n");
+    writeFileSync(join(legacySkillDir, "SKILL.md"), "---\nname: expect\n---\n");
+
+    expect(ensureAgentSymlink(projectRoot, "codex")).toBe("linked");
+
+    const stats = lstatSync(legacySkillDir);
+    expect(stats.isSymbolicLink()).toBe(true);
+    expect(readFileSync(join(legacySkillDir, "SKILL.md"), "utf8")).toBe("---\nname: expect\n---\n");
+  });
+
+  it("replaces unrelated non-symlink directories at the expect skill path", () => {
+    const sharedSkillDir = join(projectRoot, ".agents", "skills", "expect");
+    const cursorSkillsDir = join(projectRoot, ".cursor", "skills");
+    const unrelatedSkillDir = join(cursorSkillsDir, "expect");
+
+    mkdirSync(sharedSkillDir, { recursive: true });
+    mkdirSync(unrelatedSkillDir, { recursive: true });
+    writeFileSync(join(sharedSkillDir, "SKILL.md"), "---\nname: expect\n---\n");
+    writeFileSync(join(unrelatedSkillDir, "README.md"), "custom");
+
+    expect(ensureAgentSymlink(projectRoot, "cursor")).toBe("linked");
+    expect(lstatSync(unrelatedSkillDir).isSymbolicLink()).toBe(true);
+  });
+
+  it("keeps existing matching symlinks untouched", () => {
+    const sharedSkillDir = join(projectRoot, ".agents", "skills", "expect");
+    const opencodeSkillsDir = join(projectRoot, ".opencode", "skills");
+    const symlinkPath = join(opencodeSkillsDir, "expect");
+
+    mkdirSync(sharedSkillDir, { recursive: true });
+    mkdirSync(opencodeSkillsDir, { recursive: true });
+    writeFileSync(join(sharedSkillDir, "SKILL.md"), "---\nname: expect\n---\n");
+    symlinkSync(relative(opencodeSkillsDir, sharedSkillDir), symlinkPath);
+
+    expect(ensureAgentSymlink(projectRoot, "opencode")).toBe("already-linked");
+  });
+
+  it("replaces broken symlinks with a fresh symlink", () => {
+    const sharedSkillDir = join(projectRoot, ".agents", "skills", "expect");
+    const cursorSkillsDir = join(projectRoot, ".cursor", "skills");
+    const symlinkPath = join(cursorSkillsDir, "expect");
+
+    mkdirSync(sharedSkillDir, { recursive: true });
+    mkdirSync(cursorSkillsDir, { recursive: true });
+    writeFileSync(join(sharedSkillDir, "SKILL.md"), "---\nname: expect\n---\n");
+    symlinkSync("../../missing/expect", symlinkPath);
+
+    expect(ensureAgentSymlink(projectRoot, "cursor")).toBe("linked");
+    expect(lstatSync(symlinkPath).isSymbolicLink()).toBe(true);
+    expect(readFileSync(join(symlinkPath, "SKILL.md"), "utf8")).toBe("---\nname: expect\n---\n");
   });
 });
