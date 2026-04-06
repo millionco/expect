@@ -577,9 +577,18 @@ const AgentOverlay = () => {
 
 let setOverlayState: ((updater: (previous: OverlayState) => OverlayState) => void) | undefined;
 let agentActing = false;
+let agentActingTimeout: ReturnType<typeof setTimeout> | undefined;
+const AGENT_ACTING_COOLDOWN_MS = 200;
 
 export const setAgentActing = (acting: boolean): void => {
-  agentActing = acting;
+  clearTimeout(agentActingTimeout);
+  if (acting) {
+    agentActing = true;
+  } else {
+    agentActingTimeout = setTimeout(() => {
+      agentActing = false;
+    }, AGENT_ACTING_COOLDOWN_MS);
+  }
 };
 
 export const initAgentOverlay = (containerId: string): void => {
@@ -637,6 +646,7 @@ export const showAgentOverlay = (containerId: string): void => {
 
 export const destroyAgentOverlay = (containerId: string): void => {
   clearTimeout(saveCursorTimeout);
+  clearTimeout(agentActingTimeout);
   document.body.style.cursor = "";
   document.getElementById(containerId)?.remove();
   setOverlayState = undefined;
