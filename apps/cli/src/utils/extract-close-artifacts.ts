@@ -11,16 +11,13 @@ export interface CloseArtifacts {
 }
 
 export const extractCloseArtifacts = (events: readonly ExecutionEvent[]): CloseArtifacts => {
-  const closeResult = events
-    .slice()
-    .reverse()
-    .find(
-      (event) =>
-        event._tag === "ToolResult" &&
-        event.toolName === "close" &&
-        !event.isError &&
-        event.result.length > 0,
-    );
+  const closeResult = events.findLast(
+    (event) =>
+      event._tag === "ToolResult" &&
+      event.toolName === "close" &&
+      !event.isError &&
+      event.result.length > 0,
+  );
   if (!closeResult || closeResult._tag !== "ToolResult") {
     return {
       videoUrl: undefined,

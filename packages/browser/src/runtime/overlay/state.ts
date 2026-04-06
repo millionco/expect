@@ -8,7 +8,9 @@ export const saveCursorState = (state: CursorPersisted): void => {
   saveCursorTimeout = setTimeout(() => {
     try {
       sessionStorage.setItem(STATE_KEY, JSON.stringify(state));
-    } catch {}
+    } catch (error) {
+      console.debug("[expect-overlay] failed to save cursor state:", error);
+    }
   }, 500);
 };
 
