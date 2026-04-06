@@ -494,13 +494,14 @@ export default function () {
   };
   return (
     <div className="[font-synthesis:none] overflow-x-clip antialiased min-h-screen bg-white flex flex-col items-center">
-      <div className="w-full bg-[#FCFCFC] pb-6">
+      <div className="w-full pb-6">
         <div className="w-112.75 mx-auto pt-2">
           <TerminalIllustration />
         </div>
       </div>
       <div className="relative w-112.75 pb-20">
-        <div className="flex flex-col gap-2.5 mt-10">
+        <div className="h-[0.5px] w-107.25 bg-[#EEEEEE] mt-1" />
+        <div className="flex flex-col gap-2.5 mt-8">
           <div className="w-112.75 tracking-[-0.03em] [white-space-collapse:preserve] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[22px]/9.5 text-[color(display-p3_0.248_0.248_0.248)]">
             Expect more from your agents
           </div>
