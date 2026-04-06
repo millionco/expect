@@ -256,7 +256,7 @@ const AgentOverlay = () => {
 
   const hasLabel = Boolean(state.label);
   const showCursor = hasLabel || state.cursorPositioned;
-  const isExpanded = state.toolbarExpanded || hasLabel;
+  const isExpanded = state.toolbarExpanded;
 
   const toggleOverlay = () => {
     setState((previous) => ({ ...previous, overlayVisible: !previous.overlayVisible }));
