@@ -1,0 +1,29 @@
+packages/browser/tests/create-page.test.ts
+  bad96391c7cc52ad 158,165,171,179-181
+packages/browser/tests/mcp-session.test.ts
+  bad96391c7cc52ad 1-164
+packages/browser/src/browser.ts
+  bad96391c7cc52ad 85,101-102
+packages/browser/src/mcp/mcp-session.ts
+  bad96391c7cc52ad 4,137-139,167-175,179-185,188-190,213-227,262
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "7434365cda87601496d50a8583663d17b4924c7f",
+  "prompts": {
+    "bad96391c7cc52ad": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5e5c0937-a572-437f-bf32-1ff25ff32079",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 217,
+      "total_deletions": 107,
+      "accepted_lines": 214,
+      "overriden_lines": 0
+    }
+  }
+}
