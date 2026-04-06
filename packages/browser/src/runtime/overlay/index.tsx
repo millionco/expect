@@ -7,7 +7,6 @@ import cssText from "../../../dist/overlay.css";
 import {
   CURSOR_SIZE_PX,
   CURSOR_HEIGHT_PX,
-  CURSOR_TRANSITION_MS,
   SRGB_BLUE,
   getViewport,
   clampToViewport,
