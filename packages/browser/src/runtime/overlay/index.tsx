@@ -6,8 +6,6 @@ import cssText from "../../../dist/overlay.css";
 
 const CURSOR_SIZE_PX = 48;
 const CURSOR_HEIGHT_PX = 53;
-const TOOLTIP_MAX_WIDTH_PX = 200;
-const TOOLTIP_GAP_PX = 4;
 const VIEWPORT_PADDING_PX = 8;
 const CURSOR_TRANSITION_MS = 300;
 
@@ -291,50 +289,12 @@ const GuardPrompt = ({ onCancel, onConfirm }: GuardPromptProps) => (
   </div>
 );
 
-interface TooltipPosition {
-  left?: string;
-  top?: string;
-  right?: string;
-  bottom?: string;
-}
-
-const computeTooltipPosition = (
-  cursorX: number,
-  cursorY: number,
-  cursorPositioned: boolean,
-  tooltipRef: React.RefObject<HTMLDivElement | null>,
-): TooltipPosition => {
-  if (!cursorPositioned) {
-    return { right: `${VIEWPORT_PADDING_PX * 2}px`, bottom: `${VIEWPORT_PADDING_PX * 2}px` };
-  }
-
-  const viewport = getViewport();
-  const cX = clampToViewport(cursorX - CURSOR_SIZE_PX / 2, CURSOR_SIZE_PX, viewport.width, 0);
-  const cY = clampToViewport(cursorY - CURSOR_HEIGHT_PX / 2, CURSOR_HEIGHT_PX, viewport.height, 0);
-
-  const tooltipRect = tooltipRef.current?.getBoundingClientRect();
-  const tooltipWidth = tooltipRect?.width || TOOLTIP_MAX_WIDTH_PX;
-  const tooltipHeight = tooltipRect?.height || 30;
-
-  const rightOfCursor = cX + CURSOR_SIZE_PX + TOOLTIP_GAP_PX;
-  const leftOfCursor = cX - tooltipWidth - TOOLTIP_GAP_PX;
-  const fitsRight = rightOfCursor + tooltipWidth <= viewport.width - VIEWPORT_PADDING_PX;
-  const rawTooltipX = fitsRight ? rightOfCursor : Math.max(VIEWPORT_PADDING_PX, leftOfCursor);
-
-  const alignedWithCursor = cY;
-  const belowCursor = cY + CURSOR_HEIGHT_PX + TOOLTIP_GAP_PX;
-  const fitsAligned = alignedWithCursor + tooltipHeight <= viewport.height - VIEWPORT_PADDING_PX;
-  const rawTooltipY = fitsAligned ? alignedWithCursor : belowCursor;
-
-  return {
-    left: `${clampToViewport(rawTooltipX, tooltipWidth, viewport.width, VIEWPORT_PADDING_PX)}px`,
-    top: `${clampToViewport(rawTooltipY, tooltipHeight, viewport.height, VIEWPORT_PADDING_PX)}px`,
-  };
-};
+const TOAST_BOTTOM_PX = 16;
+const TOAST_RIGHT_PX = 16;
+const TOAST_MAX_WIDTH_PX = 320;
 
 const AgentOverlay = () => {
   const [state, setState] = useState<OverlayState>(loadInitialState);
-  const tooltipRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setOverlayState = setState;
@@ -508,13 +468,6 @@ const AgentOverlay = () => {
     ? clampToViewport(state.cursorY - CURSOR_HEIGHT_PX / 2, CURSOR_HEIGHT_PX, viewport.height, 0)
     : viewport.height - CURSOR_HEIGHT_PX - VIEWPORT_PADDING_PX;
 
-  const tooltipPos = computeTooltipPosition(
-    state.cursorX,
-    state.cursorY,
-    state.cursorPositioned,
-    tooltipRef,
-  );
-
   const hasLabel = Boolean(state.label);
   const showCursor = (hasLabel || state.cursorPositioned) && !state.userInControl;
   const displayLabel = state.userInControl ? "You're in control" : state.label;
@@ -567,16 +520,14 @@ const AgentOverlay = () => {
       </div>
 
       <div
-        ref={tooltipRef}
-        className="fixed pointer-events-none bg-expect-blue text-white text-[13px] font-sans font-[450] py-2 px-3.5 rounded-xl leading-[1.4] whitespace-pre-wrap break-words z-[2147483647] will-change-[left,top,opacity] shadow-[0_4px_12px_rgba(0,0,0,0.25)] flex items-start gap-2.5"
+        className="fixed pointer-events-none z-[2147483647] flex items-center gap-2.5 bg-expect-blue text-white text-[13px] font-sans font-[450] py-2.5 px-4 rounded-xl leading-[1.4] whitespace-pre-wrap break-words shadow-[0_4px_16px_rgba(0,0,0,0.3)]"
         style={{
-          maxWidth: `${TOOLTIP_MAX_WIDTH_PX}px`,
+          maxWidth: `${TOAST_MAX_WIDTH_PX}px`,
+          right: `${TOAST_RIGHT_PX}px`,
+          bottom: `${TOAST_BOTTOM_PX}px`,
           opacity: displayLabel ? 1 : 0,
-          left: tooltipPos.left,
-          top: tooltipPos.top,
-          right: tooltipPos.right,
-          bottom: tooltipPos.bottom,
-          transition: `left ${CURSOR_TRANSITION_MS}ms cubic-bezier(0.25, 1, 0.5, 1), top ${CURSOR_TRANSITION_MS}ms cubic-bezier(0.25, 1, 0.5, 1), opacity 150ms ease`,
+          transform: displayLabel ? "translateY(0)" : "translateY(8px)",
+          transition: "opacity 200ms ease, transform 200ms ease",
         }}
       >
         <SpiralSpinner visible={Boolean(displayLabel)} />
