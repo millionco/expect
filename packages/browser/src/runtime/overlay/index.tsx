@@ -176,55 +176,17 @@ const AgentOverlay = () => {
       </div>
 
       <div
-        className="fixed z-[2147483647]"
+        className="fixed pointer-events-none z-[2147483647]"
         style={{
           bottom: "1.25rem",
           right: "1.25rem",
-          opacity: state.label || state.actionLog.length > 0 ? 1 : 0,
-          transform:
-            state.label || state.actionLog.length > 0
-              ? "translateY(0) scale(1)"
-              : "translateY(8px) scale(0.96)",
+          opacity: state.label ? 1 : 0,
+          transform: state.label ? "translateY(0) scale(1)" : "translateY(8px) scale(0.96)",
           transition: "opacity 0.3s ease, transform 0.4s cubic-bezier(0.19, 1, 0.22, 1)",
-          pointerEvents: state.actionLog.length > 0 ? "auto" : "none",
         }}
       >
-        {hoveredAction !== undefined && state.actionLog[hoveredAction] && (
-          <div
-            style={{
-              position: "absolute",
-              bottom: "52px",
-              right: 0,
-              background: "#1a1a1a",
-              color: "#a1a1a1",
-              fontSize: "12px",
-              fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace",
-              padding: "10px 14px",
-              borderRadius: "12px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
-              maxWidth: "400px",
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-all",
-              lineHeight: 1.5,
-              pointerEvents: "none",
-            }}
-          >
-            <div
-              style={{
-                color: "#fff",
-                fontFamily: "system-ui, sans-serif",
-                fontSize: "13px",
-                fontWeight: 500,
-                marginBottom: "6px",
-              }}
-            >
-              {state.actionLog[hoveredAction].description}
-            </div>
-            {state.actionLog[hoveredAction].code}
-          </div>
-        )}
         <div
-          className="flex items-center gap-2"
+          className="flex items-center gap-2.5"
           style={{
             height: "44px",
             padding: "0 16px",
@@ -239,49 +201,117 @@ const AgentOverlay = () => {
             maxWidth: `${TOOLTIP_MAX_WIDTH_PX}px`,
           }}
         >
-          {state.actionLog.length > 0 && (
-            <div className="flex items-center gap-1" style={{ marginRight: "4px" }}>
-              {state.actionLog.map((_, index) => (
-                <div
-                  key={index}
-                  onMouseEnter={() => setHoveredAction(index)}
-                  onMouseLeave={() => setHoveredAction(undefined)}
-                  style={{
-                    width: "8px",
-                    height: "8px",
-                    borderRadius: "50%",
-                    background: hoveredAction === index ? "#fff" : "rgba(255,255,255,0.3)",
-                    cursor: "pointer",
-                    transition: "background 0.15s ease",
-                  }}
-                />
-              ))}
-            </div>
-          )}
-          {state.label && (
-            <>
-              <SpiralSpinner visible />
-              <span
-                className="animate-[expect-text-shimmer_3s_linear_infinite]"
-                style={{
-                  background:
-                    "linear-gradient(90deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.5) 100%)",
-                  backgroundSize: "200% 100%",
-                  WebkitBackgroundClip: "text",
-                  backgroundClip: "text",
-                  color: "transparent",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  maxWidth: "240px",
-                }}
-              >
-                {state.label}
-              </span>
-            </>
-          )}
+          <SpiralSpinner visible={Boolean(state.label)} />
+          <span
+            className="animate-[expect-text-shimmer_3s_linear_infinite]"
+            style={{
+              background:
+                "linear-gradient(90deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.5) 100%)",
+              backgroundSize: "200% 100%",
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              color: "transparent",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              maxWidth: "240px",
+            }}
+          >
+            {state.label}
+          </span>
         </div>
       </div>
+
+      {state.actionLog.map(
+        (action, index) =>
+          action.x >= 0 &&
+          action.y >= 0 && (
+            <div
+              key={`action-${index}`}
+              className="fixed z-[2147483646]"
+              style={{
+                left: `${action.x}px`,
+                top: `${action.y}px`,
+                width: "22px",
+                height: "22px",
+                borderRadius: "50%",
+                background: `rgb(${SRGB_BLUE})`,
+                color: "#fff",
+                fontSize: "11px",
+                fontWeight: 600,
+                fontFamily:
+                  "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(0,0,0,0.04)",
+                pointerEvents: "auto",
+                cursor: "pointer",
+                userSelect: "none",
+                transform: `translate(-50%, -50%)${hoveredAction === index ? " scale(1.1)" : ""}`,
+                transition: "background-color 0.15s ease, transform 0.1s ease",
+                animation: "expect-marker-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both",
+              }}
+              onMouseEnter={() => setHoveredAction(index)}
+              onMouseLeave={() => setHoveredAction(undefined)}
+            >
+              {index + 1}
+              {hoveredAction === index && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 10px)",
+                    left: "50%",
+                    transform: "translateX(-50%) scale(0.909)",
+                    background: "#1a1a1a",
+                    color: "#fff",
+                    padding: "8px 12px",
+                    borderRadius: "12px",
+                    fontFamily:
+                      "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                    fontWeight: 400,
+                    fontSize: "13px",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.08)",
+                    minWidth: "120px",
+                    maxWidth: "280px",
+                    pointerEvents: "none",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    lineHeight: 1.4,
+                    animation: "expect-tooltip-in 0.1s ease-out forwards",
+                  }}
+                >
+                  <span
+                    style={{
+                      display: "block",
+                      fontSize: "12px",
+                      fontStyle: "italic",
+                      color: "rgba(255,255,255,0.6)",
+                      marginBottom: "4px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {action.description}
+                  </span>
+                  <span
+                    style={{
+                      display: "block",
+                      fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace",
+                      fontSize: "11px",
+                      color: "rgba(255,255,255,0.8)",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {action.code.split("\n")[0]}
+                  </span>
+                </div>
+              )}
+            </div>
+          ),
+      )}
 
       {highlightRects.map((rect, index) => (
         <div
@@ -387,6 +417,9 @@ export const logAction = (containerId: string, description: string, code: string
 
   setOverlayState((previous) => ({
     ...previous,
-    actionLog: [...previous.actionLog, { description, code }],
+    actionLog: [
+      ...previous.actionLog,
+      { description, code, x: previous.cursorX, y: previous.cursorY },
+    ],
   }));
 };
