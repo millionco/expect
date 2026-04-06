@@ -2,8 +2,8 @@
 import { useEffect, useRef } from "react";
 
 const GRID_SIZE = 3;
-const CELL_PX = 10;
-const GAP_PX = 4;
+const CELL_PX = 5;
+const GAP_PX = 1;
 const CANVAS_SIZE = GRID_SIZE * CELL_PX + (GRID_SIZE - 1) * GAP_PX;
 const TICK_MS = 120;
 
@@ -66,14 +66,12 @@ export const SpiralSpinner = ({ visible }: { visible: boolean }) => {
     const render = () => {
       gridRef.current = step(gridRef.current);
       ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      ctx.fillStyle = "white";
       for (let row = 0; row < GRID_SIZE; row++) {
         for (let col = 0; col < GRID_SIZE; col++) {
-          const pixelX = col * (CELL_PX + GAP_PX);
-          const pixelY = row * (CELL_PX + GAP_PX);
-          ctx.fillStyle = gridRef.current[row][col] ? "white" : "rgba(255,255,255,0.2)";
-          ctx.beginPath();
-          ctx.arc(pixelX + CELL_PX / 2, pixelY + CELL_PX / 2, CELL_PX / 2, 0, Math.PI * 2);
-          ctx.fill();
+          if (gridRef.current[row][col]) {
+            ctx.fillRect(col * (CELL_PX + GAP_PX), row * (CELL_PX + GAP_PX), CELL_PX, CELL_PX);
+          }
         }
       }
     };
@@ -84,12 +82,13 @@ export const SpiralSpinner = ({ visible }: { visible: boolean }) => {
   }, [visible]);
 
   return (
-    <div className="size-[38px] shrink-0 flex items-center justify-center">
+    <div className="size-4 shrink-0 rounded-sm overflow-hidden">
       <canvas
         ref={canvasRef}
         width={CANVAS_SIZE}
         height={CANVAS_SIZE}
-        style={{ width: `${CANVAS_SIZE}px`, height: `${CANVAS_SIZE}px` }}
+        className="size-full"
+        style={{ imageRendering: "pixelated" }}
       />
     </div>
   );
