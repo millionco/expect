@@ -4,12 +4,13 @@ import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 import { Effect } from "effect";
 import { afterEach, describe, expect, it } from "vite-plus/test";
+import * as NodeServices from "@effect/platform-node/NodeServices";
 import {
   stripIdleFrames,
   frameWithWallpaper,
   runFfmpeg,
   VideoProcessError,
-  DEFAULT_WALLPAPER_PATH,
+  resolveWallpaperPath,
 } from "../src/video-processor";
 
 const FIXTURE_PATH = join(__dirname, "fixtures", "mixed-content.webm");
@@ -114,8 +115,10 @@ describe("video-processor", () => {
   });
 
   describe("frameWithWallpaper", () => {
-    const wallpaperPath = DEFAULT_WALLPAPER_PATH;
-    const wallpaperAvailable = existsSync(wallpaperPath);
+    const wallpaperPath = Effect.runSync(
+      resolveWallpaperPath().pipe(Effect.provide(NodeServices.layer)),
+    );
+    const wallpaperAvailable = wallpaperPath !== undefined && existsSync(wallpaperPath);
 
     it("fails with VideoProcessError when input file does not exist", async () => {
       const error = await Effect.runPromise(

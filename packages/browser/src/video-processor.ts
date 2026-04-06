@@ -3,23 +3,31 @@ import { copyFileSync, existsSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Effect, Schema } from "effect";
+import { FileSystem } from "effect/FileSystem";
 import { FFMPEG_TIMEOUT_MS, FRAME_PADDING_PX } from "./constants";
 
 const WALLPAPER_FILENAME = "wallpaper.webp";
 
-const resolveWallpaperPath = (): string | undefined => {
+const WALLPAPER_CANDIDATES = (() => {
   try {
     const currentDir = dirname(fileURLToPath(import.meta.url));
     return [
       join(currentDir, "..", "assets", WALLPAPER_FILENAME),
       join(currentDir, "assets", WALLPAPER_FILENAME),
-    ].find(existsSync);
+    ];
   } catch {
-    return undefined;
+    return [];
   }
-};
+})();
 
-export const DEFAULT_WALLPAPER_PATH = resolveWallpaperPath();
+export const resolveWallpaperPath = Effect.fn("resolveWallpaperPath")(function* () {
+  const fileSystem = yield* FileSystem;
+  for (const candidate of WALLPAPER_CANDIDATES) {
+    const found = yield* fileSystem.exists(candidate);
+    if (found) return candidate;
+  }
+  return undefined;
+});
 
 const MPDECIMATE_HI = "64*1000";
 const MPDECIMATE_LO = "64*500";

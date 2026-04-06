@@ -6,7 +6,7 @@ import { FileSystem } from "effect/FileSystem";
 import { isRunningInAgent } from "@expect/shared/launched-from";
 import { Browser } from "../browser";
 import { NavigationError } from "../errors";
-import { frameWithWallpaper, DEFAULT_WALLPAPER_PATH } from "../video-processor";
+import { frameWithWallpaper, resolveWallpaperPath } from "../video-processor";
 import { evaluateRuntime } from "../utils/evaluate-runtime";
 import { AGENT_OVERLAY_CONTAINER_ID, OVERLAY_REINJECT_TIMEOUT_MS } from "../constants";
 import type {
@@ -118,6 +118,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
   make: Effect.gen(function* () {
     const browserService = yield* Browser;
     const fileSystem = yield* FileSystem;
+    const wallpaperPath = yield* resolveWallpaperPath();
     const cookieBrowsersConfig = yield* Config.option(
       Config.string(EXPECT_COOKIE_BROWSERS_ENV_NAME),
     );
@@ -443,11 +444,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
             `${artifactBaseName}.webm`,
           );
 
-          tmpVideoPath = yield* frameWithWallpaper(
-            videoPath,
-            tmpVideoFilePath,
-            DEFAULT_WALLPAPER_PATH,
-          ).pipe(
+          tmpVideoPath = yield* frameWithWallpaper(videoPath, tmpVideoFilePath, wallpaperPath).pipe(
             Effect.as(tmpVideoFilePath),
             Effect.catchTag("VideoProcessError", () => Effect.succeed(videoPath)),
           );
