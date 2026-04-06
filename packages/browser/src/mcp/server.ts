@@ -45,10 +45,15 @@ const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
 // labels for the cursor tooltip (falls back to raw code if no comment exists).
 const REF_PATTERN = /ref\s*\(\s*['"](\w+)['"]\s*\)/;
 const REF_PATTERN_GLOBAL = /ref\s*\(\s*['"](\w+)['"]\s*\)/g;
-const COMMENT_PATTERN = /\/\/\s*(.+)/;
+const COMMENT_PATTERN = /^\s*\/\/\s*(.+)/m;
 const extractCursorLabel = (code: string): string => {
   const commentMatch = code.match(COMMENT_PATTERN);
-  return commentMatch ? commentMatch[1].trim() : code.trim();
+  if (commentMatch) {
+    const label = commentMatch[1].trim();
+    if (!label.startsWith("http")) return label;
+  }
+  const firstLine = code.trim().split("\n")[0];
+  return firstLine.length > 80 ? `${firstLine.slice(0, 77)}...` : firstLine;
 };
 
 const updateCursorLabel = (page: import("playwright").Page, label: string) =>

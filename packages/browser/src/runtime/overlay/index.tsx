@@ -559,7 +559,7 @@ export const initAgentOverlay = (containerId: string): void => {
 export const updateCursor = (containerId: string, x: number, y: number, label: string): void => {
   if (!setOverlayState) {
     initAgentOverlay(containerId);
-    return updateCursor(containerId, x, y, label);
+    if (!setOverlayState) return;
   }
 
   setOverlayState((previous) => {
@@ -610,7 +610,7 @@ export const clearUserControl = (): void => {
 export const highlightRefs = (containerId: string, rects: HighlightRect[]): void => {
   if (!setOverlayState) {
     initAgentOverlay(containerId);
-    return highlightRefs(containerId, rects);
+    if (!setOverlayState) return;
   }
 
   setOverlayState((previous) => ({ ...previous, highlightRects: rects }));
