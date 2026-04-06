@@ -503,10 +503,10 @@ const AgentOverlay = () => {
   const viewport = getViewport();
   const cursorX = state.cursorPositioned
     ? clampToViewport(state.cursorX - CURSOR_SIZE_PX / 2, CURSOR_SIZE_PX, viewport.width, 0)
-    : -100;
+    : viewport.width - CURSOR_SIZE_PX - VIEWPORT_PADDING_PX;
   const cursorY = state.cursorPositioned
     ? clampToViewport(state.cursorY - CURSOR_HEIGHT_PX / 2, CURSOR_HEIGHT_PX, viewport.height, 0)
-    : -100;
+    : viewport.height - CURSOR_HEIGHT_PX - VIEWPORT_PADDING_PX;
 
   const tooltipPos = computeTooltipPosition(
     state.cursorX,
