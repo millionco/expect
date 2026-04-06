@@ -1,5 +1,3 @@
-import { existsSync } from "node:fs";
-import { join } from "node:path";
 import { Option } from "effect";
 import { Command } from "commander";
 import { ChangesFor } from "@expect/supervisor";
@@ -21,6 +19,7 @@ import { CI_EXECUTION_TIMEOUT_MS, VERSION, VERSION_API_URL } from "./constants";
 import { prompts } from "./utils/prompts";
 import { highlighter } from "./utils/highlighter";
 import { logger } from "./utils/logger";
+import { hasInstalledExpectSkill } from "./utils/expect-skill";
 
 try {
   fetch(`${VERSION_API_URL}?source=cli&t=${Date.now()}`).catch(() => {});
@@ -131,12 +130,9 @@ const runHeadlessForTarget = async (target: Target, opts: CommanderOpts) => {
   });
 };
 
-const SKILL_DIR = join(".agents", "skills", "expect");
-
-const isSkillInstalled = (): boolean => existsSync(join(process.cwd(), SKILL_DIR, "SKILL.md"));
-
 const promptSkillInstall = async () => {
-  if (isSkillInstalled()) return;
+  const agents = detectAvailableAgents();
+  if (hasInstalledExpectSkill(process.cwd(), agents)) return;
 
   logger.break();
   const response = await prompts({
@@ -147,7 +143,6 @@ const promptSkillInstall = async () => {
   });
 
   if (response.installSkill) {
-    const agents = detectAvailableAgents();
     await runAddSkill({ agents });
     logger.break();
   }

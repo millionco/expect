@@ -1,5 +1,5 @@
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import * as fs from "node:fs";
+import path from "node:path";
 import { type SupportedAgent, toSkillDir } from "@expect/agent";
 import { Effect, Schema } from "effect";
 import { SKILL_FETCH_TIMEOUT_MS } from "../constants";
@@ -50,14 +50,14 @@ export const formatSkillVersion = (version: string | undefined): string =>
   version === undefined ? "unknown version" : `v${version}`;
 
 export const getInstalledSkillFilePath = (projectRoot: string): string =>
-  join(projectRoot, AGENTS_SKILLS_DIR, SKILL_NAME, "SKILL.md");
+  path.join(projectRoot, AGENTS_SKILLS_DIR, SKILL_NAME, "SKILL.md");
 
 export const readInstalledSkill = Effect.fn("readInstalledSkill")(function* (projectRoot: string) {
   const installedSkillPath = getInstalledSkillFilePath(projectRoot);
-  if (!existsSync(installedSkillPath)) return undefined;
+  if (!fs.existsSync(installedSkillPath)) return undefined;
 
   return yield* Effect.try({
-    try: () => readFileSync(installedSkillPath, "utf8"),
+    try: () => fs.readFileSync(installedSkillPath, "utf8"),
     catch: (cause) =>
       new ExpectSkillReadError({
         installedSkillPath,
@@ -130,4 +130,11 @@ export const detectInstalledSkillAgents = (
   projectRoot: string,
   agents: readonly SupportedAgent[],
 ): SupportedAgent[] =>
-  agents.filter((agent) => existsSync(join(projectRoot, toSkillDir(agent), SKILL_NAME)));
+  agents.filter((agent) => fs.existsSync(path.join(projectRoot, toSkillDir(agent), SKILL_NAME)));
+
+export const hasInstalledExpectSkill = (
+  projectRoot: string,
+  agents: readonly SupportedAgent[],
+): boolean =>
+  fs.existsSync(getInstalledSkillFilePath(projectRoot)) ||
+  detectInstalledSkillAgents(projectRoot, agents).length > 0;
