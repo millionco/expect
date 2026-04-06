@@ -26,6 +26,7 @@ const TERMINAL_FOCUS_DELAY_MS = 50;
 const RESPONSIVENESS_DELAY_MS = 2600;
 const REFOCUS_MOVE_DELAY_MS = 800;
 const REFOCUS_CLICK_DELAY_MS = 500;
+const INSPECT_DELAY_MS = 400;
 
 type AnimationPhase = "coding" | "diff" | "expect";
 type CursorLabelState = "expect" | "security" | "alert";
@@ -47,6 +48,8 @@ function useAnimationPhase() {
   const [cursorNudged, setCursorNudged] = useState(false);
   const [clickingRefocus, setClickingRefocus] = useState(false);
   const [browserRefocused, setBrowserRefocused] = useState(false);
+  const [inspecting, setInspecting] = useState(false);
+  const [cursorAtEdge, setCursorAtEdge] = useState(false);
 
   useEffect(() => {
     const expectTime = CODING_DURATION_MS + DIFF_DURATION_MS;
@@ -83,6 +86,9 @@ function useAnimationPhase() {
     const refocusClickTimer = setTimeout(() => setClickingRefocus(true), refocusClickTime);
     const refocusClickEndTimer = setTimeout(() => setClickingRefocus(false), refocusClickTime + 100);
     const refocusTimer = setTimeout(() => { setBrowserRefocused(true); setTerminalFocused(false); }, refocusClickTime + 50);
+    const inspectTime = refocusClickTime + 50 + INSPECT_DELAY_MS;
+    const inspectTimer = setTimeout(() => setInspecting(true), inspectTime);
+    const cursorEdgeTimer = setTimeout(() => setCursorAtEdge(true), inspectTime + 200);
     return () => {
       clearTimeout(diffTimer);
       clearTimeout(slideTimer);
@@ -100,10 +106,12 @@ function useAnimationPhase() {
       clearTimeout(refocusClickTimer);
       clearTimeout(refocusClickEndTimer);
       clearTimeout(refocusTimer);
+      clearTimeout(inspectTimer);
+      clearTimeout(cursorEdgeTimer);
     };
   }, []);
 
-  return { phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, clickingRefocus, labelVisible, cursorLabel, terminalFocused, showResponsiveness, cursorResolved, cursorNudged, browserRefocused };
+  return { phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, clickingRefocus, labelVisible, cursorLabel, terminalFocused, showResponsiveness, cursorResolved, cursorNudged, browserRefocused, inspecting, cursorAtEdge };
 }
 
 function TerminalLine({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
@@ -223,7 +231,47 @@ function TerminalContent({ phase, alert, showResponsiveness }: { phase: Animatio
   );
 }
 
-function BrowserPreview({ slid, focused }: { slid: boolean; focused: boolean }) {
+function InspectionOverlay({ visible }: { visible: boolean }) {
+  const perimeterLength = (274 + 184) * 2;
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          className="absolute inset-0 z-20 pointer-events-none"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.15 }}
+        >
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 274 184" fill="none">
+            <motion.rect
+              x="0.5" y="0.5" width="273" height="183"
+              stroke="#3486F9"
+              strokeWidth="1"
+              strokeDasharray="6 4"
+              fill="none"
+              initial={{ strokeDashoffset: perimeterLength }}
+              animate={{ strokeDashoffset: 0 }}
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            />
+          </svg>
+          <motion.div
+            className="absolute left-1/2 -translate-x-1/2 -top-6 flex items-center justify-center w-7.5 h-4.75"
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, delay: 0.6 }}
+          >
+            <div className="left-0 top-0 w-7.5 h-4.75 rounded-sm absolute bg-[#3486F9]" />
+            <div className="[letter-spacing:-0.125px] w-max left-2 top-0 h-4.5 [white-space-collapse:preserve] absolute text-white font-['GeistMono-Medium','Geist_Mono',system-ui,sans-serif] font-medium text-xs/4.5">
+              xl
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function BrowserPreview({ slid, focused, inspecting }: { slid: boolean; focused: boolean; inspecting: boolean }) {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -246,12 +294,23 @@ function BrowserPreview({ slid, focused }: { slid: boolean; focused: boolean }) 
       }
       transition={{ type: "spring", stiffness: 250, damping: 22, mass: 0.6 }}
     >
-      <div className="relative flex flex-col w-68.5 h-46 rounded-2xl pt-2.5 pr-2.25 pb-6.75 pl-4.75 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]">
+      <motion.div
+        className="relative flex flex-col w-68.5 h-46 pt-2.5 pr-2.25 pb-6.75 pl-4.75"
+        animate={{
+          backgroundColor: inspecting ? "#F9FCFF" : "#FFFFFF",
+          borderRadius: inspecting ? "0px" : "16px",
+          boxShadow: inspecting
+            ? "#FFFFFF 0px 0px 9px inset, color(display-p3 0.784 0.859 1) 0px 0px 0px 0.5px"
+            : "#FFFFFF 0px 0px 9px inset, #69696938 0px 0px 0px 0.5px, #C4C4C438 0px 1px 3px",
+        }}
+        transition={{ duration: 0.4 }}
+      >
+        <InspectionOverlay visible={inspecting} />
         <div className="flex items-center -ml-1">
           <div className="flex items-center gap-1.5">
-            <div className="rounded-full bg-[#FF726A] shrink-0 size-2.5" />
-            <div className="rounded-full bg-[#FEBC2E] shrink-0 size-2.5" />
-            <div className="rounded-full bg-[#EAEAEA] shrink-0 size-2.5" />
+            <motion.div className="rounded-full shrink-0 size-2.5" animate={{ backgroundColor: inspecting ? "color(display-p3 0.949 0.967 1)" : "#FF726A", borderWidth: inspecting ? "0.5px" : "0px", borderStyle: "solid", borderColor: inspecting ? "color(display-p3 0.395 0.593 1)" : "transparent" }} transition={{ duration: 0.4 }} />
+            <motion.div className="rounded-full shrink-0 size-2.5" animate={{ backgroundColor: inspecting ? "color(display-p3 0.949 0.967 1)" : "#FEBC2E", borderWidth: inspecting ? "0.5px" : "0px", borderStyle: "solid", borderColor: inspecting ? "color(display-p3 0.395 0.593 1)" : "transparent" }} transition={{ duration: 0.4 }} />
+            <motion.div className="rounded-full shrink-0 size-2.5" animate={{ backgroundColor: inspecting ? "color(display-p3 0.949 0.967 1)" : "#EAEAEA", borderWidth: inspecting ? "0.5px" : "0px", borderStyle: "solid", borderColor: inspecting ? "color(display-p3 0.395 0.593 1)" : "transparent" }} transition={{ duration: 0.4 }} />
           </div>
           <div className="w-3.5 shrink-0" />
           <div className="relative w-36.25 h-6.5 rounded-full shrink-0 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#A4A4A452_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] overflow-hidden flex items-center justify-center">
@@ -283,21 +342,34 @@ function BrowserPreview({ slid, focused }: { slid: boolean; focused: boolean }) 
               animate={{ opacity: 1 }}
               transition={{ duration: 0.4, ease: "easeOut" }}
             >
-              <div className="tracking-[-0.03em] [white-space-collapse:preserve] mt-4.5 w-max text-[#474747] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-base/9">
+              <motion.div
+                className="tracking-[-0.03em] [white-space-collapse:preserve] mt-4.5 w-max font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-base/9"
+                animate={{ color: inspecting ? "#1C72F3" : "#474747" }}
+                transition={{ duration: 0.4 }}
+              >
                 sign up
-              </div>
-              <div className="w-52.75 h-7 rounded-full bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696952_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] shrink-0" />
+              </motion.div>
+              <motion.div
+                className="w-52.75 h-7 rounded-full shrink-0"
+                animate={{
+                  backgroundColor: inspecting ? "color(display-p3 0.949 0.967 1)" : "#FFFFFF",
+                  boxShadow: inspecting
+                    ? "color(display-p3 0.395 0.593 1) 0px 0px 0px 0.5px"
+                    : "#FFFFFF 0px 0px 9px inset, #69696952 0px 0px 0px 0.5px, #C4C4C438 0px 1px 3px",
+                }}
+                transition={{ duration: 0.4 }}
+              />
 
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
     </motion.div>
   );
 }
 
 
-function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerminal, clickingRefocus, labelVisible, label, resolved, nudged }: { visible: boolean; onBrowser: boolean; onTerminal: boolean; clicking: boolean; clickingTerminal: boolean; clickingRefocus: boolean; labelVisible: boolean; label: CursorLabelState; resolved: boolean; nudged: boolean }) {
+function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerminal, clickingRefocus, labelVisible, label, resolved, nudged, cursorAtEdge }: { visible: boolean; onBrowser: boolean; onTerminal: boolean; clicking: boolean; clickingTerminal: boolean; clickingRefocus: boolean; labelVisible: boolean; label: CursorLabelState; resolved: boolean; nudged: boolean; cursorAtEdge: boolean }) {
   const isAlert = label === "alert" && !resolved;
   return (
     <motion.div
@@ -305,9 +377,11 @@ function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerm
       style={{ transformOrigin: "top left" }}
       initial={{ x: 200, y: 115, opacity: 0, scale: 0 }}
       animate={
-        visible && nudged
-          ? { x: -20, y: 105, opacity: 1, scale: 1 }
-          : visible && onTerminal
+        visible && cursorAtEdge
+          ? { x: 175, y: 100, opacity: 1, scale: 1 }
+          : visible && nudged
+            ? { x: -20, y: 105, opacity: 1, scale: 1 }
+            : visible && onTerminal
             ? { x: 210, y: 80, opacity: 1, scale: 1 }
             : visible && onBrowser
               ? { x: -60, y: 145, opacity: 1, scale: 1 }
@@ -318,7 +392,7 @@ function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerm
       transition={
         !visible
           ? { type: "spring", stiffness: 500, damping: 20, mass: 0.4 }
-          : { duration: 0.7, ease: [0.22, 1, 0.36, 1] }
+          : { duration: 0.4, ease: [0.22, 1, 0.36, 1] }
       }
     >
       <motion.svg
@@ -336,7 +410,7 @@ function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerm
         </defs>
       </motion.svg>
       <motion.div
-        className="absolute left-4 top-4 rounded-full px-2.5 py-1 text-white font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[13px]/4.5 whitespace-nowrap [box-shadow:0_0_0_1.5px_white,0_1px_3px_rgba(0,0,0,0.2)] flex items-center gap-1.5 origin-top-left"
+        className="absolute left-4 top-4 rounded-full px-2.5 py-1 text-white font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[13px]/4.5 whitespace-nowrap [box-shadow:0_0_0_2px_white,0_1px_3px_rgba(0,0,0,0.2)] flex items-center gap-1.5 origin-top-left"
         initial={{ opacity: 0, scale: 0.5 }}
         animate={{ backgroundColor: isAlert ? "#E5291F" : "#0074F9", opacity: labelVisible ? 1 : 0, scale: labelVisible ? 1 : 0.5 }}
         transition={{ duration: 0.15 }}
@@ -359,13 +433,13 @@ function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerm
 }
 
 function TerminalIllustration() {
-  const { phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, clickingRefocus, labelVisible, cursorLabel, terminalFocused, showResponsiveness, cursorResolved, cursorNudged, browserRefocused } = useAnimationPhase();
+  const { phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, clickingRefocus, labelVisible, cursorLabel, terminalFocused, showResponsiveness, cursorResolved, cursorNudged, browserRefocused, inspecting, cursorAtEdge } = useAnimationPhase();
 
   return (
     <div className="flex flex-col items-center justify-center gap-4 text-xs/4 mt-11.5 p-3">
       <div className="relative w-68.5 h-46 shrink-0 overflow-visible">
-        <BrowserPreview slid={slid} focused={focused || browserRefocused} />
-        <AnimatedCursor visible={cursorVisible} onBrowser={cursorOnBrowser} onTerminal={cursorOnTerminal} clicking={clicking} clickingTerminal={clickingTerminal} clickingRefocus={clickingRefocus} labelVisible={labelVisible} label={cursorLabel} resolved={cursorResolved} nudged={cursorNudged} />
+        <BrowserPreview slid={slid} focused={focused || browserRefocused} inspecting={inspecting} />
+        <AnimatedCursor visible={cursorVisible} onBrowser={cursorOnBrowser} onTerminal={cursorOnTerminal} clicking={clicking} clickingTerminal={clickingTerminal} clickingRefocus={clickingRefocus} labelVisible={labelVisible} label={cursorLabel} resolved={cursorResolved} nudged={cursorNudged} cursorAtEdge={cursorAtEdge} />
         <motion.div
           className="flex flex-col items-start w-68.5 h-46 relative z-10 rounded-2xl pt-4.5 pr-3.75 pb-6.5 pl-3.75 overflow-clip bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]"
           animate={slid ? { x: 80, scale: terminalFocused ? 1.04 : 1, zIndex: terminalFocused ? 20 : 10 } : { x: 0 }}
