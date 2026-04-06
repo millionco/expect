@@ -191,6 +191,25 @@ const AgentOverlay = () => {
 
   const [hoveredAction, setHoveredAction] = useState<number | undefined>(undefined);
 
+  const activeMarkerIndex = (() => {
+    if (hoveredAction !== undefined) return hoveredAction;
+    if (!state.cursorPositioned || state.actionLog.length === 0) return undefined;
+    const elementUnderCursor = document.elementFromPoint(state.cursorX, state.cursorY);
+    if (!elementUnderCursor) return undefined;
+    for (let index = state.actionLog.length - 1; index >= 0; index--) {
+      const entry = state.actionLog[index];
+      if (!entry.selector) continue;
+      try {
+        if (
+          elementUnderCursor.matches(entry.selector) ||
+          elementUnderCursor.closest(entry.selector)
+        )
+          return index;
+      } catch {}
+    }
+    return undefined;
+  })();
+
   const hasLabel = Boolean(state.label);
   const showCursor = hasLabel || state.cursorPositioned;
 
@@ -288,7 +307,7 @@ const AgentOverlay = () => {
               pointerEvents: "auto",
               cursor: "pointer",
               userSelect: "none",
-              transform: `translate(-50%, -50%)${hoveredAction === index ? " scale(1.1)" : ""}`,
+              transform: `translate(-50%, -50%)${activeMarkerIndex === index ? " scale(1.1)" : ""}`,
               transition: `left ${CURSOR_TRANSITION_MS}ms cubic-bezier(0.25, 1, 0.5, 1), top ${CURSOR_TRANSITION_MS}ms cubic-bezier(0.25, 1, 0.5, 1), background-color 0.15s ease, transform 0.1s ease`,
               animation: "expect-marker-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both",
             }}
@@ -296,7 +315,7 @@ const AgentOverlay = () => {
             onMouseLeave={() => setHoveredAction(undefined)}
           >
             {index + 1}
-            {hoveredAction === index && (
+            {activeMarkerIndex === index && (
               <div
                 style={{
                   position: "absolute",
