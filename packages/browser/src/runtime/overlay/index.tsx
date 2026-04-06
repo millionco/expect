@@ -24,7 +24,6 @@ import { CursorIcon, detectCursorShape } from "./cursors";
 import { SpiralSpinner } from "./spiral-spinner";
 import { Glow } from "./glow";
 import { ToolbarControls } from "./toolbar-controls";
-import { ActionHistory } from "./action-history";
 
 const AgentOverlay = () => {
   const [state, setState] = useState<OverlayState>(loadInitialState);
@@ -249,11 +248,8 @@ const AgentOverlay = () => {
     setState((previous) => ({ ...previous, overlayVisible: !previous.overlayVisible }));
   };
 
-  const [showHistory, setShowHistory] = useState(false);
-
   const toggleToolbar = () => {
     setState((previous) => ({ ...previous, toolbarExpanded: !previous.toolbarExpanded }));
-    setShowHistory(false);
   };
 
   return (
@@ -280,12 +276,6 @@ const AgentOverlay = () => {
       )}
 
       <div className="fixed bottom-5 right-5 z-[2147483647] pointer-events-auto font-[system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,sans-serif]">
-        {showHistory && state.actionLog.length > 0 && (
-          <div className="mb-2 rounded-xl bg-[#1a1a1a] text-white shadow-[0_2px_8px_rgba(0,0,0,0.2),0_4px_16px_rgba(0,0,0,0.1)] overflow-hidden w-72 animate-[expect-tooltip-in_0.15s_ease-out_forwards]">
-            <ActionHistory actions={state.actionLog} />
-          </div>
-        )}
-
         <div
           className={`relative flex items-center justify-center h-[44px] rounded-[22px] bg-[#1a1a1a] text-white shadow-[0_2px_8px_rgba(0,0,0,0.2),0_4px_16px_rgba(0,0,0,0.1)] transition-[width] duration-400 ease-[cubic-bezier(0.19,1,0.22,1)] ${isExpanded ? "w-auto px-1.5" : "w-[44px] cursor-pointer hover:bg-[#2a2a2a] active:scale-95"}`}
           onClick={isExpanded ? undefined : toggleToolbar}
@@ -305,10 +295,7 @@ const AgentOverlay = () => {
             <div className="flex items-center text-sm font-medium">
               <ToolbarControls
                 overlayVisible={state.overlayVisible}
-                historyActive={showHistory}
-                actionCount={state.actionLog.length}
                 onToggleOverlay={toggleOverlay}
-                onToggleHistory={() => setShowHistory((previous) => !previous)}
               />
               <div className="flex items-center gap-2.5 pr-2.5 pl-1">
                 <SpiralSpinner visible={hasLabel} />
