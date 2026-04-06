@@ -33,99 +33,119 @@ function useAnimationPhase() {
   return { phase, slid };
 }
 
+function TerminalLine({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.05, delay }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 function TerminalContent({ phase }: { phase: AnimationPhase }) {
+  const showDiff = phase === "diff" || phase === "expect";
+  const showExpect = phase === "expect";
 
   return (
-    <AnimatePresence mode="wait">
-      {phase === "coding" && (
-        <motion.div
-          key="coding"
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
-        >
-          <div className="flex items-center w-61 h-7 shrink-0 rounded-xs px-2.5 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696952_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]">
-            <div className="[letter-spacing:-0.125px] inline-block text-[#323232] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
-              build signup form
+    <motion.div
+      className="flex flex-col items-start w-61 text-xs/4 gap-1"
+      animate={{ y: showExpect ? -32 : showDiff ? -10 : 0 }}
+      transition={{ duration: 0.15, ease: "linear" }}
+    >
+      <div className="h-7 shrink-0" />
+      <div className="flex items-start shrink-0 gap-2.5">
+        <svg width="217" height="144" viewBox="0 0 217 144" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '41px', height: 'auto', flexShrink: '0' }}>
+          <path d="M216.06 57.69H188.18V0H27.88V57.69H0V86.85H27.44V114.73H41.28V143.89H55.57V114.73H68.52V143.45H82.36V115.17H133.42V143.89H147.71V115.17H160.66V143.45H174.06V115.17H187.91V86.85H216.02V57.69H216.06Z" fill="#F76038" />
+          <path d="M55.63 29.61H68.58V57.69H55.63V29.61Z" fill="#FFFFFF" />
+          <path d="M147.76 29.83H160.71V57.69H147.76V29.83Z" fill="#FFFFFF" />
+        </svg>
+      </div>
+      <div className="h-2.5 shrink-0" />
+      <div>
+        <div className="flex items-center w-61 h-7 shrink-0 rounded-xs px-2.5 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696952_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]">
+          <div className="[letter-spacing:-0.125px] inline-block text-[#323232] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+            build signup form
+          </div>
+        </div>
+        <div className="h-2.25 shrink-0" />
+        {!showDiff && <ClaudeSpinner message="Coalescing..." />}
+        {showDiff && (
+          <div className="flex items-center shrink-0 gap-1.25">
+            <div className="inline-block text-[#D74B25] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+              ✢
+            </div>
+            <div className="[letter-spacing:0px] inline-block text-[#D74B25] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+              Done (1.2s)
             </div>
           </div>
-          <div className="h-2.25 shrink-0" />
-          <ClaudeSpinner message="Coalescing..." />
-        </motion.div>
-      )}
-      {phase === "diff" && (
-        <motion.div
-          key="diff"
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
-          className="flex flex-col items-start w-61 text-xs/4"
-        >
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="flex flex-col w-full rounded-[3px] pt-1.25 pb-1.5 bg-[#D7F2D3] px-2"
-          >
-            <div className="flex items-center gap-1.75">
-              <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.040_0.361_0)] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
-                12 +
+        )}
+      </div>
+      {showDiff && (
+        <>
+          <TerminalLine>
+            <div className="flex flex-col w-full rounded-[3px] pt-1.25 pb-1.5 bg-[#D7F2D3] px-2">
+              <div className="flex items-center gap-1.75">
+                <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.040_0.361_0)] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+                  12 +
+                </div>
+                <div className="w-42.5 h-3.25 rounded-xs bg-[#B1E4AC] shrink-0" />
               </div>
-              <div className="w-42.5 h-3.25 rounded-xs bg-[#B1E4AC] shrink-0" />
-            </div>
-            <div className="flex items-center gap-1.75">
-              <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.040_0.361_0)] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
-                13 +
+              <div className="flex items-center gap-1.75">
+                <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.040_0.361_0)] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+                  13 +
+                </div>
+                <div className="w-23.75 h-3.25 rounded-xs bg-[#B1E4AC] shrink-0" />
               </div>
-              <div className="w-23.75 h-3.25 rounded-xs bg-[#B1E4AC] shrink-0" />
             </div>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, ease: "easeOut", delay: 0.15 }}
-            className="flex items-center w-full mt-1 rounded-[3px] py-0.75 px-2 gap-1.75 bg-[color(display-p3_1_0.879_0.854)]"
-          >
-            <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.625_0_0)] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
-              61 -
+          </TerminalLine>
+          <TerminalLine delay={0.08}>
+            <div className="flex items-center w-full rounded-[3px] py-0.75 px-2 gap-1.75 bg-[color(display-p3_1_0.879_0.854)]">
+              <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.625_0_0)] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+                61 -
+              </div>
+              <div className="w-34 h-3.25 rounded-xs bg-[#F9BFB5] shrink-0" />
             </div>
-            <div className="w-34 h-3.25 rounded-xs bg-[#F9BFB5] shrink-0" />
-          </motion.div>
-        </motion.div>
+          </TerminalLine>
+        </>
       )}
-      {phase === "expect" && (
-        <motion.div
-          key="expect"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, ease: "easeOut" }}
-          className="flex flex-col pl-0.5 gap-1.25 text-xs/4"
-        >
-          <div className="flex items-center gap-1.25">
-            <div className="inline-block text-[color(display-p3_0.663_0.522_1)] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
-              ⏺
+      {showExpect && (
+        <div className="flex flex-col pl-0.5 gap-1.25 mt-1">
+          <TerminalLine>
+            <div className="flex items-center gap-1.25">
+              <div className="inline-block text-[color(display-p3_0.663_0.522_1)] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+                ⏺
+              </div>
+              <div className="inline-block text-[color(display-p3_0.454_0.250_0.783)] font-['GeistMono-SemiBold','Geist_Mono',system-ui,sans-serif] font-semibold shrink-0 text-[12.5px]/4.5">
+                Expect Skill
+              </div>
             </div>
-            <div className="inline-block text-[color(display-p3_0.454_0.250_0.783)] font-['GeistMono-SemiBold','Geist_Mono',system-ui,sans-serif] font-semibold shrink-0 text-[12.5px]/4.5">
-              Expect Skill
+          </TerminalLine>
+          <TerminalLine delay={0.06}>
+            <div className="flex items-center pl-3.75 gap-1.5">
+              <div className="inline-block text-[#1F1F1F] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+                ◯
+              </div>
+              <div className="inline-block text-[#1F1F1F] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+                Security & Perf
+              </div>
             </div>
-          </div>
-          <div className="flex items-center pl-3.75 gap-1.5">
-            <div className="inline-block text-[#1F1F1F] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
-              ◯
+          </TerminalLine>
+          <TerminalLine delay={0.12}>
+            <div className="flex items-center pl-3.75 gap-1.5">
+              <div className="inline-block text-[#1F1F1F] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+                ◯
+              </div>
+              <div className="inline-block text-[#1F1F1F] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+                Responsiveness
+              </div>
             </div>
-            <div className="inline-block text-[#1F1F1F] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
-              Security & Perf
-            </div>
-          </div>
-          <div className="flex items-center pl-3.75 gap-1.5">
-            <div className="inline-block text-[#1F1F1F] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
-              ◯
-            </div>
-            <div className="inline-block text-[#1F1F1F] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
-              Responsiveness
-            </div>
-          </div>
-        </motion.div>
+          </TerminalLine>
+        </div>
       )}
-    </AnimatePresence>
+    </motion.div>
   );
 }
 
@@ -169,15 +189,6 @@ function TerminalIllustration() {
             <div className="rounded-full bg-[#FEBC2E] shrink-0 size-2.5" />
             <div className="rounded-full bg-[#EAEAEA] shrink-0 size-2.5" />
           </div>
-          <div className="h-7 shrink-0" />
-          <div className="flex items-start shrink-0 gap-2.5">
-            <svg width="217" height="144" viewBox="0 0 217 144" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '41px', height: 'auto', flexShrink: '0' }}>
-              <path d="M216.06 57.69H188.18V0H27.88V57.69H0V86.85H27.44V114.73H41.28V143.89H55.57V114.73H68.52V143.45H82.36V115.17H133.42V143.89H147.71V115.17H160.66V143.45H174.06V115.17H187.91V86.85H216.02V57.69H216.06Z" fill="#F76038" />
-              <path d="M55.63 29.61H68.58V57.69H55.63V29.61Z" fill="#FFFFFF" />
-              <path d="M147.76 29.83H160.71V57.69H147.76V29.83Z" fill="#FFFFFF" />
-            </svg>
-          </div>
-          <div className="h-3.5 shrink-0" />
           <TerminalContent phase={phase} />
         </motion.div>
       </div>
