@@ -5,8 +5,8 @@ const LINE_COUNT = 8;
 const TICK_MS = 100;
 const SIZE_PX = 16;
 const LINE_WIDTH = 1.5;
-const LINE_LENGTH = 3.5;
-const INNER_RADIUS = 2.5;
+const LINE_LENGTH = 3;
+const INNER_RADIUS = 3.5;
 
 export const SpiralSpinner = ({ visible }: { visible: boolean }) => {
   const [activeIndex, setActiveIndex] = useState(0);
