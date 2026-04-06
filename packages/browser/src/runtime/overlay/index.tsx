@@ -292,8 +292,6 @@ const GuardPrompt = ({ onCancel, onConfirm }: GuardPromptProps) => (
   </div>
 );
 
-const SONNER_TOAST_ID = "expect-agent-toast";
-
 const AgentOverlay = () => {
   const [state, setState] = useState<OverlayState>(loadInitialState);
 
@@ -472,14 +470,10 @@ const AgentOverlay = () => {
   const displayLabel = state.userInControl ? "You're in control" : state.label;
 
   useEffect(() => {
-    if (!displayLabel) {
-      toast.dismiss(SONNER_TOAST_ID);
-      return;
-    }
+    if (!displayLabel) return;
     toast(displayLabel, {
-      id: SONNER_TOAST_ID,
-      duration: Infinity,
-      icon: <SpiralSpinner visible={Boolean(displayLabel)} />,
+      duration: 4000,
+      icon: <SpiralSpinner visible />,
     });
   }, [displayLabel]);
 
