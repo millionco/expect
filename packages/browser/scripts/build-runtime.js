@@ -79,6 +79,24 @@ const cssTextPlugin = {
   },
 };
 
+// HACK: sonner injects styles into document.head at module load time via
+// a function that calls document.head.appendChild(). This crashes when
+// addInitScript runs before document.head exists. We already inject
+// sonner's CSS into the shadow DOM ourselves, so we no-op the injection.
+const patchSonnerPlugin = {
+  name: "patch-sonner",
+  setup(build) {
+    build.onLoad({ filter: /sonner[/\\]dist[/\\]index\.m?js$/ }, (args) => {
+      let code = fs.readFileSync(args.path, "utf-8");
+      code = code.replace(
+        /document\.head\s*\|\|\s*document\.getElementsByTagName\s*\(\s*["']head["']\s*\)\s*\[\s*0\s*\]/g,
+        "null",
+      );
+      return { contents: code, loader: "js" };
+    });
+  },
+};
+
 const ctx = await context({
   entryPoints: ["src/runtime/index.ts"],
   bundle: true,
@@ -88,7 +106,7 @@ const ctx = await context({
   minify: true,
   target: "es2020",
   jsx: "automatic",
-  plugins: [cssTextPlugin, emitPlugin],
+  plugins: [patchSonnerPlugin, cssTextPlugin, emitPlugin],
 });
 
 if (watchMode) {

@@ -231,7 +231,7 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
               });
 
         yield* Effect.tryPromise({
-          try: () => context.addInitScript(`setTimeout(()=>{${RUNTIME_SCRIPT}},0)`),
+          try: () => context.addInitScript(RUNTIME_SCRIPT),
           catch: toBrowserLaunchError,
         });
 
