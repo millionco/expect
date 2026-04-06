@@ -6,7 +6,7 @@ import { FileSystem } from "effect/FileSystem";
 import { isRunningInAgent } from "@expect/shared/launched-from";
 import { Browser } from "../browser";
 import { NavigationError } from "../errors";
-import { concatVideos, frameWithWallpaper, DEFAULT_WALLPAPER_PATH } from "../video-processor";
+import { frameWithWallpaper, DEFAULT_WALLPAPER_PATH } from "../video-processor";
 import { evaluateRuntime } from "../utils/evaluate-runtime";
 import { AGENT_OVERLAY_CONTAINER_ID, OVERLAY_REINJECT_TIMEOUT_MS } from "../constants";
 import type {
@@ -141,7 +141,6 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       Deferred.Deferred<Cookie[] | undefined, never> | undefined
     >(undefined);
     const savedScreenshotPathsRef = yield* Ref.make<string[]>([]);
-    const videoSegmentsRef = yield* Ref.make<string[]>([]);
     const isHeadedRef = yield* Ref.make<boolean>(isHeadedDefault);
 
     const saveScreenshot = Effect.fn("McpSession.saveScreenshot")(function* (buffer: Buffer) {
@@ -262,7 +261,6 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       const url = resolveUrl(rawUrl);
       yield* Effect.annotateCurrentSpan({ url });
       yield* Ref.set(savedScreenshotPathsRef, []);
-      yield* Ref.set(videoSegmentsRef, []);
 
       const cookiesOption = yield* resolveCookies(options.cookies);
       const videoOutputDir = path.join(
@@ -432,10 +430,6 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         );
 
         if (videoPath) {
-          const confirmedVideoPath = videoPath;
-          yield* Ref.update(videoSegmentsRef, (segments) => [...segments, confirmedVideoPath]);
-          const allSegments = yield* Ref.get(videoSegmentsRef);
-
           yield* fileSystem
             .makeDirectory(TMP_ARTIFACT_OUTPUT_DIRECTORY, { recursive: true })
             .pipe(
@@ -444,36 +438,18 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
               ),
             );
 
-          const rawConcatPath = path.join(
-            TMP_ARTIFACT_OUTPUT_DIRECTORY,
-            `${artifactBaseName}-raw.webm`,
-          );
           const tmpVideoFilePath = path.join(
             TMP_ARTIFACT_OUTPUT_DIRECTORY,
             `${artifactBaseName}.webm`,
           );
 
-          yield* concatVideos(allSegments, rawConcatPath).pipe(
-            Effect.catchTag("VideoProcessError", (error) =>
-              Effect.logWarning("Video concat failed, using last segment", {
-                error: error.message,
-              }).pipe(
-                Effect.tap(() =>
-                  fileSystem
-                    .copyFile(confirmedVideoPath, rawConcatPath)
-                    .pipe(Effect.catchCause(() => Effect.void)),
-                ),
-              ),
-            ),
-          );
-
           tmpVideoPath = yield* frameWithWallpaper(
-            rawConcatPath,
+            videoPath,
             tmpVideoFilePath,
             DEFAULT_WALLPAPER_PATH,
           ).pipe(
             Effect.as(tmpVideoFilePath),
-            Effect.catchTag("VideoProcessError", () => Effect.succeed(rawConcatPath)),
+            Effect.catchTag("VideoProcessError", () => Effect.succeed(videoPath)),
           );
         }
       }
