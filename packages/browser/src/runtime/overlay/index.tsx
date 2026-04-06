@@ -13,21 +13,21 @@ import {
   RAF_THROTTLE_INTERVAL_MS,
   getViewport,
   clampToViewport,
-} from "./constants";
-import type { OverlayState, HighlightRect, CursorShape } from "./constants";
+} from "./lib/constants";
+import type { OverlayState, HighlightRect, CursorShape } from "./lib/constants";
 import {
   saveCursorState,
   loadCursorState,
   loadInitialState,
   clearSaveCursorTimeout,
-} from "./state";
-import { usePolledPositions } from "./use-polled-positions";
+} from "./lib/state";
+import { usePolledPositions } from "./lib/use-polled-positions";
 import { finder } from "@medv/finder";
-import { CursorIcon, detectCursorShape } from "./cursors";
-import { SpiralSpinner } from "./spiral-spinner";
-import { Glow } from "./glow";
-import { ToolbarControls } from "./toolbar-controls";
-import { ActionMarker } from "./action-marker";
+import { CursorIcon, detectCursorShape } from "./components/cursors";
+import { SpiralSpinner } from "./components/spiral-spinner";
+import { Glow } from "./components/glow";
+import { ToolbarControls } from "./components/toolbar-controls";
+import { ActionMarker } from "./components/action-marker";
 import { XMarkIcon } from "@heroicons/react/16/solid";
 
 interface MarkerPosition {

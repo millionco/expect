@@ -1,4 +1,4 @@
-import type { CursorShape } from "./constants";
+import type { CursorShape } from "../lib/constants";
 import { PointerCursor } from "./cursor-pointer";
 import { TextCursor } from "./cursor-text";
 import { HandCursor } from "./cursor-hand";

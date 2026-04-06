@@ -5,8 +5,8 @@ import {
   RAF_THROTTLE_INTERVAL_MS,
   TOOLTIP_FLIP_THRESHOLD_PX,
   getViewport,
-} from "./constants";
-import type { ActionLogEntry, HighlightRect } from "./constants";
+} from "../lib/constants";
+import type { ActionLogEntry, HighlightRect } from "../lib/constants";
 
 interface MarkerPosition {
   x: number;
