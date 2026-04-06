@@ -23,6 +23,7 @@ const LABEL_DISMISS_DELAY_MS = 200;
 const CURSOR_RETURN_DELAY_MS = 100;
 const TERMINAL_CLICK_DELAY_MS = 700;
 const TERMINAL_FOCUS_DELAY_MS = 50;
+const RESPONSIVENESS_DELAY_MS = 1700;
 
 type AnimationPhase = "coding" | "diff" | "expect";
 type CursorLabelState = "expect" | "security" | "alert";
@@ -39,6 +40,7 @@ function useAnimationPhase() {
   const [cursorOnTerminal, setCursorOnTerminal] = useState(false);
   const [clickingTerminal, setClickingTerminal] = useState(false);
   const [terminalFocused, setTerminalFocused] = useState(false);
+  const [showResponsiveness, setShowResponsiveness] = useState(false);
 
   useEffect(() => {
     const expectTime = CODING_DURATION_MS + DIFF_DURATION_MS;
@@ -63,6 +65,7 @@ function useAnimationPhase() {
     const focusTimer = setTimeout(() => setFocused(true), focusTime);
     const alertTimer = setTimeout(() => setCursorLabel("alert"), alertTime);
     const terminalFocusTimer = setTimeout(() => { setTerminalFocused(true); setFocused(false); }, alertTime);
+    const responsivenessTimer = setTimeout(() => setShowResponsiveness(true), alertTime + RESPONSIVENESS_DELAY_MS);
     return () => {
       clearTimeout(diffTimer);
       clearTimeout(slideTimer);
@@ -75,10 +78,11 @@ function useAnimationPhase() {
       clearTimeout(focusTimer);
       clearTimeout(alertTimer);
       clearTimeout(terminalFocusTimer);
+      clearTimeout(responsivenessTimer);
     };
   }, []);
 
-  return { phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, labelVisible, cursorLabel, terminalFocused };
+  return { phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, labelVisible, cursorLabel, terminalFocused, showResponsiveness };
 }
 
 function TerminalLine({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
@@ -93,14 +97,14 @@ function TerminalLine({ children, delay = 0 }: { children: React.ReactNode; dela
   );
 }
 
-function TerminalContent({ phase, alert }: { phase: AnimationPhase; alert: boolean }) {
+function TerminalContent({ phase, alert, showResponsiveness }: { phase: AnimationPhase; alert: boolean; showResponsiveness: boolean }) {
   const showDiff = phase === "diff" || phase === "expect";
   const showExpect = phase === "expect";
 
   return (
     <motion.div
       className="flex flex-col items-start w-61 text-xs/4 gap-1"
-      animate={{ y: alert ? -260 : showExpect ? -180 : showDiff ? -70 : 0 }}
+      animate={{ y: showResponsiveness ? -230 : alert ? -210 : showExpect ? -180 : showDiff ? -70 : 0 }}
       transition={{ type: "spring", stiffness: 120, damping: 20, mass: 0.8 }}
     >
       <div className="h-7 shrink-0" />
@@ -181,6 +185,16 @@ function TerminalContent({ phase, alert }: { phase: AnimationPhase; alert: boole
           </div>
           <div className="text-[#E5291F] font-['JetBrains_Mono',system-ui,sans-serif] font-semibold shrink-0 text-[12.5px]/4.5">
             Security
+          </div>
+        </div>
+      )}
+      {showResponsiveness && (
+        <div className="flex pl-0.5 items-center gap-1.25 mt-1.5">
+          <div className="inline-block text-[#1F1F1F] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+            →
+          </div>
+          <div className="text-[#1F1F1F] font-['JetBrains_Mono',system-ui,sans-serif] font-semibold shrink-0 text-[12.5px]/4.5">
+            Responsiveness
           </div>
         </div>
       )}
@@ -322,7 +336,7 @@ function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerm
 }
 
 function TerminalIllustration() {
-  const { phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, labelVisible, cursorLabel, terminalFocused } = useAnimationPhase();
+  const { phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, labelVisible, cursorLabel, terminalFocused, showResponsiveness } = useAnimationPhase();
 
   return (
     <div className="flex flex-col items-center justify-center gap-4 text-xs/4 mt-11.5 p-3">
@@ -336,7 +350,7 @@ function TerminalIllustration() {
         >
           <div suppressHydrationWarning className="absolute top-0 left-0 right-0 h-20 z-10 pointer-events-none select-none rounded-t-2xl" style={{ background: 'linear-gradient(to top, transparent 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.45) 75%, rgba(255,255,255,0.8) 100%)' }} />
           <div suppressHydrationWarning className="absolute bottom-0 left-0 right-0 h-12 z-10 pointer-events-none select-none rounded-b-2xl" style={{ background: 'linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.45) 75%, rgba(255,255,255,0.8) 100%)' }} />
-          <TerminalContent phase={phase} alert={cursorLabel === "alert"} />
+          <TerminalContent phase={phase} alert={cursorLabel === "alert"} showResponsiveness={showResponsiveness} />
         </motion.div>
       </div>
     </div>
