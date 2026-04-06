@@ -3,6 +3,7 @@ import type { Browser as PlaywrightBrowser, BrowserContext, Page } from "playwri
 import { Config, Deferred, Effect, Layer, Option, Ref, ServiceMap } from "effect";
 import type { Cookie } from "@expect/cookies";
 import { FileSystem } from "effect/FileSystem";
+import { isRunningInAgent } from "@expect/shared/launched-from";
 import { Browser } from "../browser";
 import { NavigationError } from "../errors";
 import { concatVideos, frameWithWallpaper, DEFAULT_WALLPAPER_PATH } from "../video-processor";
@@ -112,7 +113,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
     const configuredBaseUrl = Option.getOrUndefined(baseUrlConfig);
     const headedConfig = yield* Config.option(Config.string(EXPECT_HEADED_ENV_NAME));
     const isHeadedDefault = Option.match(headedConfig, {
-      onNone: () => true,
+      onNone: () => !isRunningInAgent(),
       onSome: (value) => value !== "false",
     });
     const cookieBrowserKeys = Option.match(cookieBrowsersConfig, {

@@ -37,5 +37,3 @@ jobs:
         run: npx playwright install --with-deps chromium webkit firefox
       - name: Run E2E tests
         run: pnpm --filter @expect/browser test
-        env:
-          EXPECT_HEADED: "false"
