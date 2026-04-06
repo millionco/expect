@@ -388,27 +388,6 @@ const AgentOverlay = () => {
             </div>
           )}
         </div>
-        {state.selectedSelector && (
-          <div
-            style={{
-              marginTop: "8px",
-              padding: "8px 12px",
-              borderRadius: "12px",
-              background: "#1a1a1a",
-              color: "rgba(255,255,255,0.7)",
-              fontSize: "12px",
-              fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-              maxWidth: "320px",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            <span style={{ color: "rgba(255,255,255,0.4)", marginRight: "6px" }}>selected</span>
-            {state.selectedSelector}
-          </div>
-        )}
       </div>
 
       {state.overlayVisible &&
