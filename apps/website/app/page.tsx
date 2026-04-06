@@ -31,6 +31,7 @@ type AnimationPhase = "coding" | "diff" | "expect";
 type CursorLabelState = "expect" | "security" | "alert" | "fixed";
 
 function useAnimationPhase() {
+  const [cycle, setCycle] = useState(0);
   const [phase, setPhase] = useState<AnimationPhase>("coding");
   const [slid, setSlid] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -46,9 +47,26 @@ function useAnimationPhase() {
   const [fixDiff, setFixDiff] = useState(false);
   const [reloading, setReloading] = useState(false);
   const [reloadDone, setReloadDone] = useState(false);
-  const [resetting, setResetting] = useState(false);
+  const [looping, setLooping] = useState(false);
 
   useEffect(() => {
+    setPhase("coding");
+    setSlid(false);
+    setFocused(false);
+    setCursorVisible(false);
+    setCursorOnBrowser(false);
+    setClicking(false);
+    setLabelVisible(false);
+    setCursorLabel("security");
+    setCursorOnTerminal(false);
+    setClickingTerminal(false);
+    setTerminalFocused(false);
+    setFixing(false);
+    setFixDiff(false);
+    setReloading(false);
+    setReloadDone(false);
+    setLooping(false);
+
     const expectTime = CODING_DURATION_MS + DIFF_DURATION_MS;
     const cursorAppearTime = expectTime + CURSOR_APPEAR_DELAY_MS;
     const cursorMoveTime = cursorAppearTime + CURSOR_MOVE_DELAY_MS;
@@ -82,7 +100,16 @@ function useAnimationPhase() {
     const reloadDoneTime = reloadTime + RELOAD_DURATION_MS;
     const reloadDoneTimer = setTimeout(() => setReloadDone(true), reloadDoneTime);
     const resetTime = reloadDoneTime + RESET_DELAY_MS;
-    const resetTimer = setTimeout(() => setResetting(true), resetTime);
+    const resetTimer = setTimeout(() => {
+      setCursorVisible(false);
+      setLabelVisible(false);
+      setLooping(true);
+      setSlid(false);
+      setFocused(false);
+      setTerminalFocused(false);
+    }, resetTime);
+    const loopTime = resetTime + 400;
+    const loopTimer = setTimeout(() => setCycle((previous) => previous + 1), loopTime);
     return () => {
       clearTimeout(diffTimer);
       clearTimeout(slideTimer);
@@ -99,10 +126,11 @@ function useAnimationPhase() {
       clearTimeout(reloadTimer);
       clearTimeout(reloadDoneTimer);
       clearTimeout(resetTimer);
+      clearTimeout(loopTimer);
     };
-  }, []);
+  }, [cycle]);
 
-  return { phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, labelVisible, cursorLabel, terminalFocused, fixing, fixDiff, reloading, reloadDone, resetting };
+  return { cycle, phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, labelVisible, cursorLabel, terminalFocused, fixing, fixDiff, reloading, reloadDone, looping };
 }
 
 function TerminalLine({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
@@ -117,7 +145,7 @@ function TerminalLine({ children, delay = 0 }: { children: React.ReactNode; dela
   );
 }
 
-function TerminalContent({ phase, fixing, fixDiff }: { phase: AnimationPhase; fixing: boolean; fixDiff: boolean }) {
+function TerminalContent({ phase, fixing, fixDiff, looping }: { phase: AnimationPhase; fixing: boolean; fixDiff: boolean; looping: boolean }) {
   const showDiff = phase === "diff" || phase === "expect";
   const showExpect = phase === "expect";
 
@@ -126,8 +154,9 @@ function TerminalContent({ phase, fixing, fixDiff }: { phase: AnimationPhase; fi
   return (
     <motion.div
       className="flex flex-col items-start w-61 text-xs/4 gap-1"
-      animate={{ y: scrollY }}
-      transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+      initial={{ y: 80, opacity: 0 }}
+      animate={{ y: scrollY, opacity: looping ? 0 : 1 }}
+      transition={{ y: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }, opacity: { duration: 0.3 } }}
     >
       <div className="h-7 shrink-0" />
       <div className="flex items-start shrink-0 gap-2.5">
@@ -372,7 +401,7 @@ function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerm
         <g filter="url(#filter0_d_4_7)">
           <path d="M2.58591 2.58594C3.14041 2.03143 3.96783 1.85171 4.70212 2.12695L15.7021 6.25195C16.5219 6.55937 17.0468 7.36516 16.997 8.23926C16.9471 9.11309 16.3344 9.85306 15.4853 10.0654L11.1484 11.1484L10.0654 15.4854C9.85303 16.3345 9.11306 16.9471 8.23923 16.9971C7.36513 17.0469 6.55934 16.5219 6.25192 15.7021L2.12692 4.70215C1.85168 3.96786 2.0314 3.14045 2.58591 2.58594Z" fill="white" stroke="white" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"/>
         </g>
-        <path fillRule="evenodd" clipRule="evenodd" d="M4.17558 3.53185C3.99199 3.463 3.7851 3.50782 3.64646 3.64646C3.50782 3.7851 3.463 3.99199 3.53185 4.17558L7.65685 15.1756C7.7337 15.3805 7.93492 15.5117 8.15345 15.4992C8.37197 15.4868 8.557 15.3336 8.61009 15.1213L9.91232 9.91232L15.1213 8.61009C15.3336 8.557 15.4868 8.37197 15.4992 8.15345C15.5117 7.93492 15.3805 7.7337 15.1756 7.65685L4.17558 3.53185Z" fill="#000000" stroke="#000000" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
+        <motion.path fillRule="evenodd" clipRule="evenodd" d="M4.17558 3.53185C3.99199 3.463 3.7851 3.50782 3.64646 3.64646C3.50782 3.7851 3.463 3.99199 3.53185 4.17558L7.65685 15.1756C7.7337 15.3805 7.93492 15.5117 8.15345 15.4992C8.37197 15.4868 8.557 15.3336 8.61009 15.1213L9.91232 9.91232L15.1213 8.61009C15.3336 8.557 15.4868 8.37197 15.4992 8.15345C15.5117 7.93492 15.3805 7.7337 15.1756 7.65685L4.17558 3.53185Z" animate={{ fill: label === "fixed" ? "#28A745" : isAlert ? "#E5291F" : "#1A1A1A", stroke: label === "fixed" ? "#28A745" : isAlert ? "#E5291F" : "#1A1A1A" }} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" transition={{ duration: 0.3 }}/>
         <defs>
           <filter id="filter0_d_4_7" x="-0.000274658" y="-0.000244141" width="19.0005" height="19.0006" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB"><feFlood floodOpacity="0" result="BackgroundImageFix"/><feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/><feOffset/><feGaussianBlur stdDeviation="1"/><feComposite in2="hardAlpha" operator="out"/><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.22 0"/><feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_4_7"/><feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_4_7" result="shape"/></filter>
           <linearGradient id="paint0_linear_4_7" x1="9.50001" y1="3.5" x2="9.50001" y2="15.5" gradientUnits="userSpaceOnUse"><stop stopColor="#0172F4"/><stop offset="1" stopColor="#0168DF"/></linearGradient>
@@ -381,7 +410,7 @@ function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerm
       <motion.div
         className="absolute left-4 top-4 rounded-full px-2.5 py-1 text-white font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[13px]/4.5 whitespace-nowrap [box-shadow:0_0_0_2px_white,0_1px_3px_rgba(0,0,0,0.2)] flex items-center gap-1.5 origin-top-left"
         initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ backgroundColor: label === "fixed" ? "#28A745" : isAlert ? "#E5291F" : "#0074F9", opacity: labelVisible ? 1 : 0, scale: labelVisible ? 1 : 0.5 }}
+        animate={{ backgroundColor: label === "fixed" ? "#28A745" : isAlert ? "#E5291F" : "#1A1A1A", opacity: labelVisible ? 1 : 0, scale: labelVisible ? 1 : 0.5 }}
         transition={{ duration: 0.15 }}
       >
         {label === "security" && (
@@ -406,33 +435,22 @@ function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerm
   );
 }
 
-function TerminalIllustrationInner({ onComplete }: { onComplete: () => void }) {
-  const { phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, labelVisible, cursorLabel, terminalFocused, fixing, fixDiff, reloading, reloadDone, resetting } = useAnimationPhase();
-
-  useEffect(() => {
-    if (!resetting) return;
-    const completeTimer = setTimeout(onComplete, RESET_SLIDE_MS);
-    return () => clearTimeout(completeTimer);
-  }, [resetting, onComplete]);
+function TerminalIllustration() {
+  const { cycle, phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, labelVisible, cursorLabel, terminalFocused, fixing, fixDiff, reloading, reloadDone, looping } = useAnimationPhase();
 
   return (
-    <motion.div
-      className="flex flex-col items-center justify-center gap-4 text-xs/4 mt-11.5 p-3"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: resetting ? 0 : 1 }}
-      transition={{ duration: resetting ? 0.6 : 0.8 }}
-    >
+    <div className="flex flex-col items-center justify-center gap-4 text-xs/4 mt-11.5 p-3">
       <div className="relative w-68.5 h-46 shrink-0 overflow-visible">
         <BrowserPreview slid={slid} focused={focused} reloading={reloading} reloadDone={reloadDone} />
         <AnimatedCursor visible={cursorVisible} onBrowser={cursorOnBrowser} onTerminal={cursorOnTerminal} clicking={clicking} clickingTerminal={clickingTerminal} labelVisible={labelVisible} label={cursorLabel} />
         <motion.div
           className="flex flex-col items-start w-68.5 h-46 relative z-10 rounded-2xl pt-4.5 pr-3.75 pb-6.5 pl-3.75 overflow-clip bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]"
-          animate={slid ? { x: 80, scale: terminalFocused ? 1.04 : 1, zIndex: terminalFocused ? 20 : 10 } : { x: 0 }}
+          animate={slid ? { x: 80, scale: terminalFocused ? 1.04 : 1, zIndex: terminalFocused ? 20 : 10 } : { x: 0, scale: 1, zIndex: 10 }}
           transition={{ type: "spring", stiffness: 120, damping: 20, mass: 0.8 }}
         >
           <div suppressHydrationWarning className="absolute top-0 left-0 right-0 h-20 z-10 pointer-events-none select-none rounded-t-2xl" style={{ background: 'linear-gradient(to top, transparent 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.45) 75%, rgba(255,255,255,0.8) 100%)' }} />
           <div suppressHydrationWarning className="absolute bottom-0 left-0 right-0 h-12 z-10 pointer-events-none select-none rounded-b-2xl" style={{ background: 'linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.45) 75%, rgba(255,255,255,0.8) 100%)' }} />
-          <TerminalContent phase={phase} fixing={fixing} fixDiff={fixDiff} />
+          <TerminalContent key={cycle} phase={phase} fixing={fixing} fixDiff={fixDiff} looping={looping} />
         </motion.div>
       </div>
       <div className="[letter-spacing:0em] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-sm/5.75 text-[#858585]">
@@ -448,14 +466,8 @@ function TerminalIllustrationInner({ onComplete }: { onComplete: () => void }) {
                   : "Agent writes code"}
         </Calligraph>
       </div>
-    </motion.div>
+    </div>
   );
-}
-
-function TerminalIllustration() {
-  const [cycle, setCycle] = useState(0);
-
-  return <TerminalIllustrationInner key={cycle} onComplete={() => setCycle((previous) => previous + 1)} />;
 }
 
 export default function () {
@@ -480,7 +492,7 @@ export default function () {
   };
   return (
     <div className="[font-synthesis:none] overflow-x-clip antialiased min-h-screen bg-white flex flex-col items-center">
-      <div className="w-full bg-[#FAFAFA] pb-6">
+      <div className="w-full bg-[#FCFCFC] pb-6">
         <div className="w-112.75 mx-auto pt-2">
           <TerminalIllustration />
         </div>
