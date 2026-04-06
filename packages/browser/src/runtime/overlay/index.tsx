@@ -271,7 +271,7 @@ const AgentOverlay = () => {
             left: `${cursorX}px`,
             top: `${cursorY}px`,
             opacity: showCursor ? 1 : 0,
-            transition: `left ${CURSOR_TRANSITION_MS}ms cubic-bezier(0.25, 1, 0.5, 1), top ${CURSOR_TRANSITION_MS}ms cubic-bezier(0.25, 1, 0.5, 1), opacity 150ms ease`,
+            transition: "opacity 150ms ease",
             animation:
               state.cursorAction === "click" ? "expect-cursor-click 0.2s ease-out 1" : "none",
           }}
@@ -411,7 +411,6 @@ const AgentOverlay = () => {
               height: `${rect.height}px`,
               border: `2px solid rgb(${SRGB_BLUE})`,
               boxShadow: `0 0 0 1px rgba(${SRGB_BLUE}, 0.3)`,
-              transition: `left ${CURSOR_TRANSITION_MS}ms cubic-bezier(0.25, 1, 0.5, 1), top ${CURSOR_TRANSITION_MS}ms cubic-bezier(0.25, 1, 0.5, 1), width ${CURSOR_TRANSITION_MS}ms cubic-bezier(0.25, 1, 0.5, 1), height ${CURSOR_TRANSITION_MS}ms cubic-bezier(0.25, 1, 0.5, 1)`,
             }}
           />
         ))}
