@@ -187,7 +187,11 @@ export const launchSystemChrome = Effect.fn("launchSystemChrome")(function* (opt
 
   yield* Effect.tryPromise(() =>
     fs.promises.rm(path.join(userDataDir, "DevToolsActivePort"), { force: true }),
-  ).pipe(Effect.catchTag("UnknownError", () => Effect.void));
+  ).pipe(
+    Effect.catchTag("UnknownError", (cause) =>
+      Effect.logDebug("Failed to remove stale DevToolsActivePort", { cause }),
+    ),
+  );
 
   const args = buildLaunchArgs({ headless: options.headless, userDataDir });
 

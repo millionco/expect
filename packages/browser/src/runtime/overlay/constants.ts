@@ -5,6 +5,7 @@ export const STATE_KEY = "__expect_cursor_state__";
 export const CLICK_ANIMATION_RESET_MS = 300;
 export const MAX_ACTION_LOG_ENTRIES = 50;
 export const TOOLTIP_FLIP_THRESHOLD_PX = 80;
+export const RAF_THROTTLE_INTERVAL_MS = 100;
 
 export type CursorAction = "idle" | "click" | "type";
 export type CursorShape = "pointer" | "text" | "hand" | "grab";

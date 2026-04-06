@@ -61,20 +61,20 @@ const extractCssSelector = (code: string): string | undefined => {
   return undefined;
 };
 
-const updateCursorLabel = (page: import("playwright").Page, label: string) =>
-  evaluateRuntime(page, "updateCursor", AGENT_OVERLAY_CONTAINER_ID, -1, -1, label).pipe(
-    Effect.catchCause(() => Effect.void),
-  );
+const safeOverlayEval = (...args: Parameters<typeof evaluateRuntime>) =>
+  evaluateRuntime(...args).pipe(Effect.catchCause(() => Effect.void));
 
-const moveCursorToPosition = (
-  page: import("playwright").Page,
-  x: number,
-  y: number,
-  label: string,
-) =>
-  evaluateRuntime(page, "updateCursor", AGENT_OVERLAY_CONTAINER_ID, x, y, label).pipe(
-    Effect.catchCause(() => Effect.void),
-  );
+const updateCursorLabel = (page: import("playwright").Page, label: string) =>
+  safeOverlayEval(page, "updateCursor", AGENT_OVERLAY_CONTAINER_ID, -1, -1, label);
+
+const hideOverlay = (page: import("playwright").Page) =>
+  safeOverlayEval(page, "hideAgentOverlay", AGENT_OVERLAY_CONTAINER_ID);
+
+const showOverlay = (page: import("playwright").Page) =>
+  safeOverlayEval(page, "showAgentOverlay", AGENT_OVERLAY_CONTAINER_ID);
+
+const withOverlayHidden = <A, E>(page: import("playwright").Page, effect: Effect.Effect<A, E>) =>
+  Effect.ensuring(hideOverlay(page).pipe(Effect.flatMap(() => effect)), showOverlay(page));
 
 const moveCursorToRef = Effect.fn("moveCursorToRef")(function* (
   page: import("playwright").Page,
@@ -99,7 +99,7 @@ const moveCursorToRef = Effect.fn("moveCursorToRef")(function* (
     }),
   ).pipe(Effect.catchCause(() => Effect.succeed(undefined)));
 
-  yield* evaluateRuntime(
+  yield* safeOverlayEval(
     page,
     "updateCursor",
     AGENT_OVERLAY_CONTAINER_ID,
@@ -107,7 +107,7 @@ const moveCursorToRef = Effect.fn("moveCursorToRef")(function* (
     box.y + box.height / 2,
     label,
     selector ?? "",
-  ).pipe(Effect.catchCause(() => Effect.void));
+  );
 });
 
 const moveCursorToSelector = Effect.fn("moveCursorToSelector")(function* (
@@ -136,7 +136,7 @@ const moveCursorToSelector = Effect.fn("moveCursorToSelector")(function* (
   ).pipe(Effect.catchCause(() => Effect.succeed(undefined)));
 
   if (result) {
-    yield* evaluateRuntime(
+    yield* safeOverlayEval(
       page,
       "updateCursor",
       AGENT_OVERLAY_CONTAINER_ID,
@@ -144,14 +144,12 @@ const moveCursorToSelector = Effect.fn("moveCursorToSelector")(function* (
       result.y,
       label,
       result.selector ?? "",
-    ).pipe(Effect.catchCause(() => Effect.void));
+    );
   }
 });
 
 const clearRefHighlights = (page: import("playwright").Page) =>
-  evaluateRuntime(page, "clearHighlights", AGENT_OVERLAY_CONTAINER_ID).pipe(
-    Effect.catchCause(() => Effect.void),
-  );
+  safeOverlayEval(page, "clearHighlights", AGENT_OVERLAY_CONTAINER_ID);
 
 const highlightRefsInCode = Effect.fn("highlightRefsInCode")(function* (
   page: import("playwright").Page,
@@ -179,9 +177,7 @@ const highlightRefsInCode = Effect.fn("highlightRefsInCode")(function* (
     }
   }
 
-  yield* evaluateRuntime(page, "highlightRefs", AGENT_OVERLAY_CONTAINER_ID, selectors).pipe(
-    Effect.catchCause(() => Effect.void),
-  );
+  yield* safeOverlayEval(page, "highlightRefs", AGENT_OVERLAY_CONTAINER_ID, selectors);
 });
 
 // HACK: tool annotations (readOnlyHint, destructiveHint) are required for parallel execution in the Claude Agent SDK
@@ -331,13 +327,13 @@ export const createBrowserMcpServer = <E>(
             }
           });
 
-          yield* evaluateRuntime(
+          yield* safeOverlayEval(
             sessionData.page,
             "logAction",
             AGENT_OVERLAY_CONTAINER_ID,
             cursorLabel,
             code,
-          ).pipe(Effect.catchCause(() => Effect.void));
+          );
 
           if (!codeResult.success) {
             return textResult(`Error: ${codeResult.error}`);
@@ -401,14 +397,9 @@ export const createBrowserMcpServer = <E>(
           yield* updateCursorLabel(page, `Taking ${resolvedMode}`);
 
           if (resolvedMode === "snapshot") {
-            yield* evaluateRuntime(page, "hideAgentOverlay", AGENT_OVERLAY_CONTAINER_ID).pipe(
-              Effect.catchCause(() => Effect.void),
-            );
-            const result = yield* Effect.ensuring(
+            const result = yield* withOverlayHidden(
+              page,
               session.snapshot(page, { viewportAware: !fullPage }),
-              evaluateRuntime(page, "showAgentOverlay", AGENT_OVERLAY_CONTAINER_ID).pipe(
-                Effect.catchCause(() => Effect.void),
-              ),
             );
             yield* session.updateLastSnapshot(result);
             return jsonResult({ tree: result.tree, refs: result.refs, stats: result.stats });
@@ -437,14 +428,9 @@ export const createBrowserMcpServer = <E>(
             };
           }
 
-          yield* evaluateRuntime(page, "hideAgentOverlay", AGENT_OVERLAY_CONTAINER_ID).pipe(
-            Effect.catchCause(() => Effect.void),
-          );
-          const buffer = yield* Effect.ensuring(
+          const buffer = yield* withOverlayHidden(
+            page,
             Effect.tryPromise(() => page.screenshot({ fullPage, scale: "css" })),
-            evaluateRuntime(page, "showAgentOverlay", AGENT_OVERLAY_CONTAINER_ID).pipe(
-              Effect.catchCause(() => Effect.void),
-            ),
           );
           yield* session.saveScreenshot(buffer);
           return imageResult(buffer.toString("base64"));

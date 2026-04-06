@@ -11,6 +11,7 @@ import {
   CLICK_ANIMATION_RESET_MS,
   MAX_ACTION_LOG_ENTRIES,
   TOOLTIP_FLIP_THRESHOLD_PX,
+  RAF_THROTTLE_INTERVAL_MS,
   getViewport,
   clampToViewport,
 } from "./constants";
@@ -78,7 +79,7 @@ const AgentOverlay = () => {
 
   useEffect(() => {
     if (!state.cursorSelector) return;
-    let rafId: number;
+    let timerId: ReturnType<typeof setTimeout> | undefined;
     let running = true;
     const trackCursor = () => {
       if (!running) return;
@@ -97,13 +98,15 @@ const AgentOverlay = () => {
             return { ...previous, cursorX: centerX, cursorY: centerY };
           });
         }
-      } catch {}
-      rafId = requestAnimationFrame(trackCursor);
+      } catch (error) {
+        console.debug("[expect-overlay] cursor tracking error:", error);
+      }
+      timerId = setTimeout(trackCursor, RAF_THROTTLE_INTERVAL_MS);
     };
-    rafId = requestAnimationFrame(trackCursor);
+    timerId = setTimeout(trackCursor, 0);
     return () => {
       running = false;
-      cancelAnimationFrame(rafId);
+      clearTimeout(timerId);
     };
   }, [state.cursorSelector]);
 
@@ -156,7 +159,7 @@ const AgentOverlay = () => {
       return;
     }
 
-    let rafId: number;
+    let timerId: ReturnType<typeof setTimeout> | undefined;
     let running = true;
     let previousJson = "";
     const computeRects = () => {
@@ -168,19 +171,21 @@ const AgentOverlay = () => {
           if (!element) continue;
           const box = element.getBoundingClientRect();
           rects.push({ x: box.x, y: box.y, width: box.width, height: box.height });
-        } catch {}
+        } catch (error) {
+          console.debug("[expect-overlay] highlight selector error:", error);
+        }
       }
       const json = JSON.stringify(rects);
       if (json !== previousJson) {
         previousJson = json;
         setHighlightRects(rects);
       }
-      rafId = requestAnimationFrame(computeRects);
+      timerId = setTimeout(computeRects, RAF_THROTTLE_INTERVAL_MS);
     };
-    rafId = requestAnimationFrame(computeRects);
+    timerId = setTimeout(computeRects, 0);
     return () => {
       running = false;
-      cancelAnimationFrame(rafId);
+      clearTimeout(timerId);
     };
   }, [state.highlightSelectors]);
 
@@ -192,7 +197,7 @@ const AgentOverlay = () => {
       return;
     }
 
-    let rafId: number;
+    let timerId: ReturnType<typeof setTimeout> | undefined;
     let running = true;
     let previousJson = "";
     const computeMarkers = () => {
@@ -204,7 +209,8 @@ const AgentOverlay = () => {
           if (!element) return { x: 0, y: 0, visible: false };
           const box = element.getBoundingClientRect();
           return { x: box.x + box.width / 2, y: box.y + box.height / 2, visible: true };
-        } catch {
+        } catch (error) {
+          console.debug("[expect-overlay] marker position error:", error);
           return { x: 0, y: 0, visible: false };
         }
       });
@@ -213,12 +219,12 @@ const AgentOverlay = () => {
         previousJson = json;
         setMarkerPositions(positions);
       }
-      rafId = requestAnimationFrame(computeMarkers);
+      timerId = setTimeout(computeMarkers, RAF_THROTTLE_INTERVAL_MS);
     };
-    rafId = requestAnimationFrame(computeMarkers);
+    timerId = setTimeout(computeMarkers, 0);
     return () => {
       running = false;
-      cancelAnimationFrame(rafId);
+      clearTimeout(timerId);
     };
   }, [state.actionLog]);
 
@@ -260,7 +266,8 @@ const AgentOverlay = () => {
       } else {
         setHoveredElementRect(undefined);
       }
-    } catch {
+    } catch (error) {
+      console.debug("[expect-overlay] hovered element lookup error:", error);
       setHoveredElementRect(undefined);
     }
   }, [hoveredAction, state.actionLog]);
@@ -506,7 +513,9 @@ export const updateCursor = (
           element.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
         }
       }
-    } catch {}
+    } catch (error) {
+      console.debug("[expect-overlay] scrollIntoView error:", error);
+    }
   }
 
   if (x >= 0 && y >= 0) {
@@ -576,7 +585,9 @@ export const logAction = (containerId: string, description: string, code: string
         selector = finder(element);
       }
     }
-  } catch {}
+  } catch (error) {
+    console.debug("[expect-overlay] logAction selector error:", error);
+  }
 
   setOverlayState((previous) => ({
     ...previous,

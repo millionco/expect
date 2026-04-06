@@ -1,4 +1,4 @@
-import { Effect, Option, Stream } from "effect";
+import { Effect, Option, Predicate, Stream } from "effect";
 import * as Atom from "effect/unstable/reactivity/Atom";
 import { ExecutedTestPlan, Executor, Git, Reporter, type ExecuteOptions } from "@expect/supervisor";
 import { Analytics } from "@expect/shared/observability";
@@ -127,14 +127,10 @@ export const executeFn = cliAtomRuntime.fn<ExecuteInput>()((input) =>
       Effect.gen(function* () {
         const analytics = yield* Analytics;
         const errorTag =
-          typeof error === "object" &&
-          error !== null &&
-          "_tag" in error &&
-          typeof error._tag === "string"
+          Predicate.isObject(error) && "_tag" in error && typeof error._tag === "string"
             ? error._tag
-            : // HACK: error is typed as unknown; cast needed for instanceof check
-              (error as Error) instanceof Error
-              ? (error as Error).constructor.name
+            : Predicate.isError(error)
+              ? error.constructor.name
               : "UnknownError";
         yield* analytics.capture("run:failed", {
           plan_id: "direct",

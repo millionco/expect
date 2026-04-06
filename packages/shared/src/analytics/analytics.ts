@@ -43,6 +43,10 @@ export class AnalyticsProvider extends ServiceMap.Service<
           properties: event.properties,
           distinctId: event.distinctId,
         }),
+      ).pipe(
+        Effect.catchTag("UnknownError", (cause) =>
+          Effect.logDebug("PostHog capture failed", { cause }),
+        ),
       ),
     identify: (params) =>
       Effect.sync(() => {
