@@ -1,7 +1,7 @@
 import path from "node:path";
 import type { Browser as PlaywrightBrowser, BrowserContext, Page } from "playwright";
 import type { eventWithTime } from "@rrweb/types";
-import { Config, Effect, Fiber, Layer, Option, Ref, Schedule, ServiceMap } from "effect";
+import { Config, Deferred, Effect, Fiber, Layer, Option, Ref, Schedule, ServiceMap } from "effect";
 import type { Cookie } from "@expect/cookies";
 import { FileSystem } from "effect/FileSystem";
 import { Browser } from "../browser";
@@ -134,6 +134,9 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
     const pollingFiberRef = yield* Ref.make<Fiber.Fiber<unknown> | undefined>(undefined);
     const latestRunStateRef = yield* Ref.make<ViewerRunState | undefined>(undefined);
     const preExtractedCookiesRef = yield* Ref.make<Cookie[] | undefined>(undefined);
+    const preExtractedCookiesDeferredRef = yield* Ref.make<
+      Deferred.Deferred<Cookie[] | undefined, never> | undefined
+    >(undefined);
     const savedScreenshotPathsRef = yield* Ref.make<string[]>([]);
 
     const saveScreenshot = Effect.fn("McpSession.saveScreenshot")(function* (buffer: Buffer) {
@@ -161,14 +164,30 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       );
     });
 
-    if (!cookiesDisabled) {
+    const startPreExtractCookies = Effect.fn("McpSession.startPreExtractCookies")(function* () {
+      if (cookiesDisabled) return;
+
+      const existingDeferred = yield* Ref.get(preExtractedCookiesDeferredRef);
+      if (existingDeferred) return;
+
+      const deferred = yield* Deferred.make<Cookie[] | undefined, never>();
+      yield* Ref.set(preExtractedCookiesDeferredRef, deferred);
+
       yield* browserService.preExtractCookies(cookieBrowserKeys).pipe(
         Effect.tap((cookies) => Ref.set(preExtractedCookiesRef, cookies)),
         Effect.tap((cookies) => Effect.logInfo("Cookies pre-extracted", { count: cookies.length })),
-        Effect.catchCause((cause) => Effect.logWarning("Cookie pre-extraction failed", { cause })),
+        Effect.catchCause((cause) =>
+          Effect.logWarning("Cookie pre-extraction failed", { cause }).pipe(
+            Effect.as(undefined as Cookie[] | undefined),
+          ),
+        ),
+        Effect.flatMap((cookies) => Deferred.succeed(deferred, cookies)),
+        Effect.ensuring(Ref.set(preExtractedCookiesDeferredRef, undefined)),
         Effect.forkDetach,
       );
-    }
+    });
+
+    yield* startPreExtractCookies();
 
     const resolveUrl = (url: string): string => {
       if (configuredBaseUrl && !url.startsWith("http://") && !url.startsWith("https://")) {
@@ -189,6 +208,23 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
 
     const requirePage = Effect.fn("McpSession.requirePage")(function* () {
       return (yield* requireSession()).page;
+    });
+
+    const resolveCookies = Effect.fn("McpSession.resolveCookies")(function* (
+      cookies: OpenOptions["cookies"],
+    ) {
+      if (cookies !== true) return cookies;
+
+      const preExtracted = yield* Ref.get(preExtractedCookiesRef);
+      if (preExtracted !== undefined) return preExtracted;
+
+      const sharedExtraction = yield* Ref.get(preExtractedCookiesDeferredRef);
+      if (!sharedExtraction) return true;
+
+      const sharedCookies = yield* Deferred.await(sharedExtraction);
+      if (sharedCookies !== undefined) return sharedCookies;
+
+      return true;
     });
 
     const navigate = Effect.fn("McpSession.navigate")(function* (
@@ -223,9 +259,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       yield* Effect.annotateCurrentSpan({ url });
       yield* Ref.set(savedScreenshotPathsRef, []);
 
-      const preExtracted = options.cookies ? yield* Ref.get(preExtractedCookiesRef) : undefined;
-      const cookiesOption =
-        preExtracted && preExtracted.length > 0 ? preExtracted : options.cookies;
+      const cookiesOption = yield* resolveCookies(options.cookies);
       const videoOutputDir = path.join(
         TMP_ARTIFACT_OUTPUT_DIRECTORY,
         PLAYWRIGHT_VIDEO_SUBDIRECTORY,
