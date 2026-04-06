@@ -55,9 +55,7 @@ export class AnalyticsProvider extends ServiceMap.Service<
         });
       }),
     flush: Effect.tryPromise(() => posthogClient.flush()).pipe(
-      Effect.catchTag("UnknownError", (cause) =>
-        Effect.logDebug("PostHog flush failed", { cause }),
-      ),
+      Effect.ignore({ log: "Debug", message: "PostHog flush failed" }),
     ),
   });
 

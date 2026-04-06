@@ -429,7 +429,7 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
       }
 
       yield* evaluateRuntime(page, "hideAgentOverlay", AGENT_OVERLAY_CONTAINER_ID).pipe(
-        Effect.catchCause(() => Effect.void),
+        Effect.ignore({ log: "Warn", message: "Failed to hide agent overlay for capture" }),
       );
       yield* injectOverlayLabels(page, labelPositions);
       return yield* Effect.ensuring(
@@ -439,10 +439,13 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
         }).pipe(Effect.map((screenshotBuffer) => ({ screenshot: screenshotBuffer, annotations }))),
         // HACK: overlay removal is best-effort cleanup — evaluateRuntime uses Effect.promise which defects on failure
         evaluateRuntime(page, "removeOverlay", OVERLAY_CONTAINER_ID).pipe(
-          Effect.catchCause(() => Effect.void),
+          Effect.ignore({ log: "Warn", message: "Failed to remove annotation overlay" }),
           Effect.tap(() =>
             evaluateRuntime(page, "showAgentOverlay", AGENT_OVERLAY_CONTAINER_ID).pipe(
-              Effect.catchCause(() => Effect.void),
+              Effect.ignore({
+                log: "Warn",
+                message: "Failed to show agent overlay after capture",
+              }),
             ),
           ),
         ),

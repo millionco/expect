@@ -41,7 +41,6 @@ interface CommanderOpts {
   agent?: AgentBackend;
   target?: Target;
   verbose?: boolean;
-  headed?: boolean;
   headless?: boolean;
   noCookies?: boolean;
   ci?: boolean;
@@ -64,7 +63,6 @@ const program = new Command()
   )
   .option("-t, --target <target>", "what to test: unstaged, branch, or changes", "changes")
   .option("--verbose", "enable verbose logging")
-  .option("--headed", "show a visible browser window during tests (default)")
   .option("--headless", "run browser in headless mode")
   .option("--no-cookies", "skip system browser cookie extraction")
   .option("--ci", "force CI mode: headless, no cookies, auto-yes, 30-minute timeout")
@@ -87,10 +85,7 @@ Examples:
   $ expect watch -m "test the login flow"           watch mode`,
   );
 
-const resolveBrowserHeaded = (opts: CommanderOpts): boolean => {
-  if (opts.headless) return false;
-  return opts.headed ?? true;
-};
+const resolveBrowserHeaded = (opts: CommanderOpts): boolean => !opts.headless;
 
 const seedStores = (opts: CommanderOpts, changesFor: ChangesFor) => {
   usePreferencesStore.setState({
@@ -215,7 +210,6 @@ program
   )
   .option("-t, --target <target>", "what to test: unstaged, branch, or changes", "changes")
   .option("--verbose", "enable verbose logging")
-  .option("--headed", "show a visible browser window during tests (default)")
   .option("--headless", "run browser in headless mode")
   .option("--no-cookies", "skip system browser cookie extraction")
   .option("-u, --url <urls...>", "base URL(s) for the dev server")

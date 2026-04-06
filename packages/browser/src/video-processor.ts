@@ -5,18 +5,18 @@ import { fileURLToPath } from "node:url";
 import { Effect, Schema } from "effect";
 import { FFMPEG_TIMEOUT_MS, FRAME_PADDING_PX } from "./constants";
 
-// HACK: resolve the wallpaper path using import.meta.url (works in ESM bundles)
-// with a fallback chain for different directory layouts. If none found, the framing
-// step gracefully skips since existsSync("") returns false.
+// HACK: resolve wallpaper relative to this file's location. The ../assets path
+// works for the standard monorepo layout; assets/ covers flat bundle output.
+// Returns "" if not found so frameWithWallpaper gracefully skips.
 export const DEFAULT_WALLPAPER_PATH = (() => {
   try {
     const currentDir = dirname(fileURLToPath(import.meta.url));
-    const candidates = [
-      join(currentDir, "..", "assets", "wallpaper.webp"),
-      join(currentDir, "assets", "wallpaper.webp"),
-      join(dirname(process.argv[1] ?? ""), "assets", "wallpaper.webp"),
-    ];
-    return candidates.find(existsSync) ?? "";
+    return (
+      [
+        join(currentDir, "..", "assets", "wallpaper.webp"),
+        join(currentDir, "assets", "wallpaper.webp"),
+      ].find(existsSync) ?? ""
+    );
   } catch {
     return "";
   }
@@ -28,9 +28,9 @@ const MPDECIMATE_FRAC = "0.1";
 
 export class VideoProcessError extends Schema.ErrorClass<VideoProcessError>("VideoProcessError")({
   _tag: Schema.tag("VideoProcessError"),
-  cause: Schema.String,
+  cause: Schema.Unknown,
 }) {
-  message = `Video processing failed: ${this.cause}`;
+  message = `Video processing failed: ${String(this.cause)}`;
 }
 
 // HACK: require() instead of import because @ffmpeg-installer/ffmpeg uses
@@ -86,7 +86,7 @@ export const stripIdleFrames = Effect.fn("stripIdleFrames")(function* (
     yield* Effect.logDebug("ffmpeg not available, copying video without processing");
     yield* Effect.try({
       try: () => copyFileSync(inputPath, outputPath),
-      catch: (error) => new VideoProcessError({ cause: String(error) }),
+      catch: (error) => new VideoProcessError({ cause: error }),
     });
     return;
   }
@@ -121,7 +121,7 @@ export const frameWithWallpaper = Effect.fn("frameWithWallpaper")(function* (
     yield* Effect.logDebug("Wallpaper not found, copying video without framing");
     yield* Effect.try({
       try: () => copyFileSync(inputPath, outputPath),
-      catch: (error) => new VideoProcessError({ cause: String(error) }),
+      catch: (error) => new VideoProcessError({ cause: error }),
     });
     return;
   }
@@ -131,7 +131,7 @@ export const frameWithWallpaper = Effect.fn("frameWithWallpaper")(function* (
     yield* Effect.logDebug("ffmpeg not available, copying video without framing");
     yield* Effect.try({
       try: () => copyFileSync(inputPath, outputPath),
-      catch: (error) => new VideoProcessError({ cause: String(error) }),
+      catch: (error) => new VideoProcessError({ cause: error }),
     });
     return;
   }
@@ -171,7 +171,7 @@ export const concatVideos = Effect.fn("concatVideos")(function* (
   if (validPaths.length === 1) {
     yield* Effect.try({
       try: () => copyFileSync(validPaths[0], outputPath),
-      catch: (error) => new VideoProcessError({ cause: String(error) }),
+      catch: (error) => new VideoProcessError({ cause: error }),
     });
     return;
   }
@@ -181,7 +181,7 @@ export const concatVideos = Effect.fn("concatVideos")(function* (
     yield* Effect.logDebug("ffmpeg not available, using last video segment");
     yield* Effect.try({
       try: () => copyFileSync(validPaths[validPaths.length - 1], outputPath),
-      catch: (error) => new VideoProcessError({ cause: String(error) }),
+      catch: (error) => new VideoProcessError({ cause: error }),
     });
     return;
   }
@@ -194,7 +194,7 @@ export const concatVideos = Effect.fn("concatVideos")(function* (
     .join("\n");
   yield* Effect.try({
     try: () => writeFileSync(concatListPath, concatList),
-    catch: (error) => new VideoProcessError({ cause: String(error) }),
+    catch: (error) => new VideoProcessError({ cause: error }),
   });
 
   yield* Effect.ensuring(
@@ -213,7 +213,7 @@ export const concatVideos = Effect.fn("concatVideos")(function* (
     ]),
     Effect.try({
       try: () => unlinkSync(concatListPath),
-      catch: (error) => new VideoProcessError({ cause: String(error) }),
+      catch: (error) => new VideoProcessError({ cause: error }),
     }).pipe(
       Effect.catchTag("VideoProcessError", (error) =>
         Effect.logDebug("Failed to clean up concat list file", { error: error.message }),

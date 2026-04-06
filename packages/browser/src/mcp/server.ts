@@ -3,11 +3,13 @@ import path from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod/v4";
+import type { Page } from "playwright";
 import { Effect, Option, type ManagedRuntime } from "effect";
 import { evaluateRuntime } from "../utils/evaluate-runtime";
 import { runAccessibilityAudit } from "../accessibility";
 import { formatPerformanceTrace } from "../performance-trace";
 import { AGENT_OVERLAY_CONTAINER_ID } from "../constants";
+import type { SnapshotResult } from "../types";
 import { McpSession } from "./mcp-session";
 import { DUPLICATE_REQUEST_WINDOW_MS, TMP_ARTIFACT_OUTPUT_DIRECTORY } from "./constants";
 import { registerRulesResources } from "./rules-resources";
@@ -62,26 +64,26 @@ const extractCssSelector = (code: string): string | undefined => {
 };
 
 const safeOverlayEval = <K extends keyof import("../generated/runtime-types").ExpectRuntime>(
-  page: import("playwright").Page,
+  page: Page,
   method: K,
   ...args: Parameters<import("../generated/runtime-types").ExpectRuntime[K]>
 ) => evaluateRuntime(page, method, ...args).pipe(Effect.catchCause(() => Effect.void));
 
-const updateCursorLabel = (page: import("playwright").Page, label: string) =>
+const updateCursorLabel = (page: Page, label: string) =>
   safeOverlayEval(page, "updateCursor", AGENT_OVERLAY_CONTAINER_ID, -1, -1, label);
 
-const hideOverlay = (page: import("playwright").Page) =>
+const hideOverlay = (page: Page) =>
   safeOverlayEval(page, "hideAgentOverlay", AGENT_OVERLAY_CONTAINER_ID);
 
-const showOverlay = (page: import("playwright").Page) =>
+const showOverlay = (page: Page) =>
   safeOverlayEval(page, "showAgentOverlay", AGENT_OVERLAY_CONTAINER_ID);
 
-const withOverlayHidden = <A, E>(page: import("playwright").Page, effect: Effect.Effect<A, E>) =>
+const withOverlayHidden = <A, E>(page: Page, effect: Effect.Effect<A, E>) =>
   Effect.ensuring(hideOverlay(page).pipe(Effect.flatMap(() => effect)), showOverlay(page));
 
 const moveCursorToRef = Effect.fn("moveCursorToRef")(function* (
-  page: import("playwright").Page,
-  snapshot: import("../types").SnapshotResult,
+  page: Page,
+  snapshot: SnapshotResult,
   refId: string,
   label: string,
 ) {
@@ -114,7 +116,7 @@ const moveCursorToRef = Effect.fn("moveCursorToRef")(function* (
 });
 
 const moveCursorToSelector = Effect.fn("moveCursorToSelector")(function* (
-  page: import("playwright").Page,
+  page: Page,
   selector: string,
   label: string,
 ) {
@@ -151,12 +153,12 @@ const moveCursorToSelector = Effect.fn("moveCursorToSelector")(function* (
   }
 });
 
-const clearRefHighlights = (page: import("playwright").Page) =>
+const clearRefHighlights = (page: Page) =>
   safeOverlayEval(page, "clearHighlights", AGENT_OVERLAY_CONTAINER_ID);
 
 const highlightRefsInCode = Effect.fn("highlightRefsInCode")(function* (
-  page: import("playwright").Page,
-  snapshot: import("../types").SnapshotResult,
+  page: Page,
+  snapshot: SnapshotResult,
   code: string,
 ) {
   const matches = [...code.matchAll(REF_PATTERN_GLOBAL)];
