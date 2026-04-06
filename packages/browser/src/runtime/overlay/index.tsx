@@ -240,6 +240,20 @@ const AgentOverlay = () => {
     return undefined;
   })();
 
+  const hoveredElementRect = (() => {
+    if (activeMarkerIndex === undefined) return undefined;
+    const entry = state.actionLog[activeMarkerIndex];
+    if (!entry?.selector) return undefined;
+    try {
+      const element = document.querySelector(entry.selector);
+      if (!element) return undefined;
+      const box = element.getBoundingClientRect();
+      return { x: box.x, y: box.y, width: box.width, height: box.height };
+    } catch {
+      return undefined;
+    }
+  })();
+
   const hasLabel = Boolean(state.label);
   const showCursor = hasLabel || state.cursorPositioned;
   const isExpanded = state.toolbarExpanded || hasLabel;
@@ -379,6 +393,20 @@ const AgentOverlay = () => {
             </div>
           );
         })}
+
+      {hoveredElementRect && (
+        <div
+          className="fixed pointer-events-none z-[2147483646] rounded-[3px]"
+          style={{
+            left: `${hoveredElementRect.x}px`,
+            top: `${hoveredElementRect.y}px`,
+            width: `${hoveredElementRect.width}px`,
+            height: `${hoveredElementRect.height}px`,
+            border: `2px solid rgb(${SRGB_BLUE})`,
+            background: `rgba(${SRGB_BLUE}, 0.08)`,
+          }}
+        />
+      )}
 
       {state.overlayVisible &&
         highlightRects.map((rect, index) => (
