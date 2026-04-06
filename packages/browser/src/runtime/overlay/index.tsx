@@ -282,8 +282,14 @@ const AgentOverlay = () => {
 
       <div className="fixed bottom-5 right-5 z-[2147483647] pointer-events-auto font-[system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,sans-serif]">
         <div
-          className={`relative flex items-center justify-center h-[44px] rounded-[22px] bg-[#1a1a1a] text-white shadow-[0_2px_8px_rgba(0,0,0,0.2),0_4px_16px_rgba(0,0,0,0.1)] transition-[width] duration-400 ease-[cubic-bezier(0.19,1,0.22,1)] ${isExpanded ? "w-auto px-1.5" : "w-[44px] cursor-pointer hover:bg-[#2a2a2a] active:scale-95"}`}
-          onClick={isExpanded ? undefined : toggleToolbar}
+          className={`relative flex items-center justify-center h-[44px] rounded-[22px] bg-[#1a1a1a] text-white shadow-[0_2px_8px_rgba(0,0,0,0.2),0_4px_16px_rgba(0,0,0,0.1)] transition-[width] duration-400 ease-[cubic-bezier(0.19,1,0.22,1)] ${isExpanded ? "w-auto px-1.5" : `w-[44px] ${hasLabel || state.actionLog.length > 0 ? "cursor-pointer hover:bg-[#2a2a2a] active:scale-95" : ""}`}`}
+          onClick={
+            isExpanded
+              ? undefined
+              : hasLabel || state.actionLog.length > 0
+                ? toggleToolbar
+                : undefined
+          }
         >
           {state.actionLog.length > 0 && !isExpanded && (
             <div
