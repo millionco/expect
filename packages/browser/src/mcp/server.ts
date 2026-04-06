@@ -213,7 +213,7 @@ export const createBrowserMcpServer = <E>(
           const sessionData = yield* session.requireSession();
           yield* clearRefHighlights(sessionData.page);
 
-          const cursorLabel = description ?? "Running code";
+          const cursorLabel = description ?? "Working…";
           const refMatch = code.match(REF_PATTERN);
 
           if (refMatch && sessionData.lastSnapshot) {
