@@ -477,6 +477,10 @@ export const updateCursor = (
     if (!setOverlayState) return;
   }
 
+  // HACK: scroll the target element into view when the cursor moves to it.
+  // This may interfere with pages that have custom scroll behavior, scroll
+  // snapping, or infinite scroll listeners. Revert this block if it causes
+  // unexpected scroll jumps or breaks page interactions.
   if (selector) {
     try {
       const element = document.querySelector(selector);
