@@ -82,7 +82,7 @@ const extractCookiesForProfile = Effect.fn("Browser.extractCookiesForProfile")(
   }),
 );
 
-const dedupCookies = (cookies: Cookie[]) =>
+const dedupCookies = (cookies: readonly Cookie[]) =>
   Arr.dedupeWith(
     cookies,
     (cookieA, cookieB) =>
@@ -91,17 +91,6 @@ const dedupCookies = (cookies: Cookie[]) =>
       cookieA.path === cookieB.path,
   );
 
-const isSiblingProfile = (profile: BrowserProfile, reference: BrowserProfile) => {
-  if (profile._tag !== reference._tag) return false;
-  if (profile._tag === "ChromiumBrowser" && reference._tag === "ChromiumBrowser") {
-    return profile.key === reference.key && profile.profilePath !== reference.profilePath;
-  }
-  if (profile._tag === "FirefoxBrowser" && reference._tag === "FirefoxBrowser") {
-    return profile.profilePath !== reference.profilePath;
-  }
-  return false;
-};
-
 const extractDefaultBrowserCookies = Effect.fn("Browser.extractDefaultBrowserCookies")(function* (
   url: string,
   preferredProfile: BrowserProfile | undefined,
@@ -109,23 +98,8 @@ const extractDefaultBrowserCookies = Effect.fn("Browser.extractDefaultBrowserCoo
   if (!preferredProfile) return [];
 
   const cookiesService = yield* Cookies;
-  const browsers = yield* Browsers;
-
-  const allProfiles = yield* browsers.list.pipe(
-    Effect.catchTag("ListBrowsersError", () => Effect.succeed<BrowserProfile[]>([])),
-  );
-
-  const results = yield* Effect.forEach(
-    [
-      preferredProfile,
-      ...allProfiles.filter((profile) => isSiblingProfile(profile, preferredProfile)),
-    ],
-    (profile) => extractCookiesForProfile(cookiesService, profile),
-    { concurrency: "unbounded" },
-  );
-
-  // Preferred profile is first, so its cookies win when multiple profiles share the same cookie identity.
-  return dedupCookies(results.flat());
+  const cookies = yield* extractCookiesForProfile(cookiesService, preferredProfile);
+  return dedupCookies(cookies);
 }, Effect.provide(cookiesLayer));
 
 const extractCookiesForBrowserKeys = Effect.fn("Browser.extractCookiesForBrowserKeys")(function* (
@@ -188,6 +162,7 @@ const injectOverlayLabels = (page: Page, labels: Array<{ label: number; x: numbe
   evaluateRuntime(page, "injectOverlayLabels", OVERLAY_CONTAINER_ID, labels);
 
 export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
+  // oxlint-disable-next-line require-yield
   make: Effect.gen(function* () {
     const createPage = Effect.fn("Browser.createPage")(function* (
       url: string | undefined,

@@ -155,82 +155,20 @@ describe("Browser.createPage cookie reuse", () => {
     cookieExtractMock.mockReturnValue(Effect.succeed(profileCookies));
   });
 
-  it("extracts cookies from all profiles of the same browser", async () => {
+  it("extracts cookies only from the preferred profile", async () => {
     cookieExtractMock.mockReturnValue(Effect.succeed(profileCookies));
 
     await runBrowser((browser) => browser.createPage("https://github.com", { cookies: true }));
 
     expect(newContextMock).toHaveBeenCalledWith({ locale: "en-US" });
     expect(cookieExtractMock).toHaveBeenCalledWith(heliumProfile);
-    expect(cookieExtractMock).toHaveBeenCalledWith(workProfile);
+    expect(cookieExtractMock).not.toHaveBeenCalledWith(workProfile);
     expect(addCookiesMock).toHaveBeenCalledWith(
       profileCookies.map((cookie) => cookie.playwrightFormat),
     );
   });
 
-  it("merges unique cookies across profiles", async () => {
-    const workCookies = [
-      mockCookie({
-        name: "wos-session",
-        value: "work-session-token",
-        domain: "localhost",
-        path: "/",
-        secure: true,
-        httpOnly: true,
-        sameSite: "Lax",
-      }),
-    ];
-
-    cookieExtractMock.mockImplementation((profile: unknown) => {
-      if (profile === heliumProfile) return Effect.succeed(profileCookies);
-      return Effect.succeed(workCookies);
-    });
-
-    await runBrowser((browser) => browser.createPage("https://github.com", { cookies: true }));
-
-    expect(addCookiesMock).toHaveBeenCalledWith(
-      [...profileCookies, ...workCookies].map((cookie) => cookie.playwrightFormat),
-    );
-  });
-
-  it("preferred profile cookies win when duplicates exist across profiles", async () => {
-    const preferredVersion = [
-      mockCookie({
-        name: "session",
-        value: "preferred-value",
-        domain: "example.com",
-        path: "/",
-        secure: true,
-        httpOnly: true,
-        sameSite: "Lax",
-      }),
-    ];
-
-    const otherVersion = [
-      mockCookie({
-        name: "session",
-        value: "other-value",
-        domain: "example.com",
-        path: "/",
-        secure: true,
-        httpOnly: true,
-        sameSite: "Lax",
-      }),
-    ];
-
-    cookieExtractMock.mockImplementation((profile: unknown) => {
-      if (profile === heliumProfile) return Effect.succeed(preferredVersion);
-      return Effect.succeed(otherVersion);
-    });
-
-    await runBrowser((browser) => browser.createPage("https://github.com", { cookies: true }));
-
-    expect(addCookiesMock).toHaveBeenCalledWith(
-      preferredVersion.map((cookie) => cookie.playwrightFormat),
-    );
-  });
-
-  it("uses other profiles when preferred returns no cookies", async () => {
+  it("does not fall back to sibling profiles when the preferred profile is empty", async () => {
     cookieExtractMock.mockImplementation((profile: unknown) => {
       if (profile === heliumProfile) return Effect.succeed([]);
       return Effect.succeed(fallbackCookies);
@@ -238,9 +176,9 @@ describe("Browser.createPage cookie reuse", () => {
 
     await runBrowser((browser) => browser.createPage("https://github.com", { cookies: true }));
 
-    expect(addCookiesMock).toHaveBeenCalledWith(
-      fallbackCookies.map((cookie) => cookie.playwrightFormat),
-    );
+    expect(cookieExtractMock).toHaveBeenCalledTimes(1);
+    expect(cookieExtractMock).toHaveBeenCalledWith(heliumProfile);
+    expect(addCookiesMock).toHaveBeenCalledWith([]);
   });
 });
 
