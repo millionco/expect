@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 // eslint-disable-next-line no-restricted-imports -- overlay runs in injected runtime, not the CLI React app; React Compiler doesn't apply
 import { useState, useEffect, useRef } from "react";
+import { Toaster, toast } from "sonner";
 // @ts-expect-error -- CSS imported as text via esbuild cssTextPlugin
 import cssText from "../../../dist/overlay.css";
 
@@ -289,9 +290,7 @@ const GuardPrompt = ({ onCancel, onConfirm }: GuardPromptProps) => (
   </div>
 );
 
-const TOAST_BOTTOM_PX = 16;
-const TOAST_RIGHT_PX = 16;
-const TOAST_MAX_WIDTH_PX = 320;
+const SONNER_TOAST_ID = "expect-agent-toast";
 
 const AgentOverlay = () => {
   const [state, setState] = useState<OverlayState>(loadInitialState);
@@ -468,9 +467,22 @@ const AgentOverlay = () => {
     ? clampToViewport(state.cursorY - CURSOR_HEIGHT_PX / 2, CURSOR_HEIGHT_PX, viewport.height, 0)
     : viewport.height - CURSOR_HEIGHT_PX - VIEWPORT_PADDING_PX;
 
+  const displayLabel = state.userInControl ? "You're in control" : state.label;
+
+  useEffect(() => {
+    if (!displayLabel) {
+      toast.dismiss(SONNER_TOAST_ID);
+      return;
+    }
+    toast(displayLabel, {
+      id: SONNER_TOAST_ID,
+      duration: Infinity,
+      icon: <SpiralSpinner visible={Boolean(displayLabel)} />,
+    });
+  }, [displayLabel]);
+
   const hasLabel = Boolean(state.label);
   const showCursor = (hasLabel || state.cursorPositioned) && !state.userInControl;
-  const displayLabel = state.userInControl ? "You're in control" : state.label;
 
   return (
     <>
@@ -519,22 +531,23 @@ const AgentOverlay = () => {
         <CursorSvg />
       </div>
 
-      <div
-        className="fixed pointer-events-none z-[2147483647] flex items-center gap-2.5 bg-expect-blue text-white text-[13px] font-sans font-[450] py-2.5 px-4 rounded-xl leading-[1.4] whitespace-pre-wrap break-words shadow-[0_4px_16px_rgba(0,0,0,0.3)]"
-        style={{
-          maxWidth: `${TOAST_MAX_WIDTH_PX}px`,
-          right: `${TOAST_RIGHT_PX}px`,
-          bottom: `${TOAST_BOTTOM_PX}px`,
-          opacity: displayLabel ? 1 : 0,
-          transform: displayLabel ? "translateY(0)" : "translateY(8px)",
-          transition: "opacity 200ms ease, transform 200ms ease",
+      <Toaster
+        position="bottom-right"
+        visibleToasts={3}
+        toastOptions={{
+          style: {
+            background: `rgb(${SRGB_BLUE})`,
+            color: "white",
+            border: "none",
+            fontSize: "13px",
+            fontFamily: "system-ui, sans-serif",
+            fontWeight: 450,
+            boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
+            borderRadius: "12px",
+            pointerEvents: "none",
+          },
         }}
-      >
-        <SpiralSpinner visible={Boolean(displayLabel)} />
-        <span className="bg-[linear-gradient(90deg,rgba(255,255,255,0.85)_0%,rgba(255,255,255,1)_50%,rgba(255,255,255,0.85)_100%)] bg-[length:200px_100%] bg-clip-text text-transparent animate-[expect-shimmer_3s_linear_infinite]">
-          {displayLabel}
-        </span>
-      </div>
+      />
 
       {highlightRects.map((rect, index) => (
         <div
