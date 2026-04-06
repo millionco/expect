@@ -275,7 +275,7 @@ const AgentOverlay = () => {
       {state.overlayVisible && (
         <div
           key={state.clickCount}
-          className="fixed pointer-events-none z-[2147483647] will-change-[left,top] animate-[expect-cursor-glow_2s_ease-in-out_infinite]"
+          className="fixed pointer-events-none z-[2147483647] will-change-[left,top]"
           style={{
             width: `${CURSOR_SIZE_PX}px`,
             height: `${CURSOR_HEIGHT_PX}px`,
@@ -284,7 +284,9 @@ const AgentOverlay = () => {
             opacity: showCursor ? 1 : 0,
             transition: "opacity 150ms ease",
             animation:
-              state.cursorAction === "click" ? "expect-cursor-click 0.2s ease-out 1" : "none",
+              state.cursorAction === "click"
+                ? "expect-cursor-glow 2s ease-in-out infinite, expect-cursor-click 0.2s ease-out 1"
+                : "expect-cursor-glow 2s ease-in-out infinite",
           }}
         >
           <CursorIcon shape={state.cursorAction === "type" ? "text" : cursorShape} />
