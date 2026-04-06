@@ -19,6 +19,7 @@ import {
   loadInitialState,
   clearSaveCursorTimeout,
 } from "./state";
+import { finder } from "@medv/finder";
 import { CursorIcon, detectCursorShape } from "./cursors";
 import { SpiralSpinner } from "./spiral-spinner";
 import { Glow } from "./glow";
@@ -134,6 +135,45 @@ const AgentOverlay = () => {
     };
   }, [state.highlightSelectors]);
 
+  interface MarkerPosition {
+    x: number;
+    y: number;
+    visible: boolean;
+  }
+
+  const [markerPositions, setMarkerPositions] = useState<MarkerPosition[]>([]);
+
+  useEffect(() => {
+    if (state.actionLog.length === 0) {
+      setMarkerPositions([]);
+      return;
+    }
+
+    let rafId: number;
+    let running = true;
+    const computeMarkers = () => {
+      if (!running) return;
+      const positions: MarkerPosition[] = state.actionLog.map((entry) => {
+        if (!entry.selector) return { x: 0, y: 0, visible: false };
+        try {
+          const element = document.querySelector(entry.selector);
+          if (!element) return { x: 0, y: 0, visible: false };
+          const box = element.getBoundingClientRect();
+          return { x: box.x + box.width / 2, y: box.y + box.height / 2, visible: true };
+        } catch {
+          return { x: 0, y: 0, visible: false };
+        }
+      });
+      setMarkerPositions(positions);
+      rafId = requestAnimationFrame(computeMarkers);
+    };
+    rafId = requestAnimationFrame(computeMarkers);
+    return () => {
+      running = false;
+      cancelAnimationFrame(rafId);
+    };
+  }, [state.actionLog]);
+
   const viewport = getViewport();
   const cursorX = state.cursorPositioned
     ? clampToViewport(state.cursorX - CURSOR_SIZE_PX / 2, CURSOR_SIZE_PX, viewport.width, 0)
@@ -222,96 +262,96 @@ const AgentOverlay = () => {
         </div>
       </div>
 
-      {state.actionLog.map(
-        (action, index) =>
-          action.x >= 0 &&
-          action.y >= 0 && (
-            <div
-              key={`action-${index}`}
-              className="fixed z-[2147483646]"
-              style={{
-                left: `${action.x}px`,
-                top: `${action.y}px`,
-                width: "22px",
-                height: "22px",
-                borderRadius: "50%",
-                background: `rgb(${SRGB_BLUE})`,
-                color: "#fff",
-                fontSize: "11px",
-                fontWeight: 600,
-                fontFamily:
-                  "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 2px 6px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(0,0,0,0.04)",
-                pointerEvents: "auto",
-                cursor: "pointer",
-                userSelect: "none",
-                transform: `translate(-50%, -50%)${hoveredAction === index ? " scale(1.1)" : ""}`,
-                transition: "background-color 0.15s ease, transform 0.1s ease",
-                animation: "expect-marker-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both",
-              }}
-              onMouseEnter={() => setHoveredAction(index)}
-              onMouseLeave={() => setHoveredAction(undefined)}
-            >
-              {index + 1}
-              {hoveredAction === index && (
-                <div
+      {state.actionLog.map((action, index) => {
+        const position = markerPositions[index];
+        if (!position?.visible) return undefined;
+        return (
+          <div
+            key={`action-${index}`}
+            className="fixed z-[2147483646]"
+            style={{
+              left: `${position.x}px`,
+              top: `${position.y}px`,
+              width: "22px",
+              height: "22px",
+              borderRadius: "50%",
+              background: `rgb(${SRGB_BLUE})`,
+              color: "#fff",
+              fontSize: "11px",
+              fontWeight: 600,
+              fontFamily:
+                "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(0,0,0,0.04)",
+              pointerEvents: "auto",
+              cursor: "pointer",
+              userSelect: "none",
+              transform: `translate(-50%, -50%)${hoveredAction === index ? " scale(1.1)" : ""}`,
+              transition: `left ${CURSOR_TRANSITION_MS}ms cubic-bezier(0.25, 1, 0.5, 1), top ${CURSOR_TRANSITION_MS}ms cubic-bezier(0.25, 1, 0.5, 1), background-color 0.15s ease, transform 0.1s ease`,
+              animation: "expect-marker-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both",
+            }}
+            onMouseEnter={() => setHoveredAction(index)}
+            onMouseLeave={() => setHoveredAction(undefined)}
+          >
+            {index + 1}
+            {hoveredAction === index && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 10px)",
+                  left: "50%",
+                  transform: "translateX(-50%) scale(0.909)",
+                  background: "#1a1a1a",
+                  color: "#fff",
+                  padding: "8px 12px",
+                  borderRadius: "12px",
+                  fontFamily:
+                    "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                  fontWeight: 400,
+                  fontSize: "13px",
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.08)",
+                  minWidth: "120px",
+                  maxWidth: "280px",
+                  pointerEvents: "none",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  lineHeight: 1.4,
+                  animation: "expect-tooltip-in 0.1s ease-out forwards",
+                }}
+              >
+                <span
                   style={{
-                    position: "absolute",
-                    top: "calc(100% + 10px)",
-                    left: "50%",
-                    transform: "translateX(-50%) scale(0.909)",
-                    background: "#1a1a1a",
-                    color: "#fff",
-                    padding: "8px 12px",
-                    borderRadius: "12px",
-                    fontFamily:
-                      "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                    fontWeight: 400,
-                    fontSize: "13px",
-                    boxShadow: "0 4px 20px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.08)",
-                    minWidth: "120px",
-                    maxWidth: "280px",
-                    pointerEvents: "none",
-                    whiteSpace: "nowrap",
+                    display: "block",
+                    fontSize: "12px",
+                    fontStyle: "italic",
+                    color: "rgba(255,255,255,0.6)",
+                    marginBottom: "4px",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
-                    lineHeight: 1.4,
-                    animation: "expect-tooltip-in 0.1s ease-out forwards",
                   }}
                 >
-                  <span
-                    style={{
-                      display: "block",
-                      fontSize: "12px",
-                      fontStyle: "italic",
-                      color: "rgba(255,255,255,0.6)",
-                      marginBottom: "4px",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {action.description}
-                  </span>
-                  <span
-                    style={{
-                      display: "block",
-                      fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace",
-                      fontSize: "11px",
-                      color: "rgba(255,255,255,0.8)",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {action.code.split("\n")[0]}
-                  </span>
-                </div>
-              )}
-            </div>
-          ),
-      )}
+                  {action.description}
+                </span>
+                <span
+                  style={{
+                    display: "block",
+                    fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace",
+                    fontSize: "11px",
+                    color: "rgba(255,255,255,0.8)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {action.code.split("\n")[0]}
+                </span>
+              </div>
+            )}
+          </div>
+        );
+      })}
 
       {highlightRects.map((rect, index) => (
         <div
@@ -415,11 +455,18 @@ export const logAction = (containerId: string, description: string, code: string
     if (!setOverlayState) return;
   }
 
-  setOverlayState((previous) => ({
-    ...previous,
-    actionLog: [
-      ...previous.actionLog,
-      { description, code, x: previous.cursorX, y: previous.cursorY },
-    ],
-  }));
+  setOverlayState((previous) => {
+    let selector = "";
+    try {
+      const element = document.elementFromPoint(previous.cursorX, previous.cursorY);
+      if (element && !element.closest(`[data-expect-overlay]`)) {
+        selector = finder(element);
+      }
+    } catch {}
+
+    return {
+      ...previous,
+      actionLog: [...previous.actionLog, { description, code, selector }],
+    };
+  });
 };

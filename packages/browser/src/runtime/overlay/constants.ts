@@ -18,8 +18,7 @@ export interface HighlightRect {
 export interface ActionLogEntry {
   description: string;
   code: string;
-  x: number;
-  y: number;
+  selector: string;
 }
 
 export interface OverlayState {
