@@ -1,6 +1,6 @@
 import path from "node:path";
 import type { Browser as PlaywrightBrowser, BrowserContext, Page } from "playwright";
-import { Config, Effect, Layer, Option, Ref, ServiceMap } from "effect";
+import { Config, Deferred, Effect, Layer, Option, Ref, ServiceMap } from "effect";
 import type { Cookie } from "@expect/cookies";
 import { FileSystem } from "effect/FileSystem";
 import { Browser } from "../browser";

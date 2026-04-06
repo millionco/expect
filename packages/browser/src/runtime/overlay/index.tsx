@@ -539,7 +539,6 @@ export const initAgentOverlay = (containerId: string): void => {
 
   const host = document.createElement("div");
   host.id = containerId;
-  host.setAttribute("data-rrweb-ignore", "true");
   host.setAttribute("data-expect-overlay", "true");
 
   const shadow = host.attachShadow({ mode: "open" });

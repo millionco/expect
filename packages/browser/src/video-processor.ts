@@ -38,12 +38,16 @@ export class VideoProcessError extends Schema.ErrorClass<VideoProcessError>("Vid
 // HACK: require() instead of import because @ffmpeg-installer/ffmpeg uses
 // CJS-only exports with a dynamic platform-specific binary path that can't
 // be statically resolved by ESM import at build time.
+let cachedFfmpegPath: string | undefined | false;
 const resolveFfmpegPath = (): string | undefined => {
+  if (cachedFfmpegPath !== undefined) return cachedFfmpegPath || undefined;
   try {
     const binaryPath = (require("@ffmpeg-installer/ffmpeg") as { path: string }).path;
     execFileSync(binaryPath, ["-version"], { timeout: 5_000, stdio: "ignore" });
+    cachedFfmpegPath = binaryPath;
     return binaryPath;
   } catch {
+    cachedFfmpegPath = false;
     return undefined;
   }
 };
@@ -65,6 +69,9 @@ export const runFfmpeg = Effect.fn("runFfmpeg")(function* (ffmpegBinary: string,
   });
 });
 
+// HACK: not currently called in the close handler because mpdecimate is too
+// aggressive for pages with CSS animations (glow, spinner). Kept for future
+// use when we find better idle-detection thresholds.
 export const stripIdleFrames = Effect.fn("stripIdleFrames")(function* (
   inputPath: string,
   outputPath: string,
@@ -170,7 +177,9 @@ export const concatVideos = Effect.fn("concatVideos")(function* (
   yield* Effect.logInfo("Concatenating video segments", { count: validPaths.length });
 
   const concatListPath = `${outputPath}.concat.txt`;
-  const concatList = validPaths.map((filePath) => `file '${filePath}'`).join("\n");
+  const concatList = validPaths
+    .map((filePath) => `file '${filePath.replaceAll("'", "'\\''")}'`)
+    .join("\n");
   yield* Effect.sync(() => writeFileSync(concatListPath, concatList));
 
   yield* runFfmpeg(ffmpegBinary, [
