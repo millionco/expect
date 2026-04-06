@@ -390,6 +390,27 @@ const AgentOverlay = () => {
   }, []);
 
   useEffect(() => {
+    if (state.userInControl) {
+      document.body.style.cursor = "";
+      return;
+    }
+    document.body.style.cursor = "not-allowed";
+
+    const onClickGuard = (event: MouseEvent) => {
+      if ((event.target as Element)?.closest?.(`[data-expect-overlay]`)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setState((previous) => ({ ...previous, showPrompt: !previous.showPrompt }));
+    };
+
+    document.addEventListener("click", onClickGuard, true);
+    return () => {
+      document.body.style.cursor = "";
+      document.removeEventListener("click", onClickGuard, true);
+    };
+  }, [state.userInControl]);
+
+  useEffect(() => {
     try {
       if (state.userTookControl) {
         sessionStorage.setItem(USER_CONTROL_KEY, "true");
@@ -401,10 +422,6 @@ const AgentOverlay = () => {
       }
     } catch {}
   }, [state.userInControl, state.userTookControl]);
-
-  const handleGuardClick = () => {
-    setState((previous) => ({ ...previous, showPrompt: !previous.showPrompt }));
-  };
 
   const handleCancelPrompt = () => {
     setState((previous) => ({ ...previous, showPrompt: false }));
@@ -475,11 +492,6 @@ const AgentOverlay = () => {
 
   return (
     <>
-      <div
-        className={`fixed inset-0 z-[2147483646] bg-transparent ${state.userInControl ? "pointer-events-none" : "pointer-events-auto cursor-not-allowed"}`}
-        onClick={handleGuardClick}
-      />
-
       {state.userInControl && (
         <button
           onClick={handleReturnControl}
@@ -619,6 +631,7 @@ export const showAgentOverlay = (containerId: string): void => {
 
 export const destroyAgentOverlay = (containerId: string): void => {
   clearTimeout(saveCursorTimeout);
+  document.body.style.cursor = "";
   document.getElementById(containerId)?.remove();
   setOverlayState = undefined;
 };
