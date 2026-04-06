@@ -8,29 +8,83 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Calligraph } from "calligraph";
+import { useDialKit, DialRoot } from "dialkit";
+import "dialkit/styles.css";
 import { ClaudeSpinner } from "./claude-spinner";
 
-const CODING_DURATION_MS = 1200;
-const SLIDE_DELAY_MS = 650;
-const DIFF_DURATION_MS = 1400;
-const CURSOR_APPEAR_DELAY_MS = 175;
-const CURSOR_MOVE_DELAY_MS = 1100;
-const CURSOR_CLICK_DELAY_MS = 550;
-const FOCUS_DELAY_MS = 50;
-const CURSOR_LABEL_CHANGE_MS = 750;
-const CURSOR_ALERT_DELAY_MS = 2350;
-const FIXING_DELAY_MS = 1400;
-const FIX_DIFF_DELAY_MS = 1800;
-const RELOAD_DELAY_MS = 600;
-const RELOAD_DURATION_MS = 800;
-const FIXED_DELAY_MS = 200;
-const RESET_DELAY_MS = 2000;
-const RESET_SLIDE_MS = 1200;
+interface SpringConfig {
+  stiffness: number;
+  damping: number;
+  mass: number;
+}
+
+interface AnimationConfig {
+  codingDuration: number;
+  slideDelay: number;
+  diffDuration: number;
+  cursorAppearDelay: number;
+  cursorMoveDelay: number;
+  cursorClickDelay: number;
+  focusDelay: number;
+  cursorAlertDelay: number;
+  fixingDelay: number;
+  fixDiffDelay: number;
+  reloadDelay: number;
+  reloadDuration: number;
+  resetDelay: number;
+  loopDelay: number;
+  terminalScrollDuration: number;
+  cursorMoveDuration: number;
+  cursorEntranceStiffness: number;
+  cursorEntranceDamping: number;
+  cursorEntranceMass: number;
+  browserSpringStiffness: number;
+  browserSpringDamping: number;
+  browserSpringMass: number;
+  terminalSpringStiffness: number;
+  terminalSpringDamping: number;
+  terminalSpringMass: number;
+  clickDuration: number;
+  labelDuration: number;
+  colorTransitionDuration: number;
+}
+
+const DEFAULT_CONFIG: AnimationConfig = {
+  codingDuration: 1150,
+  slideDelay: 700,
+  diffDuration: 1250,
+  cursorAppearDelay: 0,
+  cursorMoveDelay: 1250,
+  cursorClickDelay: 550,
+  focusDelay: 50,
+  cursorAlertDelay: 800,
+  fixingDelay: 1400,
+  fixDiffDelay: 1800,
+  reloadDelay: 600,
+  reloadDuration: 800,
+  resetDelay: 2000,
+  loopDelay: 400,
+  terminalScrollDuration: 600,
+  cursorMoveDuration: 400,
+  cursorEntranceStiffness: 500,
+  cursorEntranceDamping: 20,
+  cursorEntranceMass: 400,
+  browserSpringStiffness: 250,
+  browserSpringDamping: 22,
+  browserSpringMass: 600,
+  terminalSpringStiffness: 120,
+  terminalSpringDamping: 20,
+  terminalSpringMass: 800,
+  clickDuration: 100,
+  labelDuration: 150,
+  colorTransitionDuration: 300,
+};
+
 
 type AnimationPhase = "coding" | "diff" | "expect";
 type CursorLabelState = "expect" | "security" | "alert" | "fixed";
 
-function useAnimationPhase() {
+function useAnimationPhase(config: AnimationConfig) {
   const [cycle, setCycle] = useState(0);
   const [phase, setPhase] = useState<AnimationPhase>("coding");
   const [slid, setSlid] = useState(false);
@@ -49,7 +103,11 @@ function useAnimationPhase() {
   const [reloadDone, setReloadDone] = useState(false);
   const [looping, setLooping] = useState(false);
 
+  const configRef = useRef(config);
+  configRef.current = config;
+
   useEffect(() => {
+    const c = configRef.current;
     setPhase("coding");
     setSlid(false);
     setFocused(false);
@@ -67,15 +125,15 @@ function useAnimationPhase() {
     setReloadDone(false);
     setLooping(false);
 
-    const expectTime = CODING_DURATION_MS + DIFF_DURATION_MS;
-    const cursorAppearTime = expectTime + CURSOR_APPEAR_DELAY_MS;
-    const cursorMoveTime = cursorAppearTime + CURSOR_MOVE_DELAY_MS;
-    const clickTime = cursorMoveTime + CURSOR_CLICK_DELAY_MS;
-    const focusTime = clickTime + FOCUS_DELAY_MS;
-    const alertTime = focusTime + CURSOR_ALERT_DELAY_MS;
+    const expectTime = c.codingDuration + c.diffDuration;
+    const cursorAppearTime = expectTime + c.cursorAppearDelay;
+    const cursorMoveTime = cursorAppearTime + c.cursorMoveDelay;
+    const clickTime = cursorMoveTime + c.cursorClickDelay;
+    const focusTime = clickTime + c.focusDelay;
+    const alertTime = focusTime + c.cursorAlertDelay;
 
-    const diffTimer = setTimeout(() => setPhase("diff"), CODING_DURATION_MS);
-    const slideTimer = setTimeout(() => setSlid(true), CODING_DURATION_MS + SLIDE_DELAY_MS);
+    const diffTimer = setTimeout(() => setPhase("diff"), c.codingDuration);
+    const slideTimer = setTimeout(() => setSlid(true), c.codingDuration + c.slideDelay);
     const expectTimer = setTimeout(() => setPhase("expect"), expectTime);
     const cursorTimer = setTimeout(() => setCursorVisible(true), cursorAppearTime);
     const cursorMoveTimer = setTimeout(() => setCursorOnBrowser(true), cursorMoveTime);
@@ -84,22 +142,22 @@ function useAnimationPhase() {
     const labelShowTimer = setTimeout(() => setLabelVisible(true), clickTime);
     const focusTimer = setTimeout(() => setFocused(true), focusTime);
     const alertTimer = setTimeout(() => setCursorLabel("alert"), alertTime);
-    const fixingTime = alertTime + FIXING_DELAY_MS;
+    const fixingTime = alertTime + c.fixingDelay;
     const fixingTimer = setTimeout(() => {
       setFixing(true);
       setTerminalFocused(true);
       setFocused(false);
     }, fixingTime);
-    const fixDiffTime = fixingTime + FIX_DIFF_DELAY_MS;
+    const fixDiffTime = fixingTime + c.fixDiffDelay;
     const fixDiffTimer = setTimeout(() => {
       setFixDiff(true);
       setCursorLabel("fixed");
     }, fixDiffTime);
-    const reloadTime = fixDiffTime + RELOAD_DELAY_MS;
+    const reloadTime = fixDiffTime + c.reloadDelay;
     const reloadTimer = setTimeout(() => setReloading(true), reloadTime);
-    const reloadDoneTime = reloadTime + RELOAD_DURATION_MS;
+    const reloadDoneTime = reloadTime + c.reloadDuration;
     const reloadDoneTimer = setTimeout(() => setReloadDone(true), reloadDoneTime);
-    const resetTime = reloadDoneTime + RESET_DELAY_MS;
+    const resetTime = reloadDoneTime + c.resetDelay;
     const resetTimer = setTimeout(() => {
       setCursorVisible(false);
       setLabelVisible(false);
@@ -108,7 +166,7 @@ function useAnimationPhase() {
       setFocused(false);
       setTerminalFocused(false);
     }, resetTime);
-    const loopTime = resetTime + 400;
+    const loopTime = resetTime + c.loopDelay;
     const loopTimer = setTimeout(() => setCycle((previous) => previous + 1), loopTime);
     return () => {
       clearTimeout(diffTimer);
@@ -130,8 +188,11 @@ function useAnimationPhase() {
     };
   }, [cycle]);
 
-  return { cycle, phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, labelVisible, cursorLabel, terminalFocused, fixing, fixDiff, reloading, reloadDone, looping };
+  const restart = () => setCycle((previous) => previous + 1);
+
+  return { cycle, phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, labelVisible, cursorLabel, terminalFocused, fixing, fixDiff, reloading, reloadDone, looping, restart };
 }
+
 
 function TerminalLine({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   return (
@@ -145,7 +206,7 @@ function TerminalLine({ children, delay = 0 }: { children: React.ReactNode; dela
   );
 }
 
-function TerminalContent({ phase, fixing, fixDiff, looping }: { phase: AnimationPhase; fixing: boolean; fixDiff: boolean; looping: boolean }) {
+function TerminalContent({ phase, fixing, fixDiff, looping, config }: { phase: AnimationPhase; fixing: boolean; fixDiff: boolean; looping: boolean; config: AnimationConfig }) {
   const showDiff = phase === "diff" || phase === "expect";
   const showExpect = phase === "expect";
 
@@ -156,7 +217,7 @@ function TerminalContent({ phase, fixing, fixDiff, looping }: { phase: Animation
       className="flex flex-col items-start w-61 text-xs/4 gap-1"
       initial={{ y: 120 }}
       animate={{ y: scrollY }}
-      transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
+      transition={{ duration: config.terminalScrollDuration / 1000, ease: [0.25, 0.1, 0.25, 1] }}
     >
       <div className="h-7 shrink-0" />
       <div className="flex items-start shrink-0 gap-2.5">
@@ -281,7 +342,7 @@ function TerminalContent({ phase, fixing, fixDiff, looping }: { phase: Animation
   );
 }
 
-function BrowserPreview({ slid, focused, reloading, reloadDone }: { slid: boolean; focused: boolean; reloading: boolean; reloadDone: boolean }) {
+function BrowserPreview({ slid, focused, reloading, reloadDone, config }: { slid: boolean; focused: boolean; reloading: boolean; reloadDone: boolean; config: AnimationConfig }) {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -302,7 +363,7 @@ function BrowserPreview({ slid, focused, reloading, reloadDone }: { slid: boolea
             ? { x: -100, y: -8, scale: 1, zIndex: 0 }
             : { x: -12, y: -8, scale: 1, zIndex: 0 }
       }
-      transition={{ type: "spring", stiffness: 250, damping: 22, mass: 0.6 }}
+      transition={{ type: "spring", stiffness: config.browserSpringStiffness, damping: config.browserSpringDamping, mass: config.browserSpringMass / 1000 }}
     >
       <div className="relative flex flex-col w-68.5 h-46 rounded-2xl pt-2.5 pr-2.25 pb-6.75 pl-4.75 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]">
         <div className="flex items-center -ml-1">
@@ -371,7 +432,7 @@ function BrowserPreview({ slid, focused, reloading, reloadDone }: { slid: boolea
 }
 
 
-function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerminal, labelVisible, label }: { visible: boolean; onBrowser: boolean; onTerminal: boolean; clicking: boolean; clickingTerminal: boolean; labelVisible: boolean; label: CursorLabelState }) {
+function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerminal, labelVisible, label, config }: { visible: boolean; onBrowser: boolean; onTerminal: boolean; clicking: boolean; clickingTerminal: boolean; labelVisible: boolean; label: CursorLabelState; config: AnimationConfig }) {
   const isAlert = label === "alert";
   return (
     <motion.div
@@ -390,18 +451,18 @@ function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerm
       transition={
         !visible
           ? { duration: 0.25, ease: "easeOut" }
-          : { duration: 0.4, ease: [0.22, 1, 0.36, 1] }
+          : { duration: config.cursorMoveDuration / 1000, ease: [0.22, 1, 0.36, 1] }
       }
     >
       <motion.svg
         width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '40px', height: 'auto' }}
         animate={{ scale: (clicking || clickingTerminal) ? 0.85 : 1 }}
-        transition={{ duration: 0.1, ease: "easeOut" }}
+        transition={{ duration: config.clickDuration / 1000, ease: "easeOut" }}
       >
         <g filter="url(#filter0_d_4_7)">
           <path d="M2.58591 2.58594C3.14041 2.03143 3.96783 1.85171 4.70212 2.12695L15.7021 6.25195C16.5219 6.55937 17.0468 7.36516 16.997 8.23926C16.9471 9.11309 16.3344 9.85306 15.4853 10.0654L11.1484 11.1484L10.0654 15.4854C9.85303 16.3345 9.11306 16.9471 8.23923 16.9971C7.36513 17.0469 6.55934 16.5219 6.25192 15.7021L2.12692 4.70215C1.85168 3.96786 2.0314 3.14045 2.58591 2.58594Z" fill="white" stroke="white" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"/>
         </g>
-        <motion.path fillRule="evenodd" clipRule="evenodd" d="M4.17558 3.53185C3.99199 3.463 3.7851 3.50782 3.64646 3.64646C3.50782 3.7851 3.463 3.99199 3.53185 4.17558L7.65685 15.1756C7.7337 15.3805 7.93492 15.5117 8.15345 15.4992C8.37197 15.4868 8.557 15.3336 8.61009 15.1213L9.91232 9.91232L15.1213 8.61009C15.3336 8.557 15.4868 8.37197 15.4992 8.15345C15.5117 7.93492 15.3805 7.7337 15.1756 7.65685L4.17558 3.53185Z" animate={{ fill: label === "fixed" ? "#28A745" : isAlert ? "#F03E35" : "#0074F9", stroke: label === "fixed" ? "#28A745" : isAlert ? "#F03E35" : "#0074F9" }} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" transition={{ duration: 0.3 }}/>
+        <motion.path fillRule="evenodd" clipRule="evenodd" d="M4.17558 3.53185C3.99199 3.463 3.7851 3.50782 3.64646 3.64646C3.50782 3.7851 3.463 3.99199 3.53185 4.17558L7.65685 15.1756C7.7337 15.3805 7.93492 15.5117 8.15345 15.4992C8.37197 15.4868 8.557 15.3336 8.61009 15.1213L9.91232 9.91232L15.1213 8.61009C15.3336 8.557 15.4868 8.37197 15.4992 8.15345C15.5117 7.93492 15.3805 7.7337 15.1756 7.65685L4.17558 3.53185Z" animate={{ fill: label === "fixed" ? "#28A745" : isAlert ? "#F03E35" : "#0074F9", stroke: label === "fixed" ? "#28A745" : isAlert ? "#F03E35" : "#0074F9" }} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" transition={{ duration: config.colorTransitionDuration / 1000 }}/>
         <defs>
           <filter id="filter0_d_4_7" x="-0.000274658" y="-0.000244141" width="19.0005" height="19.0006" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB"><feFlood floodOpacity="0" result="BackgroundImageFix"/><feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/><feOffset/><feGaussianBlur stdDeviation="1"/><feComposite in2="hardAlpha" operator="out"/><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.22 0"/><feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_4_7"/><feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_4_7" result="shape"/></filter>
           <linearGradient id="paint0_linear_4_7" x1="9.50001" y1="3.5" x2="9.50001" y2="15.5" gradientUnits="userSpaceOnUse"><stop stopColor="#0172F4"/><stop offset="1" stopColor="#0168DF"/></linearGradient>
@@ -411,7 +472,7 @@ function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerm
         className="absolute left-4 top-4 rounded-full px-2.5 py-1.5 text-white font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[13px]/4.5 whitespace-nowrap [box-shadow:0_0_0_2px_white,0_1px_3px_rgba(0,0,0,0.2)] flex items-center gap-1.5 origin-top-left"
         initial={{ opacity: 0, scale: 0.5 }}
         animate={{ backgroundColor: label === "fixed" ? "#28A745" : isAlert ? "#F03E35" : "#0074F9", opacity: labelVisible ? 1 : 0, scale: labelVisible ? 1 : 0.5 }}
-        transition={{ duration: 0.15 }}
+        transition={{ duration: config.labelDuration / 1000 }}
       >
         {label === "security" && (
           <svg className="size-3 animate-spin" viewBox="0 0 16 16" fill="none">
@@ -429,30 +490,101 @@ function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerm
             <path d="M3 8.5L6.5 12L13 4" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         )}
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="size-3.5 shrink-0">
-          <path fillRule="evenodd" clipRule="evenodd" d="M1.5 6.283C1.5 6.324 1.501 6.364 1.502 6.404C1.501 6.423 1.5 6.441 1.5 6.46C1.5 7.902 2.243 9.241 3.465 10.005L3.608 10.095L3.615 10.099L4.205 10.468L5.205 11.093C5.691 11.397 6.309 11.397 6.795 11.093L8.385 10.099C9.701 9.277 10.5 7.835 10.5 6.283V5.5V2.576C10.5 2.537 10.498 2.499 10.493 2.461C10.482 2.369 10.457 2.281 10.42 2.2C10.236 1.79 9.76 1.553 9.296 1.708L9.189 1.743C8.387 2.007 7.504 1.797 6.907 1.2C6.406 0.699 5.594 0.699 5.093 1.2C4.494 1.799 3.607 2.009 2.803 1.741L2.704 1.708C2.112 1.51 1.5 1.951 1.5 2.576V6.283ZM6.5 9.196V10.098L7.855 9.251C8.817 8.65 9.424 7.623 9.493 6.5H6.5V9.196ZM5.5 5.5V2.305V2.172C4.656 2.83 3.532 3.033 2.5 2.694V5.5H5.5Z" fill="white" />
-        </svg>
       </motion.div>
     </motion.div>
   );
 }
 
 function TerminalIllustration() {
-  const { cycle, phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, labelVisible, cursorLabel, terminalFocused, fixing, fixDiff, reloading, reloadDone, looping } = useAnimationPhase();
+  const restartRef = useRef(() => {});
+
+  const dial = useDialKit("Animation", {
+    restart: { type: "action" as const, label: "Restart Animation" },
+    timing: {
+      _collapsed: true,
+      codingDuration: [DEFAULT_CONFIG.codingDuration, 0, 5000, 50],
+      slideDelay: [DEFAULT_CONFIG.slideDelay, 0, 5000, 50],
+      diffDuration: [DEFAULT_CONFIG.diffDuration, 0, 5000, 50],
+      cursorAppearDelay: [DEFAULT_CONFIG.cursorAppearDelay, 0, 5000, 50],
+      cursorMoveDelay: [DEFAULT_CONFIG.cursorMoveDelay, 0, 5000, 50],
+      cursorClickDelay: [DEFAULT_CONFIG.cursorClickDelay, 0, 5000, 50],
+      focusDelay: [DEFAULT_CONFIG.focusDelay, 0, 5000, 50],
+      cursorAlertDelay: [DEFAULT_CONFIG.cursorAlertDelay, 0, 5000, 50],
+      fixingDelay: [DEFAULT_CONFIG.fixingDelay, 0, 5000, 50],
+      fixDiffDelay: [DEFAULT_CONFIG.fixDiffDelay, 0, 5000, 50],
+      reloadDelay: [DEFAULT_CONFIG.reloadDelay, 0, 5000, 50],
+      reloadDuration: [DEFAULT_CONFIG.reloadDuration, 0, 5000, 50],
+      resetDelay: [DEFAULT_CONFIG.resetDelay, 0, 5000, 50],
+      loopDelay: [DEFAULT_CONFIG.loopDelay, 0, 5000, 50],
+    },
+    transitions: {
+      _collapsed: true,
+      terminalScrollDuration: [DEFAULT_CONFIG.terminalScrollDuration, 50, 2000, 10],
+      cursorMoveDuration: [DEFAULT_CONFIG.cursorMoveDuration, 50, 2000, 10],
+      clickDuration: [DEFAULT_CONFIG.clickDuration, 10, 500, 10],
+      labelDuration: [DEFAULT_CONFIG.labelDuration, 10, 1000, 10],
+      colorTransitionDuration: [DEFAULT_CONFIG.colorTransitionDuration, 10, 1000, 10],
+    },
+    browserSpring: { type: "spring" as const, stiffness: DEFAULT_CONFIG.browserSpringStiffness, damping: DEFAULT_CONFIG.browserSpringDamping, mass: DEFAULT_CONFIG.browserSpringMass / 1000 },
+    terminalSpring: { type: "spring" as const, stiffness: DEFAULT_CONFIG.terminalSpringStiffness, damping: DEFAULT_CONFIG.terminalSpringDamping, mass: DEFAULT_CONFIG.terminalSpringMass / 1000 },
+  }, {
+    onAction: (action) => {
+      if (action === "restart") restartRef.current();
+    },
+  });
+
+  const browserSpring = dial.browserSpring as unknown as SpringConfig;
+  const terminalSpring = dial.terminalSpring as unknown as SpringConfig;
+
+  const config: AnimationConfig = {
+    ...DEFAULT_CONFIG,
+    codingDuration: dial.timing.codingDuration,
+    slideDelay: dial.timing.slideDelay,
+    diffDuration: dial.timing.diffDuration,
+    cursorAppearDelay: dial.timing.cursorAppearDelay,
+    cursorMoveDelay: dial.timing.cursorMoveDelay,
+    cursorClickDelay: dial.timing.cursorClickDelay,
+    focusDelay: dial.timing.focusDelay,
+    cursorAlertDelay: dial.timing.cursorAlertDelay,
+    fixingDelay: dial.timing.fixingDelay,
+    fixDiffDelay: dial.timing.fixDiffDelay,
+    reloadDelay: dial.timing.reloadDelay,
+    reloadDuration: dial.timing.reloadDuration,
+    resetDelay: dial.timing.resetDelay,
+    loopDelay: dial.timing.loopDelay,
+    terminalScrollDuration: dial.transitions.terminalScrollDuration,
+    cursorMoveDuration: dial.transitions.cursorMoveDuration,
+    clickDuration: dial.transitions.clickDuration,
+    labelDuration: dial.transitions.labelDuration,
+    colorTransitionDuration: dial.transitions.colorTransitionDuration,
+    browserSpringStiffness: browserSpring.stiffness ?? DEFAULT_CONFIG.browserSpringStiffness,
+    browserSpringDamping: browserSpring.damping ?? DEFAULT_CONFIG.browserSpringDamping,
+    browserSpringMass: (browserSpring.mass ?? DEFAULT_CONFIG.browserSpringMass / 1000) * 1000,
+    terminalSpringStiffness: terminalSpring.stiffness ?? DEFAULT_CONFIG.terminalSpringStiffness,
+    terminalSpringDamping: terminalSpring.damping ?? DEFAULT_CONFIG.terminalSpringDamping,
+    terminalSpringMass: (terminalSpring.mass ?? DEFAULT_CONFIG.terminalSpringMass / 1000) * 1000,
+    cursorEntranceStiffness: DEFAULT_CONFIG.cursorEntranceStiffness,
+    cursorEntranceDamping: DEFAULT_CONFIG.cursorEntranceDamping,
+    cursorEntranceMass: DEFAULT_CONFIG.cursorEntranceMass,
+  };
+
+  const animState = useAnimationPhase(config);
+  const { cycle, phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, labelVisible, cursorLabel, terminalFocused, fixing, fixDiff, reloading, reloadDone, looping, restart } = animState;
+  restartRef.current = restart;
 
   return (
     <div className="flex flex-col items-center justify-center gap-4 text-xs/4 mt-11.5 p-3">
       <div className="relative w-68.5 h-46 shrink-0 overflow-visible">
-        <BrowserPreview slid={slid} focused={focused} reloading={reloading} reloadDone={reloadDone} />
-        <AnimatedCursor visible={cursorVisible} onBrowser={cursorOnBrowser} onTerminal={cursorOnTerminal} clicking={clicking} clickingTerminal={clickingTerminal} labelVisible={labelVisible} label={cursorLabel} />
+        <BrowserPreview slid={slid} focused={focused} reloading={reloading} reloadDone={reloadDone} config={config} />
+        <AnimatedCursor visible={cursorVisible} onBrowser={cursorOnBrowser} onTerminal={cursorOnTerminal} clicking={clicking} clickingTerminal={clickingTerminal} labelVisible={labelVisible} label={cursorLabel} config={config} />
         <motion.div
           className="flex flex-col items-start w-68.5 h-46 relative z-10 rounded-2xl pt-4.5 pr-3.75 pb-6.5 pl-3.75 overflow-clip bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]"
           animate={slid ? { x: 80, scale: terminalFocused ? 1.04 : 1, zIndex: terminalFocused ? 20 : 10 } : { x: 0, scale: 1, zIndex: 10 }}
-          transition={{ type: "spring", stiffness: 120, damping: 20, mass: 0.8 }}
+          transition={{ type: "spring", stiffness: config.terminalSpringStiffness, damping: config.terminalSpringDamping, mass: config.terminalSpringMass / 1000 }}
         >
           <div suppressHydrationWarning className="absolute top-0 left-0 right-0 h-20 z-10 pointer-events-none select-none rounded-t-2xl" style={{ background: 'linear-gradient(to top, transparent 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.45) 75%, rgba(255,255,255,0.8) 100%)' }} />
           <div suppressHydrationWarning className="absolute bottom-0 left-0 right-0 h-12 z-10 pointer-events-none select-none rounded-b-2xl" style={{ background: 'linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.45) 75%, rgba(255,255,255,0.8) 100%)' }} />
-          <TerminalContent key={cycle} phase={phase} fixing={fixing} fixDiff={fixDiff} looping={looping} />
+          <TerminalContent key={cycle} phase={phase} fixing={fixing} fixDiff={fixDiff} looping={looping} config={config} />
         </motion.div>
       </div>
       <div className="[letter-spacing:0em] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-sm/5.75 text-[#858585]">
@@ -494,6 +626,7 @@ export default function () {
   };
   return (
     <div className="[font-synthesis:none] overflow-x-clip antialiased min-h-screen bg-white flex flex-col items-center">
+      <DialRoot position="top-right" />
       <div className="w-full pb-6">
         <div className="w-112.75 mx-auto pt-2">
           <TerminalIllustration />

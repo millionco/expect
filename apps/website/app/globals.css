@@ -255,3 +255,8 @@
   -webkit-text-fill-color: transparent;
   animation: text-shimmer 2s ease-in-out infinite;
 }
+
+.dialkit-root,
+.dialkit-root * {
+  font-family: "Open Runde", system-ui, sans-serif !important;
+}
