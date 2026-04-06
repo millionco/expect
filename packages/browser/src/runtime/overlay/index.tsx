@@ -174,22 +174,29 @@ const AgentOverlay = () => {
       </div>
 
       <div
-        className="fixed bottom-4 right-4 pointer-events-none z-[2147483647]"
+        className="fixed pointer-events-none z-[2147483647]"
         style={{
-          maxWidth: `${TOOLTIP_MAX_WIDTH_PX}px`,
+          bottom: "1.25rem",
+          right: "1.25rem",
           opacity: state.label ? 1 : 0,
-          transform: state.label ? "translateY(0)" : "translateY(8px)",
-          transition: "opacity 200ms ease, transform 200ms ease",
+          transform: state.label ? "translateY(0) scale(1)" : "translateY(8px) scale(0.96)",
+          transition: "opacity 0.3s ease, transform 0.4s cubic-bezier(0.19, 1, 0.22, 1)",
         }}
       >
         <div
-          className="flex items-center gap-2.5 rounded-xl py-2.5 px-4 shadow-xl"
+          className="flex items-center gap-2.5"
           style={{
-            background: "#1c1c1c",
-            color: "white",
+            height: "44px",
+            padding: "0 16px",
+            borderRadius: "22px",
+            background: "#1a1a1a",
+            color: "#fff",
             fontSize: "14px",
-            fontFamily: '"SFProDisplay-Medium", "SF Pro Display", system-ui, sans-serif',
+            fontFamily:
+              "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             fontWeight: 500,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.1)",
+            maxWidth: `${TOOLTIP_MAX_WIDTH_PX}px`,
           }}
         >
           <SpiralSpinner visible={Boolean(state.label)} />
