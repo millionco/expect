@@ -321,7 +321,7 @@ const AgentOverlay = () => {
               />
               <button
                 type="button"
-                className="flex items-center justify-center size-8 rounded-full border-none bg-transparent p-0 cursor-pointer text-white/60 hover:text-white hover:bg-white/10 transition-colors duration-150 active:scale-[0.92]"
+                className="flex items-center justify-center size-8 rounded-full border-none bg-transparent p-0 cursor-pointer outline-none text-white/60 hover:text-white hover:bg-white/10 transition-colors duration-150 active:scale-[0.92]"
                 onClick={toggleToolbar}
               >
                 <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
