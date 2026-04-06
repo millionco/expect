@@ -190,6 +190,35 @@ describe("dynamic step discovery", () => {
     expect(runFinished!.summary).toBe("All steps passed");
   });
 
+  it("finalizeTextBlock preserves a rich session summary with pipes and semicolons", () => {
+    let executed = makeEmptyExecuted();
+
+    executed = executed.applyMarker(
+      new StepStarted({ stepId: StepId.makeUnsafe("step-01"), title: "Login flow" }),
+    );
+
+    const richSummary =
+      "Verified login flow and dashboard rendering. Found a bug: submit button clipped at 375px viewport (likely-scope=src/components/LoginForm.tsx). Auth requires redirect to /callback after OAuth; future runs should seed 3+ users before testing list views. No unresolved risks.";
+
+    const withText = new ExecutedTestPlan({
+      ...executed,
+      events: [
+        ...executed.events,
+        new AgentText({
+          text: `STEP_DONE|step-01|Login form submitted\nRUN_COMPLETED|passed|${richSummary}`,
+        }),
+      ],
+    });
+
+    const finalized = withText.finalizeTextBlock();
+
+    const runFinished = finalized.events.find(
+      (event): event is RunFinished => event._tag === "RunFinished",
+    );
+    expect(runFinished).toBeDefined();
+    expect(runFinished!.summary).toBe(richSummary);
+  });
+
   it("finalizeTextBlock parses ASSERTION_FAILED from trailing AgentText", () => {
     let executed = makeEmptyExecuted();
 

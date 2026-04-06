@@ -246,6 +246,19 @@ export const ResultsScreen = ({
         </Box>
       )}
 
+      {report.summary && (
+        <Box flexDirection="column" marginTop={1} paddingX={1}>
+          <Text color={COLORS.TEXT} bold>
+            Summary
+          </Text>
+          <Box marginTop={0} paddingLeft={1}>
+            <Text color={COLORS.DIM} wrap="wrap">
+              {report.summary}
+            </Text>
+          </Box>
+        </Box>
+      )}
+
       {report.screenshotPaths.map((screenshotPath) => (
         <Box key={screenshotPath} marginTop={1}>
           <Image src={screenshotPath} alt={`Screenshot: ${screenshotPath}`} />
