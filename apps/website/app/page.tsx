@@ -24,6 +24,8 @@ const FIX_DIFF_DELAY_MS = 1800;
 const RELOAD_DELAY_MS = 600;
 const RELOAD_DURATION_MS = 800;
 const FIXED_DELAY_MS = 200;
+const RESET_DELAY_MS = 2000;
+const RESET_SLIDE_MS = 1200;
 
 type AnimationPhase = "coding" | "diff" | "expect";
 type CursorLabelState = "expect" | "security" | "alert" | "fixed";
@@ -44,6 +46,7 @@ function useAnimationPhase() {
   const [fixDiff, setFixDiff] = useState(false);
   const [reloading, setReloading] = useState(false);
   const [reloadDone, setReloadDone] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     const expectTime = CODING_DURATION_MS + DIFF_DURATION_MS;
@@ -78,6 +81,8 @@ function useAnimationPhase() {
     const reloadTimer = setTimeout(() => setReloading(true), reloadTime);
     const reloadDoneTime = reloadTime + RELOAD_DURATION_MS;
     const reloadDoneTimer = setTimeout(() => setReloadDone(true), reloadDoneTime);
+    const resetTime = reloadDoneTime + RESET_DELAY_MS;
+    const resetTimer = setTimeout(() => setResetting(true), resetTime);
     return () => {
       clearTimeout(diffTimer);
       clearTimeout(slideTimer);
@@ -93,10 +98,11 @@ function useAnimationPhase() {
       clearTimeout(fixDiffTimer);
       clearTimeout(reloadTimer);
       clearTimeout(reloadDoneTimer);
+      clearTimeout(resetTimer);
     };
   }, []);
 
-  return { phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, labelVisible, cursorLabel, terminalFocused, fixing, fixDiff, reloading, reloadDone };
+  return { phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, labelVisible, cursorLabel, terminalFocused, fixing, fixDiff, reloading, reloadDone, resetting };
 }
 
 function TerminalLine({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
@@ -400,11 +406,22 @@ function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerm
   );
 }
 
-function TerminalIllustration() {
-  const { phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, labelVisible, cursorLabel, terminalFocused, fixing, fixDiff, reloading, reloadDone } = useAnimationPhase();
+function TerminalIllustrationInner({ onComplete }: { onComplete: () => void }) {
+  const { phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, labelVisible, cursorLabel, terminalFocused, fixing, fixDiff, reloading, reloadDone, resetting } = useAnimationPhase();
+
+  useEffect(() => {
+    if (!resetting) return;
+    const completeTimer = setTimeout(onComplete, RESET_SLIDE_MS);
+    return () => clearTimeout(completeTimer);
+  }, [resetting, onComplete]);
 
   return (
-    <div className="flex flex-col items-center justify-center gap-4 text-xs/4 mt-11.5 p-3">
+    <motion.div
+      className="flex flex-col items-center justify-center gap-4 text-xs/4 mt-11.5 p-3"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: resetting ? 0 : 1 }}
+      transition={{ duration: resetting ? 0.6 : 0.8 }}
+    >
       <div className="relative w-68.5 h-46 shrink-0 overflow-visible">
         <BrowserPreview slid={slid} focused={focused} reloading={reloading} reloadDone={reloadDone} />
         <AnimatedCursor visible={cursorVisible} onBrowser={cursorOnBrowser} onTerminal={cursorOnTerminal} clicking={clicking} clickingTerminal={clickingTerminal} labelVisible={labelVisible} label={cursorLabel} />
@@ -431,8 +448,14 @@ function TerminalIllustration() {
                   : "Agent writes code"}
         </Calligraph>
       </div>
-    </div>
+    </motion.div>
   );
+}
+
+function TerminalIllustration() {
+  const [cycle, setCycle] = useState(0);
+
+  return <TerminalIllustrationInner key={cycle} onComplete={() => setCycle((previous) => previous + 1)} />;
 }
 
 export default function () {
