@@ -1,6 +1,9 @@
 import { context } from "esbuild";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { createRequire } from "node:module";
+
+const esmRequire = createRequire(import.meta.url);
 
 const watchMode = process.argv.includes("--watch");
 
@@ -62,10 +65,13 @@ const emitPlugin = {
 const cssTextPlugin = {
   name: "css-text",
   setup(build) {
-    build.onResolve({ filter: /\.css$/ }, (args) => ({
-      path: path.resolve(args.resolveDir, args.path),
-      namespace: "css-text",
-    }));
+    build.onResolve({ filter: /\.css$/ }, (args) => {
+      const isRelative = args.path.startsWith(".") || args.path.startsWith("/");
+      const resolved = isRelative
+        ? path.resolve(args.resolveDir, args.path)
+        : esmRequire.resolve(args.path, { paths: [args.resolveDir] });
+      return { path: resolved, namespace: "css-text" };
+    });
     build.onLoad({ namespace: "css-text", filter: /.*/ }, (args) => ({
       contents: `export default ${JSON.stringify(fs.readFileSync(args.path, "utf-8"))};`,
       loader: "js",

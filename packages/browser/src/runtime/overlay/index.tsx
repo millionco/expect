@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { Toaster, toast } from "sonner";
 // @ts-expect-error -- CSS imported as text via esbuild cssTextPlugin
 import cssText from "../../../dist/overlay.css";
+// @ts-expect-error -- CSS imported as text via esbuild cssTextPlugin
+import sonnerCssText from "sonner/dist/styles.css";
 
 const CURSOR_SIZE_PX = 48;
 const CURSOR_HEIGHT_PX = 53;
@@ -595,7 +597,9 @@ export const initAgentOverlay = (containerId: string): void => {
   const shadow = host.attachShadow({ mode: "open" });
 
   const style = document.createElement("style");
-  style.textContent = typeof cssText === "string" ? cssText : "";
+  const overlayStyles = typeof cssText === "string" ? cssText : "";
+  const sonnerStyles = typeof sonnerCssText === "string" ? sonnerCssText : "";
+  style.textContent = `${overlayStyles}\n${sonnerStyles}`;
   shadow.appendChild(style);
 
   const container = document.createElement("div");
