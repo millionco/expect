@@ -1,0 +1,33 @@
+apps/cli/src/commands/add-skill.ts
+  4c8ca10041013643 5,10-18,21,37-45,82-83,85-93,95-98,100-108,110-114,139,141,143-153,160-165,170,185-186,188-211,220,222-227,233-282,287-288
+apps/cli/src/constants.ts
+  4c8ca10041013643 55
+apps/cli/src/commands/update.ts
+  4c8ca10041013643 2-3,7,9-15,90,119-161
+apps/cli/src/utils/expect-skill.ts
+  4c8ca10041013643 1-133
+apps/cli/tests/expect-skill.test.ts
+  4c8ca10041013643 1-98
+apps/cli/tests/add-skill.test.ts
+  4c8ca10041013643 1-9,11,14-17,122-190
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "a228de40b7647d2f50d48bb21cd240c3f611e45f",
+  "prompts": {
+    "4c8ca10041013643": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e44d3c25-f394-44e2-86ba-164e06591be5",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 626,
+      "total_deletions": 131,
+      "accepted_lines": 533,
+      "overriden_lines": 1
+    }
+  }
+}
