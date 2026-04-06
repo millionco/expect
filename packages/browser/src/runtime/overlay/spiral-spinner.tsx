@@ -2,8 +2,9 @@
 import { useEffect, useRef } from "react";
 
 const GRID_SIZE = 3;
-const CELL_PX = 1;
-const CANVAS_SIZE = GRID_SIZE * CELL_PX;
+const CELL_PX = 4;
+const GAP_PX = 2;
+const CANVAS_SIZE = GRID_SIZE * CELL_PX + (GRID_SIZE - 1) * GAP_PX;
 const TICK_MS = 120;
 
 const GLIDER = [
@@ -65,12 +66,14 @@ export const SpiralSpinner = ({ visible }: { visible: boolean }) => {
     const render = () => {
       gridRef.current = step(gridRef.current);
       ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-      ctx.fillStyle = "white";
       for (let row = 0; row < GRID_SIZE; row++) {
         for (let col = 0; col < GRID_SIZE; col++) {
-          if (gridRef.current[row][col]) {
-            ctx.fillRect(col * CELL_PX, row * CELL_PX, CELL_PX, CELL_PX);
-          }
+          const pixelX = col * (CELL_PX + GAP_PX);
+          const pixelY = row * (CELL_PX + GAP_PX);
+          ctx.fillStyle = gridRef.current[row][col] ? "white" : "rgba(255,255,255,0.2)";
+          ctx.beginPath();
+          ctx.arc(pixelX + CELL_PX / 2, pixelY + CELL_PX / 2, CELL_PX / 2, 0, Math.PI * 2);
+          ctx.fill();
         }
       }
     };
