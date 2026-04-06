@@ -2,8 +2,8 @@
 import { useEffect, useRef } from "react";
 
 const GRID_SIZE = 3;
-const CELL_PX = 4;
-const GAP_PX = 2;
+const CELL_PX = 10;
+const GAP_PX = 4;
 const CANVAS_SIZE = GRID_SIZE * CELL_PX + (GRID_SIZE - 1) * GAP_PX;
 const TICK_MS = 120;
 
@@ -84,13 +84,12 @@ export const SpiralSpinner = ({ visible }: { visible: boolean }) => {
   }, [visible]);
 
   return (
-    <div className="size-4 shrink-0 rounded-sm overflow-hidden">
+    <div className="size-[38px] shrink-0 flex items-center justify-center">
       <canvas
         ref={canvasRef}
         width={CANVAS_SIZE}
         height={CANVAS_SIZE}
-        className="size-full"
-        style={{ imageRendering: "pixelated" }}
+        style={{ width: `${CANVAS_SIZE}px`, height: `${CANVAS_SIZE}px` }}
       />
     </div>
   );
