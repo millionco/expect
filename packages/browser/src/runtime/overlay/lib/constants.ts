@@ -18,6 +18,7 @@ export interface HighlightRect {
 }
 
 export interface ActionLogEntry {
+  id: number;
   description: string;
   code: string;
   selector: string;

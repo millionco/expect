@@ -1,8 +1,8 @@
-import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod/v4";
+import { mkdir, writeFile } from "node:fs/promises";
 import { Effect, Option, type ManagedRuntime } from "effect";
 import { evaluateRuntime } from "../utils/evaluate-runtime";
 import { runAccessibilityAudit } from "../accessibility";
@@ -435,12 +435,14 @@ export const createBrowserMcpServer = <E>(
           }
 
           const traceDocument = formatPerformanceTrace(trace);
-          const traceDir = TMP_ARTIFACT_OUTPUT_DIRECTORY;
-          const tracePath = path.join(traceDir, `performance-trace-${Date.now()}.md`);
-          yield* Effect.sync(() => {
-            mkdirSync(traceDir, { recursive: true });
-            writeFileSync(tracePath, traceDocument);
-          });
+          const tracePath = path.join(
+            TMP_ARTIFACT_OUTPUT_DIRECTORY,
+            `performance-trace-${Date.now()}.md`,
+          );
+          yield* Effect.tryPromise(() =>
+            mkdir(TMP_ARTIFACT_OUTPUT_DIRECTORY, { recursive: true }),
+          ).pipe(Effect.catchCause(() => Effect.void));
+          yield* Effect.tryPromise(() => writeFile(tracePath, traceDocument));
 
           const summary = [`Performance trace written to: ${tracePath}`, "", "Web Vitals:"];
           const { webVitals } = trace;

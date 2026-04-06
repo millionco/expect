@@ -7,18 +7,15 @@ import { FFMPEG_TIMEOUT_MS, FRAME_PADDING_PX } from "./constants";
 
 // HACK: resolve wallpaper relative to this file's location. The ../assets path
 // works for the standard monorepo layout; assets/ covers flat bundle output.
-// Returns "" if not found so frameWithWallpaper gracefully skips.
-export const DEFAULT_WALLPAPER_PATH = (() => {
+export const DEFAULT_WALLPAPER_PATH: string | undefined = (() => {
   try {
     const currentDir = dirname(fileURLToPath(import.meta.url));
-    return (
-      [
-        join(currentDir, "..", "assets", "wallpaper.webp"),
-        join(currentDir, "assets", "wallpaper.webp"),
-      ].find(existsSync) ?? ""
-    );
+    return [
+      join(currentDir, "..", "assets", "wallpaper.webp"),
+      join(currentDir, "assets", "wallpaper.webp"),
+    ].find(existsSync);
   } catch {
-    return "";
+    return undefined;
   }
 })();
 
@@ -53,18 +50,25 @@ const resolveFfmpegPath = (): string | undefined => {
 
 export const runFfmpeg = Effect.fn("runFfmpeg")(function* (ffmpegBinary: string, args: string[]) {
   yield* Effect.callback<void, VideoProcessError>((resume) => {
-    execFile(ffmpegBinary, args, { timeout: FFMPEG_TIMEOUT_MS }, (error, _stdout, stderr) => {
-      if (error) {
-        return resume(
-          Effect.fail(
-            new VideoProcessError({
-              cause: stderr || error.message,
-            }),
-          ),
-        );
-      }
-      resume(Effect.void);
-    });
+    const child = execFile(
+      ffmpegBinary,
+      args,
+      { timeout: FFMPEG_TIMEOUT_MS },
+      (error, _stdout, stderr) => {
+        if (error) {
+          return resume(
+            Effect.fail(
+              new VideoProcessError({
+                cause: stderr || error.message,
+              }),
+            ),
+          );
+        }
+        resume(Effect.void);
+      },
+    );
+
+    return Effect.sync(() => child.kill());
   });
 });
 
@@ -109,7 +113,7 @@ export const stripIdleFrames = Effect.fn("stripIdleFrames")(function* (
 export const frameWithWallpaper = Effect.fn("frameWithWallpaper")(function* (
   inputPath: string,
   outputPath: string,
-  wallpaperPath: string,
+  wallpaperPath: string | undefined,
 ) {
   yield* Effect.annotateCurrentSpan({ inputPath, outputPath });
 
@@ -117,7 +121,7 @@ export const frameWithWallpaper = Effect.fn("frameWithWallpaper")(function* (
     return yield* new VideoProcessError({ cause: `Input file not found: ${inputPath}` });
   }
 
-  if (!existsSync(wallpaperPath)) {
+  if (!wallpaperPath || !existsSync(wallpaperPath)) {
     yield* Effect.logDebug("Wallpaper not found, copying video without framing");
     yield* Effect.try({
       try: () => copyFileSync(inputPath, outputPath),

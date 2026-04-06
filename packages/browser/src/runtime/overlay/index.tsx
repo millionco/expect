@@ -304,7 +304,7 @@ const AgentOverlay = () => {
           if (!position?.visible) return undefined;
           return (
             <ActionMarker
-              key={`action-${index}`}
+              key={action.id}
               action={action}
               index={index}
               position={position}
@@ -351,6 +351,7 @@ let setOverlayState: ((updater: (previous: OverlayState) => OverlayState) => voi
 let overlayRoot: ReturnType<typeof createRoot> | undefined;
 let lastCursorX = -1;
 let lastCursorY = -1;
+let nextActionId = 0;
 
 export const initAgentOverlay = (containerId: string): void => {
   if (document.getElementById(containerId)) return;
@@ -480,9 +481,10 @@ export const logAction = (containerId: string, description: string, code: string
     console.debug("[expect-overlay] logAction selector error:", error);
   }
 
+  const actionId = nextActionId++;
   setOverlayState((previous) => ({
     ...previous,
-    actionLog: [...previous.actionLog, { description, code, selector }].slice(
+    actionLog: [...previous.actionLog, { id: actionId, description, code, selector }].slice(
       -MAX_ACTION_LOG_ENTRIES,
     ),
   }));
