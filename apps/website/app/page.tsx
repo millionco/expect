@@ -5,7 +5,185 @@
  */
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { ClaudeSpinner } from "./claude-spinner";
+
+const CODING_DURATION_MS = 2000;
+const SLIDE_DELAY_MS = 800;
+const DIFF_DURATION_MS = 2500;
+
+type AnimationPhase = "coding" | "diff" | "expect";
+
+function useAnimationPhase() {
+  const [phase, setPhase] = useState<AnimationPhase>("coding");
+  const [slid, setSlid] = useState(false);
+
+  useEffect(() => {
+    const diffTimer = setTimeout(() => setPhase("diff"), CODING_DURATION_MS);
+    const slideTimer = setTimeout(() => setSlid(true), CODING_DURATION_MS + SLIDE_DELAY_MS);
+    const expectTimer = setTimeout(() => setPhase("expect"), CODING_DURATION_MS + DIFF_DURATION_MS);
+    return () => {
+      clearTimeout(diffTimer);
+      clearTimeout(slideTimer);
+      clearTimeout(expectTimer);
+    };
+  }, []);
+
+  return { phase, slid };
+}
+
+function TerminalContent({ phase }: { phase: AnimationPhase }) {
+
+  return (
+    <AnimatePresence mode="wait">
+      {phase === "coding" && (
+        <motion.div
+          key="coding"
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+        >
+          <div className="flex items-center w-61 h-7 shrink-0 rounded-xs px-2.5 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696952_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]">
+            <div className="[letter-spacing:-0.125px] inline-block text-[#323232] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+              build signup form
+            </div>
+          </div>
+          <div className="h-2.25 shrink-0" />
+          <ClaudeSpinner message="Coalescing..." />
+        </motion.div>
+      )}
+      {phase === "diff" && (
+        <motion.div
+          key="diff"
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          className="flex flex-col items-start w-61 text-xs/4"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="flex flex-col w-full rounded-[3px] pt-1.25 pb-1.5 bg-[#D7F2D3] px-2"
+          >
+            <div className="flex items-center gap-1.75">
+              <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.040_0.361_0)] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+                12 +
+              </div>
+              <div className="w-42.5 h-3.25 rounded-xs bg-[#B1E4AC] shrink-0" />
+            </div>
+            <div className="flex items-center gap-1.75">
+              <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.040_0.361_0)] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+                13 +
+              </div>
+              <div className="w-23.75 h-3.25 rounded-xs bg-[#B1E4AC] shrink-0" />
+            </div>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut", delay: 0.15 }}
+            className="flex items-center w-full mt-1 rounded-[3px] py-0.75 px-2 gap-1.75 bg-[color(display-p3_1_0.879_0.854)]"
+          >
+            <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.625_0_0)] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+              61 -
+            </div>
+            <div className="w-34 h-3.25 rounded-xs bg-[#F9BFB5] shrink-0" />
+          </motion.div>
+        </motion.div>
+      )}
+      {phase === "expect" && (
+        <motion.div
+          key="expect"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className="flex flex-col pl-0.5 gap-1.25 text-xs/4"
+        >
+          <div className="flex items-center gap-1.25">
+            <div className="inline-block text-[color(display-p3_0.663_0.522_1)] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+              ⏺
+            </div>
+            <div className="inline-block text-[color(display-p3_0.454_0.250_0.783)] font-['GeistMono-SemiBold','Geist_Mono',system-ui,sans-serif] font-semibold shrink-0 text-[12.5px]/4.5">
+              Expect Skill
+            </div>
+          </div>
+          <div className="flex items-center pl-3.75 gap-1.5">
+            <div className="inline-block text-[#1F1F1F] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+              ◯
+            </div>
+            <div className="inline-block text-[#1F1F1F] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+              Security & Perf
+            </div>
+          </div>
+          <div className="flex items-center pl-3.75 gap-1.5">
+            <div className="inline-block text-[#1F1F1F] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+              ◯
+            </div>
+            <div className="inline-block text-[#1F1F1F] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+              Responsiveness
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function TerminalIllustration() {
+  const { phase, slid } = useAnimationPhase();
+
+  return (
+    <div className="flex flex-col items-center justify-center gap-4 text-xs/4 mt-11.5 p-3">
+      <div className="relative w-68.5 h-46 shrink-0 overflow-visible">
+        <motion.div
+          className="absolute top-0 left-0 z-0"
+          animate={slid ? { x: -100, y: -8 } : { x: -12, y: -8 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        >
+          <div className="flex flex-col w-68.5 h-46 rounded-2xl pt-2.5 pr-2.25 pb-6.75 pl-4.75 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]">
+            <div className="flex items-center -ml-1">
+              <div className="flex items-center gap-1.5">
+                <div className="rounded-full bg-[#FF726A] shrink-0 size-2.5" />
+                <div className="rounded-full bg-[#FEBC2E] shrink-0 size-2.5" />
+                <div className="rounded-full bg-[#EAEAEA] shrink-0 size-2.5" />
+              </div>
+              <div className="w-3.5 shrink-0" />
+              <div className="w-36.25 h-6.5 rounded-full shrink-0 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#A4A4A452_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]" />
+              <div className="w-2 shrink-0" />
+              <div className="w-10.5 h-6.5 rounded-full shrink-0 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#A4A4A452_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]" />
+            </div>
+            <div className="tracking-[-0.03em] [white-space-collapse:preserve] mt-4.5 w-max text-[#474747] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-lg/10">
+              Sign up
+            </div>
+            <div className="w-52.75 h-7 rounded-lg bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696952_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] shrink-0" />
+            <div className="w-19.5 h-6.25 rounded-lg mt-2.5 bg-[#FBFBFB] [box-shadow:#69696952_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] shrink-0" />
+          </div>
+        </motion.div>
+        <motion.div
+          className="flex flex-col items-start w-68.5 h-46 relative z-10 rounded-2xl pt-4.5 pr-3.75 pb-6.5 pl-3.75 overflow-clip bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]"
+          animate={slid ? { x: 80 } : { x: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        >
+          <div className="flex shrink-0 gap-1.5">
+            <div className="rounded-full bg-[#FF726A] shrink-0 size-2.5" />
+            <div className="rounded-full bg-[#FEBC2E] shrink-0 size-2.5" />
+            <div className="rounded-full bg-[#EAEAEA] shrink-0 size-2.5" />
+          </div>
+          <div className="h-7 shrink-0" />
+          <div className="flex items-start shrink-0 gap-2.5">
+            <svg width="217" height="144" viewBox="0 0 217 144" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '41px', height: 'auto', flexShrink: '0' }}>
+              <path d="M216.06 57.69H188.18V0H27.88V57.69H0V86.85H27.44V114.73H41.28V143.89H55.57V114.73H68.52V143.45H82.36V115.17H133.42V143.89H147.71V115.17H160.66V143.45H174.06V115.17H187.91V86.85H216.02V57.69H216.06Z" fill="#F76038" />
+              <path d="M55.63 29.61H68.58V57.69H55.63V29.61Z" fill="#FFFFFF" />
+              <path d="M147.76 29.83H160.71V57.69H147.76V29.83Z" fill="#FFFFFF" />
+            </svg>
+          </div>
+          <div className="h-3.5 shrink-0" />
+          <TerminalContent phase={phase} />
+        </motion.div>
+      </div>
+    </div>
+  );
+}
 
 export default function () {
   const [copied, setCopied] = useState(false);
@@ -30,26 +208,10 @@ export default function () {
   return (
     <div className="[font-synthesis:none] overflow-x-clip antialiased min-h-screen bg-white flex justify-center">
       <div className="relative w-112.75 pt-10.25 pb-20">
-        <div className="flex items-center bg-white">
-          <div className="relative w-107.25 h-67.5 shrink-0">
-            <div className="left-0 top-0 w-107.25 h-67.5 rounded-[11px] absolute bg-white [box-shadow:#B0B0B038_0px_0px_0px_0.5px,#95959533_0px_1px_3px] pointer-events-none" />
-            <div className="left-0 top-58.75 w-107.25 h-[0.5px] absolute bg-[#E5E5E5]" />
-            <div className="left-0 top-8.5 w-5.5 h-[0.5px] absolute bg-[#E5E5E5]" />
-            <div className="left-23.75 top-8.5 w-83.5 h-[0.5px] absolute bg-[#E5E5E5]" />
-            <div className="left-5.5 top-0 w-67.5 h-[0.5px] absolute origin-top-left bg-[#E5E5E5]" style={{ rotate: '90deg' }} />
-            <div className="left-102 top-0 w-67.5 h-[0.5px] absolute origin-top-left bg-[#E5E5E5]" style={{ rotate: '90deg' }} />
-            <div className="left-5.5 top-3.5 w-96.5 tracking-[-0.02em] [white-space-collapse:preserve] absolute font-['NewYork-Regular','New_York',system-ui,sans-serif] text-[21px]/9.5 text-[#8A8A8A]">
-              Expect
-            </div>
-            <div className="left-2.75 top-53.5 rounded-full absolute size-11 [box-shadow:#FFFFFF_0px_0px_9px_inset,#85858538_0px_0px_0px_0.5px,#6F6F6F38_0px_1px_3px]" style={{ backgroundImage: 'linear-gradient(in oklab 180deg, oklab(100% 0 0) 0%, oklab(98.1% 0 0) 100%)' }} />
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ left: '24px', top: '227px', width: '18px', height: 'auto', position: 'absolute' }}>
-              <path fillRule="evenodd" clipRule="evenodd" d="M4.055 1.102C3.39 0.659 2.5 1.136 2.5 1.934V10.066C2.5 10.864 3.39 11.341 4.055 10.898L10.153 6.832C10.747 6.436 10.747 5.564 10.153 5.168L4.055 1.102Z" fill="#5F5F5F" />
-            </svg>
-          </div>
-        </div>
+        <TerminalIllustration />
         <div className="flex flex-col gap-2.5 mt-11.5">
           <div className="w-112.75 tracking-[-0.03em] [white-space-collapse:preserve] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[22px]/9.5 text-[color(display-p3_0.248_0.248_0.248)]">
-            Expect verifies what your agent built
+            Expect more from your agents
           </div>
           <div className="[letter-spacing:0em] w-102 [white-space-collapse:preserve] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[15px]/5.75 text-[#707070]">
             Expect is an agent skill that tests your app in a browser so you don't have to. It checks for:
@@ -139,8 +301,8 @@ export default function () {
             </button>
           </div>
         </div>
-        <div className="flex flex-col gap-5.5 w-107.25 mt-8">
-          <div className="h-[0.5px] self-stretch shrink-0 bg-[#DDDDDD]" />
+        <div className="flex flex-col w-107.25 mt-8">
+          <div className="h-[0.5px] self-stretch shrink-0 bg-[#DDDDDD] mb-2.75" />
           {[
             { question: "How is this different from Puppeteer / Playwright / Cypress?", answer: "Instead of writing scripts, maintaining selectors, and wiring up assertions, Expect reads your code changes and tests them in a real browser automatically. It's like giving your agent QA superpowers." },
             { question: "How is this different from coding agents or computer-use tools?", answer: "Your agent needs to verify its work, and general-purpose browser tools rely on screenshots and mouse coordinates.\n\nExpect is purpose-built for testing: it uses Playwright for fast DOM automation, reads your code changes, generates a test plan, and runs it with your real cookies, then reports back what's broken so the agent can fix it." },
@@ -149,8 +311,8 @@ export default function () {
             { question: "Can this do mobile / desktop testing?", answer: "Coming soon." },
             { question: "Is there a cloud or enterprise version?", answer: "Coming soon. Email aiden@million.dev if you have questions or ideas." },
           ].map((faq, index) => (
-            <div key={index}>
-              <div onClick={() => setOpenFaqs((previous) => { const next = new Set(previous); if (next.has(index)) { next.delete(index); } else { next.add(index); } return next; })} className="flex justify-between items-start cursor-pointer group/faq transition-colors hover:text-[#1E1E1E]">
+            <div key={index} onClick={() => setOpenFaqs((previous) => { const next = new Set(previous); if (next.has(index)) { next.delete(index); } else { next.add(index); } return next; })} className="cursor-pointer group/faq pb-2.75">
+              <div className="flex justify-between items-start transition-colors group-hover/faq:text-[#1E1E1E] pt-2.75">
                 <div className={`[letter-spacing:0em] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[15px]/5.75 transition-colors group-hover/faq:text-[#1E1E1E] ${openFaqs.has(index) ? "text-[#1E1E1E]" : "text-[#5A5A5A]"}`}>
                   {faq.question}
                 </div>
@@ -160,7 +322,7 @@ export default function () {
               </div>
               <div className={`grid transition-[grid-template-rows,opacity] duration-200 ${openFaqs.has(index) ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
                 <div className="overflow-hidden">
-                  <div className="[letter-spacing:0em] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[14px]/5.5 text-[#858585] whitespace-pre-line pt-2">
+                  <div className="[letter-spacing:0em] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[14px]/5.5 text-[#858585] whitespace-pre-line mt-1.5">
                     {faq.answer}
                   </div>
                 </div>
