@@ -370,8 +370,8 @@ const AgentOverlay = () => {
               {index + 1}
               {activeMarkerIndex === index && (
                 <div
-                  className="absolute top-[calc(100%+10px)] left-1/2 -translate-x-1/2 px-3 py-2 bg-[#1a1a1a] text-white text-[13px] font-normal rounded-xl whitespace-nowrap overflow-hidden text-ellipsis leading-[1.4] pointer-events-none shadow-[0_4px_20px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.08)] min-w-[120px] max-w-[280px] animate-[expect-tooltip-in_0.1s_ease-out_forwards]"
-                  style={{ transform: "scale(0.909)" }}
+                  className="absolute top-[calc(100%+10px)] left-1/2 px-3 py-2 bg-[#1a1a1a] text-white text-[13px] font-normal rounded-xl whitespace-nowrap overflow-hidden text-ellipsis leading-[1.4] pointer-events-none shadow-[0_4px_20px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.08)] min-w-[120px] max-w-[280px] text-center animate-[expect-tooltip-in_0.1s_ease-out_forwards]"
+                  style={{ transform: "translateX(-50%)" }}
                 >
                   {action.description}
                 </div>
