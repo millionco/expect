@@ -1,17 +1,17 @@
 // HACK: this barrel is the esbuild IIFE entry point for __EXPECT_RUNTIME__;
 // build-runtime.js depends on a single file exporting the full runtime API.
-export { getPerformanceMetrics, getPerformanceTrace } from "./performance";
-export type { PerformanceTrace } from "./performance";
+export { getPerformanceMetrics, getPerformanceTrace } from "./lib/performance";
+export type { PerformanceTrace } from "./lib/performance";
 
 export {
   injectOverlayLabels,
   removeOverlay,
   findCursorInteractiveElements,
-} from "./annotation-overlay";
-export type { CursorInteractiveResult } from "./annotation-overlay";
+} from "./lib/annotation-overlay";
+export type { CursorInteractiveResult } from "./lib/annotation-overlay";
 
-export { prepareViewportSnapshot, restoreViewportSnapshot } from "./scroll-detection";
-export type { ScrollContainerResult } from "./scroll-detection";
+export { prepareViewportSnapshot, restoreViewportSnapshot } from "./lib/scroll-detection";
+export type { ScrollContainerResult } from "./lib/scroll-detection";
 
 export {
   initAgentOverlay,
