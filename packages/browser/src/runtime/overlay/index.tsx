@@ -144,6 +144,7 @@ const AgentOverlay = () => {
 
     let rafId: number;
     let running = true;
+    let previousJson = "";
     const computeRects = () => {
       if (!running) return;
       const rects: HighlightRect[] = [];
@@ -155,7 +156,11 @@ const AgentOverlay = () => {
           rects.push({ x: box.x, y: box.y, width: box.width, height: box.height });
         } catch {}
       }
-      setHighlightRects(rects);
+      const json = JSON.stringify(rects);
+      if (json !== previousJson) {
+        previousJson = json;
+        setHighlightRects(rects);
+      }
       rafId = requestAnimationFrame(computeRects);
     };
     rafId = requestAnimationFrame(computeRects);
@@ -181,6 +186,7 @@ const AgentOverlay = () => {
 
     let rafId: number;
     let running = true;
+    let previousJson = "";
     const computeMarkers = () => {
       if (!running) return;
       const positions: MarkerPosition[] = state.actionLog.map((entry) => {
@@ -194,7 +200,11 @@ const AgentOverlay = () => {
           return { x: 0, y: 0, visible: false };
         }
       });
-      setMarkerPositions(positions);
+      const json = JSON.stringify(positions);
+      if (json !== previousJson) {
+        previousJson = json;
+        setMarkerPositions(positions);
+      }
       rafId = requestAnimationFrame(computeMarkers);
     };
     rafId = requestAnimationFrame(computeMarkers);
@@ -504,7 +514,7 @@ export const logAction = (containerId: string, description: string, code: string
 
     return {
       ...previous,
-      actionLog: [...previous.actionLog, { description, code, selector }],
+      actionLog: [...previous.actionLog, { description, code, selector }].slice(-50),
     };
   });
 };

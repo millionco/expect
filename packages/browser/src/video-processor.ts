@@ -198,24 +198,25 @@ export const concatVideos = Effect.fn("concatVideos")(function* (
     catch: (error) => new VideoProcessError({ cause: String(error) }),
   });
 
-  yield* runFfmpeg(ffmpegBinary, [
-    "-f",
-    "concat",
-    "-safe",
-    "0",
-    "-i",
-    concatListPath,
-    "-c",
-    "copy",
-    "-an",
-    "-y",
-    outputPath,
-  ]);
-
-  yield* Effect.try({
-    try: () => unlinkSync(concatListPath),
-    catch: (error) => new VideoProcessError({ cause: String(error) }),
-  }).pipe(Effect.catchTag("VideoProcessError", () => Effect.void));
+  yield* Effect.ensuring(
+    runFfmpeg(ffmpegBinary, [
+      "-f",
+      "concat",
+      "-safe",
+      "0",
+      "-i",
+      concatListPath,
+      "-c",
+      "copy",
+      "-an",
+      "-y",
+      outputPath,
+    ]),
+    Effect.try({
+      try: () => unlinkSync(concatListPath),
+      catch: (error) => new VideoProcessError({ cause: String(error) }),
+    }).pipe(Effect.catchTag("VideoProcessError", () => Effect.void)),
+  );
 
   yield* Effect.logInfo("Videos concatenated", { outputPath });
 });
