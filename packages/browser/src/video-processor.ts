@@ -85,7 +85,10 @@ export const stripIdleFrames = Effect.fn("stripIdleFrames")(function* (
   const ffmpegBinary = resolveFfmpegPath();
   if (!ffmpegBinary) {
     yield* Effect.logDebug("ffmpeg not available, copying video without processing");
-    yield* Effect.try({ try: () => copyFileSync(inputPath, outputPath), catch: () => undefined });
+    yield* Effect.try({
+      try: () => copyFileSync(inputPath, outputPath),
+      catch: (error) => new VideoProcessError({ cause: String(error) }),
+    }).pipe(Effect.catchTag("VideoProcessError", () => Effect.void));
     return;
   }
 
@@ -117,14 +120,20 @@ export const frameWithWallpaper = Effect.fn("frameWithWallpaper")(function* (
 
   if (!existsSync(wallpaperPath)) {
     yield* Effect.logDebug("Wallpaper not found, copying video without framing");
-    yield* Effect.try({ try: () => copyFileSync(inputPath, outputPath), catch: () => undefined });
+    yield* Effect.try({
+      try: () => copyFileSync(inputPath, outputPath),
+      catch: (error) => new VideoProcessError({ cause: String(error) }),
+    }).pipe(Effect.catchTag("VideoProcessError", () => Effect.void));
     return;
   }
 
   const ffmpegBinary = resolveFfmpegPath();
   if (!ffmpegBinary) {
     yield* Effect.logDebug("ffmpeg not available, copying video without framing");
-    yield* Effect.try({ try: () => copyFileSync(inputPath, outputPath), catch: () => undefined });
+    yield* Effect.try({
+      try: () => copyFileSync(inputPath, outputPath),
+      catch: (error) => new VideoProcessError({ cause: String(error) }),
+    }).pipe(Effect.catchTag("VideoProcessError", () => Effect.void));
     return;
   }
 
@@ -163,8 +172,8 @@ export const concatVideos = Effect.fn("concatVideos")(function* (
   if (validPaths.length === 1) {
     yield* Effect.try({
       try: () => copyFileSync(validPaths[0], outputPath),
-      catch: () => undefined,
-    });
+      catch: (error) => new VideoProcessError({ cause: String(error) }),
+    }).pipe(Effect.catchTag("VideoProcessError", () => Effect.void));
     return;
   }
 
@@ -173,8 +182,8 @@ export const concatVideos = Effect.fn("concatVideos")(function* (
     yield* Effect.logDebug("ffmpeg not available, using last video segment");
     yield* Effect.try({
       try: () => copyFileSync(validPaths[validPaths.length - 1], outputPath),
-      catch: () => undefined,
-    });
+      catch: (error) => new VideoProcessError({ cause: String(error) }),
+    }).pipe(Effect.catchTag("VideoProcessError", () => Effect.void));
     return;
   }
 
@@ -186,8 +195,8 @@ export const concatVideos = Effect.fn("concatVideos")(function* (
     .join("\n");
   yield* Effect.try({
     try: () => writeFileSync(concatListPath, concatList),
-    catch: () => undefined,
-  });
+    catch: (error) => new VideoProcessError({ cause: String(error) }),
+  }).pipe(Effect.catchTag("VideoProcessError", () => Effect.void));
 
   yield* runFfmpeg(ffmpegBinary, [
     "-f",
@@ -205,8 +214,8 @@ export const concatVideos = Effect.fn("concatVideos")(function* (
 
   yield* Effect.try({
     try: () => unlinkSync(concatListPath),
-    catch: () => undefined,
-  });
+    catch: (error) => new VideoProcessError({ cause: String(error) }),
+  }).pipe(Effect.catchTag("VideoProcessError", () => Effect.void));
 
   yield* Effect.logInfo("Videos concatenated", { outputPath });
 });
