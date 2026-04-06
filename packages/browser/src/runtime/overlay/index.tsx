@@ -530,6 +530,7 @@ const AgentOverlay = () => {
       <Toaster
         position="bottom-right"
         visibleToasts={3}
+        expand={false}
         toastOptions={{
           style: {
             background: "#1c1c1c",
@@ -540,7 +541,6 @@ const AgentOverlay = () => {
             fontWeight: 500,
             boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)",
             borderRadius: "12px",
-            pointerEvents: "none",
             maxWidth: "320px",
           },
         }}
