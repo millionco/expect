@@ -515,7 +515,8 @@ const AgentOverlay = () => {
     tooltipRef,
   );
 
-  const showCursor = state.cursorPositioned && !state.userInControl;
+  const hasLabel = Boolean(state.label);
+  const showCursor = (hasLabel || state.cursorPositioned) && !state.userInControl;
   const displayLabel = state.userInControl ? "You're in control" : state.label;
 
   return (
@@ -543,8 +544,8 @@ const AgentOverlay = () => {
           height: `${CURSOR_HEIGHT_PX}px`,
           left: `${cursorX}px`,
           top: `${cursorY}px`,
-          display: showCursor ? "" : "none",
-          transition: `left ${CURSOR_TRANSITION_MS}ms cubic-bezier(0.25, 1, 0.5, 1), top ${CURSOR_TRANSITION_MS}ms cubic-bezier(0.25, 1, 0.5, 1)`,
+          opacity: showCursor ? 1 : 0,
+          transition: `left ${CURSOR_TRANSITION_MS}ms cubic-bezier(0.25, 1, 0.5, 1), top ${CURSOR_TRANSITION_MS}ms cubic-bezier(0.25, 1, 0.5, 1), opacity 150ms ease`,
           animation:
             state.cursorAction === "click" ? "expect-cursor-click 0.2s ease-out 1" : "none",
         }}
