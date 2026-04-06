@@ -1,5 +1,5 @@
-export const CURSOR_SIZE_PX = 48;
-export const CURSOR_HEIGHT_PX = 53;
+export const CURSOR_SIZE_PX = 96;
+export const CURSOR_HEIGHT_PX = 106;
 export const VIEWPORT_PADDING_PX = 8;
 export const CURSOR_TRANSITION_MS = 300;
 export const SRGB_BLUE = "30, 123, 252";
