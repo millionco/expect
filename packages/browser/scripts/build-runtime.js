@@ -89,8 +89,8 @@ const patchSonnerPlugin = {
     build.onLoad({ filter: /sonner[/\\]dist[/\\]index\.m?js$/ }, (args) => {
       let code = fs.readFileSync(args.path, "utf-8");
       code = code.replace(
-        /document\.head\s*\|\|\s*document\.getElementsByTagName\s*\(\s*["']head["']\s*\)\s*\[\s*0\s*\]/g,
-        "null",
+        /function __insertCSS\(code\)\s*\{[\s\S]*?\n\}/,
+        "function __insertCSS() {}",
       );
       return { contents: code, loader: "js" };
     });
