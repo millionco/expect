@@ -529,7 +529,7 @@ export const updateCursor = (
       ...previous,
       cursorX: hasPosition ? x : previous.cursorX,
       cursorY: hasPosition ? y : previous.cursorY,
-      cursorSelector: selector ?? previous.cursorSelector,
+      cursorSelector: selector ?? "",
       label,
       cursorPositioned: hasPosition ? true : previous.cursorPositioned,
     };

@@ -129,6 +129,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
     >(undefined);
     const savedScreenshotPathsRef = yield* Ref.make<string[]>([]);
     const videoSegmentsRef = yield* Ref.make<string[]>([]);
+    const isHeadedRef = yield* Ref.make<boolean>(isHeadedDefault);
 
     const saveScreenshot = Effect.fn("McpSession.saveScreenshot")(function* (buffer: Buffer) {
       const currentPaths = yield* Ref.get(savedScreenshotPathsRef);
@@ -237,7 +238,8 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
             cause: cause instanceof Error ? cause.message : String(cause),
           }),
       });
-      if (isHeadedDefault) {
+      const currentHeaded = yield* Ref.get(isHeadedRef);
+      if (currentHeaded) {
         yield* ensureOverlay(sessionData.page);
       }
     });
@@ -249,6 +251,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       const url = resolveUrl(rawUrl);
       yield* Effect.annotateCurrentSpan({ url });
       yield* Ref.set(savedScreenshotPathsRef, []);
+      yield* Ref.set(videoSegmentsRef, []);
 
       const cookiesOption = yield* resolveCookies(options.cookies);
       const videoOutputDir = path.join(
@@ -266,6 +269,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
 
       const cdpUrl = Option.orElse(options.cdpUrl ?? Option.none(), () => defaultCdpUrl);
       const headed = options.headed ?? isHeadedDefault;
+      yield* Ref.set(isHeadedRef, headed);
 
       const pageResult = yield* browserService.createPage(url, {
         headed,
