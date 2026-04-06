@@ -39,22 +39,8 @@ const imageResult = (base64: string) => ({
 
 const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
 
-// HACK: we parse the agent's playwright code to extract cursor intent before execution.
-// REF_PATTERN finds the first ref('eN') call so we can move the virtual cursor to that
-// element's position eagerly. COMMENT_PATTERN extracts // comments as human-readable
-// labels for the cursor tooltip (falls back to raw code if no comment exists).
 const REF_PATTERN = /ref\s*\(\s*['"](\w+)['"]\s*\)/;
 const REF_PATTERN_GLOBAL = /ref\s*\(\s*['"](\w+)['"]\s*\)/g;
-const COMMENT_PATTERN = /^\s*\/\/\s*(.+)/m;
-const extractCursorLabel = (code: string): string => {
-  const commentMatch = code.match(COMMENT_PATTERN);
-  if (commentMatch) {
-    const label = commentMatch[1].trim();
-    if (!label.startsWith("http")) return label;
-  }
-  const firstLine = code.trim().split("\n")[0];
-  return firstLine.length > 80 ? `${firstLine.slice(0, 77)}...` : firstLine;
-};
 
 const updateCursorLabel = (page: import("playwright").Page, label: string) =>
   evaluateRuntime(page, "updateCursor", AGENT_OVERLAY_CONTAINER_ID, -1, -1, label).pipe(
@@ -206,6 +192,12 @@ export const createBrowserMcpServer = <E>(
         "Execute Playwright code in the Node.js context. Available globals: page (Page), context (BrowserContext), browser (Browser), ref (function: ref ID from snapshot → Playwright Locator). Use `return` to send a value back as JSON. Supports await. Set snapshotAfter=true to automatically take a fresh ARIA snapshot after execution and get updated refs — useful after actions that change the DOM (opening dropdowns, dialogs, navigating).",
       inputSchema: {
         code: z.string().describe("Playwright code to execute"),
+        description: z
+          .string()
+          .optional()
+          .describe(
+            "Short human-readable description of what this action does (e.g. 'Click the login button'). Shown in the overlay tooltip.",
+          ),
         snapshotAfter: z
           .boolean()
           .optional()
@@ -214,14 +206,14 @@ export const createBrowserMcpServer = <E>(
           ),
       },
     },
-    ({ code, snapshotAfter }) =>
+    ({ code, description, snapshotAfter }) =>
       runMcp(
         Effect.gen(function* () {
           const session = yield* McpSession;
           const sessionData = yield* session.requireSession();
           yield* clearRefHighlights(sessionData.page);
 
-          const cursorLabel = extractCursorLabel(code);
+          const cursorLabel = description ?? "Running code";
           const refMatch = code.match(REF_PATTERN);
 
           if (refMatch && sessionData.lastSnapshot) {
