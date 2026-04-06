@@ -376,7 +376,7 @@ const AgentOverlay = () => {
                 cursor: "pointer",
                 userSelect: "none",
                 transform: `translate(-50%, -50%)${activeMarkerIndex === index ? " scale(1.1)" : ""}`,
-                transition: `left ${CURSOR_TRANSITION_MS}ms cubic-bezier(0.25, 1, 0.5, 1), top ${CURSOR_TRANSITION_MS}ms cubic-bezier(0.25, 1, 0.5, 1), background-color 0.15s ease, transform 0.1s ease`,
+                transition: "background-color 0.15s ease, transform 0.1s ease",
                 animation: "expect-marker-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both",
               }}
               onMouseEnter={() => setHoveredAction(index)}
