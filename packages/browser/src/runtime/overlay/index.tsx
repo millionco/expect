@@ -261,7 +261,17 @@ const AgentOverlay = () => {
           {state.label && (
             <>
               <SpiralSpinner visible />
-              <span className="whitespace-pre-wrap break-words animate-[expect-text-shimmer_2s_ease-in-out_infinite]">
+              <span
+                className="whitespace-pre-wrap break-words animate-[expect-text-shimmer_3s_linear_infinite]"
+                style={{
+                  background:
+                    "linear-gradient(90deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.5) 100%)",
+                  backgroundSize: "200% 100%",
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
+                  color: "transparent",
+                }}
+              >
                 {state.label}
               </span>
             </>

@@ -56,12 +56,11 @@
 }
 
 @keyframes expect-text-shimmer {
-  0%,
-  100% {
-    opacity: 1;
+  0% {
+    background-position: -200% 0;
   }
-  50% {
-    opacity: 0.5;
+  100% {
+    background-position: 200% 0;
   }
 }
 
