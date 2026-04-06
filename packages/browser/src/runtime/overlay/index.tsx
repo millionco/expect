@@ -330,6 +330,10 @@ const AgentOverlay = () => {
     setState((previous) => ({ ...previous, overlayVisible: !previous.overlayVisible }));
   };
 
+  const toggleToolbar = () => {
+    setState((previous) => ({ ...previous, toolbarExpanded: !previous.toolbarExpanded }));
+  };
+
   return (
     <>
       {state.overlayVisible && <Glow />}
@@ -354,28 +358,70 @@ const AgentOverlay = () => {
       )}
 
       <div className="fixed bottom-5 right-5 z-[2147483647] pointer-events-auto">
-        <div className="flex items-center h-[44px] px-1.5 rounded-[22px] bg-[#1a1a1a] text-white text-sm font-medium shadow-[0_2px_8px_rgba(0,0,0,0.2),0_4px_16px_rgba(0,0,0,0.1)] font-[system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,sans-serif]">
-          <ToolbarControls
-            selectActive={state.selectMode}
-            overlayVisible={state.overlayVisible}
-            onToggleSelect={toggleSelect}
-            onToggleOverlay={toggleOverlay}
-          />
-          {state.label && (
-            <div className="flex items-center gap-2.5 pr-2.5 pl-1">
-              <SpiralSpinner visible />
-              <span
-                className="overflow-hidden text-ellipsis whitespace-nowrap max-w-60 bg-clip-text text-transparent animate-[expect-text-shimmer_3s_linear_infinite]"
-                style={{
-                  background:
-                    "linear-gradient(90deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.5) 100%)",
-                  backgroundSize: "200% 100%",
-                  WebkitBackgroundClip: "text",
-                  backgroundClip: "text",
-                }}
+        <div
+          className="relative flex items-center justify-center bg-[#1a1a1a] text-white shadow-[0_2px_8px_rgba(0,0,0,0.2),0_4px_16px_rgba(0,0,0,0.1)] font-[system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,sans-serif]"
+          style={{
+            height: "44px",
+            borderRadius: "22px",
+            width: state.toolbarExpanded ? "auto" : "44px",
+            padding: state.toolbarExpanded ? "0 6px" : "0",
+            cursor: state.toolbarExpanded ? "default" : "pointer",
+            transition: "width 0.4s cubic-bezier(0.19, 1, 0.22, 1)",
+          }}
+          onClick={state.toolbarExpanded ? undefined : toggleToolbar}
+        >
+          {state.actionLog.length > 0 && !state.toolbarExpanded && (
+            <div
+              className="absolute -top-3 -right-3 flex items-center justify-center rounded-full text-white text-[10px] font-semibold select-none"
+              style={{
+                minWidth: "18px",
+                height: "18px",
+                padding: "0 5px",
+                background: `rgb(${SRGB_BLUE})`,
+                boxShadow: "0 1px 3px rgba(0,0,0,0.15), inset 0 0 0 1px rgba(255,255,255,0.04)",
+              }}
+            >
+              {state.actionLog.length}
+            </div>
+          )}
+
+          {!state.toolbarExpanded && <SpiralSpinner visible={Boolean(state.label)} />}
+
+          {state.toolbarExpanded && (
+            <div className="flex items-center text-sm font-medium">
+              <ToolbarControls
+                selectActive={state.selectMode}
+                overlayVisible={state.overlayVisible}
+                onToggleSelect={toggleSelect}
+                onToggleOverlay={toggleOverlay}
+              />
+              {state.label && (
+                <div className="flex items-center gap-2.5 pr-2.5 pl-1">
+                  <SpiralSpinner visible />
+                  <span
+                    className="overflow-hidden text-ellipsis whitespace-nowrap max-w-60 bg-clip-text text-transparent animate-[expect-text-shimmer_3s_linear_infinite]"
+                    style={{
+                      background:
+                        "linear-gradient(90deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.5) 100%)",
+                      backgroundSize: "200% 100%",
+                      WebkitBackgroundClip: "text",
+                      backgroundClip: "text",
+                    }}
+                  >
+                    {state.label}
+                  </span>
+                </div>
+              )}
+              <button
+                type="button"
+                className="flex items-center justify-center size-8 rounded-full border-none p-0 cursor-pointer text-white/60 hover:text-white hover:bg-white/10 transition-colors duration-150 active:scale-[0.92]"
+                style={{ background: "transparent" }}
+                onClick={toggleToolbar}
               >
-                {state.label}
-              </span>
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+                </svg>
+              </button>
             </div>
           )}
         </div>

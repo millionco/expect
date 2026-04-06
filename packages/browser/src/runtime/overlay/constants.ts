@@ -34,6 +34,7 @@ export interface OverlayState {
   selectMode: boolean;
   overlayVisible: boolean;
   selectedSelector: string;
+  toolbarExpanded: boolean;
 }
 
 export interface CursorPersisted {

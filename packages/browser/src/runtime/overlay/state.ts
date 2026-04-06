@@ -38,6 +38,7 @@ export const loadInitialState = (): OverlayState => {
     selectMode: false,
     overlayVisible: true,
     selectedSelector: "",
+    toolbarExpanded: false,
   };
 };
 
