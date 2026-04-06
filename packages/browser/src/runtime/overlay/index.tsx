@@ -138,8 +138,23 @@ const AgentOverlay = () => {
     };
   }, []);
 
+  const [selectHoverRect, setSelectHoverRect] = useState<HighlightRect | undefined>(undefined);
+
   useEffect(() => {
-    if (!state.selectMode) return;
+    if (!state.selectMode) {
+      setSelectHoverRect(undefined);
+      return;
+    }
+
+    const onMouseMove = (event: MouseEvent) => {
+      const target = document.elementFromPoint(event.clientX, event.clientY);
+      if (!target || target.closest(`[data-expect-overlay]`)) {
+        setSelectHoverRect(undefined);
+        return;
+      }
+      const box = target.getBoundingClientRect();
+      setSelectHoverRect({ x: box.x, y: box.y, width: box.width, height: box.height });
+    };
 
     const onClick = (event: MouseEvent) => {
       const target = event.target as Element;
@@ -156,9 +171,11 @@ const AgentOverlay = () => {
       } catch {}
     };
 
+    document.addEventListener("mousemove", onMouseMove, true);
     document.addEventListener("click", onClick, true);
     document.body.style.cursor = "crosshair";
     return () => {
+      document.removeEventListener("mousemove", onMouseMove, true);
       document.removeEventListener("click", onClick, true);
       document.body.style.cursor = "";
     };
@@ -455,6 +472,20 @@ const AgentOverlay = () => {
             </div>
           );
         })}
+
+      {selectHoverRect && (
+        <div
+          className="fixed pointer-events-none z-[2147483646] rounded-[3px]"
+          style={{
+            left: `${selectHoverRect.x}px`,
+            top: `${selectHoverRect.y}px`,
+            width: `${selectHoverRect.width}px`,
+            height: `${selectHoverRect.height}px`,
+            border: `2px solid rgb(${SRGB_BLUE})`,
+            background: `rgba(${SRGB_BLUE}, 0.08)`,
+          }}
+        />
+      )}
 
       {selectedRect && (
         <div
