@@ -349,6 +349,21 @@ const AgentOverlay = () => {
   }, [state.cursorX, state.cursorY, state.label, state.cursorPositioned]);
 
   useEffect(() => {
+    const onResize = () => {
+      const saved = loadCursorState();
+      if (!saved?.positioned) return;
+      const viewport = getViewport();
+      setState((previous) => ({
+        ...previous,
+        cursorX: saved.relativeX * viewport.width,
+        cursorY: saved.relativeY * viewport.height,
+      }));
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  useEffect(() => {
     let clickTimeout: ReturnType<typeof setTimeout> | undefined;
 
     const onMouseDown = () => {
