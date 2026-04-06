@@ -30,9 +30,7 @@ describe("Browsers", () => {
       const results = yield* browsers.list;
       const chromium = results.filter((browser) => browser._tag === "ChromiumBrowser");
 
-      assert.isTrue(
-        chromium.every((browser) => browser.profileName !== "System Profile"),
-      );
+      assert.isTrue(chromium.every((browser) => browser.profileName !== "System Profile"));
     }).pipe(Effect.provide(layerLive), Effect.runPromise));
 
   it("defaultBrowser returns a known browser or none", () =>
