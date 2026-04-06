@@ -406,16 +406,6 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
       return yield* snapshot(page, options);
     });
 
-    const hideAgentOverlayForCapture = (page: Page) =>
-      evaluateRuntime(page, "hideAgentOverlay", AGENT_OVERLAY_CONTAINER_ID).pipe(
-        Effect.catchCause(() => Effect.void),
-      );
-
-    const showAgentOverlayAfterCapture = (page: Page) =>
-      evaluateRuntime(page, "showAgentOverlay", AGENT_OVERLAY_CONTAINER_ID).pipe(
-        Effect.catchCause(() => Effect.void),
-      );
-
     const annotatedScreenshot = Effect.fn("Browser.annotatedScreenshot")(function* (
       page: Page,
       options: AnnotatedScreenshotOptions = {},
@@ -438,7 +428,9 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
         labelPositions.push({ label: labelCounter, x: box.x, y: box.y });
       }
 
-      yield* hideAgentOverlayForCapture(page);
+      yield* evaluateRuntime(page, "hideAgentOverlay", AGENT_OVERLAY_CONTAINER_ID).pipe(
+        Effect.catchCause(() => Effect.void),
+      );
       yield* injectOverlayLabels(page, labelPositions);
       return yield* Effect.ensuring(
         Effect.tryPromise({
@@ -448,7 +440,11 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
         // HACK: overlay removal is best-effort cleanup — evaluateRuntime uses Effect.promise which defects on failure
         evaluateRuntime(page, "removeOverlay", OVERLAY_CONTAINER_ID).pipe(
           Effect.catchCause(() => Effect.void),
-          Effect.tap(() => showAgentOverlayAfterCapture(page)),
+          Effect.tap(() =>
+            evaluateRuntime(page, "showAgentOverlay", AGENT_OVERLAY_CONTAINER_ID).pipe(
+              Effect.catchCause(() => Effect.void),
+            ),
+          ),
         ),
       );
     });
