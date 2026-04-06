@@ -5,6 +5,7 @@ const TICK_MS = 250;
 const CELL_PX = 4;
 const GAP_PX = 2;
 const CANVAS_SIZE = 3 * CELL_PX + 2 * GAP_PX;
+const DISPLAY_SIZE = `${CANVAS_SIZE}px`;
 
 const GLIDER_FRAMES = [
   [
@@ -71,7 +72,7 @@ export const SpiralSpinner = ({ visible }: { visible: boolean }) => {
       width={CANVAS_SIZE}
       height={CANVAS_SIZE}
       className="shrink-0"
-      style={{ width: "16px", height: "16px", imageRendering: "pixelated" }}
+      style={{ width: DISPLAY_SIZE, height: DISPLAY_SIZE }}
     />
   );
 };
