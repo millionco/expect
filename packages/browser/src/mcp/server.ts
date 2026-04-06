@@ -42,26 +42,6 @@ const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
 const REF_PATTERN = /ref\s*\(\s*['"](\w+)['"]\s*\)/;
 const REF_PATTERN_GLOBAL = /ref\s*\(\s*['"](\w+)['"]\s*\)/g;
 
-const getSelectedElement = (page: import("playwright").Page) =>
-  evaluateRuntime(page, "getSelectedSelector").pipe(Effect.catchCause(() => Effect.succeed("")));
-
-const prependSelectedNotice = <T extends { content: Array<{ type: string; text?: string }> }>(
-  result: T,
-  selectedSelector: string,
-): T => {
-  if (!selectedSelector) return result;
-  return {
-    ...result,
-    content: [
-      {
-        type: "text" as const,
-        text: `[USER SELECTED ELEMENT] The user has selected an element on the page for your attention: \`${selectedSelector}\`. Consider this element in your actions and observations.`,
-      },
-      ...result.content,
-    ],
-  };
-};
-
 const updateCursorLabel = (page: import("playwright").Page, label: string) =>
   evaluateRuntime(page, "updateCursor", AGENT_OVERLAY_CONTAINER_ID, -1, -1, label).pipe(
     Effect.catchCause(() => Effect.void),
@@ -249,7 +229,6 @@ export const createBrowserMcpServer = <E>(
         Effect.gen(function* () {
           const session = yield* McpSession;
           const sessionData = yield* session.requireSession();
-          const selectedSelector = yield* getSelectedElement(sessionData.page);
           yield* clearRefHighlights(sessionData.page);
 
           const cursorLabel = description ?? "Working…";
@@ -300,10 +279,7 @@ export const createBrowserMcpServer = <E>(
           ).pipe(Effect.catchCause(() => Effect.void));
 
           if (!codeResult.success) {
-            return prependSelectedNotice(
-              textResult(`Error: ${codeResult.error}`),
-              selectedSelector,
-            );
+            return textResult(`Error: ${codeResult.error}`);
           }
 
           if (snapshotAfter) {
@@ -326,12 +302,11 @@ export const createBrowserMcpServer = <E>(
                       stats: snapshotResult.stats,
                     },
                   };
-            return prependSelectedNotice(jsonResult(resultPayload), selectedSelector);
+            return jsonResult(resultPayload);
           }
 
-          if (codeResult.value === undefined)
-            return prependSelectedNotice(textResult("OK"), selectedSelector);
-          return prependSelectedNotice(jsonResult(codeResult.value), selectedSelector);
+          if (codeResult.value === undefined) return textResult("OK");
+          return jsonResult(codeResult.value);
         }).pipe(Effect.withSpan(`mcp.tool.playwright`)),
       ),
   );
@@ -361,7 +336,6 @@ export const createBrowserMcpServer = <E>(
         Effect.gen(function* () {
           const session = yield* McpSession;
           const page = yield* session.requirePage();
-          const selectedSelector = yield* getSelectedElement(page);
           const resolvedMode = mode ?? "screenshot";
           yield* updateCursorLabel(page, `Taking ${resolvedMode}`);
 
@@ -376,36 +350,30 @@ export const createBrowserMcpServer = <E>(
               ),
             );
             yield* session.updateLastSnapshot(result);
-            return prependSelectedNotice(
-              jsonResult({ tree: result.tree, refs: result.refs, stats: result.stats }),
-              selectedSelector,
-            );
+            return jsonResult({ tree: result.tree, refs: result.refs, stats: result.stats });
           }
 
           if (resolvedMode === "annotated") {
             const result = yield* session.annotatedScreenshot(page, { fullPage });
             yield* session.saveScreenshot(result.screenshot);
-            return prependSelectedNotice(
-              {
-                content: [
-                  {
-                    type: "image" as const,
-                    data: result.screenshot.toString("base64"),
-                    mimeType: "image/png",
-                  },
-                  {
-                    type: "text" as const,
-                    text: result.annotations
-                      .map(
-                        (annotation) =>
-                          `[${annotation.label}] @${annotation.ref} ${annotation.role} "${annotation.name}"`,
-                      )
-                      .join("\n"),
-                  },
-                ],
-              },
-              selectedSelector,
-            );
+            return {
+              content: [
+                {
+                  type: "image" as const,
+                  data: result.screenshot.toString("base64"),
+                  mimeType: "image/png",
+                },
+                {
+                  type: "text" as const,
+                  text: result.annotations
+                    .map(
+                      (annotation) =>
+                        `[${annotation.label}] @${annotation.ref} ${annotation.role} "${annotation.name}"`,
+                    )
+                    .join("\n"),
+                },
+              ],
+            };
           }
 
           yield* evaluateRuntime(page, "hideAgentOverlay", AGENT_OVERLAY_CONTAINER_ID).pipe(
@@ -418,7 +386,7 @@ export const createBrowserMcpServer = <E>(
             ),
           );
           yield* session.saveScreenshot(buffer);
-          return prependSelectedNotice(imageResult(buffer.toString("base64")), selectedSelector);
+          return imageResult(buffer.toString("base64"));
         }).pipe(Effect.withSpan(`mcp.tool.screenshot`)),
       ),
   );

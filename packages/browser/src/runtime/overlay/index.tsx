@@ -24,8 +24,7 @@ import { CursorIcon, detectCursorShape } from "./cursors";
 import { SpiralSpinner } from "./spiral-spinner";
 import { Glow } from "./glow";
 import { ToolbarControls } from "./toolbar-controls";
-
-const TOOLTIP_MAX_WIDTH_PX = 320;
+import { ActionHistory } from "./action-history";
 
 const AgentOverlay = () => {
   const [state, setState] = useState<OverlayState>(loadInitialState);
@@ -36,8 +35,6 @@ const AgentOverlay = () => {
       setOverlayState = undefined;
     };
   }, []);
-
-  currentState = state;
 
   useEffect(() => {
     const viewport = getViewport();
@@ -137,81 +134,6 @@ const AgentOverlay = () => {
       clearTimeout(clickTimeout);
     };
   }, []);
-
-  const [selectHoverRect, setSelectHoverRect] = useState<HighlightRect | undefined>(undefined);
-
-  useEffect(() => {
-    if (!state.selectMode) {
-      setSelectHoverRect(undefined);
-      return;
-    }
-
-    const onMouseMove = (event: MouseEvent) => {
-      const target = document.elementFromPoint(event.clientX, event.clientY);
-      if (!target || target.closest(`[data-expect-overlay]`)) {
-        setSelectHoverRect(undefined);
-        return;
-      }
-      const box = target.getBoundingClientRect();
-      setSelectHoverRect({ x: box.x, y: box.y, width: box.width, height: box.height });
-    };
-
-    const onClick = (event: MouseEvent) => {
-      const target = event.target as Element;
-      if (target?.closest?.(`[data-expect-overlay]`)) return;
-      event.preventDefault();
-      event.stopPropagation();
-      try {
-        const selector = finder(target);
-        setState((previous) => ({
-          ...previous,
-          selectMode: false,
-          selectedSelector: selector,
-        }));
-      } catch {}
-    };
-
-    document.addEventListener("mousemove", onMouseMove, true);
-    document.addEventListener("click", onClick, true);
-    document.body.style.cursor = "crosshair";
-    return () => {
-      document.removeEventListener("mousemove", onMouseMove, true);
-      document.removeEventListener("click", onClick, true);
-      document.body.style.cursor = "";
-    };
-  }, [state.selectMode]);
-
-  const [selectedRect, setSelectedRect] = useState<HighlightRect | undefined>(undefined);
-
-  useEffect(() => {
-    if (!state.selectedSelector) {
-      setSelectedRect(undefined);
-      return;
-    }
-
-    let rafId: number;
-    let running = true;
-    const trackSelected = () => {
-      if (!running) return;
-      try {
-        const element = document.querySelector(state.selectedSelector);
-        if (element) {
-          const box = element.getBoundingClientRect();
-          setSelectedRect({ x: box.x, y: box.y, width: box.width, height: box.height });
-        } else {
-          setSelectedRect(undefined);
-        }
-      } catch {
-        setSelectedRect(undefined);
-      }
-      rafId = requestAnimationFrame(trackSelected);
-    };
-    rafId = requestAnimationFrame(trackSelected);
-    return () => {
-      running = false;
-      cancelAnimationFrame(rafId);
-    };
-  }, [state.selectedSelector]);
 
   const [highlightRects, setHighlightRects] = useState<HighlightRect[]>([]);
 
@@ -321,10 +243,7 @@ const AgentOverlay = () => {
 
   const hasLabel = Boolean(state.label);
   const showCursor = hasLabel || state.cursorPositioned;
-
-  const toggleSelect = () => {
-    setState((previous) => ({ ...previous, selectMode: !previous.selectMode }));
-  };
+  const isExpanded = state.toolbarExpanded || hasLabel;
 
   const toggleOverlay = () => {
     setState((previous) => ({ ...previous, overlayVisible: !previous.overlayVisible }));
@@ -357,12 +276,18 @@ const AgentOverlay = () => {
         </div>
       )}
 
-      <div className="fixed bottom-5 right-5 z-[2147483647] pointer-events-auto">
+      <div className="fixed bottom-5 right-5 z-[2147483647] pointer-events-auto font-[system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,sans-serif]">
+        {state.toolbarExpanded && state.actionLog.length > 0 && (
+          <div className="mb-2 rounded-xl bg-[#1a1a1a] text-white shadow-[0_2px_8px_rgba(0,0,0,0.2),0_4px_16px_rgba(0,0,0,0.1)] overflow-hidden w-72">
+            <ActionHistory actions={state.actionLog} />
+          </div>
+        )}
+
         <div
-          className={`relative flex items-center justify-center h-[44px] rounded-[22px] bg-[#1a1a1a] text-white shadow-[0_2px_8px_rgba(0,0,0,0.2),0_4px_16px_rgba(0,0,0,0.1)] font-[system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,sans-serif] transition-[width] duration-400 ease-[cubic-bezier(0.19,1,0.22,1)] ${state.toolbarExpanded ? "w-auto px-1.5" : "w-[44px] cursor-pointer hover:bg-[#2a2a2a] active:scale-95"}`}
-          onClick={state.toolbarExpanded ? undefined : toggleToolbar}
+          className={`relative flex items-center justify-center h-[44px] rounded-[22px] bg-[#1a1a1a] text-white shadow-[0_2px_8px_rgba(0,0,0,0.2),0_4px_16px_rgba(0,0,0,0.1)] transition-[width] duration-400 ease-[cubic-bezier(0.19,1,0.22,1)] ${isExpanded ? "w-auto px-1.5" : "w-[44px] cursor-pointer hover:bg-[#2a2a2a] active:scale-95"}`}
+          onClick={isExpanded ? undefined : toggleToolbar}
         >
-          {state.actionLog.length > 0 && !state.toolbarExpanded && (
+          {state.actionLog.length > 0 && !isExpanded && (
             <div
               className="absolute -top-3 -right-3 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-white text-[10px] font-semibold select-none shadow-[0_1px_3px_rgba(0,0,0,0.15),inset_0_0_0_1px_rgba(255,255,255,0.04)]"
               style={{ background: `rgb(${SRGB_BLUE})` }}
@@ -371,33 +296,30 @@ const AgentOverlay = () => {
             </div>
           )}
 
-          {!state.toolbarExpanded && <SpiralSpinner visible={Boolean(state.label)} />}
+          {!isExpanded && <SpiralSpinner visible={hasLabel} />}
 
-          {state.toolbarExpanded && (
+          {isExpanded && (
             <div className="flex items-center text-sm font-medium">
               <ToolbarControls
-                selectActive={state.selectMode}
                 overlayVisible={state.overlayVisible}
-                onToggleSelect={toggleSelect}
                 onToggleOverlay={toggleOverlay}
               />
-              {state.label && (
-                <div className="flex items-center gap-2.5 pr-2.5 pl-1">
-                  <SpiralSpinner visible />
-                  <span
-                    className="overflow-hidden text-ellipsis whitespace-nowrap max-w-60 bg-clip-text text-transparent animate-[expect-text-shimmer_3s_linear_infinite]"
-                    style={{
-                      background:
-                        "linear-gradient(90deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.5) 100%)",
-                      backgroundSize: "200% 100%",
-                      WebkitBackgroundClip: "text",
-                      backgroundClip: "text",
-                    }}
-                  >
-                    {state.label}
-                  </span>
-                </div>
-              )}
+              <div className="flex items-center gap-2.5 pr-2.5 pl-1">
+                <SpiralSpinner visible={hasLabel} />
+                <span
+                  className="overflow-hidden text-ellipsis whitespace-nowrap max-w-60 bg-clip-text text-transparent animate-[expect-text-shimmer_3s_linear_infinite]"
+                  style={{
+                    background:
+                      "linear-gradient(90deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.5) 100%)",
+                    backgroundSize: "200% 100%",
+                    WebkitBackgroundClip: "text",
+                    backgroundClip: "text",
+                    opacity: hasLabel ? 1 : 0,
+                  }}
+                >
+                  {state.label || "Idle"}
+                </span>
+              </div>
               <button
                 type="button"
                 className="flex items-center justify-center size-8 rounded-full border-none bg-transparent p-0 cursor-pointer text-white/60 hover:text-white hover:bg-white/10 transition-colors duration-150 active:scale-[0.92]"
@@ -449,29 +371,8 @@ const AgentOverlay = () => {
               {index + 1}
               {activeMarkerIndex === index && (
                 <div
-                  style={{
-                    position: "absolute",
-                    top: "calc(100% + 10px)",
-                    left: "50%",
-                    transform: "translateX(-50%) scale(0.909)",
-                    background: "#1a1a1a",
-                    color: "#fff",
-                    padding: "8px 12px",
-                    borderRadius: "12px",
-                    fontFamily:
-                      "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                    fontWeight: 400,
-                    fontSize: "13px",
-                    boxShadow: "0 4px 20px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.08)",
-                    minWidth: "120px",
-                    maxWidth: "280px",
-                    pointerEvents: "none",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    lineHeight: 1.4,
-                    animation: "expect-tooltip-in 0.1s ease-out forwards",
-                  }}
+                  className="absolute top-[calc(100%+10px)] left-1/2 -translate-x-1/2 px-3 py-2 bg-[#1a1a1a] text-white text-[13px] font-normal rounded-xl whitespace-nowrap overflow-hidden text-ellipsis leading-[1.4] pointer-events-none shadow-[0_4px_20px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.08)] min-w-[120px] max-w-[280px] animate-[expect-tooltip-in_0.1s_ease-out_forwards]"
+                  style={{ transform: "scale(0.909)" }}
                 >
                   {action.description}
                 </div>
@@ -479,34 +380,6 @@ const AgentOverlay = () => {
             </div>
           );
         })}
-
-      {selectHoverRect && (
-        <div
-          className="fixed pointer-events-none z-[2147483646] rounded-[3px]"
-          style={{
-            left: `${selectHoverRect.x}px`,
-            top: `${selectHoverRect.y}px`,
-            width: `${selectHoverRect.width}px`,
-            height: `${selectHoverRect.height}px`,
-            border: `2px solid rgb(${SRGB_BLUE})`,
-            background: `rgba(${SRGB_BLUE}, 0.08)`,
-          }}
-        />
-      )}
-
-      {selectedRect && (
-        <div
-          className="fixed pointer-events-none z-[2147483646] rounded-[3px]"
-          style={{
-            left: `${selectedRect.x}px`,
-            top: `${selectedRect.y}px`,
-            width: `${selectedRect.width}px`,
-            height: `${selectedRect.height}px`,
-            border: `2px solid rgb(${SRGB_BLUE})`,
-            boxShadow: `0 0 0 1px rgba(${SRGB_BLUE}, 0.3), 0 0 8px rgba(${SRGB_BLUE}, 0.15)`,
-          }}
-        />
-      )}
 
       {state.overlayVisible &&
         highlightRects.map((rect, index) => (
@@ -530,7 +403,6 @@ const AgentOverlay = () => {
 
 let setOverlayState: ((updater: (previous: OverlayState) => OverlayState) => void) | undefined;
 let overlayRoot: ReturnType<typeof createRoot> | undefined;
-let currentState: OverlayState | undefined;
 
 export const initAgentOverlay = (containerId: string): void => {
   if (document.getElementById(containerId)) return;
@@ -633,9 +505,4 @@ export const logAction = (containerId: string, description: string, code: string
       actionLog: [...previous.actionLog, { description, code, selector }],
     };
   });
-};
-
-export const getSelectedSelector = (): string => {
-  if (!currentState) return "";
-  return currentState.selectedSelector;
 };

@@ -22,7 +22,6 @@ export {
   highlightRefs,
   clearHighlights,
   logAction,
-  getSelectedSelector,
 } from "./overlay";
 
 import { finder } from "@medv/finder";

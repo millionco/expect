@@ -31,9 +31,7 @@ export interface OverlayState {
   clickCount: number;
   highlightSelectors: string[];
   actionLog: ActionLogEntry[];
-  selectMode: boolean;
   overlayVisible: boolean;
-  selectedSelector: string;
   toolbarExpanded: boolean;
 }
 
