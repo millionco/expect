@@ -1,0 +1,25 @@
+packages/cookies/src/browser-detector.ts
+  f4029477402ac35f 20-21,25-26
+packages/cookies/tests/browsers.test.ts
+  f4029477402ac35f 27-37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "6fc7aa763d505f1cfaea83f687bb97e660607b45",
+  "prompts": {
+    "f4029477402ac35f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "65bd9674-eb9a-4f74-ab41-b3e3670d8a3c",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 853,
+      "total_deletions": 702,
+      "accepted_lines": 43,
+      "overriden_lines": 36
+    }
+  }
+}
