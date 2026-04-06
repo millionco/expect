@@ -10,7 +10,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { ClaudeSpinner } from "./claude-spinner";
 
 const CODING_DURATION_MS = 2000;
-const SLIDE_DELAY_MS = 800;
+const SLIDE_DELAY_MS = 500;
 const DIFF_DURATION_MS = 2500;
 
 type AnimationPhase = "coding" | "diff" | "expect";
@@ -52,8 +52,8 @@ function TerminalContent({ phase }: { phase: AnimationPhase }) {
   return (
     <motion.div
       className="flex flex-col items-start w-61 text-xs/4 gap-1"
-      animate={{ y: showExpect ? -32 : showDiff ? -10 : 0 }}
-      transition={{ duration: 0.15, ease: "linear" }}
+      animate={{ y: showExpect ? -180 : showDiff ? -70 : 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
     >
       <div className="h-7 shrink-0" />
       <div className="flex items-start shrink-0 gap-2.5">
@@ -74,17 +74,21 @@ function TerminalContent({ phase }: { phase: AnimationPhase }) {
         {!showDiff && <ClaudeSpinner message="Coalescing..." />}
         {showDiff && (
           <div className="flex items-center shrink-0 gap-1.25">
-            <div className="inline-block text-[#D74B25] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
-              ✢
+            <div className="inline-block [white-space-collapse:preserve] w-max text-[color(display-p3_0.249_0.701_0.193)] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+              ⏺
             </div>
-            <div className="[letter-spacing:0px] inline-block text-[#D74B25] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
-              Done (1.2s)
+            <div className="[letter-spacing:-0.125px] inline-block [white-space-collapse:preserve] w-max text-[#1F1F1F] font-['GeistMono-SemiBold','Geist_Mono',system-ui,sans-serif] font-semibold shrink-0 text-[12.5px]/4.5">
+              Update
+            </div>
+            <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[#1F1F1F] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+              (signup.tsx)
             </div>
           </div>
         )}
       </div>
       {showDiff && (
         <>
+          <div className="h-0.5 shrink-0" />
           <TerminalLine>
             <div className="flex flex-col w-full rounded-[3px] pt-1.25 pb-1.5 bg-[#D7F2D3] px-2">
               <div className="flex items-center gap-1.75">
@@ -112,7 +116,7 @@ function TerminalContent({ phase }: { phase: AnimationPhase }) {
         </>
       )}
       {showExpect && (
-        <div className="flex flex-col pl-0.5 gap-1.25 mt-1">
+        <div className="flex flex-col pl-0.5 gap-1.25 mt-4">
           <TerminalLine>
             <div className="flex items-center gap-1.25">
               <div className="inline-block text-[color(display-p3_0.663_0.522_1)] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
@@ -184,11 +188,13 @@ function TerminalIllustration() {
           animate={slid ? { x: 80 } : { x: 0 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
         >
-          <div className="flex shrink-0 gap-1.5">
+          <div className="flex shrink-0 gap-1.5 relative z-20">
             <div className="rounded-full bg-[#FF726A] shrink-0 size-2.5" />
             <div className="rounded-full bg-[#FEBC2E] shrink-0 size-2.5" />
             <div className="rounded-full bg-[#EAEAEA] shrink-0 size-2.5" />
           </div>
+          <div className="absolute top-0 left-0 right-0 h-14 z-10 pointer-events-none rounded-t-2xl" style={{ background: 'linear-gradient(to bottom, white 30%, transparent 100%)' }} />
+          <div className="absolute bottom-0 left-0 right-0 h-8 z-10 pointer-events-none rounded-b-2xl" style={{ background: 'linear-gradient(to top, white 0%, transparent 100%)' }} />
           <TerminalContent phase={phase} />
         </motion.div>
       </div>

@@ -56,14 +56,15 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">
+      <head>
         {process.env.NODE_ENV === "development" && (
-          <Script
+          <script
             src="//unpkg.com/react-grab/dist/index.global.js"
             crossOrigin="anonymous"
-            strategy="beforeInteractive"
           />
         )}
+      </head>
+      <body className="min-h-full flex flex-col">
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
