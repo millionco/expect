@@ -291,7 +291,7 @@ const AgentOverlay = () => {
                 : undefined
           }
         >
-          {state.actionLog.length > 0 && !isExpanded && (
+          {state.actionLog.length > 0 && (
             <div
               className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-white text-[10px] font-semibold select-none shadow-[0_1px_3px_rgba(0,0,0,0.15),inset_0_0_0_1px_rgba(255,255,255,0.04)]"
               style={{ background: `rgb(${SRGB_BLUE})` }}
