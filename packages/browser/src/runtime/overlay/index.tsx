@@ -27,6 +27,7 @@ import { CursorIcon, detectCursorShape } from "./cursors";
 import { SpiralSpinner } from "./spiral-spinner";
 import { Glow } from "./glow";
 import { ToolbarControls } from "./toolbar-controls";
+import { XMarkIcon } from "@heroicons/react/16/solid";
 
 interface MarkerPosition {
   x: number;
@@ -358,9 +359,7 @@ const AgentOverlay = () => {
                 className="flex items-center justify-center size-8 rounded-full border-none bg-transparent p-0 cursor-pointer outline-none text-white/60 hover:text-white hover:bg-white/10 transition-colors duration-150 active:scale-[0.92]"
                 onClick={toggleToolbar}
               >
-                <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-                </svg>
+                <XMarkIcon className="size-4" />
               </button>
             </div>
           )}
