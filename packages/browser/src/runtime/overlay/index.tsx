@@ -472,7 +472,7 @@ const AgentOverlay = () => {
   useEffect(() => {
     if (!displayLabel) return;
     toast(displayLabel, {
-      duration: 4000,
+      duration: Infinity,
       icon: <SpiralSpinner visible />,
     });
   }, [displayLabel]);
