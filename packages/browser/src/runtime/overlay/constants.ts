@@ -24,6 +24,7 @@ export interface ActionLogEntry {
 export interface OverlayState {
   cursorX: number;
   cursorY: number;
+  cursorSelector: string;
   label: string;
   cursorPositioned: boolean;
   cursorAction: CursorAction;

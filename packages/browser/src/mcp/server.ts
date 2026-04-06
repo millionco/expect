@@ -68,9 +68,27 @@ const moveCursorToRef = Effect.fn("moveCursorToRef")(function* (
   const box = yield* Effect.tryPromise(() => locator.boundingBox()).pipe(
     Effect.catchTag("UnknownError", () => Effect.succeed(undefined)),
   );
-  if (box) {
-    yield* moveCursorToPosition(page, box.x + box.width / 2, box.y + box.height / 2, label);
-  }
+  if (!box) return;
+
+  const selector = yield* Effect.tryPromise(() =>
+    locator.evaluate((element) => {
+      const runtime = (globalThis as Record<string, unknown>).__EXPECT_RUNTIME__ as
+        | { cssSelector: (element: Element) => string }
+        | undefined;
+      if (!runtime?.cssSelector) return undefined;
+      return runtime.cssSelector(element);
+    }),
+  ).pipe(Effect.catchCause(() => Effect.succeed(undefined)));
+
+  yield* evaluateRuntime(
+    page,
+    "updateCursor",
+    AGENT_OVERLAY_CONTAINER_ID,
+    box.x + box.width / 2,
+    box.y + box.height / 2,
+    label,
+    selector ?? "",
+  ).pipe(Effect.catchCause(() => Effect.void));
 });
 
 const clearRefHighlights = (page: import("playwright").Page) =>

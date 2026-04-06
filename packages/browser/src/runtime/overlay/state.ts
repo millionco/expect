@@ -28,6 +28,7 @@ export const loadInitialState = (): OverlayState => {
   return {
     cursorX: saved?.positioned ? saved.relativeX * viewport.width : -1,
     cursorY: saved?.positioned ? saved.relativeY * viewport.height : -1,
+    cursorSelector: "",
     label: saved?.label ?? "",
     cursorPositioned: saved?.positioned ?? false,
     cursorAction: "idle",

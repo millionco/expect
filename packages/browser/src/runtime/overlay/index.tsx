@@ -67,6 +67,37 @@ const AgentOverlay = () => {
   }, []);
 
   useEffect(() => {
+    if (!state.cursorSelector) return;
+    let rafId: number;
+    let running = true;
+    const trackCursor = () => {
+      if (!running) return;
+      try {
+        const element = document.querySelector(state.cursorSelector);
+        if (element) {
+          const box = element.getBoundingClientRect();
+          const centerX = box.x + box.width / 2;
+          const centerY = box.y + box.height / 2;
+          setState((previous) => {
+            if (
+              Math.abs(previous.cursorX - centerX) < 1 &&
+              Math.abs(previous.cursorY - centerY) < 1
+            )
+              return previous;
+            return { ...previous, cursorX: centerX, cursorY: centerY };
+          });
+        }
+      } catch {}
+      rafId = requestAnimationFrame(trackCursor);
+    };
+    rafId = requestAnimationFrame(trackCursor);
+    return () => {
+      running = false;
+      cancelAnimationFrame(rafId);
+    };
+  }, [state.cursorSelector]);
+
+  useEffect(() => {
     let clickTimeout: ReturnType<typeof setTimeout> | undefined;
 
     const onMouseDown = () => {
@@ -486,7 +517,13 @@ export const initAgentOverlay = (containerId: string): void => {
   overlayRoot.render(<AgentOverlay />);
 };
 
-export const updateCursor = (containerId: string, x: number, y: number, label: string): void => {
+export const updateCursor = (
+  containerId: string,
+  x: number,
+  y: number,
+  label: string,
+  selector?: string,
+): void => {
   if (!setOverlayState) {
     initAgentOverlay(containerId);
     if (!setOverlayState) return;
@@ -498,6 +535,7 @@ export const updateCursor = (containerId: string, x: number, y: number, label: s
       ...previous,
       cursorX: hasPosition ? x : previous.cursorX,
       cursorY: hasPosition ? y : previous.cursorY,
+      cursorSelector: selector ?? previous.cursorSelector,
       label,
       cursorPositioned: hasPosition ? true : previous.cursorPositioned,
     };
