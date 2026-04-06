@@ -221,28 +221,9 @@ const AgentOverlay = () => {
 
   const [hoveredAction, setHoveredAction] = useState<number | undefined>(undefined);
 
-  const activeMarkerIndex = (() => {
-    if (hoveredAction !== undefined) return hoveredAction;
-    if (!state.cursorPositioned || state.actionLog.length === 0) return undefined;
-    const elementUnderCursor = document.elementFromPoint(state.cursorX, state.cursorY);
-    if (!elementUnderCursor) return undefined;
-    for (let index = state.actionLog.length - 1; index >= 0; index--) {
-      const entry = state.actionLog[index];
-      if (!entry.selector) continue;
-      try {
-        if (
-          elementUnderCursor.matches(entry.selector) ||
-          elementUnderCursor.closest(entry.selector)
-        )
-          return index;
-      } catch {}
-    }
-    return undefined;
-  })();
-
   const hoveredElementRect = (() => {
-    if (activeMarkerIndex === undefined) return undefined;
-    const entry = state.actionLog[activeMarkerIndex];
+    if (hoveredAction === undefined) return undefined;
+    const entry = state.actionLog[hoveredAction];
     if (!entry?.selector) return undefined;
     try {
       const element = document.querySelector(entry.selector);
@@ -368,7 +349,7 @@ const AgentOverlay = () => {
                 pointerEvents: "auto",
                 cursor: "pointer",
                 userSelect: "none",
-                transform: `translate(-50%, -50%)${activeMarkerIndex === index ? " scale(1.1)" : ""}`,
+                transform: `translate(-50%, -50%)${hoveredAction === index ? " scale(1.1)" : ""}`,
                 transition: "background-color 0.15s ease, transform 0.1s ease",
                 animation: "expect-marker-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both",
               }}
@@ -376,7 +357,7 @@ const AgentOverlay = () => {
               onMouseLeave={() => setHoveredAction(undefined)}
             >
               {index + 1}
-              {activeMarkerIndex === index && (
+              {hoveredAction === index && (
                 <div
                   className="absolute top-[calc(100%+10px)] left-1/2 px-3 py-2 bg-[#1a1a1a] text-white text-[13px] font-normal rounded-xl whitespace-nowrap overflow-hidden text-ellipsis leading-[1.4] pointer-events-none shadow-[0_4px_20px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.08)] min-w-[120px] max-w-[280px] text-center animate-[expect-tooltip-in_0.1s_ease-out_forwards]"
                   style={{ transform: "translateX(-50%)" }}
