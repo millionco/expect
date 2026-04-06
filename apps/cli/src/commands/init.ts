@@ -11,11 +11,7 @@ import { prompts, setOnCancel } from "../utils/prompts";
 import { spinner } from "../utils/spinner";
 import { runAddSkill } from "./add-skill";
 import { runAddGithubAction } from "./add-github-action";
-import {
-  detectNonInteractive,
-  detectPackageManager,
-  hasGitHubRemote,
-} from "./init-utils";
+import { detectNonInteractive, detectPackageManager, hasGitHubRemote } from "./init-utils";
 import { formatInstallCommand, getGlobalInstallCommand, runInstallCommand } from "./update";
 
 export { detectAvailableAgents };
