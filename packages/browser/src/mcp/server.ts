@@ -61,8 +61,11 @@ const extractCssSelector = (code: string): string | undefined => {
   return undefined;
 };
 
-const safeOverlayEval = (...args: Parameters<typeof evaluateRuntime>) =>
-  evaluateRuntime(...args).pipe(Effect.catchCause(() => Effect.void));
+const safeOverlayEval = <K extends keyof import("../generated/runtime-types").ExpectRuntime>(
+  page: import("playwright").Page,
+  method: K,
+  ...args: Parameters<import("../generated/runtime-types").ExpectRuntime[K]>
+) => evaluateRuntime(page, method, ...args).pipe(Effect.catchCause(() => Effect.void));
 
 const updateCursorLabel = (page: import("playwright").Page, label: string) =>
   safeOverlayEval(page, "updateCursor", AGENT_OVERLAY_CONTAINER_ID, -1, -1, label);
