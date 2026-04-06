@@ -478,14 +478,22 @@ export const updateCursor = (
   }
 
   // HACK: scroll the target element into view when the cursor moves to it.
-  // This may interfere with pages that have custom scroll behavior, scroll
-  // snapping, or infinite scroll listeners. Revert this block if it causes
-  // unexpected scroll jumps or breaks page interactions.
+  // Only scrolls if the element is outside the viewport. Uses "nearest" to
+  // minimize scroll distance. May interfere with pages that have custom scroll
+  // behavior or scroll snapping. Revert this block if it causes issues.
   if (selector) {
     try {
       const element = document.querySelector(selector);
       if (element instanceof HTMLElement) {
-        element.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+        const rect = element.getBoundingClientRect();
+        const offScreen =
+          rect.bottom < 0 ||
+          rect.top > window.innerHeight ||
+          rect.right < 0 ||
+          rect.left > window.innerWidth;
+        if (offScreen) {
+          element.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+        }
       }
     } catch {}
   }
