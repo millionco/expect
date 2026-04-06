@@ -21,6 +21,7 @@ export {
   clearUserControl,
   highlightRefs,
   clearHighlights,
+  setAgentActing,
 } from "./overlay";
 
 import { finder } from "@medv/finder";

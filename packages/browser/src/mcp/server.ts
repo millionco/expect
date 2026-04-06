@@ -270,23 +270,32 @@ export const createBrowserMcpServer = <E>(
             return Effect.runSync(sessionData.lastSnapshot.locator(refId));
           };
 
-          const codeResult = yield* Effect.promise(async () => {
-            try {
-              const userFunction = new AsyncFunction("page", "context", "browser", "ref", code);
-              const result = await userFunction(
-                sessionData.page,
-                sessionData.context,
-                sessionData.browser,
-                ref,
-              );
-              return { success: true as const, value: result };
-            } catch (error) {
-              return {
-                success: false as const,
-                error: error instanceof Error ? error.message : String(error),
-              };
-            }
-          });
+          yield* evaluateRuntime(sessionData.page, "setAgentActing", true).pipe(
+            Effect.catchCause(() => Effect.void),
+          );
+
+          const codeResult = yield* Effect.ensuring(
+            Effect.promise(async () => {
+              try {
+                const userFunction = new AsyncFunction("page", "context", "browser", "ref", code);
+                const result = await userFunction(
+                  sessionData.page,
+                  sessionData.context,
+                  sessionData.browser,
+                  ref,
+                );
+                return { success: true as const, value: result };
+              } catch (error) {
+                return {
+                  success: false as const,
+                  error: error instanceof Error ? error.message : String(error),
+                };
+              }
+            }),
+            evaluateRuntime(sessionData.page, "setAgentActing", false).pipe(
+              Effect.catchCause(() => Effect.void),
+            ),
+          );
 
           if (!codeResult.success) {
             return prependUserControlNotice(textResult(`Error: ${codeResult.error}`), didControl);

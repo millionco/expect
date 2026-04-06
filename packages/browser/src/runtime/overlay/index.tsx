@@ -397,6 +397,7 @@ const AgentOverlay = () => {
     document.body.style.cursor = "not-allowed";
 
     const onClickGuard = (event: MouseEvent) => {
+      if (agentActing) return;
       if ((event.target as Element)?.closest?.(`[data-expect-overlay]`)) return;
       event.preventDefault();
       event.stopPropagation();
@@ -575,6 +576,11 @@ const AgentOverlay = () => {
 };
 
 let setOverlayState: ((updater: (previous: OverlayState) => OverlayState) => void) | undefined;
+let agentActing = false;
+
+export const setAgentActing = (acting: boolean): void => {
+  agentActing = acting;
+};
 
 export const initAgentOverlay = (containerId: string): void => {
   if (document.getElementById(containerId)) return;
