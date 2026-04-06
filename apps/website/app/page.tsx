@@ -13,7 +13,11 @@ import { ClaudeSpinner } from "./claude-spinner";
 const CODING_DURATION_MS = 1250;
 const SLIDE_DELAY_MS = 500;
 const DIFF_DURATION_MS = 1500;
-const FOCUS_DELAY_MS = 900;
+const CURSOR_APPEAR_DELAY_MS = 800;
+const CURSOR_MOVE_DELAY_MS = 800;
+const CURSOR_CLICK_DELAY_MS = 400;
+const FOCUS_DELAY_MS = 200;
+const CURSOR_LABEL_CHANGE_MS = 1200;
 
 type AnimationPhase = "coding" | "diff" | "expect";
 
@@ -21,21 +25,41 @@ function useAnimationPhase() {
   const [phase, setPhase] = useState<AnimationPhase>("coding");
   const [slid, setSlid] = useState(false);
   const [focused, setFocused] = useState(false);
+  const [cursorVisible, setCursorVisible] = useState(false);
+  const [cursorOnBrowser, setCursorOnBrowser] = useState(false);
+  const [clicking, setClicking] = useState(false);
+  const [cursorLabel, setCursorLabel] = useState<"agent" | "reading">("agent");
 
   useEffect(() => {
+    const expectTime = CODING_DURATION_MS + DIFF_DURATION_MS;
+    const cursorAppearTime = expectTime + CURSOR_APPEAR_DELAY_MS;
+    const cursorMoveTime = cursorAppearTime + CURSOR_MOVE_DELAY_MS;
+    const clickTime = cursorMoveTime + CURSOR_CLICK_DELAY_MS;
+    const focusTime = clickTime + FOCUS_DELAY_MS;
+
     const diffTimer = setTimeout(() => setPhase("diff"), CODING_DURATION_MS);
     const slideTimer = setTimeout(() => setSlid(true), CODING_DURATION_MS + SLIDE_DELAY_MS);
-    const expectTimer = setTimeout(() => setPhase("expect"), CODING_DURATION_MS + DIFF_DURATION_MS);
-    const focusTimer = setTimeout(() => setFocused(true), CODING_DURATION_MS + DIFF_DURATION_MS + FOCUS_DELAY_MS);
+    const expectTimer = setTimeout(() => setPhase("expect"), expectTime);
+    const cursorTimer = setTimeout(() => setCursorVisible(true), cursorAppearTime);
+    const cursorMoveTimer = setTimeout(() => setCursorOnBrowser(true), cursorMoveTime);
+    const clickTimer = setTimeout(() => setClicking(true), clickTime);
+    const clickEndTimer = setTimeout(() => setClicking(false), clickTime + 100);
+    const focusTimer = setTimeout(() => setFocused(true), focusTime);
+    const labelTimer = setTimeout(() => setCursorLabel("reading"), focusTime + CURSOR_LABEL_CHANGE_MS);
     return () => {
       clearTimeout(diffTimer);
       clearTimeout(slideTimer);
       clearTimeout(expectTimer);
+      clearTimeout(cursorTimer);
+      clearTimeout(cursorMoveTimer);
+      clearTimeout(clickTimer);
+      clearTimeout(clickEndTimer);
       clearTimeout(focusTimer);
+      clearTimeout(labelTimer);
     };
   }, []);
 
-  return { phase, slid, focused };
+  return { phase, slid, focused, cursorVisible, cursorOnBrowser, clicking, cursorLabel };
 }
 
 function TerminalLine({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
@@ -159,24 +183,6 @@ function BrowserPreview({ slid, focused }: { slid: boolean; focused: boolean }) 
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
       <div className="relative flex flex-col w-68.5 h-46 rounded-2xl pt-2.5 pr-2.25 pb-6.75 pl-4.75 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]">
-        <motion.div
-          className="absolute bottom-3.5 left-3.5 flex items-center justify-center size-5 rounded-full [background:rgba(0,0,0,0.8)] [box-shadow:0_0_0_1px_#171717,inset_0_0_0_1px_hsla(0,0%,100%,0.14),0px_16px_32px_-8px_rgba(0,0,0,0.24)] [backdrop-filter:blur(48px)]"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={loaded ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
-        >
-          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="size-full">
-            <g transform="translate(12, 12)">
-              <path d="M13.3 15.2 L2.34 1 V12.6" fill="none" stroke="url(#nj_p0)" strokeWidth="1.86" mask="url(#nj_m0)" strokeDasharray="29.6" strokeDashoffset="0" />
-              <path d="M11.825 1.5 V13.1" strokeWidth="1.86" stroke="url(#nj_p1)" strokeDasharray="11.6" strokeDashoffset="0" />
-            </g>
-            <defs>
-              <linearGradient id="nj_p0" x1="9.95555" y1="11.1226" x2="15.4778" y2="17.9671" gradientUnits="userSpaceOnUse"><stop stopColor="white"/><stop offset="0.604072" stopColor="white" stopOpacity="0"/><stop offset="1" stopColor="white" stopOpacity="0"/></linearGradient>
-              <linearGradient id="nj_p1" x1="11.8222" y1="1.40039" x2="11.791" y2="9.62542" gradientUnits="userSpaceOnUse"><stop stopColor="white"/><stop offset="1" stopColor="white" stopOpacity="0"/></linearGradient>
-              <mask id="nj_m0"><rect width="100%" height="100%" fill="white"/><rect width="5" height="1.5" fill="black"/></mask>
-            </defs>
-          </svg>
-        </motion.div>
         <div className="flex items-center -ml-1">
           <div className="flex items-center gap-1.5">
             <div className="rounded-full bg-[#FF726A] shrink-0 size-2.5" />
@@ -184,7 +190,8 @@ function BrowserPreview({ slid, focused }: { slid: boolean; focused: boolean }) 
             <div className="rounded-full bg-[#EAEAEA] shrink-0 size-2.5" />
           </div>
           <div className="w-3.5 shrink-0" />
-          <div className="relative w-36.25 h-6.5 rounded-full shrink-0 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#A4A4A452_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] overflow-hidden">
+          <div className="relative w-36.25 h-6.5 rounded-full shrink-0 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#A4A4A452_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] overflow-hidden flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center justify-center text-[12px] text-[#888888] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium">localhost</div>
             {slid && !loaded && (
               <motion.div
                 className="absolute bottom-0 left-0 h-[2.5px] bg-[#007AFF]"
@@ -225,25 +232,72 @@ function BrowserPreview({ slid, focused }: { slid: boolean; focused: boolean }) 
   );
 }
 
-function AnimationCaption({ phase, focused }: { phase: AnimationPhase; focused: boolean }) {
-  const caption = phase === "expect" || focused
-    ? "Agent calls Expect skill"
-    : "Build a feature";
+function AnimationCaption({ phase, focused, cursorVisible }: { phase: AnimationPhase; focused: boolean; cursorVisible: boolean }) {
+  const showAgent = phase === "expect" || focused;
+  const rest = showAgent ? "calls Expect skill" : "Build a feature";
 
   return (
     <div className="[letter-spacing:0em] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[13px]/5 text-[#707070]">
-      <Calligraph animation="smooth">{caption}</Calligraph>
+      {showAgent && <span className={cursorVisible ? "text-[#0074F9] transition-colors duration-300" : "transition-colors duration-300"}>Agent </span>}
+      <Calligraph animation="smooth">{rest}</Calligraph>
     </div>
   );
 }
 
+function AnimatedCursor({ visible, onBrowser, clicking, label }: { visible: boolean; onBrowser: boolean; clicking: boolean; label: "agent" | "reading" }) {
+  return (
+    <motion.div
+      className="absolute z-30 pointer-events-none"
+      style={{ transformOrigin: "bottom left" }}
+      initial={{ x: 130, y: 140, opacity: 0, scale: 0, scaleX: 0.3 }}
+      animate={
+        visible && onBrowser
+          ? { x: -60, y: 110, opacity: 1, scale: 1, scaleX: 1 }
+          : visible
+            ? { x: 130, y: 120, opacity: 1, scale: 1, scaleX: 1 }
+            : { x: 130, y: 140, opacity: 0, scale: 0, scaleX: 0.3 }
+      }
+      transition={
+        !visible
+          ? { type: "spring", stiffness: 400, damping: 15, mass: 0.5 }
+          : { duration: 0.7, ease: [0.22, 1, 0.36, 1] }
+      }
+    >
+      <motion.svg
+        width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '48px', height: 'auto' }}
+        animate={{ scale: clicking ? 0.85 : 1 }}
+        transition={{ duration: 0.1, ease: "easeOut" }}
+      >
+        <g filter="url(#filter0_d_4_7)">
+          <path d="M2.58591 2.58594C3.14041 2.03143 3.96783 1.85171 4.70212 2.12695L15.7021 6.25195C16.5219 6.55937 17.0468 7.36516 16.997 8.23926C16.9471 9.11309 16.3344 9.85306 15.4853 10.0654L11.1484 11.1484L10.0654 15.4854C9.85303 16.3345 9.11306 16.9471 8.23923 16.9971C7.36513 17.0469 6.55934 16.5219 6.25192 15.7021L2.12692 4.70215C1.85168 3.96786 2.0314 3.14045 2.58591 2.58594Z" fill="white"/>
+        </g>
+        <path fillRule="evenodd" clipRule="evenodd" d="M4.17558 3.53185C3.99199 3.463 3.7851 3.50782 3.64646 3.64646C3.50782 3.7851 3.463 3.99199 3.53185 4.17558L7.65685 15.1756C7.7337 15.3805 7.93492 15.5117 8.15345 15.4992C8.37197 15.4868 8.557 15.3336 8.61009 15.1213L9.91232 9.91232L15.1213 8.61009C15.3336 8.557 15.4868 8.37197 15.4992 8.15345C15.5117 7.93492 15.3805 7.7337 15.1756 7.65685L4.17558 3.53185Z" fill="url(#paint0_linear_4_7)"/>
+        <defs>
+          <filter id="filter0_d_4_7" x="-0.000274658" y="-0.000244141" width="19.0005" height="19.0006" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB"><feFlood floodOpacity="0" result="BackgroundImageFix"/><feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/><feOffset/><feGaussianBlur stdDeviation="1"/><feComposite in2="hardAlpha" operator="out"/><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.22 0"/><feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_4_7"/><feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_4_7" result="shape"/></filter>
+          <linearGradient id="paint0_linear_4_7" x1="9.50001" y1="3.5" x2="9.50001" y2="15.5" gradientUnits="userSpaceOnUse"><stop stopColor="#0172F4"/><stop offset="1" stopColor="#0168DF"/></linearGradient>
+        </defs>
+      </motion.svg>
+      <div className="absolute left-5 top-5 bg-[#0074F9] rounded-full px-2.5 py-1 text-white font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[13px]/4.5 whitespace-nowrap [box-shadow:0_1px_3px_rgba(0,0,0,0.2)] flex items-center gap-1.5">
+        {label === "reading" && (
+          <svg className="size-3 animate-spin" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="6.5" stroke="white" strokeOpacity="0.3" strokeWidth="2.5" />
+            <path d="M14.5 8C14.5 4.41015 11.5899 1.5 8 1.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+          </svg>
+        )}
+        <Calligraph animation="smooth">{label === "reading" ? "Logging" : "Agent"}</Calligraph>
+      </div>
+    </motion.div>
+  );
+}
+
 function TerminalIllustration() {
-  const { phase, slid, focused } = useAnimationPhase();
+  const { phase, slid, focused, cursorVisible, cursorOnBrowser, clicking, cursorLabel } = useAnimationPhase();
 
   return (
     <div className="flex flex-col items-center justify-center gap-4 text-xs/4 mt-11.5 p-3">
       <div className="relative w-68.5 h-46 shrink-0 overflow-visible">
         <BrowserPreview slid={slid} focused={focused} />
+        <AnimatedCursor visible={cursorVisible} onBrowser={cursorOnBrowser} clicking={clicking} label={cursorLabel} />
         <motion.div
           className="flex flex-col items-start w-68.5 h-46 relative z-10 rounded-2xl pt-4.5 pr-3.75 pb-6.5 pl-3.75 overflow-clip bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]"
           animate={slid ? { x: 80 } : { x: 0 }}
@@ -254,7 +308,7 @@ function TerminalIllustration() {
           <TerminalContent phase={phase} />
         </motion.div>
       </div>
-      <AnimationCaption phase={phase} focused={focused} />
+      <AnimationCaption phase={phase} focused={focused} cursorVisible={cursorVisible} />
     </div>
   );
 }
@@ -297,8 +351,8 @@ export default function () {
         </div>
         <div className="flex items-center justify-between pt-2.5 pb-2.75 w-107.25 mt-6">
           <div className="flex items-center gap-1.5">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '16px', height: 'auto', backgroundColor: '#FCFCFC', flexShrink: '0' }}>
-              <path fillRule="evenodd" clipRule="evenodd" d="M1.25 3.25C1.25 2.145 2.145 1.25 3.25 1.25H8.75C9.855 1.25 10.75 2.145 10.75 3.25V8.75C10.75 9.855 9.855 10.75 8.75 10.75H3.25C2.145 10.75 1.25 9.855 1.25 8.75V3.25ZM7.13 3.925C7.017 3.793 6.845 3.73 6.674 3.756C6.504 3.782 6.358 3.894 6.29 4.053L5.107 6.815L4.13 5.675C4.035 5.564 3.896 5.5 3.75 5.5H2.75C2.474 5.5 2.25 5.724 2.25 6C2.25 6.276 2.474 6.5 2.75 6.5H3.52L4.87 8.075C4.983 8.207 5.155 8.27 5.326 8.244C5.496 8.218 5.642 8.106 5.71 7.947L6.893 5.185L7.87 6.325C7.965 6.436 8.104 6.5 8.25 6.5H9.25C9.526 6.5 9.75 6.276 9.75 6C9.75 5.724 9.526 5.5 9.25 5.5H8.48L7.13 3.925Z" fill="#00C8B3" />
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '16px', height: 'auto', flexShrink: '0' }}>
+              <path fillRule="evenodd" clipRule="evenodd" d="M1.25 3.25C1.25 2.145 2.145 1.25 3.25 1.25H8.75C9.855 1.25 10.75 2.145 10.75 3.25V8.75C10.75 9.855 9.855 10.75 8.75 10.75H3.25C2.145 10.75 1.25 9.855 1.25 8.75V3.25ZM7.13 3.925C7.017 3.793 6.845 3.73 6.674 3.756C6.504 3.782 6.358 3.894 6.29 4.053L5.107 6.815L4.13 5.675C4.035 5.564 3.896 5.5 3.75 5.5H2.75C2.474 5.5 2.25 5.724 2.25 6C2.25 6.276 2.474 6.5 2.75 6.5H3.52L4.87 8.075C4.983 8.207 5.155 8.27 5.326 8.244C5.496 8.218 5.642 8.106 5.71 7.947L6.893 5.185L7.87 6.325C7.965 6.436 8.104 6.5 8.25 6.5H9.25C9.526 6.5 9.75 6.276 9.75 6C9.75 5.724 9.526 5.5 9.25 5.5H8.48L7.13 3.925Z" fill="#999999" />
             </svg>
             <div className="[letter-spacing:0em] [white-space-collapse:preserve] w-max font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold shrink-0 text-sm/5.75 text-[#353535]">
               Performance
@@ -312,7 +366,7 @@ export default function () {
         <div className="flex items-center justify-between pt-2.5 pb-2.75 w-107.25" style={{ backgroundImage: 'linear-gradient(in oklab 90deg, oklab(100% 0 0) 0%, oklab(98.8% 0 0) 10.09%, oklab(98.9% 0 0) 90.46%, oklab(100% 0 0) 100%)' }}>
           <div className="flex items-center gap-1.5">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '16px', height: 'auto', flexShrink: '0' }}>
-              <path fillRule="evenodd" clipRule="evenodd" d="M1.5 6.283C1.5 6.324 1.501 6.364 1.502 6.404C1.501 6.423 1.5 6.441 1.5 6.46C1.5 7.902 2.243 9.241 3.465 10.005L3.608 10.095L3.615 10.099L4.205 10.468L5.205 11.093C5.691 11.397 6.309 11.397 6.795 11.093L8.385 10.099C9.701 9.277 10.5 7.835 10.5 6.283V5.5V2.576C10.5 2.537 10.498 2.499 10.493 2.461C10.482 2.369 10.457 2.281 10.42 2.2C10.236 1.79 9.76 1.553 9.296 1.708L9.189 1.743C8.387 2.007 7.504 1.797 6.907 1.2C6.406 0.699 5.594 0.699 5.093 1.2C4.494 1.799 3.607 2.009 2.803 1.741L2.704 1.708C2.112 1.51 1.5 1.951 1.5 2.576V6.283ZM6.5 9.196V10.098L7.855 9.251C8.817 8.65 9.424 7.623 9.493 6.5H6.5V9.196ZM5.5 5.5V2.305V2.172C4.656 2.83 3.532 3.033 2.5 2.694V5.5H5.5Z" fill="#00C8B3" />
+              <path fillRule="evenodd" clipRule="evenodd" d="M1.5 6.283C1.5 6.324 1.501 6.364 1.502 6.404C1.501 6.423 1.5 6.441 1.5 6.46C1.5 7.902 2.243 9.241 3.465 10.005L3.608 10.095L3.615 10.099L4.205 10.468L5.205 11.093C5.691 11.397 6.309 11.397 6.795 11.093L8.385 10.099C9.701 9.277 10.5 7.835 10.5 6.283V5.5V2.576C10.5 2.537 10.498 2.499 10.493 2.461C10.482 2.369 10.457 2.281 10.42 2.2C10.236 1.79 9.76 1.553 9.296 1.708L9.189 1.743C8.387 2.007 7.504 1.797 6.907 1.2C6.406 0.699 5.594 0.699 5.093 1.2C4.494 1.799 3.607 2.009 2.803 1.741L2.704 1.708C2.112 1.51 1.5 1.951 1.5 2.576V6.283ZM6.5 9.196V10.098L7.855 9.251C8.817 8.65 9.424 7.623 9.493 6.5H6.5V9.196ZM5.5 5.5V2.305V2.172C4.656 2.83 3.532 3.033 2.5 2.694V5.5H5.5Z" fill="#999999" />
             </svg>
             <div className="[letter-spacing:0em] [white-space-collapse:preserve] w-max font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold shrink-0 text-sm/5.75 text-[#353535]">
               Security
@@ -326,7 +380,7 @@ export default function () {
         <div className="flex items-center justify-between pt-2.5 pb-2.75 w-107.25">
           <div className="flex items-center gap-1.5">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '16px', height: 'auto', flexShrink: '0' }}>
-              <path fillRule="evenodd" clipRule="evenodd" d="M1 6C1 3.239 3.239 1 6 1C8.761 1 11 3.239 11 6C11 6.934 10.172 7.496 9.385 7.496H8.015C7.37 7.496 6.912 8.124 7.109 8.738L7.24 9.147C7.376 9.569 7.321 10.02 7.106 10.376C6.885 10.739 6.492 11 6 11C3.239 11 1 8.761 1 6ZM6.105 3.391C6.208 3.793 5.967 4.201 5.565 4.304C5.164 4.408 4.755 4.166 4.652 3.765C4.549 3.363 4.791 2.955 5.192 2.852C5.593 2.749 6.002 2.99 6.105 3.391ZM3.795 4.603C4.194 4.715 4.427 5.129 4.315 5.528C4.204 5.927 3.79 6.159 3.391 6.048C2.992 5.936 2.759 5.522 2.871 5.124C2.982 4.725 3.396 4.492 3.795 4.603ZM4.749 7.223C4.459 6.927 3.984 6.922 3.688 7.212C3.392 7.501 3.387 7.976 3.676 8.272C3.966 8.568 4.441 8.573 4.737 8.284C5.033 7.994 5.038 7.519 4.749 7.223ZM8.312 4.788C8.016 5.077 7.541 5.072 7.251 4.776C6.962 4.48 6.967 4.005 7.263 3.716C7.559 3.426 8.034 3.431 8.323 3.727C8.613 4.023 8.608 4.498 8.312 4.788Z" fill="#06C0E8" />
+              <path fillRule="evenodd" clipRule="evenodd" d="M1 6C1 3.239 3.239 1 6 1C8.761 1 11 3.239 11 6C11 6.934 10.172 7.496 9.385 7.496H8.015C7.37 7.496 6.912 8.124 7.109 8.738L7.24 9.147C7.376 9.569 7.321 10.02 7.106 10.376C6.885 10.739 6.492 11 6 11C3.239 11 1 8.761 1 6ZM6.105 3.391C6.208 3.793 5.967 4.201 5.565 4.304C5.164 4.408 4.755 4.166 4.652 3.765C4.549 3.363 4.791 2.955 5.192 2.852C5.593 2.749 6.002 2.99 6.105 3.391ZM3.795 4.603C4.194 4.715 4.427 5.129 4.315 5.528C4.204 5.927 3.79 6.159 3.391 6.048C2.992 5.936 2.759 5.522 2.871 5.124C2.982 4.725 3.396 4.492 3.795 4.603ZM4.749 7.223C4.459 6.927 3.984 6.922 3.688 7.212C3.392 7.501 3.387 7.976 3.676 8.272C3.966 8.568 4.441 8.573 4.737 8.284C5.033 7.994 5.038 7.519 4.749 7.223ZM8.312 4.788C8.016 5.077 7.541 5.072 7.251 4.776C6.962 4.48 6.967 4.005 7.263 3.716C7.559 3.426 8.034 3.431 8.323 3.727C8.613 4.023 8.608 4.498 8.312 4.788Z" fill="#999999" />
             </svg>
             <div className="[letter-spacing:0em] [white-space-collapse:preserve] w-max font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold shrink-0 text-sm/5.75 text-[#353535]">
               Design tweaks
@@ -340,7 +394,7 @@ export default function () {
         <div className="flex items-center justify-between pt-2.5 pb-2.75 w-107.25" style={{ backgroundImage: 'linear-gradient(in oklab 90deg, oklab(100% 0 0) 0%, oklab(98.8% 0 0) 10.09%, oklab(98.9% 0 0) 90.46%, oklab(100% 0 0) 100%)' }}>
           <div className="flex items-center gap-1.5">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '16px', height: 'auto', flexShrink: '0' }}>
-              <path fillRule="evenodd" clipRule="evenodd" d="M1 6C1 3.239 3.239 1 6 1C8.761 1 11 3.239 11 6C11 8.761 8.761 11 6 11C3.239 11 1 8.761 1 6ZM4.5 5.5C4.914 5.5 5.25 5.164 5.25 4.75C5.25 4.336 4.914 4 4.5 4C4.086 4 3.75 4.336 3.75 4.75C3.75 5.164 4.086 5.5 4.5 5.5ZM9.436 6.667C9.488 6.396 9.311 6.134 9.04 6.081C8.769 6.028 8.507 6.205 8.454 6.477C8.345 7.041 8.044 7.551 7.602 7.919C7.161 8.288 6.606 8.493 6.031 8.5C5.456 8.507 4.896 8.316 4.446 7.958C3.995 7.601 3.682 7.099 3.558 6.537C3.499 6.267 3.232 6.097 2.963 6.156C2.693 6.215 2.522 6.482 2.582 6.752C2.755 7.538 3.193 8.241 3.824 8.741C4.454 9.242 5.238 9.51 6.043 9.5C6.848 9.49 7.625 9.203 8.243 8.687C8.861 8.171 9.282 7.457 9.436 6.667ZM8.25 4.75C8.25 5.164 7.914 5.5 7.5 5.5C7.086 5.5 6.75 5.164 6.75 4.75C6.75 4.336 7.086 4 7.5 4C7.914 4 8.25 4.336 8.25 4.75Z" fill="#06C0E8" />
+              <path fillRule="evenodd" clipRule="evenodd" d="M1 6C1 3.239 3.239 1 6 1C8.761 1 11 3.239 11 6C11 8.761 8.761 11 6 11C3.239 11 1 8.761 1 6ZM4.5 5.5C4.914 5.5 5.25 5.164 5.25 4.75C5.25 4.336 4.914 4 4.5 4C4.086 4 3.75 4.336 3.75 4.75C3.75 5.164 4.086 5.5 4.5 5.5ZM9.436 6.667C9.488 6.396 9.311 6.134 9.04 6.081C8.769 6.028 8.507 6.205 8.454 6.477C8.345 7.041 8.044 7.551 7.602 7.919C7.161 8.288 6.606 8.493 6.031 8.5C5.456 8.507 4.896 8.316 4.446 7.958C3.995 7.601 3.682 7.099 3.558 6.537C3.499 6.267 3.232 6.097 2.963 6.156C2.693 6.215 2.522 6.482 2.582 6.752C2.755 7.538 3.193 8.241 3.824 8.741C4.454 9.242 5.238 9.51 6.043 9.5C6.848 9.49 7.625 9.203 8.243 8.687C8.861 8.171 9.282 7.457 9.436 6.667ZM8.25 4.75C8.25 5.164 7.914 5.5 7.5 5.5C7.086 5.5 6.75 5.164 6.75 4.75C6.75 4.336 7.086 4 7.5 4C7.914 4 8.25 4.336 8.25 4.75Z" fill="#999999" />
             </svg>
             <div className="[letter-spacing:0em] [white-space-collapse:preserve] w-max font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold shrink-0 text-sm/5.75 text-[#353535]">
               App completeness
