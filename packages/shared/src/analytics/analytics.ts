@@ -37,13 +37,13 @@ export class AnalyticsProvider extends ServiceMap.Service<
 >()("@expect/AnalyticsProvider") {
   static layerPostHog = Layer.succeed(this)({
     capture: (event) =>
-      Effect.sync(() => {
+      Effect.tryPromise(() =>
         posthogClient.captureImmediate({
           event: event.eventName,
           properties: event.properties,
           distinctId: event.distinctId,
-        });
-      }),
+        }),
+      ),
     identify: (params) =>
       Effect.sync(() => {
         posthogClient.identify({
@@ -124,7 +124,7 @@ export class Analytics extends ServiceMap.Service<Analytics>()("@expect/Analytic
 
         yield* provider.capture({
           eventName: eventName as string,
-          properties: { ...commonProperties, ...(properties ?? {}) },
+          properties: { ...commonProperties, ...properties },
           distinctId,
         });
       }).pipe(
