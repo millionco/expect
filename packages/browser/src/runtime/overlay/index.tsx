@@ -1,11 +1,8 @@
 import { createRoot } from "react-dom/client";
 // eslint-disable-next-line no-restricted-imports -- overlay runs in injected runtime, not the CLI React app; React Compiler doesn't apply
-import { useState, useEffect } from "react";
-import { Toaster, toast } from "sonner";
+import { useState, useEffect, useRef } from "react";
 // @ts-expect-error -- CSS imported as text via esbuild cssTextPlugin
 import cssText from "../../../dist/overlay.css";
-// @ts-expect-error -- CSS imported as text via esbuild cssTextPlugin
-import sonnerCssText from "sonner/dist/styles.css";
 
 import {
   CURSOR_SIZE_PX,
@@ -26,8 +23,47 @@ import { CursorIcon, detectCursorShape } from "./cursors";
 import { SpiralSpinner } from "./spiral-spinner";
 import { Glow } from "./glow";
 
+const TOOLTIP_MAX_WIDTH_PX = 320;
+const TOOLTIP_GAP_PX = 6;
+const VIEWPORT_PADDING_PX = 8;
+
+const computeTooltipPosition = (
+  cursorX: number,
+  cursorY: number,
+  cursorPositioned: boolean,
+  tooltipRef: React.RefObject<HTMLDivElement | null>,
+) => {
+  if (!cursorPositioned) {
+    return { right: `${VIEWPORT_PADDING_PX * 2}px`, bottom: `${VIEWPORT_PADDING_PX * 2}px` };
+  }
+
+  const viewport = getViewport();
+  const clamped = {
+    x: clampToViewport(cursorX - CURSOR_SIZE_PX / 2, CURSOR_SIZE_PX, viewport.width, 0),
+    y: clampToViewport(cursorY - CURSOR_HEIGHT_PX / 2, CURSOR_HEIGHT_PX, viewport.height, 0),
+  };
+
+  const tooltipRect = tooltipRef.current?.getBoundingClientRect();
+  const tooltipWidth = tooltipRect?.width || TOOLTIP_MAX_WIDTH_PX;
+  const tooltipHeight = tooltipRect?.height || 30;
+
+  const rightOfCursor = clamped.x + CURSOR_SIZE_PX + TOOLTIP_GAP_PX;
+  const leftOfCursor = clamped.x - tooltipWidth - TOOLTIP_GAP_PX;
+  const fitsRight = rightOfCursor + tooltipWidth <= viewport.width - VIEWPORT_PADDING_PX;
+  const rawX = fitsRight ? rightOfCursor : Math.max(VIEWPORT_PADDING_PX, leftOfCursor);
+
+  const fitsAligned = clamped.y + tooltipHeight <= viewport.height - VIEWPORT_PADDING_PX;
+  const rawY = fitsAligned ? clamped.y : clamped.y + CURSOR_HEIGHT_PX + TOOLTIP_GAP_PX;
+
+  return {
+    left: `${clampToViewport(rawX, tooltipWidth, viewport.width, VIEWPORT_PADDING_PX)}px`,
+    top: `${clampToViewport(rawY, tooltipHeight, viewport.height, VIEWPORT_PADDING_PX)}px`,
+  };
+};
+
 const AgentOverlay = () => {
   const [state, setState] = useState<OverlayState>(loadInitialState);
+  const tooltipRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setOverlayState = setState;
@@ -143,14 +179,6 @@ const AgentOverlay = () => {
     ? clampToViewport(state.cursorY - CURSOR_HEIGHT_PX / 2, CURSOR_HEIGHT_PX, viewport.height, 0)
     : viewport.height + CURSOR_HEIGHT_PX;
 
-  useEffect(() => {
-    if (!state.label) return;
-    toast(state.label, {
-      duration: Infinity,
-      icon: <SpiralSpinner visible />,
-    });
-  }, [state.label]);
-
   const [cursorShape, setCursorShape] = useState<CursorShape>("pointer");
 
   useEffect(() => {
@@ -160,6 +188,13 @@ const AgentOverlay = () => {
 
   const hasLabel = Boolean(state.label);
   const showCursor = hasLabel || state.cursorPositioned;
+
+  const tooltipPos = computeTooltipPosition(
+    state.cursorX,
+    state.cursorY,
+    state.cursorPositioned,
+    tooltipRef,
+  );
 
   return (
     <>
@@ -182,23 +217,30 @@ const AgentOverlay = () => {
         <CursorIcon shape={state.cursorAction === "type" ? "text" : cursorShape} />
       </div>
 
-      <Toaster
-        position="bottom-right"
-        visibleToasts={3}
-        expand
-        toastOptions={{
-          style: {
+      <div
+        ref={tooltipRef}
+        className="fixed pointer-events-none z-[2147483647] will-change-[left,top,opacity]"
+        style={{
+          maxWidth: `${TOOLTIP_MAX_WIDTH_PX}px`,
+          opacity: state.label ? 1 : 0,
+          ...tooltipPos,
+          transition: `left ${CURSOR_TRANSITION_MS}ms cubic-bezier(0.25, 1, 0.5, 1), top ${CURSOR_TRANSITION_MS}ms cubic-bezier(0.25, 1, 0.5, 1), opacity 150ms ease`,
+        }}
+      >
+        <div
+          className="flex items-center gap-2.5 rounded-xl py-2.5 px-4 shadow-xl"
+          style={{
             background: "#1c1c1c",
             color: "white",
-            border: "none",
             fontSize: "14px",
             fontFamily: '"SFProDisplay-Medium", "SF Pro Display", system-ui, sans-serif',
             fontWeight: 500,
-            boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)",
-            borderRadius: "12px",
-          },
-        }}
-      />
+          }}
+        >
+          <SpiralSpinner visible={Boolean(state.label)} />
+          <span className="whitespace-pre-wrap break-words">{state.label}</span>
+        </div>
+      </div>
 
       {highlightRects.map((rect, index) => (
         <div
@@ -232,9 +274,7 @@ export const initAgentOverlay = (containerId: string): void => {
   const shadow = host.attachShadow({ mode: "open" });
 
   const style = document.createElement("style");
-  const overlayStyles = typeof cssText === "string" ? cssText : "";
-  const sonnerStyles = typeof sonnerCssText === "string" ? sonnerCssText : "";
-  style.textContent = `${overlayStyles}\n${sonnerStyles}`;
+  style.textContent = typeof cssText === "string" ? cssText : "";
   shadow.appendChild(style);
 
   const container = document.createElement("div");
