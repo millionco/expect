@@ -9,7 +9,7 @@ import { runAccessibilityAudit } from "../accessibility";
 import { formatPerformanceTrace } from "../performance-trace";
 import { AGENT_OVERLAY_CONTAINER_ID } from "../constants";
 import { McpSession } from "./mcp-session";
-import { DUPLICATE_REQUEST_WINDOW_MS } from "./constants";
+import { DUPLICATE_REQUEST_WINDOW_MS, TMP_ARTIFACT_OUTPUT_DIRECTORY } from "./constants";
 import { registerRulesResources } from "./rules-resources";
 
 const textResult = (text: string) => ({
@@ -590,7 +590,7 @@ export const createBrowserMcpServer = <E>(
           }
 
           const traceDocument = formatPerformanceTrace(trace);
-          const traceDir = "/tmp/expect-replays";
+          const traceDir = TMP_ARTIFACT_OUTPUT_DIRECTORY;
           const tracePath = path.join(traceDir, `performance-trace-${Date.now()}.md`);
           yield* Effect.sync(() => {
             mkdirSync(traceDir, { recursive: true });

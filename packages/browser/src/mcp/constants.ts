@@ -3,3 +3,4 @@ export const EXPECT_CDP_URL_ENV_NAME = "EXPECT_CDP_URL";
 export const EXPECT_BASE_URL_ENV_NAME = "EXPECT_BASE_URL";
 export const EXPECT_HEADED_ENV_NAME = "EXPECT_HEADED";
 export const DUPLICATE_REQUEST_WINDOW_MS = 500;
+export const TMP_ARTIFACT_OUTPUT_DIRECTORY = "/tmp/expect-replays";

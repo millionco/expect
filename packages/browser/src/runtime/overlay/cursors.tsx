@@ -21,8 +21,8 @@ export const detectCursorShape = (x: number, y: number): CursorShape => {
   const tag = element.tagName;
   if (tag === "TEXTAREA" || (element instanceof HTMLElement && element.isContentEditable))
     return "text";
-  if (tag === "INPUT") {
-    const inputType = (element as HTMLInputElement).type;
+  if (tag === "INPUT" && element instanceof HTMLInputElement) {
+    const inputType = element.type;
     if (
       inputType === "text" ||
       inputType === "search" ||

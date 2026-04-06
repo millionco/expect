@@ -142,7 +142,7 @@ const getExistingPathStats = (targetPath: string): fs.Stats | fs.Dirent | undefi
   try {
     return fs.lstatSync(targetPath);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") return undefined;
     throw error;
   }
 };

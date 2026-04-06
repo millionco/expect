@@ -3,6 +3,7 @@ import { copyFileSync, existsSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Effect, Schema } from "effect";
+import { FFMPEG_TIMEOUT_MS, FRAME_PADDING_PX } from "./constants";
 
 // HACK: resolve the wallpaper path using import.meta.url (works in ESM bundles)
 // with a fallback chain for different directory layouts. If none found, the framing
@@ -21,11 +22,9 @@ export const DEFAULT_WALLPAPER_PATH = (() => {
   }
 })();
 
-const FFMPEG_TIMEOUT_MS = 120_000;
 const MPDECIMATE_HI = "64*1000";
 const MPDECIMATE_LO = "64*500";
 const MPDECIMATE_FRAC = "0.1";
-const FRAME_PADDING_PX = 48;
 
 export class VideoProcessError extends Schema.ErrorClass<VideoProcessError>("VideoProcessError")({
   _tag: Schema.tag("VideoProcessError"),
@@ -215,7 +214,11 @@ export const concatVideos = Effect.fn("concatVideos")(function* (
     Effect.try({
       try: () => unlinkSync(concatListPath),
       catch: (error) => new VideoProcessError({ cause: String(error) }),
-    }).pipe(Effect.catchTag("VideoProcessError", () => Effect.void)),
+    }).pipe(
+      Effect.catchTag("VideoProcessError", (error) =>
+        Effect.logDebug("Failed to clean up concat list file", { error: error.message }),
+      ),
+    ),
   );
 
   yield* Effect.logInfo("Videos concatenated", { outputPath });

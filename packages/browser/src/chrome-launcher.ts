@@ -80,7 +80,7 @@ export const findSystemChrome = Effect.fn("findSystemChrome")(function* () {
       programFiles && path.join(programFiles, "Microsoft", "Edge", "Application", "msedge.exe"),
       programFilesX86 &&
         path.join(programFilesX86, "Microsoft", "Edge", "Application", "msedge.exe"),
-    ].filter(Boolean) as string[];
+    ].filter((candidate): candidate is string => typeof candidate === "string");
 
     for (const candidate of candidates) {
       if (fs.existsSync(candidate)) {

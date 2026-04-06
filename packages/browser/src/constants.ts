@@ -61,3 +61,6 @@ export const CDP_POLL_INTERVAL_MS = 50;
 
 export const HEADLESS_CHROME_WINDOW_WIDTH_PX = 1280;
 export const HEADLESS_CHROME_WINDOW_HEIGHT_PX = 720;
+
+export const FFMPEG_TIMEOUT_MS = 120_000;
+export const FRAME_PADDING_PX = 48;

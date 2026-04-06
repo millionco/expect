@@ -13,10 +13,6 @@ const posthogClient = new PostHog(POSTHOG_API_KEY, {
   host: POSTHOG_DEFAULT_HOST,
 });
 
-// ---------------------------------------------------------------------------
-// AnalyticsProvider — abstract provider that Analytics delegates to
-// ---------------------------------------------------------------------------
-
 export interface AnalyticsProviderShape {
   readonly capture: (event: {
     readonly eventName: string;
@@ -58,10 +54,11 @@ export class AnalyticsProvider extends ServiceMap.Service<
           },
         });
       }),
-    flush: Effect.tryPromise({
-      try: () => posthogClient.flush(),
-      catch: (cause) => cause,
-    }).pipe(Effect.ignore),
+    flush: Effect.tryPromise(() => posthogClient.flush()).pipe(
+      Effect.catchTag("UnknownError", (cause) =>
+        Effect.logDebug("PostHog flush failed", { cause }),
+      ),
+    ),
   });
 
   static layerDev = Layer.succeed(this)({
@@ -80,10 +77,6 @@ export class AnalyticsProvider extends ServiceMap.Service<
     flush: Effect.void,
   });
 }
-
-// ---------------------------------------------------------------------------
-// Analytics — public service
-// ---------------------------------------------------------------------------
 
 export class Analytics extends ServiceMap.Service<Analytics>()("@expect/Analytics", {
   make: Effect.gen(function* () {

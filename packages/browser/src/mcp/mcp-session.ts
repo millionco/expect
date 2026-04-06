@@ -20,6 +20,7 @@ import {
   EXPECT_CDP_URL_ENV_NAME,
   EXPECT_BASE_URL_ENV_NAME,
   EXPECT_HEADED_ENV_NAME,
+  TMP_ARTIFACT_OUTPUT_DIRECTORY,
 } from "./constants";
 import { McpSessionNotOpenError } from "./errors";
 
@@ -68,7 +69,6 @@ export interface CloseResult {
   readonly screenshotPaths: readonly string[];
 }
 
-const TMP_ARTIFACT_OUTPUT_DIRECTORY = "/tmp/expect-replays";
 const PLAYWRIGHT_VIDEO_SUBDIRECTORY = "playwright";
 
 const setupPageTracking = (page: Page, sessionData: BrowserSessionData) => {
@@ -130,7 +130,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       onSome: (value) => value !== "false",
     });
     const cookieBrowserKeys = Option.match(cookieBrowsersConfig, {
-      onNone: () => [] as string[],
+      onNone: (): string[] => [],
       onSome: (value) => value.split(",").filter(Boolean),
     });
     const cookiesDisabled = cookieBrowserKeys.length === 0;
@@ -183,7 +183,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         Effect.tap((cookies) => Effect.logInfo("Cookies pre-extracted", { count: cookies.length })),
         Effect.catchCause((cause) =>
           Effect.logWarning("Cookie pre-extraction failed", { cause }).pipe(
-            Effect.as(undefined as Cookie[] | undefined),
+            Effect.as<Cookie[] | undefined>(undefined),
           ),
         ),
         Effect.flatMap((cookies) => Deferred.succeed(deferred, cookies)),
