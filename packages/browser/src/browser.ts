@@ -7,14 +7,15 @@ import { Array as Arr, Effect, Layer, Option, ServiceMap } from "effect";
 
 const cookiesLayer = Layer.mergeAll(layerLive, Cookies.layer);
 import {
+  AGENT_OVERLAY_CONTAINER_ID,
   CONTENT_ROLES,
   HEADLESS_CHROMIUM_ARGS,
   INTERACTIVE_ROLES,
   NAVIGATION_DETECT_DELAY_MS,
   OVERLAY_CONTAINER_ID,
   POST_NAVIGATION_SETTLE_MS,
-  REPLAY_PLAYER_HEIGHT_PX,
-  REPLAY_PLAYER_WIDTH_PX,
+  VIDEO_HEIGHT_PX,
+  VIDEO_WIDTH_PX,
   REF_PREFIX,
   SNAPSHOT_TIMEOUT_MS,
 } from "./constants";
@@ -215,7 +216,7 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
         if (options.videoOutputDir) {
           contextOptions.recordVideo = {
             dir: options.videoOutputDir,
-            size: { width: REPLAY_PLAYER_WIDTH_PX, height: REPLAY_PLAYER_HEIGHT_PX },
+            size: { width: VIDEO_WIDTH_PX, height: VIDEO_HEIGHT_PX },
           };
         }
 
@@ -405,6 +406,16 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
       return yield* snapshot(page, options);
     });
 
+    const hideAgentOverlayForCapture = (page: Page) =>
+      evaluateRuntime(page, "hideAgentOverlay", AGENT_OVERLAY_CONTAINER_ID).pipe(
+        Effect.catchCause(() => Effect.void),
+      );
+
+    const showAgentOverlayAfterCapture = (page: Page) =>
+      evaluateRuntime(page, "showAgentOverlay", AGENT_OVERLAY_CONTAINER_ID).pipe(
+        Effect.catchCause(() => Effect.void),
+      );
+
     const annotatedScreenshot = Effect.fn("Browser.annotatedScreenshot")(function* (
       page: Page,
       options: AnnotatedScreenshotOptions = {},
@@ -427,6 +438,7 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
         labelPositions.push({ label: labelCounter, x: box.x, y: box.y });
       }
 
+      yield* hideAgentOverlayForCapture(page);
       yield* injectOverlayLabels(page, labelPositions);
       return yield* Effect.ensuring(
         Effect.tryPromise({
@@ -436,6 +448,7 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
         // HACK: overlay removal is best-effort cleanup — evaluateRuntime uses Effect.promise which defects on failure
         evaluateRuntime(page, "removeOverlay", OVERLAY_CONTAINER_ID).pipe(
           Effect.catchCause(() => Effect.void),
+          Effect.tap(() => showAgentOverlayAfterCapture(page)),
         ),
       );
     });

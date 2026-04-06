@@ -8,7 +8,6 @@ interface PreferencesStore {
   agentBackend: AgentBackend;
   verbose: boolean;
   browserHeaded: boolean;
-  replayHost: string;
   autoSaveFlows: boolean;
   notifications: boolean | undefined;
   instructionHistory: string[];
@@ -26,8 +25,7 @@ export const usePreferencesStore = create<PreferencesStore>()(
     (set) => ({
       agentBackend: "claude",
       verbose: false,
-      browserHeaded: false,
-      replayHost: "https://expect.dev",
+      browserHeaded: true,
       autoSaveFlows: true,
       notifications: undefined,
       instructionHistory: [],

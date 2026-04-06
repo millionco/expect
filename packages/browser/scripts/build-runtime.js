@@ -1,5 +1,6 @@
 import { context } from "esbuild";
 import * as fs from "node:fs";
+import * as path from "node:path";
 
 const watchMode = process.argv.includes("--watch");
 
@@ -58,6 +59,20 @@ const emitPlugin = {
   },
 };
 
+const cssTextPlugin = {
+  name: "css-text",
+  setup(build) {
+    build.onResolve({ filter: /\.css$/ }, (args) => ({
+      path: path.resolve(args.resolveDir, args.path),
+      namespace: "css-text",
+    }));
+    build.onLoad({ namespace: "css-text", filter: /.*/ }, (args) => ({
+      contents: `export default ${JSON.stringify(fs.readFileSync(args.path, "utf-8"))};`,
+      loader: "js",
+    }));
+  },
+};
+
 const ctx = await context({
   entryPoints: ["src/runtime/index.ts"],
   bundle: true,
@@ -66,7 +81,8 @@ const ctx = await context({
   write: false,
   minify: true,
   target: "es2020",
-  plugins: [emitPlugin],
+  jsx: "automatic",
+  plugins: [cssTextPlugin, emitPlugin],
 });
 
 if (watchMode) {

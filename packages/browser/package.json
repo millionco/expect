@@ -10,7 +10,8 @@
     "./runtime": "./src/runtime/index.ts"
   },
   "scripts": {
-    "build": "node scripts/build-runtime.js",
+    "build:css": "mkdir -p dist && pnpm exec tailwindcss -i ./src/runtime/overlay/index.css -o ./dist/overlay.css -m && node scripts/css-rem-to-px.js",
+    "build": "pnpm build:css && node scripts/build-runtime.js",
     "lint": "vp lint && tsc --noEmit",
     "format": "vp fmt",
     "format:check": "vp fmt --check",
@@ -24,17 +25,23 @@
     "@effect/platform-node": "4.0.0-beta.35",
     "@expect/cookies": "workspace:*",
     "@expect/shared": "workspace:*",
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@medv/finder": "^4.0.2",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "accessibility-checker-engine": "^4.0.16",
     "effect": "4.0.0-beta.35",
     "playwright": "^1.52.0",
-    "rrweb": "^2.0.0-alpha.18",
+    "react": "^19.2.4",
+    "react-dom": "19.2.4",
+    "tailwindcss": "^4.2.2",
     "which": "^6.0.1",
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@tailwindcss/cli": "^4.2.2",
     "@types/node": "^22.15.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "@types/which": "^3.0.4",
     "esbuild": "^0.25.0",
     "typescript": "^5.7.0"

@@ -7,6 +7,7 @@ import { Effect, Option, type ManagedRuntime } from "effect";
 import { evaluateRuntime } from "../utils/evaluate-runtime";
 import { runAccessibilityAudit } from "../accessibility";
 import { formatPerformanceTrace } from "../performance-trace";
+import { AGENT_OVERLAY_CONTAINER_ID } from "../constants";
 import { McpSession } from "./mcp-session";
 import { DUPLICATE_REQUEST_WINDOW_MS } from "./constants";
 import { registerRulesResources } from "./rules-resources";
@@ -37,6 +38,105 @@ const imageResult = (base64: string) => ({
 });
 
 const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
+
+// HACK: we parse the agent's playwright code to extract cursor intent before execution.
+// REF_PATTERN finds the first ref('eN') call so we can move the virtual cursor to that
+// element's position eagerly. COMMENT_PATTERN extracts // comments as human-readable
+// labels for the cursor tooltip (falls back to raw code if no comment exists).
+const REF_PATTERN = /ref\s*\(\s*['"](\w+)['"]\s*\)/;
+const REF_PATTERN_GLOBAL = /ref\s*\(\s*['"](\w+)['"]\s*\)/g;
+const COMMENT_PATTERN = /\/\/\s*(.+)/;
+const extractCursorLabel = (code: string): string => {
+  const commentMatch = code.match(COMMENT_PATTERN);
+  return commentMatch ? commentMatch[1].trim() : code.trim();
+};
+
+const updateCursorLabel = (page: import("playwright").Page, label: string) =>
+  evaluateRuntime(page, "updateCursor", AGENT_OVERLAY_CONTAINER_ID, -1, -1, label).pipe(
+    Effect.catchCause(() => Effect.void),
+  );
+
+const moveCursorToPosition = (
+  page: import("playwright").Page,
+  x: number,
+  y: number,
+  label: string,
+) =>
+  evaluateRuntime(page, "updateCursor", AGENT_OVERLAY_CONTAINER_ID, x, y, label).pipe(
+    Effect.catchCause(() => Effect.void),
+  );
+
+const USER_CONTROL_NOTICE =
+  "[NOTICE] The user took manual control of the browser and may have changed the page state. " +
+  "Take a fresh snapshot before continuing to ensure your refs and assumptions are up to date.";
+
+const checkUserControl = (page: import("playwright").Page) =>
+  evaluateRuntime(page, "didUserTakeControl").pipe(
+    Effect.tap((didControl) => {
+      if (didControl) {
+        return evaluateRuntime(page, "clearUserControl").pipe(Effect.catchCause(() => Effect.void));
+      }
+      return Effect.void;
+    }),
+    Effect.catchCause(() => Effect.succeed(false)),
+  );
+
+const prependUserControlNotice = <T extends { content: Array<{ type: string; text?: string }> }>(
+  result: T,
+  didControl: boolean,
+): T => {
+  if (!didControl) return result;
+  return {
+    ...result,
+    content: [{ type: "text" as const, text: USER_CONTROL_NOTICE }, ...result.content],
+  };
+};
+
+const moveCursorToRef = Effect.fn("moveCursorToRef")(function* (
+  page: import("playwright").Page,
+  snapshot: import("../types").SnapshotResult,
+  refId: string,
+  label: string,
+) {
+  if (!snapshot.refs[refId]) return;
+  const locator = yield* snapshot.locator(refId);
+  const box = yield* Effect.tryPromise(() => locator.boundingBox()).pipe(
+    Effect.catchTag("UnknownError", () => Effect.succeed(undefined)),
+  );
+  if (box) {
+    yield* moveCursorToPosition(page, box.x + box.width / 2, box.y + box.height / 2, label);
+  }
+});
+
+const clearRefHighlights = (page: import("playwright").Page) =>
+  evaluateRuntime(page, "clearHighlights", AGENT_OVERLAY_CONTAINER_ID).pipe(
+    Effect.catchCause(() => Effect.void),
+  );
+
+const highlightRefsInCode = Effect.fn("highlightRefsInCode")(function* (
+  page: import("playwright").Page,
+  snapshot: import("../types").SnapshotResult,
+  code: string,
+) {
+  const matches = [...code.matchAll(REF_PATTERN_GLOBAL)];
+  const uniqueRefIds = [...new Set(matches.map((match) => match[1]))];
+
+  const rects: Array<{ x: number; y: number; width: number; height: number }> = [];
+  for (const refId of uniqueRefIds) {
+    if (!snapshot.refs[refId]) continue;
+    const locator = yield* snapshot.locator(refId);
+    const box = yield* Effect.tryPromise(() => locator.boundingBox()).pipe(
+      Effect.catchTag("UnknownError", () => Effect.succeed(undefined)),
+    );
+    if (box) {
+      rects.push({ x: box.x, y: box.y, width: box.width, height: box.height });
+    }
+  }
+
+  yield* evaluateRuntime(page, "highlightRefs", AGENT_OVERLAY_CONTAINER_ID, rects).pipe(
+    Effect.catchCause(() => Effect.void),
+  );
+});
 
 // Tool annotations (readOnlyHint, destructiveHint) enable parallel execution in the Claude Agent SDK.
 // See: https://platform.claude.com/docs/en/agent-sdk/agent-loop#parallel-tool-execution
@@ -87,6 +187,8 @@ export const createBrowserMcpServer = <E>(
           const session = yield* McpSession;
 
           if (session.hasSession()) {
+            const page = yield* session.requirePage();
+            yield* updateCursorLabel(page, `Navigating to ${url}`);
             yield* session.navigate(url, { waitUntil });
             return textResult(`Navigated to ${url}`);
           }
@@ -132,6 +234,24 @@ export const createBrowserMcpServer = <E>(
         Effect.gen(function* () {
           const session = yield* McpSession;
           const sessionData = yield* session.requireSession();
+          const didControl = yield* checkUserControl(sessionData.page);
+
+          yield* clearRefHighlights(sessionData.page);
+
+          const cursorLabel = extractCursorLabel(code);
+          const refMatch = code.match(REF_PATTERN);
+
+          if (refMatch && sessionData.lastSnapshot) {
+            yield* moveCursorToRef(
+              sessionData.page,
+              sessionData.lastSnapshot,
+              refMatch[1],
+              cursorLabel,
+            );
+            yield* highlightRefsInCode(sessionData.page, sessionData.lastSnapshot, code);
+          } else {
+            yield* updateCursorLabel(sessionData.page, cursorLabel);
+          }
 
           const ref = (refId: string) => {
             if (!sessionData.lastSnapshot)
@@ -158,7 +278,7 @@ export const createBrowserMcpServer = <E>(
           });
 
           if (!codeResult.success) {
-            return textResult(`Error: ${codeResult.error}`);
+            return prependUserControlNotice(textResult(`Error: ${codeResult.error}`), didControl);
           }
 
           if (snapshotAfter) {
@@ -181,11 +301,12 @@ export const createBrowserMcpServer = <E>(
                       stats: snapshotResult.stats,
                     },
                   };
-            return jsonResult(resultPayload);
+            return prependUserControlNotice(jsonResult(resultPayload), didControl);
           }
 
-          if (codeResult.value === undefined) return textResult("OK");
-          return jsonResult(codeResult.value);
+          if (codeResult.value === undefined)
+            return prependUserControlNotice(textResult("OK"), didControl);
+          return prependUserControlNotice(jsonResult(codeResult.value), didControl);
         }).pipe(Effect.withSpan(`mcp.tool.playwright`)),
       ),
   );
@@ -215,44 +336,64 @@ export const createBrowserMcpServer = <E>(
         Effect.gen(function* () {
           const session = yield* McpSession;
           const page = yield* session.requirePage();
+          const didControl = yield* checkUserControl(page);
           const resolvedMode = mode ?? "screenshot";
+          yield* updateCursorLabel(page, `Taking ${resolvedMode}`);
 
           if (resolvedMode === "snapshot") {
-            const result = yield* session.snapshot(page, {
-              viewportAware: !fullPage,
-            });
+            yield* evaluateRuntime(page, "hideAgentOverlay", AGENT_OVERLAY_CONTAINER_ID).pipe(
+              Effect.catchCause(() => Effect.void),
+            );
+            const result = yield* Effect.ensuring(
+              session.snapshot(page, { viewportAware: !fullPage }),
+              evaluateRuntime(page, "showAgentOverlay", AGENT_OVERLAY_CONTAINER_ID).pipe(
+                Effect.catchCause(() => Effect.void),
+              ),
+            );
             yield* session.updateLastSnapshot(result);
-            return jsonResult({ tree: result.tree, refs: result.refs, stats: result.stats });
+            return prependUserControlNotice(
+              jsonResult({ tree: result.tree, refs: result.refs, stats: result.stats }),
+              didControl,
+            );
           }
 
           if (resolvedMode === "annotated") {
             const result = yield* session.annotatedScreenshot(page, { fullPage });
             yield* session.saveScreenshot(result.screenshot);
-            return {
-              content: [
-                {
-                  type: "image" as const,
-                  data: result.screenshot.toString("base64"),
-                  mimeType: "image/png",
-                },
-                {
-                  type: "text" as const,
-                  text: result.annotations
-                    .map(
-                      (annotation) =>
-                        `[${annotation.label}] @${annotation.ref} ${annotation.role} "${annotation.name}"`,
-                    )
-                    .join("\n"),
-                },
-              ],
-            };
+            return prependUserControlNotice(
+              {
+                content: [
+                  {
+                    type: "image" as const,
+                    data: result.screenshot.toString("base64"),
+                    mimeType: "image/png",
+                  },
+                  {
+                    type: "text" as const,
+                    text: result.annotations
+                      .map(
+                        (annotation) =>
+                          `[${annotation.label}] @${annotation.ref} ${annotation.role} "${annotation.name}"`,
+                      )
+                      .join("\n"),
+                  },
+                ],
+              },
+              didControl,
+            );
           }
 
-          const buffer = yield* Effect.tryPromise(() =>
-            page.screenshot({ fullPage, scale: "css" }),
+          yield* evaluateRuntime(page, "hideAgentOverlay", AGENT_OVERLAY_CONTAINER_ID).pipe(
+            Effect.catchCause(() => Effect.void),
+          );
+          const buffer = yield* Effect.ensuring(
+            Effect.tryPromise(() => page.screenshot({ fullPage, scale: "css" })),
+            evaluateRuntime(page, "showAgentOverlay", AGENT_OVERLAY_CONTAINER_ID).pipe(
+              Effect.catchCause(() => Effect.void),
+            ),
           );
           yield* session.saveScreenshot(buffer);
-          return imageResult(buffer.toString("base64"));
+          return prependUserControlNotice(imageResult(buffer.toString("base64")), didControl);
         }).pipe(Effect.withSpan(`mcp.tool.screenshot`)),
       ),
   );
@@ -277,6 +418,7 @@ export const createBrowserMcpServer = <E>(
         Effect.gen(function* () {
           const session = yield* McpSession;
           const sessionData = yield* session.requireSession();
+          yield* updateCursorLabel(sessionData.page, "Reading console logs");
           const entries = type
             ? sessionData.consoleMessages.filter((entry) => entry.type === type)
             : sessionData.consoleMessages;
@@ -317,6 +459,7 @@ export const createBrowserMcpServer = <E>(
         Effect.gen(function* () {
           const session = yield* McpSession;
           const sessionData = yield* session.requireSession();
+          yield* updateCursorLabel(sessionData.page, "Checking network requests");
           const normalizedMethod = method?.toUpperCase();
           const normalizedResourceType = resourceType?.toLowerCase();
           const entries = sessionData.networkRequests.filter(
@@ -395,6 +538,7 @@ export const createBrowserMcpServer = <E>(
         Effect.gen(function* () {
           const session = yield* McpSession;
           const page = yield* session.requirePage();
+          yield* updateCursorLabel(page, "Collecting performance metrics");
           const trace = yield* evaluateRuntime(page, "getPerformanceTrace");
 
           const hasMetrics = trace.webVitals.fcp || trace.webVitals.lcp || trace.webVitals.inp;
@@ -466,6 +610,7 @@ export const createBrowserMcpServer = <E>(
         Effect.gen(function* () {
           const session = yield* McpSession;
           const page = yield* session.requirePage();
+          yield* updateCursorLabel(page, "Running accessibility audit");
           const result = yield* runAccessibilityAudit(page, { selector, tags });
           if (result.violations.length === 0) {
             return textResult("No accessibility violations found.");
@@ -487,15 +632,13 @@ export const createBrowserMcpServer = <E>(
       runMcp(
         Effect.gen(function* () {
           const session = yield* McpSession;
+          if (session.hasSession()) {
+            const page = yield* session.requirePage();
+            yield* updateCursorLabel(page, "Closing browser");
+          }
           const result = yield* session.close();
           if (!result) return textResult("No browser open.");
           const lines = ["Browser closed."];
-          if (result.tmpReplaySessionPath) {
-            lines.push(`rrweb replay: ${result.tmpReplaySessionPath}`);
-          }
-          if (result.tmpReportPath) {
-            lines.push(`rrweb report: ${result.tmpReportPath}`);
-          }
           if (result.tmpVideoPath) {
             lines.push(`Playwright video: ${result.tmpVideoPath}`);
           } else if (result.videoPath) {

@@ -18,11 +18,9 @@ describe("extractCloseArtifacts", () => {
     it("returns all undefined for empty events array", () => {
       const artifacts = extractCloseArtifacts([]);
 
-      expect(artifacts.localReplayUrl).toBeUndefined();
       expect(artifacts.videoUrl).toBeUndefined();
-      expect(artifacts.replayPath).toBeUndefined();
       expect(artifacts.videoPath).toBeUndefined();
-      expect(artifacts.replaySessionPath).toBeUndefined();
+      expect(artifacts.screenshotPaths).toEqual([]);
     });
 
     it("returns all undefined when events have no close tool result", () => {
@@ -33,21 +31,15 @@ describe("extractCloseArtifacts", () => {
 
       const artifacts = extractCloseArtifacts(events);
 
-      expect(artifacts.localReplayUrl).toBeUndefined();
       expect(artifacts.videoUrl).toBeUndefined();
-      expect(artifacts.replayPath).toBeUndefined();
       expect(artifacts.videoPath).toBeUndefined();
-      expect(artifacts.replaySessionPath).toBeUndefined();
     });
 
     it("returns all undefined when close result is an error", () => {
-      const events: ExecutionEvent[] = [
-        makeErrorCloseResult("rrweb report: /tmp/report.html\nPlaywright video: /tmp/video.webm"),
-      ];
+      const events: ExecutionEvent[] = [makeErrorCloseResult("Playwright video: /tmp/video.webm")];
 
       const artifacts = extractCloseArtifacts(events);
 
-      expect(artifacts.localReplayUrl).toBeUndefined();
       expect(artifacts.videoUrl).toBeUndefined();
     });
 
@@ -58,29 +50,7 @@ describe("extractCloseArtifacts", () => {
 
       const artifacts = extractCloseArtifacts(events);
 
-      expect(artifacts.localReplayUrl).toBeUndefined();
       expect(artifacts.videoUrl).toBeUndefined();
-    });
-  });
-
-  describe("extracting replay report path", () => {
-    it("extracts replay path and converts to file URL", () => {
-      const events: ExecutionEvent[] = [
-        makeCloseResult("Browser closed.\nrrweb report: /tmp/expect-replays/report.html"),
-      ];
-
-      const artifacts = extractCloseArtifacts(events);
-
-      expect(artifacts.replayPath).toBe("/tmp/expect-replays/report.html");
-      expect(artifacts.localReplayUrl).toBe(pathToFileURL("/tmp/expect-replays/report.html").href);
-    });
-
-    it("trims whitespace from replay path", () => {
-      const events: ExecutionEvent[] = [makeCloseResult("rrweb report:   /tmp/report.html  ")];
-
-      const artifacts = extractCloseArtifacts(events);
-
-      expect(artifacts.replayPath).toBe("/tmp/report.html");
     });
   });
 
@@ -105,60 +75,39 @@ describe("extractCloseArtifacts", () => {
     });
   });
 
-  describe("extracting replay session path", () => {
-    it("extracts replay session NDJSON path", () => {
-      const events: ExecutionEvent[] = [
-        makeCloseResult("Browser closed.\nrrweb replay: /tmp/expect-replays/session.ndjson"),
-      ];
-
-      const artifacts = extractCloseArtifacts(events);
-
-      expect(artifacts.replaySessionPath).toBe("/tmp/expect-replays/session.ndjson");
-    });
-
-    it("trims whitespace from session path", () => {
-      const events: ExecutionEvent[] = [makeCloseResult("rrweb replay:   /tmp/session.ndjson  ")];
-
-      const artifacts = extractCloseArtifacts(events);
-
-      expect(artifacts.replaySessionPath).toBe("/tmp/session.ndjson");
-    });
-  });
-
-  describe("extracting all artifacts together", () => {
-    it("extracts all artifacts from a complete close result", () => {
+  describe("extracting screenshots", () => {
+    it("extracts multiple screenshot paths", () => {
       const closeText = [
         "Browser closed.",
-        "rrweb replay: /tmp/replays/session.ndjson",
-        "rrweb report: /tmp/replays/report.html",
-        "Playwright video: /tmp/replays/video.webm",
+        "Playwright video: /tmp/video.webm",
+        "Screenshot: /tmp/screenshot-0.png",
+        "Screenshot: /tmp/screenshot-1.png",
       ].join("\n");
       const events: ExecutionEvent[] = [makeCloseResult(closeText)];
 
       const artifacts = extractCloseArtifacts(events);
 
-      expect(artifacts.replaySessionPath).toBe("/tmp/replays/session.ndjson");
-      expect(artifacts.replayPath).toBe("/tmp/replays/report.html");
-      expect(artifacts.videoPath).toBe("/tmp/replays/video.webm");
-      expect(artifacts.localReplayUrl).toBe(pathToFileURL("/tmp/replays/report.html").href);
-      expect(artifacts.videoUrl).toBe(pathToFileURL("/tmp/replays/video.webm").href);
+      expect(artifacts.screenshotPaths).toEqual(["/tmp/screenshot-0.png", "/tmp/screenshot-1.png"]);
     });
+  });
 
-    it("handles partial artifacts — only replay, no video", () => {
-      const events: ExecutionEvent[] = [
-        makeCloseResult("Browser closed.\nrrweb report: /tmp/report.html"),
-      ];
+  describe("extracting all artifacts together", () => {
+    it("extracts video and screenshots from a complete close result", () => {
+      const closeText = [
+        "Browser closed.",
+        "Playwright video: /tmp/replays/video.webm",
+        "Screenshot: /tmp/screenshot-0.png",
+      ].join("\n");
+      const events: ExecutionEvent[] = [makeCloseResult(closeText)];
 
       const artifacts = extractCloseArtifacts(events);
 
-      expect(artifacts.replayPath).toBe("/tmp/report.html");
-      expect(artifacts.localReplayUrl).toBe(pathToFileURL("/tmp/report.html").href);
-      expect(artifacts.videoPath).toBeUndefined();
-      expect(artifacts.videoUrl).toBeUndefined();
-      expect(artifacts.replaySessionPath).toBeUndefined();
+      expect(artifacts.videoPath).toBe("/tmp/replays/video.webm");
+      expect(artifacts.videoUrl).toBe(pathToFileURL("/tmp/replays/video.webm").href);
+      expect(artifacts.screenshotPaths).toEqual(["/tmp/screenshot-0.png"]);
     });
 
-    it("handles partial artifacts — only video, no replay", () => {
+    it("handles partial artifacts — only video, no screenshots", () => {
       const events: ExecutionEvent[] = [
         makeCloseResult("Browser closed.\nPlaywright video: /tmp/video.webm"),
       ];
@@ -167,69 +116,63 @@ describe("extractCloseArtifacts", () => {
 
       expect(artifacts.videoPath).toBe("/tmp/video.webm");
       expect(artifacts.videoUrl).toBe(pathToFileURL("/tmp/video.webm").href);
-      expect(artifacts.replayPath).toBeUndefined();
-      expect(artifacts.localReplayUrl).toBeUndefined();
+      expect(artifacts.screenshotPaths).toEqual([]);
     });
   });
 
   describe("uses the last close event", () => {
     it("picks the last successful close result when multiple exist", () => {
       const events: ExecutionEvent[] = [
-        makeCloseResult("rrweb report: /tmp/first-report.html"),
+        makeCloseResult("Playwright video: /tmp/first-video.webm"),
         makeOtherToolResult("irrelevant"),
-        makeCloseResult("rrweb report: /tmp/second-report.html"),
+        makeCloseResult("Playwright video: /tmp/second-video.webm"),
       ];
 
       const artifacts = extractCloseArtifacts(events);
 
-      expect(artifacts.replayPath).toBe("/tmp/second-report.html");
+      expect(artifacts.videoPath).toBe("/tmp/second-video.webm");
     });
 
     it("skips error close results and finds last successful one", () => {
       const events: ExecutionEvent[] = [
-        makeCloseResult("rrweb report: /tmp/good-report.html"),
-        makeErrorCloseResult("rrweb report: /tmp/error-report.html"),
+        makeCloseResult("Playwright video: /tmp/good-video.webm"),
+        makeErrorCloseResult("Playwright video: /tmp/error-video.webm"),
       ];
 
       const artifacts = extractCloseArtifacts(events);
 
-      expect(artifacts.replayPath).toBe("/tmp/good-report.html");
+      expect(artifacts.videoPath).toBe("/tmp/good-video.webm");
     });
   });
 
   describe("edge cases", () => {
     it("returns undefined for whitespace-only paths", () => {
-      const events: ExecutionEvent[] = [
-        makeCloseResult("rrweb report:   \nPlaywright video:   \nrrweb replay:   "),
-      ];
+      const events: ExecutionEvent[] = [makeCloseResult("Playwright video:   ")];
 
       const artifacts = extractCloseArtifacts(events);
 
-      expect(artifacts.replayPath).toBeUndefined();
       expect(artifacts.videoPath).toBeUndefined();
-      expect(artifacts.replaySessionPath).toBeUndefined();
-      expect(artifacts.localReplayUrl).toBeUndefined();
       expect(artifacts.videoUrl).toBeUndefined();
     });
 
     it("handles paths with spaces", () => {
       const events: ExecutionEvent[] = [
-        makeCloseResult("rrweb report: /tmp/my folder/report file.html"),
+        makeCloseResult("Playwright video: /tmp/my folder/video file.webm"),
       ];
 
       const artifacts = extractCloseArtifacts(events);
 
-      expect(artifacts.replayPath).toBe("/tmp/my folder/report file.html");
-      expect(artifacts.localReplayUrl).toBe(pathToFileURL("/tmp/my folder/report file.html").href);
+      expect(artifacts.videoPath).toBe("/tmp/my folder/video file.webm");
+      expect(artifacts.videoUrl).toBe(pathToFileURL("/tmp/my folder/video file.webm").href);
     });
 
     it("handles lines with extra whitespace and blank lines", () => {
-      const closeText = "\n  Browser closed.  \n\n  rrweb report: /tmp/report.html  \n\n";
+      const closeText = "\n  Browser closed.  \n\n  Playwright video: /tmp/video.webm  \n\n";
       const events: ExecutionEvent[] = [makeCloseResult(closeText)];
 
       const artifacts = extractCloseArtifacts(events);
 
-      expect(artifacts.replayPath).toBe("/tmp/report.html");
+      expect(artifacts.videoPath).toBe("/tmp/video.webm");
     });
   });
 });

@@ -1,15 +1,13 @@
 import path from "node:path";
 import type { Browser as PlaywrightBrowser, BrowserContext, Page } from "playwright";
-import type { eventWithTime } from "@rrweb/types";
-import { Config, Deferred, Effect, Fiber, Layer, Option, Ref, Schedule, ServiceMap } from "effect";
+import { Config, Effect, Layer, Option, Ref, ServiceMap } from "effect";
 import type { Cookie } from "@expect/cookies";
 import { FileSystem } from "effect/FileSystem";
 import { Browser } from "../browser";
 import { NavigationError } from "../errors";
-import { collectAllEvents } from "../recorder";
+import { concatVideos, frameWithWallpaper, DEFAULT_WALLPAPER_PATH } from "../video-processor";
 import { evaluateRuntime } from "../utils/evaluate-runtime";
-import { EVENT_COLLECT_INTERVAL_MS } from "../constants";
-import { buildReplayViewerHtml } from "../replay-viewer";
+import { AGENT_OVERLAY_CONTAINER_ID } from "../constants";
 import type {
   AnnotatedScreenshotOptions,
   BrowserEngine,
@@ -17,15 +15,12 @@ import type {
   SnapshotResult,
 } from "../types";
 import {
-  EXPECT_LIVE_VIEW_URL_ENV_NAME,
   EXPECT_COOKIE_BROWSERS_ENV_NAME,
-  EXPECT_REPLAY_OUTPUT_ENV_NAME,
   EXPECT_CDP_URL_ENV_NAME,
   EXPECT_BASE_URL_ENV_NAME,
+  EXPECT_HEADED_ENV_NAME,
 } from "./constants";
 import { McpSessionNotOpenError } from "./errors";
-import { startLiveViewServer, type LiveViewHandle } from "./live-view-server";
-import type { ViewerRunState } from "./viewer-events";
 
 interface ConsoleEntry {
   readonly type: string;
@@ -49,8 +44,6 @@ export interface BrowserSessionData {
   readonly isExternalBrowser: boolean;
   readonly consoleMessages: ConsoleEntry[];
   readonly networkRequests: NetworkEntry[];
-  readonly replayOutputPath: string | undefined;
-  readonly accumulatedReplayEvents: eventWithTime[];
   readonly trackedPages: Set<Page>;
   lastSnapshot: SnapshotResult | undefined;
 }
@@ -69,11 +62,7 @@ export interface OpenResult {
 }
 
 export interface CloseResult {
-  readonly replaySessionPath: string | undefined;
-  readonly reportPath: string | undefined;
   readonly videoPath: string | undefined;
-  readonly tmpReplaySessionPath: string | undefined;
-  readonly tmpReportPath: string | undefined;
   readonly tmpVideoPath: string | undefined;
   readonly screenshotPaths: readonly string[];
 }
@@ -115,14 +104,17 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
   make: Effect.gen(function* () {
     const browserService = yield* Browser;
     const fileSystem = yield* FileSystem;
-    const replayOutputPath = yield* Config.option(Config.string(EXPECT_REPLAY_OUTPUT_ENV_NAME));
-    const liveViewUrl = yield* Config.option(Config.string(EXPECT_LIVE_VIEW_URL_ENV_NAME));
     const cookieBrowsersConfig = yield* Config.option(
       Config.string(EXPECT_COOKIE_BROWSERS_ENV_NAME),
     );
     const defaultCdpUrl = yield* Config.option(Config.string(EXPECT_CDP_URL_ENV_NAME));
     const baseUrlConfig = yield* Config.option(Config.string(EXPECT_BASE_URL_ENV_NAME));
     const configuredBaseUrl = Option.getOrUndefined(baseUrlConfig);
+    const headedConfig = yield* Config.option(Config.string(EXPECT_HEADED_ENV_NAME));
+    const isHeadedDefault = Option.match(headedConfig, {
+      onNone: () => true,
+      onSome: (value) => value !== "false",
+    });
     const cookieBrowserKeys = Option.match(cookieBrowsersConfig, {
       onNone: () => [] as string[],
       onSome: (value) => value.split(",").filter(Boolean),
@@ -130,14 +122,12 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
     const cookiesDisabled = cookieBrowserKeys.length === 0;
 
     const sessionRef = yield* Ref.make<BrowserSessionData | undefined>(undefined);
-    const liveViewRef = yield* Ref.make<LiveViewHandle | undefined>(undefined);
-    const pollingFiberRef = yield* Ref.make<Fiber.Fiber<unknown> | undefined>(undefined);
-    const latestRunStateRef = yield* Ref.make<ViewerRunState | undefined>(undefined);
     const preExtractedCookiesRef = yield* Ref.make<Cookie[] | undefined>(undefined);
     const preExtractedCookiesDeferredRef = yield* Ref.make<
       Deferred.Deferred<Cookie[] | undefined, never> | undefined
     >(undefined);
     const savedScreenshotPathsRef = yield* Ref.make<string[]>([]);
+    const videoSegmentsRef = yield* Ref.make<string[]>([]);
 
     const saveScreenshot = Effect.fn("McpSession.saveScreenshot")(function* (buffer: Buffer) {
       const currentPaths = yield* Ref.get(savedScreenshotPathsRef);
@@ -243,14 +233,6 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       });
     });
 
-    const pushStepEvent = Effect.fn("McpSession.pushStepEvent")(function* (state: ViewerRunState) {
-      yield* Ref.set(latestRunStateRef, state);
-      const liveView = yield* Ref.get(liveViewRef);
-      if (liveView) {
-        liveView.pushRunState(state);
-      }
-    });
-
     const open = Effect.fn("McpSession.open")(function* (
       rawUrl: string,
       options: OpenOptions = {},
@@ -274,9 +256,10 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         );
 
       const cdpUrl = Option.orElse(options.cdpUrl ?? Option.none(), () => defaultCdpUrl);
+      const headed = options.headed ?? isHeadedDefault;
 
       const pageResult = yield* browserService.createPage(url, {
-        headed: options.headed,
+        headed,
         cookies: cookiesOption,
         waitUntil: options.waitUntil,
         videoOutputDir,
@@ -292,65 +275,46 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         isExternalBrowser: pageResult.isExternalBrowser,
         consoleMessages: [],
         networkRequests: [],
-        replayOutputPath: Option.getOrUndefined(replayOutputPath),
-        accumulatedReplayEvents: [],
         trackedPages: new Set(),
         lastSnapshot: undefined,
       };
       setupPageTracking(pageResult.page, sessionData);
       yield* Ref.set(sessionRef, sessionData);
 
-      yield* evaluateRuntime(pageResult.page, "startRecording").pipe(
-        Effect.catchCause((cause) => Effect.logDebug("rrweb recording failed to start", { cause })),
-      );
+      if (headed) {
+        yield* Effect.tryPromise({
+          try: () =>
+            pageResult.context.addInitScript(`
+              const __expectInitOverlay = () => {
+                if (typeof globalThis.__EXPECT_RUNTIME__ !== 'undefined' && typeof globalThis.__EXPECT_RUNTIME__.initAgentOverlay === 'function') {
+                  globalThis.__EXPECT_RUNTIME__.initAgentOverlay('${AGENT_OVERLAY_CONTAINER_ID}');
+                }
+              };
+              if (document.body) { __expectInitOverlay(); }
+              else { document.addEventListener('DOMContentLoaded', __expectInitOverlay); }
+            `),
+          catch: () => undefined,
+        }).pipe(Effect.catchCause(() => Effect.void));
 
-      const existingLiveView = yield* Ref.get(liveViewRef);
-      if (Option.isSome(liveViewUrl) && !existingLiveView) {
-        const handle = yield* startLiveViewServer({
-          liveViewUrl: liveViewUrl.value,
-          getPage: () => Ref.getUnsafe(sessionRef)?.page,
-          onEventsCollected: (events) => {
-            Ref.getUnsafe(sessionRef)?.accumulatedReplayEvents.push(...events);
-          },
-        }).pipe(
+        yield* evaluateRuntime(
+          pageResult.page,
+          "initAgentOverlay",
+          AGENT_OVERLAY_CONTAINER_ID,
+        ).pipe(
+          Effect.tap(() => Effect.logDebug("Agent overlay injected")),
           Effect.catchCause((cause) =>
-            Effect.logDebug("Live view server failed to start", { cause }).pipe(
-              Effect.as(undefined),
-            ),
+            Effect.logDebug("Agent overlay injection failed", { cause }),
           ),
         );
-        if (handle) {
-          yield* Ref.set(liveViewRef, handle);
-        }
-      }
 
-      const hasLiveView = Boolean(yield* Ref.get(liveViewRef));
-      if (!hasLiveView) {
-        const pollPage = Effect.sync(() => Ref.getUnsafe(sessionRef)?.page).pipe(
-          Effect.flatMap((page) => {
-            if (!page || page.isClosed()) return Effect.void;
-            return evaluateRuntime(page, "startRecording").pipe(
-              Effect.catchCause(() => Effect.void),
-              Effect.flatMap(() => evaluateRuntime(page, "getEvents")),
-              Effect.tap((events) =>
-                Effect.sync(() => {
-                  if (Array.isArray(events) && events.length > 0) {
-                    Ref.getUnsafe(sessionRef)?.accumulatedReplayEvents.push(...events);
-                  }
-                }),
-              ),
-              Effect.catchCause((cause) =>
-                Effect.logDebug("Replay event collection failed", { cause }),
-              ),
-            );
-          }),
-        );
-
-        const fiber = yield* pollPage.pipe(
-          Effect.repeat(Schedule.spaced(EVENT_COLLECT_INTERVAL_MS)),
-          Effect.forkDetach,
-        );
-        yield* Ref.set(pollingFiberRef, fiber);
+        yield* evaluateRuntime(
+          pageResult.page,
+          "updateCursor",
+          AGENT_OVERLAY_CONTAINER_ID,
+          -1,
+          -1,
+          `Navigated to ${url}`,
+        ).pipe(Effect.catchCause(() => Effect.void));
       }
 
       const injectedCookieCount = yield* Effect.tryPromise(() => pageResult.context.cookies()).pipe(
@@ -393,182 +357,18 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
 
       yield* Ref.set(sessionRef, undefined);
 
-      const pollingFiber = yield* Ref.get(pollingFiberRef);
-      if (pollingFiber) {
-        yield* Fiber.interrupt(pollingFiber);
-        yield* Ref.set(pollingFiberRef, undefined);
-      }
-
-      const liveView = yield* Ref.get(liveViewRef);
-      if (liveView) {
-        yield* liveView.close.pipe(
-          Effect.catchCause((cause) => Effect.logDebug("Failed to close live view", { cause })),
-        );
-        yield* Ref.set(liveViewRef, undefined);
-      }
-
-      let replaySessionPath: string | undefined;
-      let reportPath: string | undefined;
       let videoPath: string | undefined;
-      let tmpReplaySessionPath: string | undefined;
-      let tmpReportPath: string | undefined;
       let tmpVideoPath: string | undefined;
       const pageVideo = activeSession.page.video();
-      const artifactBaseName = activeSession.replayOutputPath
-        ? path.basename(
-            activeSession.replayOutputPath,
-            path.extname(activeSession.replayOutputPath),
-          )
-        : `session-${Date.now()}`;
+      const artifactBaseName = `session-${Date.now()}`;
 
-      yield* Effect.gen(function* () {
-        if (!activeSession.page.isClosed()) {
-          const finalEvents = yield* collectAllEvents(activeSession.page).pipe(
-            Effect.catchCause((cause) =>
-              Effect.logDebug("Failed to collect final replay events", { cause }).pipe(
-                Effect.as([] as ReadonlyArray<eventWithTime>),
-              ),
-            ),
-          );
-          if (finalEvents.length > 0) {
-            activeSession.accumulatedReplayEvents.push(...finalEvents);
-          }
-        }
-
-        const resolvedReplayOutputPath = activeSession.replayOutputPath;
-        if (resolvedReplayOutputPath && activeSession.accumulatedReplayEvents.length > 0) {
-          const ndjson =
-            activeSession.accumulatedReplayEvents.map((event) => JSON.stringify(event)).join("\n") +
-            "\n";
-
-          yield* fileSystem
-            .makeDirectory(path.dirname(resolvedReplayOutputPath), { recursive: true })
-            .pipe(
-              Effect.catchCause((cause) =>
-                Effect.logDebug("Failed to create replay output directory", { cause }),
-              ),
-            );
-          yield* fileSystem
-            .writeFileString(resolvedReplayOutputPath, ndjson)
-            .pipe(
-              Effect.catchCause((cause) =>
-                Effect.logDebug("Failed to write replay file", { cause }),
-              ),
-            );
-          replaySessionPath = resolvedReplayOutputPath;
-
-          const runState = yield* Ref.get(latestRunStateRef);
-          const replayFileName = path.basename(resolvedReplayOutputPath);
-          const replayBaseName = path.basename(
-            resolvedReplayOutputPath,
-            path.extname(resolvedReplayOutputPath),
-          );
-          const htmlReportPath = path.join(
-            path.dirname(resolvedReplayOutputPath),
-            `${replayBaseName}.html`,
-          );
-          const reportHtml = buildReplayViewerHtml({
-            title: runState ? `Test Report: ${runState.title}` : "Expect Report",
-            eventsSource: { ndjsonPath: replayFileName },
-            steps: runState,
-          });
-
-          yield* fileSystem
-            .writeFileString(htmlReportPath, reportHtml)
-            .pipe(
-              Effect.catchCause((cause) =>
-                Effect.logDebug("Failed to write HTML report", { cause }),
-              ),
-            );
-          reportPath = htmlReportPath;
-
-          const ndjsonJsPath = `${resolvedReplayOutputPath}.js`;
-          const ndjsonJsContent = `window.__EXPECT_REPLAY_NDJSON__ = ${JSON.stringify(ndjson)};\n`;
-          yield* fileSystem
-            .writeFileString(ndjsonJsPath, ndjsonJsContent)
-            .pipe(
-              Effect.catchCause((cause) =>
-                Effect.logDebug("Failed to write ndjson.js wrapper", { cause }),
-              ),
-            );
-
-          const tmpReplayPath = path.join(
-            TMP_ARTIFACT_OUTPUT_DIRECTORY,
-            `${replayBaseName}.ndjson`,
-          );
-          const tmpReportFilePath = path.join(
-            TMP_ARTIFACT_OUTPUT_DIRECTORY,
-            `${replayBaseName}.html`,
-          );
-          const tmpNdjsonJsPath = `${tmpReplayPath}.js`;
-
-          yield* fileSystem
-            .makeDirectory(TMP_ARTIFACT_OUTPUT_DIRECTORY, { recursive: true })
-            .pipe(
-              Effect.catchCause((cause) =>
-                Effect.logDebug("Failed to create /tmp artifact directory", { cause }),
-              ),
-            );
-          yield* fileSystem.copyFile(resolvedReplayOutputPath, tmpReplayPath).pipe(
-            Effect.tap(() =>
-              Effect.sync(() => {
-                tmpReplaySessionPath = tmpReplayPath;
-              }),
-            ),
-            Effect.catchCause((cause) =>
-              Effect.logDebug("Failed to copy replay to /tmp", { cause }),
-            ),
-          );
-          yield* fileSystem.copyFile(htmlReportPath, tmpReportFilePath).pipe(
-            Effect.tap(() =>
-              Effect.sync(() => {
-                tmpReportPath = tmpReportFilePath;
-              }),
-            ),
-            Effect.catchCause((cause) =>
-              Effect.logDebug("Failed to copy report to /tmp", { cause }),
-            ),
-          );
-          yield* fileSystem
-            .copyFile(ndjsonJsPath, tmpNdjsonJsPath)
-            .pipe(
-              Effect.catchCause((cause) =>
-                Effect.logDebug("Failed to copy ndjson.js to /tmp", { cause }),
-              ),
-            );
-
-          const tmpLatestJsonPath = path.join(
-            TMP_ARTIFACT_OUTPUT_DIRECTORY,
-            `${replayBaseName}-latest.json`,
-          );
-          yield* fileSystem
-            .writeFileString(
-              tmpLatestJsonPath,
-              JSON.stringify(activeSession.accumulatedReplayEvents),
-            )
-            .pipe(
-              Effect.catchCause((cause) =>
-                Effect.logDebug("Failed to write latest.json to /tmp", { cause }),
-              ),
-            );
-
-          if (runState) {
-            const tmpStepsJsonPath = path.join(
-              TMP_ARTIFACT_OUTPUT_DIRECTORY,
-              `${replayBaseName}-steps.json`,
-            );
-            yield* fileSystem
-              .writeFileString(tmpStepsJsonPath, JSON.stringify(runState))
-              .pipe(
-                Effect.catchCause((cause) =>
-                  Effect.logDebug("Failed to write steps.json to /tmp", { cause }),
-                ),
-              );
-          }
-        }
-      }).pipe(
-        Effect.catchCause((cause) => Effect.logDebug("Failed during close cleanup", { cause })),
-      );
+      if (!activeSession.page.isClosed()) {
+        yield* evaluateRuntime(
+          activeSession.page,
+          "destroyAgentOverlay",
+          AGENT_OVERLAY_CONTAINER_ID,
+        ).pipe(Effect.catchCause(() => Effect.void));
+      }
 
       if (activeSession.isExternalBrowser) {
         yield* Effect.tryPromise(() => activeSession.page.close()).pipe(
@@ -596,10 +396,10 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         );
 
         if (videoPath) {
-          const tmpVideoFilePath = path.join(
-            TMP_ARTIFACT_OUTPUT_DIRECTORY,
-            `${artifactBaseName}.webm`,
-          );
+          yield* Ref.update(videoSegmentsRef, (segments) => [...segments, videoPath!]);
+
+          const allSegments = yield* Ref.get(videoSegmentsRef);
+
           yield* fileSystem
             .makeDirectory(TMP_ARTIFACT_OUTPUT_DIRECTORY, { recursive: true })
             .pipe(
@@ -607,25 +407,47 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
                 Effect.logDebug("Failed to create /tmp artifact directory", { cause }),
               ),
             );
-          yield* fileSystem.copyFile(videoPath, tmpVideoFilePath).pipe(
+
+          const rawConcatPath = path.join(
+            TMP_ARTIFACT_OUTPUT_DIRECTORY,
+            `${artifactBaseName}-raw.webm`,
+          );
+          const tmpVideoFilePath = path.join(
+            TMP_ARTIFACT_OUTPUT_DIRECTORY,
+            `${artifactBaseName}.webm`,
+          );
+
+          yield* concatVideos(allSegments, rawConcatPath).pipe(
+            Effect.catchTag("VideoProcessError", (error) =>
+              Effect.logWarning("Video concat failed, using last segment", {
+                error: error.message,
+              }).pipe(
+                Effect.tap(() =>
+                  fileSystem
+                    .copyFile(videoPath!, rawConcatPath)
+                    .pipe(Effect.catchCause(() => Effect.void)),
+                ),
+              ),
+            ),
+          );
+
+          yield* frameWithWallpaper(rawConcatPath, tmpVideoFilePath, DEFAULT_WALLPAPER_PATH).pipe(
             Effect.tap(() =>
               Effect.sync(() => {
                 tmpVideoPath = tmpVideoFilePath;
               }),
             ),
-            Effect.catchCause((cause) =>
-              Effect.logDebug("Failed to copy Playwright video to /tmp", { cause }),
+            Effect.catchTag("VideoProcessError", () =>
+              Effect.sync(() => {
+                tmpVideoPath = rawConcatPath;
+              }),
             ),
           );
         }
       }
 
       return {
-        replaySessionPath,
-        reportPath,
         videoPath,
-        tmpReplaySessionPath,
-        tmpReportPath,
         tmpVideoPath,
         screenshotPaths: yield* Ref.get(savedScreenshotPathsRef),
       } satisfies CloseResult;
@@ -641,7 +463,6 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       snapshot,
       annotatedScreenshot,
       updateLastSnapshot,
-      pushStepEvent,
       saveScreenshot,
       close,
     } as const;

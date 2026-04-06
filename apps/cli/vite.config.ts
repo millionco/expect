@@ -102,6 +102,7 @@ export default defineConfig({
         "playwright",
         "@agentclientprotocol/claude-agent-acp",
         "@zed-industries/codex-acp",
+        "@ffmpeg-installer/ffmpeg",
         "oxc-resolver",
       ],
     },

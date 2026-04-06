@@ -9,7 +9,6 @@ import { layerCli } from "../layers";
 import { playSound } from "./play-sound";
 import { stripUndefinedRequirement } from "./strip-undefined-requirement";
 import { extractCloseArtifacts } from "./extract-close-artifacts";
-import { RrVideo } from "@expect/browser";
 import { createCiReporter } from "./ci-reporter";
 import { writeGhaOutputs, writeGhaStepSummary } from "./gha-output";
 import { getStepElapsedMs, getTotalElapsedMs } from "./step-elapsed";
@@ -232,32 +231,6 @@ export const runHeadless = (options: HeadlessRunOptions) =>
 
           const artifacts = extractCloseArtifacts(finalExecuted.events);
 
-          let generatedVideoPath: string | undefined;
-          if (artifacts.replaySessionPath && artifacts.replaySessionPath.endsWith(".ndjson")) {
-            const latestJsonPath = artifacts.replaySessionPath.replace(/\.ndjson$/, "-latest.json");
-            const videoOutputPath = artifacts.replaySessionPath.replace(/\.ndjson$/, ".mp4");
-            const rrvideo = yield* RrVideo;
-            generatedVideoPath = yield* rrvideo
-              .convert({
-                inputPath: latestJsonPath,
-                outputPath: videoOutputPath,
-                skipInactive: true,
-                speed: 1,
-              })
-              .pipe(
-                Effect.catchTag("RrVideoConvertError", (error) =>
-                  Effect.sync(() => {
-                    if (!isJsonOutput) {
-                      process.stderr.write(`Warning: video generation failed: ${error.message}\n`);
-                    }
-                    return undefined;
-                  }),
-                ),
-              );
-          }
-
-          const effectiveVideoPath = generatedVideoPath ?? artifacts.videoPath;
-
           if (!isJsonOutput) {
             ciReporter.summary(
               passedCount,
@@ -266,23 +239,19 @@ export const runHeadless = (options: HeadlessRunOptions) =>
               report.steps.length,
               totalDurationMs,
             );
-            ciReporter.artifacts(
-              effectiveVideoPath,
-              artifacts.localReplayUrl,
-              artifacts.screenshotPaths,
-            );
+            ciReporter.artifacts(artifacts.videoPath, undefined, artifacts.screenshotPaths);
             for (const screenshotPath of artifacts.screenshotPaths) {
               process.stdout.write(`Screenshot: ${screenshotPath}\n`);
             }
           }
 
           if (isGitHubActions) {
-            yield* writeGhaOutputs(report.status, effectiveVideoPath, artifacts.replayPath);
+            yield* writeGhaOutputs(report.status, artifacts.videoPath, undefined);
             yield* writeGhaStepSummary(
               report.toPlainText,
               report.status,
-              effectiveVideoPath,
-              artifacts.replayPath,
+              artifacts.videoPath,
+              undefined,
             );
 
             yield* Effect.gen(function* () {
@@ -324,7 +293,7 @@ export const runHeadless = (options: HeadlessRunOptions) =>
                 })
                 .join("\n");
 
-              const videoSection = effectiveVideoPath
+              const videoSection = artifacts.videoPath
                 ? `\n**Video:** see workflow artifacts\n`
                 : "";
 
@@ -386,8 +355,7 @@ export const runHeadless = (options: HeadlessRunOptions) =>
               duration_ms: totalDurationMs,
               steps: stepResults,
               artifacts: {
-                ...(effectiveVideoPath ? { video: effectiveVideoPath } : {}),
-                ...(artifacts.replayPath ? { replay: artifacts.replayPath } : {}),
+                ...(artifacts.videoPath ? { video: artifacts.videoPath } : {}),
                 ...(artifacts.screenshotPaths.length > 0
                   ? { screenshots: [...artifacts.screenshotPaths] }
                   : {}),
