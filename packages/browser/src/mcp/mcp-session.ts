@@ -421,14 +421,15 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       let tmpVideoPath: string | undefined;
 
       if (pageVideo) {
-        videoPath = yield* Effect.tryPromise(() => pageVideo.path()).pipe(
-          Effect.timeoutOrElse({
-            duration: "30 seconds",
-            onTimeout: () =>
-              Effect.logWarning("Timed out waiting for Playwright video path").pipe(
-                Effect.as(undefined),
-              ),
-          }),
+        const VIDEO_PATH_TIMEOUT_MS = 15_000;
+        videoPath = yield* Effect.tryPromise(() =>
+          Promise.race([
+            pageVideo.path(),
+            new Promise<undefined>((resolve) =>
+              setTimeout(() => resolve(undefined), VIDEO_PATH_TIMEOUT_MS),
+            ),
+          ]),
+        ).pipe(
           Effect.catchCause((cause) =>
             Effect.logDebug("Failed to resolve Playwright video path", { cause }).pipe(
               Effect.as(undefined),
