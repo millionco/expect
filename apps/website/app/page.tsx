@@ -385,11 +385,11 @@ function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerm
               ? { x: -60, y: 145, opacity: 1, scale: 1 }
               : visible
                 ? { x: 200, y: 115, opacity: 1, scale: 1 }
-                : { x: 200, y: 115, opacity: 0, scale: 0 }
+                : { opacity: 0, scale: 0.8 }
       }
       transition={
         !visible
-          ? { type: "spring", stiffness: 500, damping: 20, mass: 0.4 }
+          ? { duration: 0.25, ease: "easeOut" }
           : { duration: 0.4, ease: [0.22, 1, 0.36, 1] }
       }
     >
@@ -408,7 +408,7 @@ function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerm
         </defs>
       </motion.svg>
       <motion.div
-        className="absolute left-4 top-4 rounded-full px-2.5 py-1 text-white font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[13px]/4.5 whitespace-nowrap [box-shadow:0_0_0_2px_white,0_1px_3px_rgba(0,0,0,0.2)] flex items-center gap-1.5 origin-top-left"
+        className="absolute left-4 top-4 rounded-full px-2.5 py-1.5 text-white font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[13px]/4.5 whitespace-nowrap [box-shadow:0_0_0_2px_white,0_1px_3px_rgba(0,0,0,0.2)] flex items-center gap-1.5 origin-top-left"
         initial={{ opacity: 0, scale: 0.5 }}
         animate={{ backgroundColor: label === "fixed" ? "#28A745" : isAlert ? "#F03E35" : "#1A1A1A", opacity: labelVisible ? 1 : 0, scale: labelVisible ? 1 : 0.5 }}
         transition={{ duration: 0.15 }}
@@ -429,7 +429,9 @@ function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerm
             <path d="M3 8.5L6.5 12L13 4" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         )}
-        <Calligraph animation="smooth">Security</Calligraph>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="size-3.5 shrink-0">
+          <path fillRule="evenodd" clipRule="evenodd" d="M1.5 6.283C1.5 6.324 1.501 6.364 1.502 6.404C1.501 6.423 1.5 6.441 1.5 6.46C1.5 7.902 2.243 9.241 3.465 10.005L3.608 10.095L3.615 10.099L4.205 10.468L5.205 11.093C5.691 11.397 6.309 11.397 6.795 11.093L8.385 10.099C9.701 9.277 10.5 7.835 10.5 6.283V5.5V2.576C10.5 2.537 10.498 2.499 10.493 2.461C10.482 2.369 10.457 2.281 10.42 2.2C10.236 1.79 9.76 1.553 9.296 1.708L9.189 1.743C8.387 2.007 7.504 1.797 6.907 1.2C6.406 0.699 5.594 0.699 5.093 1.2C4.494 1.799 3.607 2.009 2.803 1.741L2.704 1.708C2.112 1.51 1.5 1.951 1.5 2.576V6.283ZM6.5 9.196V10.098L7.855 9.251C8.817 8.65 9.424 7.623 9.493 6.5H6.5V9.196ZM5.5 5.5V2.305V2.172C4.656 2.83 3.532 3.033 2.5 2.694V5.5H5.5Z" fill="white" />
+        </svg>
       </motion.div>
     </motion.div>
   );
