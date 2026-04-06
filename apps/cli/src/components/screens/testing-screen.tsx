@@ -557,14 +557,6 @@ export const TestingScreen = ({
             </Text>
           </Box>
 
-          {browserHeaded && isExecuting && (
-            <Box marginTop={0}>
-              <Text color={COLORS.PRIMARY} bold>
-                {"  "}Watching in browser{figures.ellipsis}
-              </Text>
-            </Box>
-          )}
-
           {expanded ? (
             <Box flexDirection="column" marginTop={1}>
               {visibleExpandedRows}
