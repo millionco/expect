@@ -231,7 +231,11 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
               });
 
         yield* Effect.tryPromise({
-          try: () => context.addInitScript(RUNTIME_SCRIPT),
+          try: () =>
+            context.addInitScript(
+              `if(!document.head){document.documentElement.appendChild(document.createElement('head'));}` +
+                RUNTIME_SCRIPT,
+            ),
           catch: toBrowserLaunchError,
         });
 
