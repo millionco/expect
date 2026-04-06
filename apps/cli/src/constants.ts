@@ -52,6 +52,7 @@ export const NPM_PACKAGE_NAME = "expect-cli";
 export const VERSION_API_URL = "https://expect.dev/api/version";
 export const UPDATE_CHECK_STALE_MS = 3_600_000;
 export const UPDATE_CHECK_TIMEOUT_MS = 5_000;
+export const SKILL_FETCH_TIMEOUT_MS = 5_000;
 export const PLAYWRIGHT_INSTALL_TIMEOUT_MS = 300_000;
 export const GLOBAL_INSTALL_TIMEOUT_MS = 60_000;
 

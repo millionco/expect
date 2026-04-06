@@ -1,9 +1,18 @@
 import { spawnSync } from "node:child_process";
+import { detectAvailableAgents } from "@expect/agent";
+import { Effect } from "effect";
 import { type PackageManager, GLOBAL_INSTALL_TIMEOUT_MS, NPM_PACKAGE_NAME } from "../constants";
 import { highlighter } from "../utils/highlighter";
 import { logger } from "../utils/logger";
+import { prompts } from "../utils/prompts";
 import { spinner } from "../utils/spinner";
-import { detectPackageManager, tryRun } from "./init-utils";
+import {
+  detectInstalledSkillAgents,
+  formatSkillVersion,
+  getExpectSkillStatus,
+} from "../utils/expect-skill";
+import { runAddSkill } from "./add-skill";
+import { detectNonInteractive, detectPackageManager, tryRun } from "./init-utils";
 
 export interface InstallCommand {
   binary: string;
@@ -78,6 +87,7 @@ export const runUpdateCommand = async (version?: string) => {
 
   if (updated) {
     updateSpinner.succeed(`Updated expect-cli to ${versionLabel}.`);
+    await maybePromptForSkillUpdate();
     return;
   }
 
@@ -105,4 +115,48 @@ export const runUpdateCommandSync = (version?: string): boolean => {
   logger.dim(`  Run manually: ${highlighter.info(formatInstallCommand(installCommand))}`);
   logger.break();
   return false;
+};
+
+const maybePromptForSkillUpdate = async () => {
+  const projectRoot = process.cwd();
+  const installedAgents = detectInstalledSkillAgents(projectRoot, detectAvailableAgents());
+  if (installedAgents.length === 0) return;
+
+  const skillStatus = await Effect.runPromise(getExpectSkillStatus(projectRoot));
+  if (!skillStatus.installed) return;
+
+  if (skillStatus.isLatest === true) {
+    logger.success(
+      `Expect skill is already up to date (${formatSkillVersion(
+        skillStatus.latestVersion ?? skillStatus.installedVersion,
+      )}).`,
+    );
+    return;
+  }
+
+  if (skillStatus.isLatest === undefined) {
+    logger.warn("Could not verify whether the installed expect skill is up to date.");
+    return;
+  }
+
+  const latestVersionLabel = formatSkillVersion(skillStatus.latestVersion);
+  if (detectNonInteractive(false)) {
+    logger.info(
+      `A newer expect skill (${latestVersionLabel}) is available. Run ${highlighter.info(
+        "expect add skill",
+      )} to update it.`,
+    );
+    return;
+  }
+
+  logger.break();
+  const response = await prompts({
+    type: "confirm",
+    name: "updateSkill",
+    message: `Update the installed ${highlighter.info("expect")} skill to ${highlighter.info(latestVersionLabel)}?`,
+    initial: true,
+  });
+
+  if (!response.updateSkill) return;
+  await runAddSkill({ yes: true, agents: installedAgents });
 };
