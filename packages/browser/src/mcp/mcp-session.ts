@@ -233,9 +233,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
     });
 
     const ensureOverlay = (page: import("playwright").Page) =>
-      evaluateRuntime(page, "initAgentOverlay", AGENT_OVERLAY_CONTAINER_ID).pipe(
-        Effect.catchCause(() => Effect.void),
-      );
+      evaluateRuntime(page, "initAgentOverlay", AGENT_OVERLAY_CONTAINER_ID);
 
     const navigate = Effect.fn("McpSession.navigate")(function* (
       url: string,
@@ -253,7 +251,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       });
       const currentHeaded = yield* Ref.get(isHeadedRef);
       if (currentHeaded) {
-        yield* ensureOverlay(sessionData.page);
+        yield* ensureOverlay(sessionData.page).pipe(Effect.catchCause(() => Effect.void));
       }
     });
 
