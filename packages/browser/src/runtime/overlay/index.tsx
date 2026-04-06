@@ -359,27 +359,13 @@ const AgentOverlay = () => {
 
       <div className="fixed bottom-5 right-5 z-[2147483647] pointer-events-auto">
         <div
-          className="relative flex items-center justify-center bg-[#1a1a1a] text-white shadow-[0_2px_8px_rgba(0,0,0,0.2),0_4px_16px_rgba(0,0,0,0.1)] font-[system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,sans-serif]"
-          style={{
-            height: "44px",
-            borderRadius: "22px",
-            width: state.toolbarExpanded ? "auto" : "44px",
-            padding: state.toolbarExpanded ? "0 6px" : "0",
-            cursor: state.toolbarExpanded ? "default" : "pointer",
-            transition: "width 0.4s cubic-bezier(0.19, 1, 0.22, 1)",
-          }}
+          className={`relative flex items-center justify-center h-[44px] rounded-[22px] bg-[#1a1a1a] text-white shadow-[0_2px_8px_rgba(0,0,0,0.2),0_4px_16px_rgba(0,0,0,0.1)] font-[system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,sans-serif] transition-[width] duration-400 ease-[cubic-bezier(0.19,1,0.22,1)] ${state.toolbarExpanded ? "w-auto px-1.5" : "w-[44px] cursor-pointer hover:bg-[#2a2a2a] active:scale-95"}`}
           onClick={state.toolbarExpanded ? undefined : toggleToolbar}
         >
           {state.actionLog.length > 0 && !state.toolbarExpanded && (
             <div
-              className="absolute -top-3 -right-3 flex items-center justify-center rounded-full text-white text-[10px] font-semibold select-none"
-              style={{
-                minWidth: "18px",
-                height: "18px",
-                padding: "0 5px",
-                background: `rgb(${SRGB_BLUE})`,
-                boxShadow: "0 1px 3px rgba(0,0,0,0.15), inset 0 0 0 1px rgba(255,255,255,0.04)",
-              }}
+              className="absolute -top-3 -right-3 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-white text-[10px] font-semibold select-none shadow-[0_1px_3px_rgba(0,0,0,0.15),inset_0_0_0_1px_rgba(255,255,255,0.04)]"
+              style={{ background: `rgb(${SRGB_BLUE})` }}
             >
               {state.actionLog.length}
             </div>
@@ -414,8 +400,7 @@ const AgentOverlay = () => {
               )}
               <button
                 type="button"
-                className="flex items-center justify-center size-8 rounded-full border-none p-0 cursor-pointer text-white/60 hover:text-white hover:bg-white/10 transition-colors duration-150 active:scale-[0.92]"
-                style={{ background: "transparent" }}
+                className="flex items-center justify-center size-8 rounded-full border-none bg-transparent p-0 cursor-pointer text-white/60 hover:text-white hover:bg-white/10 transition-colors duration-150 active:scale-[0.92]"
                 onClick={toggleToolbar}
               >
                 <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
