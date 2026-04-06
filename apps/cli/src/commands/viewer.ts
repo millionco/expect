@@ -10,7 +10,6 @@ interface ViewerOptions {
 }
 
 export const runViewer = (options: ViewerOptions = {}) => {
-  console.log("[viewer] options:", options);
   const layer = layerCli({
     verbose: options.verbose ?? false,
     agent: options.agent ?? "claude",
