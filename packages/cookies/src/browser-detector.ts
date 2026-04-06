@@ -15,7 +15,16 @@ export class Browsers extends ServiceMap.Service<Browsers>()("@cookies/Browsers"
 
     const list = Effect.forEach(sources, identity, {
       concurrency: "unbounded",
-    }).pipe(Effect.map(Arr.flatten), Effect.withSpan("Browsers.list"));
+    }).pipe(
+      Effect.map(Arr.flatten),
+      Effect.map(
+        Arr.filter(
+          (browser) =>
+            browser._tag !== "ChromiumBrowser" || browser.profileName !== "System Profile",
+        ),
+      ),
+      Effect.withSpan("Browsers.list"),
+    );
 
     const defaultBrowser = Effect.fn("Browsers.defaultBrowser")(function* () {
       const result = yield* Effect.tryPromise({
