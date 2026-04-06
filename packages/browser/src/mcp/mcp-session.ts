@@ -45,6 +45,8 @@ export interface BrowserSessionData {
   readonly browser: PlaywrightBrowser;
   readonly context: BrowserContext;
   readonly page: Page;
+  readonly cleanup: Effect.Effect<void>;
+  readonly isExternalBrowser: boolean;
   readonly consoleMessages: ConsoleEntry[];
   readonly networkRequests: NetworkEntry[];
   readonly replayOutputPath: string | undefined;
@@ -57,12 +59,13 @@ export interface OpenOptions {
   headed?: boolean;
   cookies?: boolean;
   waitUntil?: "load" | "domcontentloaded" | "networkidle" | "commit";
-  cdpUrl?: string;
+  cdpUrl?: Option.Option<string>;
   browserType?: BrowserEngine;
 }
 
 export interface OpenResult {
   readonly injectedCookieCount: number;
+  readonly isExternalBrowser: boolean;
 }
 
 export interface CloseResult {
@@ -117,8 +120,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
     const cookieBrowsersConfig = yield* Config.option(
       Config.string(EXPECT_COOKIE_BROWSERS_ENV_NAME),
     );
-    const cdpUrlConfig = yield* Config.option(Config.string(EXPECT_CDP_URL_ENV_NAME));
-    const defaultCdpUrl = Option.getOrUndefined(cdpUrlConfig);
+    const defaultCdpUrl = yield* Config.option(Config.string(EXPECT_CDP_URL_ENV_NAME));
     const baseUrlConfig = yield* Config.option(Config.string(EXPECT_BASE_URL_ENV_NAME));
     const configuredBaseUrl = Option.getOrUndefined(baseUrlConfig);
     const cookieBrowserKeys = Option.match(cookieBrowsersConfig, {
@@ -237,12 +239,14 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
           ),
         );
 
+      const cdpUrl = Option.orElse(options.cdpUrl ?? Option.none(), () => defaultCdpUrl);
+
       const pageResult = yield* browserService.createPage(url, {
         headed: options.headed,
         cookies: cookiesOption,
         waitUntil: options.waitUntil,
         videoOutputDir,
-        cdpUrl: options.cdpUrl ?? defaultCdpUrl,
+        cdpUrl,
         browserType: options.browserType,
       });
 
@@ -250,6 +254,8 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         browser: pageResult.browser,
         context: pageResult.context,
         page: pageResult.page,
+        cleanup: pageResult.cleanup,
+        isExternalBrowser: pageResult.isExternalBrowser,
         consoleMessages: [],
         networkRequests: [],
         replayOutputPath: Option.getOrUndefined(replayOutputPath),
@@ -320,7 +326,10 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         ),
       );
 
-      return { injectedCookieCount } satisfies OpenResult;
+      return {
+        injectedCookieCount,
+        isExternalBrowser: pageResult.isExternalBrowser,
+      } satisfies OpenResult;
     });
 
     const snapshot = Effect.fn("McpSession.snapshot")(function* (
@@ -527,8 +536,20 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         Effect.catchCause((cause) => Effect.logDebug("Failed during close cleanup", { cause })),
       );
 
-      yield* Effect.tryPromise(() => activeSession.browser.close()).pipe(
-        Effect.catchCause((cause) => Effect.logDebug("Failed to close browser", { cause })),
+      if (activeSession.isExternalBrowser) {
+        yield* Effect.tryPromise(() => activeSession.page.close()).pipe(
+          Effect.catchCause((cause) => Effect.logDebug("Failed to close page", { cause })),
+        );
+      } else {
+        yield* Effect.tryPromise(() => activeSession.browser.close()).pipe(
+          Effect.catchCause((cause) => Effect.logDebug("Failed to close browser", { cause })),
+        );
+      }
+
+      yield* activeSession.cleanup.pipe(
+        Effect.catchCause((cause) =>
+          Effect.logDebug("Failed to clean up Chrome process", { cause }),
+        ),
       );
 
       if (pageVideo) {

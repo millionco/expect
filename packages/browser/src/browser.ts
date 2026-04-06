@@ -194,32 +194,33 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
       options: CreatePageOptions = {},
     ) {
       const engine = options.browserType ?? "chromium";
+      const cdpUrl = engine === "chromium" ? (options.cdpUrl ?? Option.none()) : Option.none();
       yield* Effect.annotateCurrentSpan({
         url: url ?? "about:blank",
-        cdp: Boolean(options.cdpUrl),
+        cdp: Option.isSome(cdpUrl),
         browserType: engine,
       });
 
-      const cdpEndpoint = engine === "chromium" ? options.cdpUrl : undefined;
       const browserType = resolveBrowserType(engine);
-      const browser = cdpEndpoint
-        ? yield* Effect.tryPromise({
-            try: () => chromium.connectOverCDP(cdpEndpoint),
-            catch: (cause) =>
-              new CdpConnectionError({
-                endpointUrl: cdpEndpoint,
-                cause: cause instanceof Error ? cause.message : String(cause),
-              }),
-          })
-        : yield* Effect.tryPromise({
-            try: () =>
-              browserType.launch({
-                headless: !options.headed,
-                executablePath: options.executablePath,
-                args: engine === "chromium" && !options.headed ? HEADLESS_CHROMIUM_ARGS : [],
-              }),
-            catch: toBrowserLaunchError,
-          });
+      const browser =
+        cdpUrl._tag === "Some"
+          ? yield* Effect.tryPromise({
+              try: () => chromium.connectOverCDP(cdpUrl.value),
+              catch: (cause) =>
+                new CdpConnectionError({
+                  endpointUrl: cdpUrl.value,
+                  cause: cause instanceof Error ? cause.message : String(cause),
+                }),
+            })
+          : yield* Effect.tryPromise({
+              try: () =>
+                browserType.launch({
+                  headless: !options.headed,
+                  executablePath: options.executablePath,
+                  args: engine === "chromium" && !options.headed ? HEADLESS_CHROMIUM_ARGS : [],
+                }),
+              catch: toBrowserLaunchError,
+            });
 
       const setupPage = Effect.gen(function* () {
         const defaultBrowserContext =
@@ -243,7 +244,7 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
           };
         }
 
-        const isCdpConnected = Boolean(cdpEndpoint);
+        const isCdpConnected = Option.isSome(cdpUrl);
         const existingContexts = isCdpConnected ? browser.contexts() : [];
         const context =
           existingContexts.length > 0
@@ -301,12 +302,12 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
           });
         }
 
-        return { browser, context, page };
+        return { browser, context, page, cleanup: Effect.void, isExternalBrowser: false };
       });
 
       return yield* setupPage.pipe(
         Effect.tapError(() => {
-          if (cdpEndpoint) return Effect.void;
+          if (Option.isSome(cdpUrl)) return Effect.void;
           return Effect.tryPromise(() => browser.close()).pipe(
             Effect.catchTag("UnknownError", () => Effect.void),
           );

@@ -116,6 +116,50 @@ export class CdpConnectionError extends Schema.ErrorClass<CdpConnectionError>("C
   message = `Failed to connect to CDP endpoint ${this.endpointUrl}: ${this.cause}`;
 }
 
+export class BrowserAlreadyOpenError extends Schema.ErrorClass<BrowserAlreadyOpenError>(
+  "BrowserAlreadyOpenError",
+)({
+  _tag: Schema.tag("BrowserAlreadyOpenError"),
+}) {
+  message = "A browser session is already open";
+}
+
+export class BrowserNotOpenError extends Schema.ErrorClass<BrowserNotOpenError>(
+  "BrowserNotOpenError",
+)({
+  _tag: Schema.tag("BrowserNotOpenError"),
+}) {
+  message = "No browser session is open";
+}
+
+export class McpServerStartError extends Schema.ErrorClass<McpServerStartError>(
+  "McpServerStartError",
+)({
+  _tag: Schema.tag("McpServerStartError"),
+  cause: Schema.String,
+}) {
+  message = `Failed to start MCP server: ${this.cause}`;
+}
+
+export class ChromeNotFoundError extends Schema.ErrorClass<ChromeNotFoundError>(
+  "ChromeNotFoundError",
+)({
+  _tag: Schema.tag("ChromeNotFoundError"),
+}) {
+  message =
+    "No system Chrome installation found. Install Google Chrome or pass an explicit executable path.";
+}
+
+export class ChromeLaunchTimeoutError extends Schema.ErrorClass<ChromeLaunchTimeoutError>(
+  "ChromeLaunchTimeoutError",
+)({
+  _tag: Schema.tag("ChromeLaunchTimeoutError"),
+  timeoutMs: Schema.Number,
+  cause: Schema.String,
+}) {
+  message = `Chrome launch failed (timeout ${this.timeoutMs}ms): ${this.cause}`;
+}
+
 export type ActionError =
   | RefAmbiguousError
   | RefBlockedError

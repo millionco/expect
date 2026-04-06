@@ -3,12 +3,11 @@ import path from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod/v4";
-import { Effect, type ManagedRuntime } from "effect";
+import { Effect, Option, type ManagedRuntime } from "effect";
 import { evaluateRuntime } from "../utils/evaluate-runtime";
 import { runAccessibilityAudit } from "../accessibility";
 import { formatPerformanceTrace } from "../performance-trace";
 import { McpSession } from "./mcp-session";
-import { autoDiscoverCdp } from "../cdp-discovery";
 import { DUPLICATE_REQUEST_WINDOW_MS } from "./constants";
 import { registerRulesResources } from "./rules-resources";
 
@@ -72,7 +71,7 @@ export const createBrowserMcpServer = <E>(
           .string()
           .optional()
           .describe(
-            "CDP WebSocket endpoint URL to connect to an existing Chrome instance (e.g. 'ws://localhost:9222/devtools/browser/...'). Use 'auto' to auto-discover a running Chrome.",
+            "CDP WebSocket endpoint URL to connect to an existing Chrome instance (e.g. 'ws://localhost:9222/devtools/browser/...').",
           ),
         browser: z
           .enum(["chromium", "webkit", "firefox"])
@@ -92,25 +91,18 @@ export const createBrowserMcpServer = <E>(
             return textResult(`Navigated to ${url}`);
           }
 
-          let cdpUrl: string | undefined;
-          if (cdp === "auto") {
-            cdpUrl = yield* autoDiscoverCdp();
-            yield* Effect.logInfo("Auto-discovered CDP endpoint", { cdpUrl });
-          } else if (cdp) {
-            cdpUrl = cdp;
-          }
-
           const result = yield* session.open(url, {
             headed,
             cookies,
             waitUntil,
-            cdpUrl,
+            cdpUrl: Option.fromNullishOr(cdp),
             browserType,
           });
           const engineSuffix = browserType && browserType !== "chromium" ? ` [${browserType}]` : "";
-          const cdpSuffix = cdpUrl ? ` (connected via CDP: ${cdpUrl})` : "";
+          const cdpSuffix = cdp ? ` (connected via CDP: ${cdp})` : "";
+          const chromeSuffix = result.isExternalBrowser ? " (live Chrome)" : "";
           return textResult(
-            `Opened ${url}${engineSuffix}${cdpSuffix}` +
+            `Opened ${url}${engineSuffix}${cdpSuffix}${chromeSuffix}` +
               (result.injectedCookieCount > 0
                 ? ` (${result.injectedCookieCount} cookies synced from local browser)`
                 : ""),
