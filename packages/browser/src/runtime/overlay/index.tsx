@@ -298,7 +298,7 @@ const AgentOverlay = () => {
             left: `${cursorX}px`,
             top: `${cursorY}px`,
             opacity: showCursor ? 1 : 0,
-            transition: "opacity 150ms ease",
+            transition: `left ${RAF_THROTTLE_INTERVAL_MS}ms linear, top ${RAF_THROTTLE_INTERVAL_MS}ms linear, opacity 150ms ease`,
             animation:
               state.cursorAction === "click"
                 ? "expect-cursor-glow 2s ease-in-out infinite, expect-cursor-click 0.2s ease-out 1"
@@ -395,7 +395,7 @@ const AgentOverlay = () => {
                 cursor: "pointer",
                 userSelect: "none",
                 transform: `translate(-50%, -50%)${hoveredAction === index ? " scale(1.1)" : ""}`,
-                transition: "background-color 0.15s ease, transform 0.1s ease",
+                transition: `left ${RAF_THROTTLE_INTERVAL_MS}ms linear, top ${RAF_THROTTLE_INTERVAL_MS}ms linear, background-color 0.15s ease, transform 0.1s ease`,
                 animation: "expect-marker-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both",
               }}
               onMouseEnter={() => setHoveredAction(index)}
@@ -449,6 +449,7 @@ const AgentOverlay = () => {
               height: `${rect.height}px`,
               border: `2px solid rgb(${SRGB_BLUE})`,
               boxShadow: `0 0 0 1px rgba(${SRGB_BLUE}, 0.3)`,
+              transition: `left ${RAF_THROTTLE_INTERVAL_MS}ms linear, top ${RAF_THROTTLE_INTERVAL_MS}ms linear, width ${RAF_THROTTLE_INTERVAL_MS}ms linear, height ${RAF_THROTTLE_INTERVAL_MS}ms linear`,
             }}
           />
         ))}
