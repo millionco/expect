@@ -330,7 +330,18 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         pageResult.page.on("load", () => {
           pageResult.page
             .evaluate(
-              `if(typeof globalThis.__EXPECT_RUNTIME__!=='undefined'){globalThis.__EXPECT_RUNTIME__.initAgentOverlay('${AGENT_OVERLAY_CONTAINER_ID}')}`,
+              `new Promise(function(resolve){
+                var attempts=0;
+                function check(){
+                  if(typeof globalThis.__EXPECT_RUNTIME__!=='undefined'&&typeof globalThis.__EXPECT_RUNTIME__.initAgentOverlay==='function'){
+                    globalThis.__EXPECT_RUNTIME__.initAgentOverlay('${AGENT_OVERLAY_CONTAINER_ID}');
+                    resolve();
+                  }else if(attempts++<50){
+                    setTimeout(check,100);
+                  }else{resolve();}
+                }
+                check();
+              })`,
             )
             .catch((error) =>
               console.debug("[expect] overlay re-injection on load failed:", error),
