@@ -336,29 +336,8 @@ const AgentOverlay = () => {
         </div>
       )}
 
-      <div
-        className="fixed z-[2147483647]"
-        style={{
-          bottom: "1.25rem",
-          right: "1.25rem",
-          pointerEvents: "auto",
-        }}
-      >
-        <div
-          className="flex items-center"
-          style={{
-            height: "44px",
-            padding: "0 6px",
-            borderRadius: "22px",
-            background: "#1a1a1a",
-            color: "#fff",
-            fontSize: "14px",
-            fontFamily:
-              "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-            fontWeight: 500,
-            boxShadow: "0 2px 8px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.1)",
-          }}
-        >
+      <div className="fixed bottom-5 right-5 z-[2147483647] pointer-events-auto">
+        <div className="flex items-center h-[44px] px-1.5 rounded-[22px] bg-[#1a1a1a] text-white text-sm font-medium shadow-[0_2px_8px_rgba(0,0,0,0.2),0_4px_16px_rgba(0,0,0,0.1)] font-[system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,sans-serif]">
           <ToolbarControls
             selectActive={state.selectMode}
             overlayVisible={state.overlayVisible}
@@ -366,21 +345,16 @@ const AgentOverlay = () => {
             onToggleOverlay={toggleOverlay}
           />
           {state.label && (
-            <div className="flex items-center gap-2.5" style={{ padding: "0 10px 0 4px" }}>
+            <div className="flex items-center gap-2.5 pr-2.5 pl-1">
               <SpiralSpinner visible />
               <span
-                className="animate-[expect-text-shimmer_3s_linear_infinite]"
+                className="overflow-hidden text-ellipsis whitespace-nowrap max-w-60 bg-clip-text text-transparent animate-[expect-text-shimmer_3s_linear_infinite]"
                 style={{
                   background:
                     "linear-gradient(90deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.5) 100%)",
                   backgroundSize: "200% 100%",
                   WebkitBackgroundClip: "text",
                   backgroundClip: "text",
-                  color: "transparent",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  maxWidth: "240px",
                 }}
               >
                 {state.label}

@@ -10,52 +10,6 @@ interface ToolbarControlsProps {
   onToggleOverlay: () => void;
 }
 
-const BUTTON_STYLE: React.CSSProperties = {
-  position: "relative",
-  cursor: "pointer",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  width: "32px",
-  height: "32px",
-  borderRadius: "50%",
-  border: "none",
-  background: "transparent",
-  color: "rgba(255, 255, 255, 0.85)",
-  padding: 0,
-  transition: "background-color 0.15s ease, color 0.15s ease, transform 0.1s ease",
-};
-
-const TOOLTIP_STYLE: React.CSSProperties = {
-  position: "absolute",
-  bottom: "calc(100% + 14px)",
-  left: "50%",
-  transform: "translateX(-50%) scale(1)",
-  padding: "6px 10px",
-  background: "#1a1a1a",
-  color: "rgba(255, 255, 255, 0.9)",
-  fontSize: "12px",
-  fontWeight: 500,
-  fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-  borderRadius: "8px",
-  whiteSpace: "nowrap",
-  pointerEvents: "none",
-  boxShadow: "0 4px 20px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.08)",
-  zIndex: 100001,
-};
-
-const ARROW_STYLE: React.CSSProperties = {
-  content: '""',
-  position: "absolute",
-  top: "calc(100% - 4px)",
-  left: "50%",
-  transform: "translateX(-50%) rotate(45deg)",
-  width: "8px",
-  height: "8px",
-  background: "#1a1a1a",
-  borderRadius: "0 0 2px 0",
-};
-
 interface ControlButtonProps {
   active?: boolean;
   tooltip: string;
@@ -68,39 +22,29 @@ const ControlButton = ({ active, tooltip, onClick, children }: ControlButtonProp
 
   return (
     <div
-      style={{
-        position: "relative",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
+      className="relative flex items-center justify-center"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       <button
         type="button"
         onClick={onClick}
+        className="relative flex items-center justify-center size-8 rounded-full border-none p-0 cursor-pointer transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.92]"
         style={{
-          ...BUTTON_STYLE,
-          ...(active
-            ? { color: `rgb(${SRGB_BLUE})`, background: `rgba(${SRGB_BLUE}, 0.2)` }
+          background: active
+            ? `rgba(${SRGB_BLUE}, 0.2)`
             : hovered
-              ? { background: "rgba(255,255,255,0.12)", color: "#fff" }
-              : {}),
-        }}
-        onMouseDown={(event) => {
-          event.currentTarget.style.transform = "scale(0.92)";
-        }}
-        onMouseUp={(event) => {
-          event.currentTarget.style.transform = "";
+              ? "rgba(255,255,255,0.12)"
+              : "transparent",
+          color: active ? `rgb(${SRGB_BLUE})` : hovered ? "#fff" : "rgba(255,255,255,0.85)",
         }}
       >
         {children}
       </button>
       {hovered && (
-        <div style={TOOLTIP_STYLE}>
+        <div className="absolute bottom-[calc(100%+14px)] left-1/2 -translate-x-1/2 px-2.5 py-1.5 bg-[#1a1a1a] text-white/90 text-xs font-medium rounded-lg whitespace-nowrap pointer-events-none shadow-[0_4px_20px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.08)] z-[100001]">
           {tooltip}
-          <div style={ARROW_STYLE} />
+          <div className="absolute top-[calc(100%-4px)] left-1/2 -translate-x-1/2 rotate-45 size-2 bg-[#1a1a1a] rounded-br-sm" />
         </div>
       )}
     </div>
@@ -113,16 +57,16 @@ export const ToolbarControls = ({
   onToggleSelect,
   onToggleOverlay,
 }: ToolbarControlsProps) => (
-  <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+  <div className="flex items-center gap-0.5">
     <ControlButton active={selectActive} tooltip="Select element" onClick={onToggleSelect}>
-      <CursorArrowRaysIcon style={{ width: "16px", height: "16px" }} />
+      <CursorArrowRaysIcon className="size-4" />
     </ControlButton>
     <ControlButton
       tooltip={overlayVisible ? "Hide overlay" : "Show overlay"}
       onClick={onToggleOverlay}
     >
-      {overlayVisible && <EyeIcon style={{ width: "16px", height: "16px" }} />}
-      {!overlayVisible && <EyeSlashIcon style={{ width: "16px", height: "16px" }} />}
+      {overlayVisible && <EyeIcon className="size-4" />}
+      {!overlayVisible && <EyeSlashIcon className="size-4" />}
     </ControlButton>
   </div>
 );
