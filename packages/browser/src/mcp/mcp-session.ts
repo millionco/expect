@@ -83,21 +83,34 @@ const setupPageTracking = (page: Page, sessionData: BrowserSessionData) => {
     });
   });
 
+  const pendingRequests = new Map<string, NetworkEntry[]>();
+
   page.on("request", (request) => {
-    sessionData.networkRequests.push({
+    const entry: NetworkEntry = {
       url: request.url(),
       method: request.method(),
       status: undefined,
       resourceType: request.resourceType(),
       timestamp: Date.now(),
-    });
+    };
+    sessionData.networkRequests.push(entry);
+    const key = `${entry.method}:${entry.url}`;
+    const pending = pendingRequests.get(key);
+    if (pending) {
+      pending.push(entry);
+    } else {
+      pendingRequests.set(key, [entry]);
+    }
   });
 
   page.on("response", (response) => {
-    const entry = sessionData.networkRequests.find(
-      (networkEntry) => networkEntry.url === response.url() && networkEntry.status === undefined,
-    );
-    if (entry) entry.status = response.status();
+    const key = `${response.request().method()}:${response.url()}`;
+    const pending = pendingRequests.get(key);
+    if (pending) {
+      const entry = pending.shift();
+      if (entry) entry.status = response.status();
+      if (pending.length === 0) pendingRequests.delete(key);
+    }
   });
 };
 
@@ -295,9 +308,8 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       yield* Ref.set(sessionRef, sessionData);
 
       if (headed) {
-        yield* Effect.tryPromise({
-          try: () =>
-            pageResult.context.addInitScript(`
+        yield* Effect.tryPromise(() =>
+          pageResult.context.addInitScript(`
               const __expectInitOverlay = () => {
                 if (typeof globalThis.__EXPECT_RUNTIME__ !== 'undefined' && typeof globalThis.__EXPECT_RUNTIME__.initAgentOverlay === 'function') {
                   globalThis.__EXPECT_RUNTIME__.initAgentOverlay('${AGENT_OVERLAY_CONTAINER_ID}');
@@ -306,8 +318,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
               if (document.body) { __expectInitOverlay(); }
               else { document.addEventListener('DOMContentLoaded', __expectInitOverlay); }
             `),
-          catch: () => undefined,
-        }).pipe(Effect.catchCause(() => Effect.void));
+        ).pipe(Effect.catchCause(() => Effect.void));
 
         yield* ensureOverlay(pageResult.page).pipe(
           Effect.tap(() => Effect.logDebug("Agent overlay injected")),
@@ -321,7 +332,9 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
             .evaluate(
               `if(typeof globalThis.__EXPECT_RUNTIME__!=='undefined'){globalThis.__EXPECT_RUNTIME__.initAgentOverlay('${AGENT_OVERLAY_CONTAINER_ID}')}`,
             )
-            .catch(() => {});
+            .catch((error) =>
+              console.debug("[expect] overlay re-injection on load failed:", error),
+            );
         });
 
         yield* evaluateRuntime(
@@ -374,8 +387,6 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
 
       yield* Ref.set(sessionRef, undefined);
 
-      let videoPath: string | undefined;
-      let tmpVideoPath: string | undefined;
       const pageVideo = activeSession.page.video();
       const artifactBaseName = `session-${Date.now()}`;
 
@@ -403,6 +414,9 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         ),
       );
 
+      let videoPath: string | undefined;
+      let tmpVideoPath: string | undefined;
+
       if (pageVideo) {
         videoPath = yield* Effect.tryPromise(() => pageVideo.path()).pipe(
           Effect.catchCause((cause) =>
@@ -413,9 +427,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         );
 
         if (videoPath) {
-          const confirmedVideoPath = videoPath;
-          yield* Ref.update(videoSegmentsRef, (segments) => [...segments, confirmedVideoPath]);
-
+          yield* Ref.update(videoSegmentsRef, (segments) => [...segments, videoPath]);
           const allSegments = yield* Ref.get(videoSegmentsRef);
 
           yield* fileSystem
@@ -442,24 +454,20 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
               }).pipe(
                 Effect.tap(() =>
                   fileSystem
-                    .copyFile(confirmedVideoPath, rawConcatPath)
+                    .copyFile(videoPath, rawConcatPath)
                     .pipe(Effect.catchCause(() => Effect.void)),
                 ),
               ),
             ),
           );
 
-          yield* frameWithWallpaper(rawConcatPath, tmpVideoFilePath, DEFAULT_WALLPAPER_PATH).pipe(
-            Effect.tap(() =>
-              Effect.sync(() => {
-                tmpVideoPath = tmpVideoFilePath;
-              }),
-            ),
-            Effect.catchTag("VideoProcessError", () =>
-              Effect.sync(() => {
-                tmpVideoPath = rawConcatPath;
-              }),
-            ),
+          tmpVideoPath = yield* frameWithWallpaper(
+            rawConcatPath,
+            tmpVideoFilePath,
+            DEFAULT_WALLPAPER_PATH,
+          ).pipe(
+            Effect.as(tmpVideoFilePath),
+            Effect.catchTag("VideoProcessError", () => Effect.succeed(rawConcatPath)),
           );
         }
       }

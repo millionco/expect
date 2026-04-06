@@ -2,7 +2,7 @@ import type { CursorShape } from "./constants";
 import { PointerCursor } from "./cursor-pointer";
 import { TextCursor } from "./cursor-text";
 import { HandCursor } from "./cursor-hand";
-import { GrabCursor } from "./cursor-grab";
+import { HandCursor as GrabCursor } from "./cursor-hand";
 
 const CLICKABLE_SELECTOR =
   'a,button,[role="button"],[role="link"],[role="tab"],[role="menuitem"],select,summary,label[for]';
