@@ -462,10 +462,10 @@ const AgentOverlay = () => {
   const viewport = getViewport();
   const cursorX = state.cursorPositioned
     ? clampToViewport(state.cursorX - CURSOR_SIZE_PX / 2, CURSOR_SIZE_PX, viewport.width, 0)
-    : viewport.width - CURSOR_SIZE_PX - VIEWPORT_PADDING_PX;
+    : viewport.width + CURSOR_SIZE_PX;
   const cursorY = state.cursorPositioned
     ? clampToViewport(state.cursorY - CURSOR_HEIGHT_PX / 2, CURSOR_HEIGHT_PX, viewport.height, 0)
-    : viewport.height - CURSOR_HEIGHT_PX - VIEWPORT_PADDING_PX;
+    : viewport.height + CURSOR_HEIGHT_PX;
 
   const displayLabel = state.userInControl ? "You're in control" : state.label;
 
