@@ -3,14 +3,12 @@ import path from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod/v4";
-import type { Page } from "playwright";
 import { Effect, Option, type ManagedRuntime } from "effect";
 import { evaluateRuntime } from "../utils/evaluate-runtime";
 import { runAccessibilityAudit } from "../accessibility";
 import { formatPerformanceTrace } from "../performance-trace";
-import { AGENT_OVERLAY_CONTAINER_ID } from "../constants";
-import type { SnapshotResult } from "../types";
 import { McpSession } from "./mcp-session";
+import { OverlayController } from "./overlay-controller";
 import { DUPLICATE_REQUEST_WINDOW_MS, TMP_ARTIFACT_OUTPUT_DIRECTORY } from "./constants";
 import { registerRulesResources } from "./rules-resources";
 
@@ -42,154 +40,12 @@ const imageResult = (base64: string) => ({
 // HACK: get AsyncFunction constructor for dynamic code evaluation in playwright tool
 const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
 
-const REF_PATTERN = /ref\s*\(\s*['"](\w+)['"]\s*\)/;
-const REF_PATTERN_GLOBAL = /ref\s*\(\s*['"](\w+)['"]\s*\)/g;
-
-const SELECTOR_PATTERNS = [
-  /querySelector\s*\(\s*['"]([^'"]+)['"]\s*\)/,
-  /querySelectorAll\s*\(\s*['"]([^'"]+)['"]\s*\)/,
-  /\$\s*\(\s*['"]([^'"]+)['"]\s*\)/,
-  /\$\$\s*\(\s*['"]([^'"]+)['"]\s*\)/,
-  /locator\s*\(\s*['"]([^'"]+)['"]\s*\)/,
-  /getByRole\s*\(\s*['"]([^'"]+)['"]\s*\)/,
-  /getByText\s*\(\s*['"]([^'"]+)['"]\s*\)/,
-];
-
-const extractCssSelector = (code: string): string | undefined => {
-  for (const pattern of SELECTOR_PATTERNS) {
-    const match = code.match(pattern);
-    if (match) return match[1];
-  }
-  return undefined;
-};
-
-const safeOverlayEval = <K extends keyof import("../generated/runtime-types").ExpectRuntime>(
-  page: Page,
-  method: K,
-  ...args: Parameters<import("../generated/runtime-types").ExpectRuntime[K]>
-) => evaluateRuntime(page, method, ...args).pipe(Effect.catchCause(() => Effect.void));
-
-const updateCursorLabel = (page: Page, label: string) =>
-  safeOverlayEval(page, "updateCursor", AGENT_OVERLAY_CONTAINER_ID, -1, -1, label);
-
-const hideOverlay = (page: Page) =>
-  safeOverlayEval(page, "hideAgentOverlay", AGENT_OVERLAY_CONTAINER_ID);
-
-const showOverlay = (page: Page) =>
-  safeOverlayEval(page, "showAgentOverlay", AGENT_OVERLAY_CONTAINER_ID);
-
-const withOverlayHidden = <A, E>(page: Page, effect: Effect.Effect<A, E>) =>
-  Effect.ensuring(hideOverlay(page).pipe(Effect.flatMap(() => effect)), showOverlay(page));
-
-const moveCursorToRef = Effect.fn("moveCursorToRef")(function* (
-  page: Page,
-  snapshot: SnapshotResult,
-  refId: string,
-  label: string,
-) {
-  if (!snapshot.refs[refId]) return;
-  const locator = yield* snapshot.locator(refId);
-  const box = yield* Effect.tryPromise(() => locator.boundingBox()).pipe(
-    Effect.catchTag("UnknownError", () => Effect.succeed(undefined)),
-  );
-  if (!box) return;
-
-  const selector = yield* Effect.tryPromise(() =>
-    locator.evaluate((element) => {
-      const runtime = (globalThis as Record<string, unknown>).__EXPECT_RUNTIME__ as
-        | { cssSelector: (element: Element) => string }
-        | undefined;
-      if (!runtime?.cssSelector) return undefined;
-      return runtime.cssSelector(element);
-    }),
-  ).pipe(Effect.catchCause(() => Effect.succeed(undefined)));
-
-  yield* safeOverlayEval(
-    page,
-    "updateCursor",
-    AGENT_OVERLAY_CONTAINER_ID,
-    box.x + box.width / 2,
-    box.y + box.height / 2,
-    label,
-    selector ?? "",
-  );
-});
-
-const moveCursorToSelector = Effect.fn("moveCursorToSelector")(function* (
-  page: Page,
-  selector: string,
-  label: string,
-) {
-  const result = yield* Effect.tryPromise(() =>
-    page.evaluate(
-      ([sel]) => {
-        const element = document.querySelector(sel);
-        if (!element) return undefined;
-        const box = element.getBoundingClientRect();
-        const runtime = (globalThis as Record<string, unknown>).__EXPECT_RUNTIME__ as
-          | { cssSelector: (element: Element) => string }
-          | undefined;
-        const cssSelector = runtime?.cssSelector ? runtime.cssSelector(element) : undefined;
-        return {
-          x: box.x + box.width / 2,
-          y: box.y + box.height / 2,
-          selector: cssSelector,
-        };
-      },
-      [selector],
-    ),
-  ).pipe(Effect.catchCause(() => Effect.succeed(undefined)));
-
-  if (result) {
-    yield* safeOverlayEval(
-      page,
-      "updateCursor",
-      AGENT_OVERLAY_CONTAINER_ID,
-      result.x,
-      result.y,
-      label,
-      result.selector ?? "",
-    );
-  }
-});
-
-const clearRefHighlights = (page: Page) =>
-  safeOverlayEval(page, "clearHighlights", AGENT_OVERLAY_CONTAINER_ID);
-
-const highlightRefsInCode = Effect.fn("highlightRefsInCode")(function* (
-  page: Page,
-  snapshot: SnapshotResult,
-  code: string,
-) {
-  const matches = [...code.matchAll(REF_PATTERN_GLOBAL)];
-  const uniqueRefIds = [...new Set(matches.map((match) => match[1]))];
-
-  const selectors: string[] = [];
-  for (const refId of uniqueRefIds) {
-    if (!snapshot.refs[refId]) continue;
-    const locator = yield* snapshot.locator(refId);
-    const selector = yield* Effect.tryPromise(() =>
-      locator.evaluate((element) => {
-        const runtime = (globalThis as Record<string, unknown>).__EXPECT_RUNTIME__ as
-          | { cssSelector: (element: Element) => string }
-          | undefined;
-        if (!runtime?.cssSelector) return undefined;
-        return runtime.cssSelector(element);
-      }),
-    ).pipe(Effect.catchCause(() => Effect.succeed(undefined)));
-    if (selector) {
-      selectors.push(selector);
-    }
-  }
-
-  yield* safeOverlayEval(page, "highlightRefs", AGENT_OVERLAY_CONTAINER_ID, selectors);
-});
-
 // HACK: tool annotations (readOnlyHint, destructiveHint) are required for parallel execution in the Claude Agent SDK
 export const createBrowserMcpServer = <E>(
-  runtime: ManagedRuntime.ManagedRuntime<McpSession, E>,
+  runtime: ManagedRuntime.ManagedRuntime<McpSession | OverlayController, E>,
 ) => {
-  const runMcp = <A>(effect: Effect.Effect<A, unknown, McpSession>) => runtime.runPromise(effect);
+  const runMcp = <A>(effect: Effect.Effect<A, unknown, McpSession | OverlayController>) =>
+    runtime.runPromise(effect);
 
   const server = new McpServer({
     name: "expect",
@@ -231,10 +87,11 @@ export const createBrowserMcpServer = <E>(
       runMcp(
         Effect.gen(function* () {
           const session = yield* McpSession;
+          const overlay = yield* OverlayController;
 
           if (session.hasSession()) {
             const page = yield* session.requirePage();
-            yield* updateCursorLabel(page, `Navigating to ${url}`);
+            yield* overlay.updateLabel(page, `Navigating to ${url}`);
             yield* session.navigate(url, { waitUntil });
             return textResult(`Navigated to ${url}`);
           }
@@ -285,28 +142,16 @@ export const createBrowserMcpServer = <E>(
       runMcp(
         Effect.gen(function* () {
           const session = yield* McpSession;
+          const overlay = yield* OverlayController;
           const sessionData = yield* session.requireSession();
-          yield* clearRefHighlights(sessionData.page);
-
           const cursorLabel = description ?? "Working…";
-          const refMatch = code.match(REF_PATTERN);
 
-          if (refMatch && sessionData.lastSnapshot) {
-            yield* moveCursorToRef(
-              sessionData.page,
-              sessionData.lastSnapshot,
-              refMatch[1],
-              cursorLabel,
-            );
-            yield* highlightRefsInCode(sessionData.page, sessionData.lastSnapshot, code);
-          } else {
-            const cssSelector = extractCssSelector(code);
-            if (cssSelector) {
-              yield* moveCursorToSelector(sessionData.page, cssSelector, cursorLabel);
-            } else {
-              yield* updateCursorLabel(sessionData.page, cursorLabel);
-            }
-          }
+          yield* overlay.positionCursorForCode(
+            sessionData.page,
+            code,
+            cursorLabel,
+            sessionData.lastSnapshot,
+          );
 
           const ref = (refId: string) => {
             if (!sessionData.lastSnapshot)
@@ -332,13 +177,7 @@ export const createBrowserMcpServer = <E>(
             }
           });
 
-          yield* safeOverlayEval(
-            sessionData.page,
-            "logAction",
-            AGENT_OVERLAY_CONTAINER_ID,
-            cursorLabel,
-            code,
-          );
+          yield* overlay.logAction(sessionData.page, cursorLabel, code);
 
           if (!codeResult.success) {
             return textResult(`Error: ${codeResult.error}`);
@@ -397,12 +236,13 @@ export const createBrowserMcpServer = <E>(
       runMcp(
         Effect.gen(function* () {
           const session = yield* McpSession;
+          const overlay = yield* OverlayController;
           const page = yield* session.requirePage();
           const resolvedMode = mode ?? "screenshot";
-          yield* updateCursorLabel(page, `Taking ${resolvedMode}`);
+          yield* overlay.updateLabel(page, `Taking ${resolvedMode}`);
 
           if (resolvedMode === "snapshot") {
-            const result = yield* withOverlayHidden(
+            const result = yield* overlay.withHidden(
               page,
               session.snapshot(page, { viewportAware: !fullPage }),
             );
@@ -433,7 +273,7 @@ export const createBrowserMcpServer = <E>(
             };
           }
 
-          const buffer = yield* withOverlayHidden(
+          const buffer = yield* overlay.withHidden(
             page,
             Effect.tryPromise(() => page.screenshot({ fullPage, scale: "css" })),
           );
@@ -462,8 +302,9 @@ export const createBrowserMcpServer = <E>(
       runMcp(
         Effect.gen(function* () {
           const session = yield* McpSession;
+          const overlay = yield* OverlayController;
           const sessionData = yield* session.requireSession();
-          yield* updateCursorLabel(sessionData.page, "Reading console logs");
+          yield* overlay.updateLabel(sessionData.page, "Reading console logs");
           const entries = type
             ? sessionData.consoleMessages.filter((entry) => entry.type === type)
             : sessionData.consoleMessages;
@@ -503,8 +344,9 @@ export const createBrowserMcpServer = <E>(
       runMcp(
         Effect.gen(function* () {
           const session = yield* McpSession;
+          const overlay = yield* OverlayController;
           const sessionData = yield* session.requireSession();
-          yield* updateCursorLabel(sessionData.page, "Checking network requests");
+          yield* overlay.updateLabel(sessionData.page, "Checking network requests");
           const normalizedMethod = method?.toUpperCase();
           const normalizedResourceType = resourceType?.toLowerCase();
           const entries = sessionData.networkRequests.filter(
@@ -582,8 +424,9 @@ export const createBrowserMcpServer = <E>(
       runMcp(
         Effect.gen(function* () {
           const session = yield* McpSession;
+          const overlay = yield* OverlayController;
           const page = yield* session.requirePage();
-          yield* updateCursorLabel(page, "Collecting performance metrics");
+          yield* overlay.updateLabel(page, "Collecting performance metrics");
           const trace = yield* evaluateRuntime(page, "getPerformanceTrace");
 
           const hasMetrics = trace.webVitals.fcp || trace.webVitals.lcp || trace.webVitals.inp;
@@ -654,8 +497,9 @@ export const createBrowserMcpServer = <E>(
       runMcp(
         Effect.gen(function* () {
           const session = yield* McpSession;
+          const overlay = yield* OverlayController;
           const page = yield* session.requirePage();
-          yield* updateCursorLabel(page, "Running accessibility audit");
+          yield* overlay.updateLabel(page, "Running accessibility audit");
           const result = yield* runAccessibilityAudit(page, { selector, tags });
           if (result.violations.length === 0) {
             return textResult("No accessibility violations found.");
@@ -677,9 +521,10 @@ export const createBrowserMcpServer = <E>(
       runMcp(
         Effect.gen(function* () {
           const session = yield* McpSession;
+          const overlay = yield* OverlayController;
           if (session.hasSession()) {
             const page = yield* session.requirePage();
-            yield* updateCursorLabel(page, "Closing browser");
+            yield* overlay.updateLabel(page, "Closing browser");
           }
           const result = yield* session.close();
           if (!result) return textResult("No browser open.");
@@ -703,7 +548,7 @@ export const createBrowserMcpServer = <E>(
 };
 
 export const startBrowserMcpServer = async <E>(
-  runtime: ManagedRuntime.ManagedRuntime<McpSession, E>,
+  runtime: ManagedRuntime.ManagedRuntime<McpSession | OverlayController, E>,
 ) => {
   const server = createBrowserMcpServer(runtime);
   const transport = new StdioServerTransport();
