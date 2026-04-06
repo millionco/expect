@@ -307,7 +307,7 @@ const AgentOverlay = () => {
 
           {isExpanded && (
             <div className="flex items-center text-sm font-medium h-full">
-              <div className="group/label relative flex items-center gap-2 pl-3 pr-1">
+              <div className="flex items-center gap-2 pl-3 pr-1">
                 <SpiralSpinner visible={hasLabel} />
                 <span
                   className="overflow-hidden text-ellipsis whitespace-nowrap max-w-60 bg-clip-text text-transparent animate-[expect-text-shimmer_3s_linear_infinite]"
@@ -322,12 +322,6 @@ const AgentOverlay = () => {
                 >
                   {state.label || "Idle"}
                 </span>
-                {hasLabel && (
-                  <div className="absolute bottom-[calc(100%+14px)] right-0 px-3 py-2 bg-[#1a1a1a] text-white/90 text-[13px] font-normal rounded-xl leading-[1.4] max-w-72 whitespace-pre-wrap break-words pointer-events-none shadow-[0_4px_20px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.08)] z-[100001] opacity-0 group-hover/label:opacity-100 transition-opacity duration-150">
-                    {state.label}
-                    <div className="absolute top-[calc(100%-4px)] right-4 rotate-45 size-2 bg-[#1a1a1a] rounded-br-sm" />
-                  </div>
-                )}
               </div>
               <ToolbarControls
                 overlayVisible={state.overlayVisible}

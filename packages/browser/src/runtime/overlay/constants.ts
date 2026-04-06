@@ -43,10 +43,10 @@ export interface CursorPersisted {
 }
 
 export const getViewport = () => {
-  const vv = window.visualViewport;
+  const visualViewport = window.visualViewport;
   return {
-    width: vv?.width ?? window.innerWidth,
-    height: vv?.height ?? window.innerHeight,
+    width: visualViewport?.width ?? window.innerWidth,
+    height: visualViewport?.height ?? window.innerHeight,
   };
 };
 

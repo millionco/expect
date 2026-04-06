@@ -19,7 +19,11 @@ export const detectCursorShape = (x: number, y: number): CursorShape => {
   if (element.closest(CLICKABLE_SELECTOR)) return "hand";
 
   const tag = element.tagName;
-  if (tag === "INPUT" || tag === "TEXTAREA" || (element as HTMLElement).isContentEditable)
+  if (
+    tag === "INPUT" ||
+    tag === "TEXTAREA" ||
+    (element instanceof HTMLElement && element.isContentEditable)
+  )
     return "text";
 
   return "pointer";
