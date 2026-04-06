@@ -394,36 +394,28 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       const artifactBaseName = `session-${Date.now()}`;
 
       const CLOSE_TIMEOUT_MS = 10_000;
+      const withTimeout = <T>(promise: Promise<T>) =>
+        Promise.race([
+          promise,
+          new Promise<undefined>((resolve) =>
+            setTimeout(() => resolve(undefined), CLOSE_TIMEOUT_MS),
+          ),
+        ]);
 
       if (!activeSession.page.isClosed()) {
         yield* evaluateRuntime(
           activeSession.page,
           "destroyAgentOverlay",
           AGENT_OVERLAY_CONTAINER_ID,
-        ).pipe(
-          Effect.timeoutOrElse({
-            duration: `${CLOSE_TIMEOUT_MS} millis`,
-            onTimeout: () => Effect.void,
-          }),
-          Effect.catchCause(() => Effect.void),
-        );
+        ).pipe(Effect.catchCause(() => Effect.void));
       }
 
       if (activeSession.isExternalBrowser) {
-        yield* Effect.tryPromise(() => activeSession.page.close()).pipe(
-          Effect.timeoutOrElse({
-            duration: `${CLOSE_TIMEOUT_MS} millis`,
-            onTimeout: () => Effect.logWarning("Timed out closing page").pipe(Effect.as(undefined)),
-          }),
+        yield* Effect.tryPromise(() => withTimeout(activeSession.page.close())).pipe(
           Effect.catchCause((cause) => Effect.logDebug("Failed to close page", { cause })),
         );
       } else {
-        yield* Effect.tryPromise(() => activeSession.browser.close()).pipe(
-          Effect.timeoutOrElse({
-            duration: `${CLOSE_TIMEOUT_MS} millis`,
-            onTimeout: () =>
-              Effect.logWarning("Timed out closing browser").pipe(Effect.as(undefined)),
-          }),
+        yield* Effect.tryPromise(() => withTimeout(activeSession.browser.close())).pipe(
           Effect.catchCause((cause) => Effect.logDebug("Failed to close browser", { cause })),
         );
       }
