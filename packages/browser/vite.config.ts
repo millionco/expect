@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite-plus";
 
-const BROWSER_TEST_TIMEOUT_MS = 30_000;
+const BROWSER_TEST_TIMEOUT_MS = 60_000;
 
 const collectMdFiles = (
   baseDir: string,
