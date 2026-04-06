@@ -19,12 +19,23 @@ export const detectCursorShape = (x: number, y: number): CursorShape => {
   if (element.closest(CLICKABLE_SELECTOR)) return "hand";
 
   const tag = element.tagName;
-  if (
-    tag === "INPUT" ||
-    tag === "TEXTAREA" ||
-    (element instanceof HTMLElement && element.isContentEditable)
-  )
+  if (tag === "TEXTAREA" || (element instanceof HTMLElement && element.isContentEditable))
     return "text";
+  if (tag === "INPUT") {
+    const inputType = (element as HTMLInputElement).type;
+    if (
+      inputType === "text" ||
+      inputType === "search" ||
+      inputType === "email" ||
+      inputType === "url" ||
+      inputType === "tel" ||
+      inputType === "password" ||
+      inputType === "number" ||
+      inputType === ""
+    )
+      return "text";
+    return "hand";
+  }
 
   return "pointer";
 };
