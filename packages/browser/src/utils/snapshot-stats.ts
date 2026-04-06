@@ -1,6 +1,6 @@
 import { ESTIMATED_CHARS_PER_TOKEN, INTERACTIVE_ROLES } from "../constants";
 import type { RefMap, SnapshotStats } from "../types";
-import type { ScrollContainerResult } from "../runtime/scroll-detection";
+import type { ScrollContainerResult } from "../runtime/lib/scroll-detection";
 
 export const computeSnapshotStats = (
   tree: string,

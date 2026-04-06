@@ -328,16 +328,13 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         pageResult.page.on("load", () => {
           pageResult.page
             .waitForFunction(
-              () =>
-                typeof globalThis.__EXPECT_RUNTIME__ !== "undefined" &&
-                typeof globalThis.__EXPECT_RUNTIME__.initAgentOverlay === "function",
+              `typeof globalThis.__EXPECT_RUNTIME__ !== 'undefined' && typeof globalThis.__EXPECT_RUNTIME__.initAgentOverlay === 'function'`,
               undefined,
               { timeout: OVERLAY_REINJECT_TIMEOUT_MS },
             )
             .then(() =>
               pageResult.page.evaluate(
-                (containerId) => globalThis.__EXPECT_RUNTIME__.initAgentOverlay(containerId),
-                AGENT_OVERLAY_CONTAINER_ID,
+                `globalThis.__EXPECT_RUNTIME__.initAgentOverlay('${AGENT_OVERLAY_CONTAINER_ID}')`,
               ),
             )
             .catch((error) =>
@@ -435,7 +432,8 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         );
 
         if (videoPath) {
-          yield* Ref.update(videoSegmentsRef, (segments) => [...segments, videoPath]);
+          const confirmedVideoPath = videoPath;
+          yield* Ref.update(videoSegmentsRef, (segments) => [...segments, confirmedVideoPath]);
           const allSegments = yield* Ref.get(videoSegmentsRef);
 
           yield* fileSystem
@@ -462,7 +460,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
               }).pipe(
                 Effect.tap(() =>
                   fileSystem
-                    .copyFile(videoPath, rawConcatPath)
+                    .copyFile(confirmedVideoPath, rawConcatPath)
                     .pipe(Effect.catchCause(() => Effect.void)),
                 ),
               ),

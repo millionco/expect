@@ -42,7 +42,7 @@ import type {
   RefMap,
   SnapshotOptions,
 } from "./types";
-import type { ScrollContainerResult } from "./runtime/scroll-detection";
+import type { ScrollContainerResult } from "./runtime/lib/scroll-detection";
 
 const BROWSER_ENGINES = { chromium, webkit, firefox } as const;
 
