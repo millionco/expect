@@ -126,19 +126,25 @@ const highlightRefsInCode = Effect.fn("highlightRefsInCode")(function* (
   const matches = [...code.matchAll(REF_PATTERN_GLOBAL)];
   const uniqueRefIds = [...new Set(matches.map((match) => match[1]))];
 
-  const rects: Array<{ x: number; y: number; width: number; height: number }> = [];
+  const selectors: string[] = [];
   for (const refId of uniqueRefIds) {
     if (!snapshot.refs[refId]) continue;
     const locator = yield* snapshot.locator(refId);
-    const box = yield* Effect.tryPromise(() => locator.boundingBox()).pipe(
-      Effect.catchTag("UnknownError", () => Effect.succeed(undefined)),
-    );
-    if (box) {
-      rects.push({ x: box.x, y: box.y, width: box.width, height: box.height });
+    const selector = yield* Effect.tryPromise(() =>
+      locator.evaluate((element) => {
+        const runtime = (globalThis as Record<string, unknown>).__EXPECT_RUNTIME__ as
+          | { cssSelector: (element: Element) => string }
+          | undefined;
+        if (!runtime?.cssSelector) return undefined;
+        return runtime.cssSelector(element);
+      }),
+    ).pipe(Effect.catchCause(() => Effect.succeed(undefined)));
+    if (selector) {
+      selectors.push(selector);
     }
   }
 
-  yield* evaluateRuntime(page, "highlightRefs", AGENT_OVERLAY_CONTAINER_ID, rects).pipe(
+  yield* evaluateRuntime(page, "highlightRefs", AGENT_OVERLAY_CONTAINER_ID, selectors).pipe(
     Effect.catchCause(() => Effect.void),
   );
 });

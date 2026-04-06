@@ -22,3 +22,6 @@ export {
   highlightRefs,
   clearHighlights,
 } from "./overlay";
+
+import { finder } from "@medv/finder";
+export const cssSelector = finder;

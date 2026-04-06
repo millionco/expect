@@ -47,7 +47,7 @@ interface OverlayState {
   showPrompt: boolean;
   cursorAction: CursorAction;
   clickCount: number;
-  highlightRects: HighlightRect[];
+  highlightSelectors: string[];
 }
 
 interface CursorPersisted {
@@ -112,7 +112,7 @@ const loadInitialState = (): OverlayState => {
     showPrompt: false,
     cursorAction: "idle",
     clickCount: 0,
-    highlightRects: [],
+    highlightSelectors: [],
   };
 };
 
@@ -429,6 +429,32 @@ const AgentOverlay = () => {
     }));
   };
 
+  const [highlightRects, setHighlightRects] = useState<HighlightRect[]>([]);
+
+  useEffect(() => {
+    if (state.highlightSelectors.length === 0) {
+      setHighlightRects([]);
+      return;
+    }
+
+    let rafId: number;
+    const updateRects = () => {
+      const rects: HighlightRect[] = [];
+      for (const selector of state.highlightSelectors) {
+        try {
+          const element = document.querySelector(selector);
+          if (!element) continue;
+          const box = element.getBoundingClientRect();
+          rects.push({ x: box.x, y: box.y, width: box.width, height: box.height });
+        } catch {}
+      }
+      setHighlightRects(rects);
+      rafId = requestAnimationFrame(updateRects);
+    };
+    rafId = requestAnimationFrame(updateRects);
+    return () => cancelAnimationFrame(rafId);
+  }, [state.highlightSelectors]);
+
   const viewport = getViewport();
   const cursorX = state.cursorPositioned
     ? clampToViewport(state.cursorX - CURSOR_SIZE_PX / 2, CURSOR_SIZE_PX, viewport.width, 0)
@@ -518,9 +544,9 @@ const AgentOverlay = () => {
         </span>
       </div>
 
-      {state.highlightRects.map((rect) => (
+      {highlightRects.map((rect, index) => (
         <div
-          key={`${rect.x}-${rect.y}-${rect.width}-${rect.height}`}
+          key={`hl-${index}`}
           className="fixed pointer-events-none z-[2147483646] rounded-[3px]"
           style={{
             left: `${rect.x}px`,
@@ -611,16 +637,16 @@ export const clearUserControl = (): void => {
   } catch {}
 };
 
-export const highlightRefs = (containerId: string, rects: HighlightRect[]): void => {
+export const highlightRefs = (containerId: string, selectors: string[]): void => {
   if (!setOverlayState) {
     initAgentOverlay(containerId);
     if (!setOverlayState) return;
   }
 
-  setOverlayState((previous) => ({ ...previous, highlightRects: rects }));
+  setOverlayState((previous) => ({ ...previous, highlightSelectors: selectors }));
 };
 
 export const clearHighlights = (_containerId: string): void => {
   if (!setOverlayState) return;
-  setOverlayState((previous) => ({ ...previous, highlightRects: [] }));
+  setOverlayState((previous) => ({ ...previous, highlightSelectors: [] }));
 };
