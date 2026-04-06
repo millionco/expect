@@ -33,6 +33,7 @@ export const loadInitialState = (): OverlayState => {
     cursorAction: "idle",
     clickCount: 0,
     highlightSelectors: [],
+    actionLog: [],
   };
 };
 

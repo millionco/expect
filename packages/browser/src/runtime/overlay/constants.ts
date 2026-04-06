@@ -15,6 +15,11 @@ export interface HighlightRect {
   height: number;
 }
 
+export interface ActionLogEntry {
+  description: string;
+  code: string;
+}
+
 export interface OverlayState {
   cursorX: number;
   cursorY: number;
@@ -23,6 +28,7 @@ export interface OverlayState {
   cursorAction: CursorAction;
   clickCount: number;
   highlightSelectors: string[];
+  actionLog: ActionLogEntry[];
 }
 
 export interface CursorPersisted {

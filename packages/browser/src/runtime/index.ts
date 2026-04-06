@@ -21,6 +21,7 @@ export {
   destroyAgentOverlay,
   highlightRefs,
   clearHighlights,
+  logAction,
 } from "./overlay";
 
 import { finder } from "@medv/finder";

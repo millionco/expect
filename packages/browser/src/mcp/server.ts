@@ -252,6 +252,14 @@ export const createBrowserMcpServer = <E>(
             }
           });
 
+          yield* evaluateRuntime(
+            sessionData.page,
+            "logAction",
+            AGENT_OVERLAY_CONTAINER_ID,
+            cursorLabel,
+            code,
+          ).pipe(Effect.catchCause(() => Effect.void));
+
           if (!codeResult.success) {
             return textResult(`Error: ${codeResult.error}`);
           }
