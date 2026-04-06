@@ -66,14 +66,12 @@ export const SpiralSpinner = ({ visible }: { visible: boolean }) => {
   }, [visible]);
 
   return (
-    <div className="size-4 shrink-0 rounded-sm overflow-hidden">
-      <canvas
-        ref={canvasRef}
-        width={CANVAS_SIZE}
-        height={CANVAS_SIZE}
-        className="size-full"
-        style={{ imageRendering: "pixelated" }}
-      />
-    </div>
+    <canvas
+      ref={canvasRef}
+      width={CANVAS_SIZE}
+      height={CANVAS_SIZE}
+      className="shrink-0"
+      style={{ width: "16px", height: "16px", imageRendering: "pixelated" }}
+    />
   );
 };
