@@ -87,7 +87,7 @@ function TerminalContent({ phase }: { phase: AnimationPhase }) {
     <motion.div
       className="flex flex-col items-start w-61 text-xs/4 gap-1"
       animate={{ y: showExpect ? -180 : showDiff ? -70 : 0 }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      transition={{ type: "spring", stiffness: 120, damping: 20, mass: 0.8 }}
     >
       <div className="h-7 shrink-0" />
       <div className="flex items-start shrink-0 gap-2.5">
@@ -185,7 +185,7 @@ function BrowserPreview({ slid, focused }: { slid: boolean; focused: boolean }) 
             ? { x: -100, y: -8, scale: 1, zIndex: 0 }
             : { x: -12, y: -8, scale: 1, zIndex: 0 }
       }
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      transition={{ type: "spring", stiffness: 100, damping: 18, mass: 0.8 }}
     >
       <div className="relative flex flex-col w-68.5 h-46 rounded-2xl pt-2.5 pr-2.25 pb-6.75 pl-4.75 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]">
         <div className="flex items-center -ml-1">
@@ -222,7 +222,7 @@ function BrowserPreview({ slid, focused }: { slid: boolean; focused: boolean }) 
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
             >
               <div className="tracking-[-0.03em] [white-space-collapse:preserve] mt-4.5 w-max text-[#474747] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-base/9">
                 sign up
@@ -254,19 +254,19 @@ function AnimatedCursor({ visible, onBrowser, clicking, labelVisible, label }: {
       }
       transition={
         !visible
-          ? { type: "spring", stiffness: 500, damping: 20, mass: 0.4 }
-          : { duration: 0.7, ease: [0.22, 1, 0.36, 1] }
+          ? { type: "spring", stiffness: 400, damping: 22, mass: 0.5 }
+          : { type: "spring", stiffness: 80, damping: 16, mass: 0.6 }
       }
     >
       <motion.svg
         width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '40px', height: 'auto' }}
         animate={{ scale: clicking ? 0.85 : 1 }}
-        transition={{ duration: 0.1, ease: "easeOut" }}
+        transition={{ type: "spring", stiffness: 600, damping: 15 }}
       >
         <g filter="url(#filter0_d_4_7)">
           <path d="M2.58591 2.58594C3.14041 2.03143 3.96783 1.85171 4.70212 2.12695L15.7021 6.25195C16.5219 6.55937 17.0468 7.36516 16.997 8.23926C16.9471 9.11309 16.3344 9.85306 15.4853 10.0654L11.1484 11.1484L10.0654 15.4854C9.85303 16.3345 9.11306 16.9471 8.23923 16.9971C7.36513 17.0469 6.55934 16.5219 6.25192 15.7021L2.12692 4.70215C1.85168 3.96786 2.0314 3.14045 2.58591 2.58594Z" fill="white" stroke="white" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"/>
         </g>
-        <motion.path fillRule="evenodd" clipRule="evenodd" d="M4.17558 3.53185C3.99199 3.463 3.7851 3.50782 3.64646 3.64646C3.50782 3.7851 3.463 3.99199 3.53185 4.17558L7.65685 15.1756C7.7337 15.3805 7.93492 15.5117 8.15345 15.4992C8.37197 15.4868 8.557 15.3336 8.61009 15.1213L9.91232 9.91232L15.1213 8.61009C15.3336 8.557 15.4868 8.37197 15.4992 8.15345C15.5117 7.93492 15.3805 7.7337 15.1756 7.65685L4.17558 3.53185Z" animate={{ fill: isAlert ? "#F5332A" : "#0074F9", stroke: isAlert ? "#F5332A" : "#0074F9" }} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" transition={{ duration: 0.3 }}/>
+        <motion.path fillRule="evenodd" clipRule="evenodd" d="M4.17558 3.53185C3.99199 3.463 3.7851 3.50782 3.64646 3.64646C3.50782 3.7851 3.463 3.99199 3.53185 4.17558L7.65685 15.1756C7.7337 15.3805 7.93492 15.5117 8.15345 15.4992C8.37197 15.4868 8.557 15.3336 8.61009 15.1213L9.91232 9.91232L15.1213 8.61009C15.3336 8.557 15.4868 8.37197 15.4992 8.15345C15.5117 7.93492 15.3805 7.7337 15.1756 7.65685L4.17558 3.53185Z" animate={{ fill: isAlert ? "#F5332A" : "#0074F9", stroke: isAlert ? "#F5332A" : "#0074F9" }} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" transition={{ duration: 0.5, ease: "easeInOut" }}/>
         <defs>
           <filter id="filter0_d_4_7" x="-0.000274658" y="-0.000244141" width="19.0005" height="19.0006" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB"><feFlood floodOpacity="0" result="BackgroundImageFix"/><feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/><feOffset/><feGaussianBlur stdDeviation="1"/><feComposite in2="hardAlpha" operator="out"/><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.22 0"/><feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_4_7"/><feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_4_7" result="shape"/></filter>
           <linearGradient id="paint0_linear_4_7" x1="9.50001" y1="3.5" x2="9.50001" y2="15.5" gradientUnits="userSpaceOnUse"><stop stopColor="#0172F4"/><stop offset="1" stopColor="#0168DF"/></linearGradient>
@@ -276,7 +276,7 @@ function AnimatedCursor({ visible, onBrowser, clicking, labelVisible, label }: {
         className="absolute left-4 top-4 rounded-full px-2.5 py-1 text-white font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[13px]/4.5 whitespace-nowrap [box-shadow:0_0_0_1.5px_white,0_1px_3px_rgba(0,0,0,0.2)] flex items-center gap-1.5 origin-top-left"
         initial={{ opacity: 0, scale: 0.5 }}
         animate={{ backgroundColor: isAlert ? "#F5332A" : "#0074F9", opacity: labelVisible ? 1 : 0, scale: labelVisible ? 1 : 0.5 }}
-        transition={{ duration: 0.15 }}
+        transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.5 }}
       >
         {label === "security" && (
           <svg className="size-3 animate-spin" viewBox="0 0 16 16" fill="none">
@@ -306,7 +306,7 @@ function TerminalIllustration() {
         <motion.div
           className="flex flex-col items-start w-68.5 h-46 relative z-10 rounded-2xl pt-4.5 pr-3.75 pb-6.5 pl-3.75 overflow-clip bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]"
           animate={slid ? { x: 80 } : { x: 0 }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          transition={{ type: "spring", stiffness: 120, damping: 20, mass: 0.8 }}
         >
           <div suppressHydrationWarning className="absolute top-0 left-0 right-0 h-20 z-10 pointer-events-none select-none rounded-t-2xl" style={{ background: 'linear-gradient(to top, transparent 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.45) 75%, rgba(255,255,255,0.8) 100%)' }} />
           <div suppressHydrationWarning className="absolute bottom-0 left-0 right-0 h-12 z-10 pointer-events-none select-none rounded-b-2xl" style={{ background: 'linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.45) 75%, rgba(255,255,255,0.8) 100%)' }} />
