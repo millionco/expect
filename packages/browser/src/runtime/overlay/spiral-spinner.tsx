@@ -1,7 +1,7 @@
 // eslint-disable-next-line no-restricted-imports
 import { useEffect, useRef } from "react";
 
-const GRID_SIZE = 16;
+const GRID_SIZE = 3;
 const CELL_PX = 1;
 const CANVAS_SIZE = GRID_SIZE * CELL_PX;
 const TICK_MS = 120;
@@ -19,7 +19,7 @@ const createGrid = (): boolean[][] => {
     Array.from({ length: GRID_SIZE }, () => false),
   );
   for (const [row, col] of GLIDER) {
-    grid[row + 2][col + 2] = true;
+    grid[row % GRID_SIZE][col % GRID_SIZE] = true;
   }
   return grid;
 };
