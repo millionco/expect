@@ -145,10 +145,30 @@ const AgentOverlay = () => {
 
   useEffect(() => {
     if (!state.label) return;
-    toast(state.label, {
-      duration: Infinity,
-      icon: <SpiralSpinner visible />,
-    });
+    toast(
+      () => (
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <SpiralSpinner visible />
+          <span>{state.label}</span>
+        </div>
+      ),
+      {
+        duration: Infinity,
+        unstyled: true,
+        style: {
+          background: "#1c1c1c",
+          color: "white",
+          fontSize: "14px",
+          fontFamily: '"SFProDisplay-Medium", "SF Pro Display", system-ui, sans-serif',
+          fontWeight: 500,
+          boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)",
+          borderRadius: "12px",
+          padding: "12px 16px",
+          maxWidth: "320px",
+          width: "fit-content",
+        },
+      },
+    );
   }, [state.label]);
 
   const [cursorShape, setCursorShape] = useState<CursorShape>("pointer");
@@ -183,24 +203,7 @@ const AgentOverlay = () => {
       </div>
 
       <div className="fixed bottom-0 right-0 z-[2147483647]" style={{ pointerEvents: "auto" }}>
-        <Toaster
-          position="bottom-right"
-          visibleToasts={3}
-          expand={false}
-          toastOptions={{
-            style: {
-              background: "#1c1c1c",
-              color: "white",
-              border: "none",
-              fontSize: "14px",
-              fontFamily: '"SFProDisplay-Medium", "SF Pro Display", system-ui, sans-serif',
-              fontWeight: 500,
-              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)",
-              borderRadius: "12px",
-              maxWidth: "320px",
-            },
-          }}
-        />
+        <Toaster position="bottom-right" visibleToasts={3} expand={false} />
       </div>
 
       {highlightRects.map((rect, index) => (
