@@ -1,3 +1,4 @@
+import { HEX_BLUE } from "./constants";
 import type { CursorShape } from "./constants";
 
 const CLICKABLE_SELECTOR =
@@ -69,7 +70,7 @@ const PointerCursor = () => (
         fillRule="evenodd"
         clipRule="evenodd"
         d="M15.999 15.129C15.999 14.998 16.159 14.932 16.25 15.025L24.159 22.95C24.59 23.382 24.284 24.119 23.674 24.119L20.97 24.118L22.769 28.394C22.996 28.934 22.742 29.555 22.203 29.781C21.662 30.008 21.042 29.755 20.816 29.216L18.998 24.892L17.139 26.539C16.723 26.907 16.081 26.651 16.007 26.127L15.999 26.026V15.129Z"
-        fill="#000000"
+        fill={HEX_BLUE}
       />
     </g>
   </svg>

@@ -3,6 +3,7 @@ export const CURSOR_HEIGHT_PX = 53;
 export const VIEWPORT_PADDING_PX = 8;
 export const CURSOR_TRANSITION_MS = 300;
 export const SRGB_BLUE = "30, 123, 252";
+export const HEX_BLUE = "#1E7BFC";
 export const STATE_KEY = "__expect_cursor_state__";
 
 export type CursorAction = "idle" | "click" | "type";
