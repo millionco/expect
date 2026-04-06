@@ -8,7 +8,7 @@ import { Browser } from "../browser";
 import { NavigationError } from "../errors";
 import { concatVideos, frameWithWallpaper, DEFAULT_WALLPAPER_PATH } from "../video-processor";
 import { evaluateRuntime } from "../utils/evaluate-runtime";
-import { AGENT_OVERLAY_CONTAINER_ID } from "../constants";
+import { AGENT_OVERLAY_CONTAINER_ID, OVERLAY_REINJECT_TIMEOUT_MS } from "../constants";
 import type {
   AnnotatedScreenshotOptions,
   BrowserEngine,
@@ -329,19 +329,18 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
 
         pageResult.page.on("load", () => {
           pageResult.page
-            .evaluate(
-              `new Promise(function(resolve){
-                var attempts=0;
-                function check(){
-                  if(typeof globalThis.__EXPECT_RUNTIME__!=='undefined'&&typeof globalThis.__EXPECT_RUNTIME__.initAgentOverlay==='function'){
-                    globalThis.__EXPECT_RUNTIME__.initAgentOverlay('${AGENT_OVERLAY_CONTAINER_ID}');
-                    resolve();
-                  }else if(attempts++<50){
-                    setTimeout(check,100);
-                  }else{resolve();}
-                }
-                check();
-              })`,
+            .waitForFunction(
+              () =>
+                typeof globalThis.__EXPECT_RUNTIME__ !== "undefined" &&
+                typeof globalThis.__EXPECT_RUNTIME__.initAgentOverlay === "function",
+              undefined,
+              { timeout: OVERLAY_REINJECT_TIMEOUT_MS },
+            )
+            .then(() =>
+              pageResult.page.evaluate(
+                (containerId) => globalThis.__EXPECT_RUNTIME__.initAgentOverlay(containerId),
+                AGENT_OVERLAY_CONTAINER_ID,
+              ),
             )
             .catch((error) =>
               console.debug("[expect] overlay re-injection on load failed:", error),
