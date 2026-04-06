@@ -53,7 +53,7 @@ export function ClaudeSpinner({ message }: { message: string }) {
       >
         {glyph}
       </div>
-      <div className="[letter-spacing:0px] inline-block font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+      <div className="[letter-spacing:0px] inline-block font-['JetBrains_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
         {characters}
       </div>
     </div>

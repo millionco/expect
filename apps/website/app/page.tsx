@@ -7,30 +7,35 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { Calligraph } from "calligraph";
 import { ClaudeSpinner } from "./claude-spinner";
 
-const CODING_DURATION_MS = 2000;
+const CODING_DURATION_MS = 1250;
 const SLIDE_DELAY_MS = 500;
 const DIFF_DURATION_MS = 1500;
+const FOCUS_DELAY_MS = 900;
 
 type AnimationPhase = "coding" | "diff" | "expect";
 
 function useAnimationPhase() {
   const [phase, setPhase] = useState<AnimationPhase>("coding");
   const [slid, setSlid] = useState(false);
+  const [focused, setFocused] = useState(false);
 
   useEffect(() => {
     const diffTimer = setTimeout(() => setPhase("diff"), CODING_DURATION_MS);
     const slideTimer = setTimeout(() => setSlid(true), CODING_DURATION_MS + SLIDE_DELAY_MS);
     const expectTimer = setTimeout(() => setPhase("expect"), CODING_DURATION_MS + DIFF_DURATION_MS);
+    const focusTimer = setTimeout(() => setFocused(true), CODING_DURATION_MS + DIFF_DURATION_MS + FOCUS_DELAY_MS);
     return () => {
       clearTimeout(diffTimer);
       clearTimeout(slideTimer);
       clearTimeout(expectTimer);
+      clearTimeout(focusTimer);
     };
   }, []);
 
-  return { phase, slid };
+  return { phase, slid, focused };
 }
 
 function TerminalLine({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
@@ -66,7 +71,7 @@ function TerminalContent({ phase }: { phase: AnimationPhase }) {
       <div className="h-2.5 shrink-0" />
       <div>
         <div className="flex items-center w-61 h-7 shrink-0 rounded-xs px-2.5 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696952_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]">
-          <div className="[letter-spacing:-0.125px] inline-block text-[#323232] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+          <div className="[letter-spacing:-0.125px] inline-block text-[#323232] font-['JetBrains_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
             build signup form
           </div>
         </div>
@@ -77,10 +82,10 @@ function TerminalContent({ phase }: { phase: AnimationPhase }) {
             <div className="inline-block [white-space-collapse:preserve] w-max text-[color(display-p3_0.249_0.701_0.193)] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
               ⏺
             </div>
-            <div className="[letter-spacing:-0.125px] inline-block [white-space-collapse:preserve] w-max text-[#1F1F1F] font-['GeistMono-SemiBold','Geist_Mono',system-ui,sans-serif] font-semibold shrink-0 text-[12.5px]/4.5">
+            <div className="[letter-spacing:-0.125px] inline-block [white-space-collapse:preserve] w-max text-[#1F1F1F] font-['JetBrains_Mono',system-ui,sans-serif] font-semibold shrink-0 text-[12.5px]/4.5">
               update
             </div>
-            <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[#1F1F1F] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+            <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[#1F1F1F] font-['JetBrains_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
               (signup.tsx)
             </div>
           </div>
@@ -91,20 +96,20 @@ function TerminalContent({ phase }: { phase: AnimationPhase }) {
           <div className="h-0.5 shrink-0" />
           <div className="flex flex-col w-full rounded-[3px] pt-1.25 pb-1.5 bg-[#D7F2D3] px-2">
             <div className="flex items-center gap-1.75">
-              <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.040_0.361_0)] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+              <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.040_0.361_0)] font-['JetBrains_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
                 12 +
               </div>
               <div className="w-42.5 h-3.25 rounded-xs bg-[#B1E4AC] shrink-0" />
             </div>
             <div className="flex items-center gap-1.75">
-              <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.040_0.361_0)] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+              <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.040_0.361_0)] font-['JetBrains_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
                 13 +
               </div>
               <div className="w-23.75 h-3.25 rounded-xs bg-[#B1E4AC] shrink-0" />
             </div>
           </div>
           <div className="flex items-center w-full rounded-[3px] py-0.75 px-2 gap-1.75 bg-[color(display-p3_1_0.879_0.854)]">
-            <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.625_0_0)] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+            <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.625_0_0)] font-['JetBrains_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
               61 -
             </div>
             <div className="w-34 h-3.25 rounded-xs bg-[#F9BFB5] shrink-0" />
@@ -112,29 +117,16 @@ function TerminalContent({ phase }: { phase: AnimationPhase }) {
         </>
       )}
       {showExpect && (
-        <div className="flex flex-col pl-0.5 gap-1.25 mt-4">
-          <div className="flex items-center gap-1.25">
-            <div className="inline-block text-[color(display-p3_0.663_0.522_1)] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
-              ⏺
-            </div>
-            <div className="inline-block text-[color(display-p3_0.454_0.250_0.783)] font-['GeistMono-SemiBold','Geist_Mono',system-ui,sans-serif] font-semibold shrink-0 text-[12.5px]/4.5">
-              expect skill
-            </div>
+        <div className="flex pl-0.5 items-start gap-1.25 mt-4">
+          <div className="inline-block text-[color(display-p3_0.663_0.522_1)] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
+            ⏺
           </div>
-          <div className="flex items-center pl-3.75 gap-1.5">
-            <div className="inline-block text-[#1F1F1F] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
-              ◯
+          <div className="flex flex-col">
+            <div className="text-[#1F1F1F] font-['JetBrains_Mono',system-ui,sans-serif] font-semibold shrink-0 text-[12.5px]/4.5">
+              changes detected,
             </div>
-            <div className="inline-block text-[#1F1F1F] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
-              security & perf
-            </div>
-          </div>
-          <div className="flex items-center pl-3.75 gap-1.5">
-            <div className="inline-block text-[#1F1F1F] font-['BerkeleyMono-Regular','Berkeley_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
-              ◯
-            </div>
-            <div className="inline-block text-[#1F1F1F] font-['GeistMono-Regular','Geist_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
-              responsiveness
+            <div className="text-[#1F1F1F] font-['JetBrains_Mono',system-ui,sans-serif] font-semibold shrink-0 text-[12.5px]/4.5">
+              activating expect
             </div>
           </div>
         </div>
@@ -143,7 +135,7 @@ function TerminalContent({ phase }: { phase: AnimationPhase }) {
   );
 }
 
-function BrowserPreview({ slid }: { slid: boolean }) {
+function BrowserPreview({ slid, focused }: { slid: boolean; focused: boolean }) {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -154,11 +146,37 @@ function BrowserPreview({ slid }: { slid: boolean }) {
 
   return (
     <motion.div
-      className="absolute top-0 left-0 z-0"
-      animate={slid ? { x: -100, y: -8 } : { x: -12, y: -8 }}
+      className="absolute top-0 left-0"
+      suppressHydrationWarning
+      initial={false}
+      animate={
+        focused
+          ? { x: -100, y: -8, scale: 1.04, zIndex: 20 }
+          : slid
+            ? { x: -100, y: -8, scale: 1, zIndex: 0 }
+            : { x: -12, y: -8, scale: 1, zIndex: 0 }
+      }
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
-      <div className="flex flex-col w-68.5 h-46 rounded-2xl pt-2.5 pr-2.25 pb-6.75 pl-4.75 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]">
+      <div className="relative flex flex-col w-68.5 h-46 rounded-2xl pt-2.5 pr-2.25 pb-6.75 pl-4.75 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]">
+        <motion.div
+          className="absolute bottom-3.5 left-3.5 flex items-center justify-center size-5 rounded-full [background:rgba(0,0,0,0.8)] [box-shadow:0_0_0_1px_#171717,inset_0_0_0_1px_hsla(0,0%,100%,0.14),0px_16px_32px_-8px_rgba(0,0,0,0.24)] [backdrop-filter:blur(48px)]"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={loaded ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+        >
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="size-full">
+            <g transform="translate(12, 12)">
+              <path d="M13.3 15.2 L2.34 1 V12.6" fill="none" stroke="url(#nj_p0)" strokeWidth="1.86" mask="url(#nj_m0)" strokeDasharray="29.6" strokeDashoffset="0" />
+              <path d="M11.825 1.5 V13.1" strokeWidth="1.86" stroke="url(#nj_p1)" strokeDasharray="11.6" strokeDashoffset="0" />
+            </g>
+            <defs>
+              <linearGradient id="nj_p0" x1="9.95555" y1="11.1226" x2="15.4778" y2="17.9671" gradientUnits="userSpaceOnUse"><stop stopColor="white"/><stop offset="0.604072" stopColor="white" stopOpacity="0"/><stop offset="1" stopColor="white" stopOpacity="0"/></linearGradient>
+              <linearGradient id="nj_p1" x1="11.8222" y1="1.40039" x2="11.791" y2="9.62542" gradientUnits="userSpaceOnUse"><stop stopColor="white"/><stop offset="1" stopColor="white" stopOpacity="0"/></linearGradient>
+              <mask id="nj_m0"><rect width="100%" height="100%" fill="white"/><rect width="5" height="1.5" fill="black"/></mask>
+            </defs>
+          </svg>
+        </motion.div>
         <div className="flex items-center -ml-1">
           <div className="flex items-center gap-1.5">
             <div className="rounded-full bg-[#FF726A] shrink-0 size-2.5" />
@@ -194,11 +212,11 @@ function BrowserPreview({ slid }: { slid: boolean }) {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
             >
-              <div className="tracking-[-0.03em] [white-space-collapse:preserve] mt-4.5 w-max text-[#474747] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-lg/10">
+              <div className="tracking-[-0.03em] [white-space-collapse:preserve] mt-4.5 w-max text-[#474747] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-base/9">
                 sign up
               </div>
               <div className="w-52.75 h-7 rounded-lg bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696952_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] shrink-0" />
-              <div className="w-19.5 h-6.25 rounded-lg mt-2.5 bg-[#FBFBFB] [box-shadow:#69696952_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] shrink-0" />
+
             </motion.div>
           )}
         </AnimatePresence>
@@ -207,28 +225,36 @@ function BrowserPreview({ slid }: { slid: boolean }) {
   );
 }
 
+function AnimationCaption({ phase, focused }: { phase: AnimationPhase; focused: boolean }) {
+  const caption = phase === "expect" || focused
+    ? "Agent calls Expect skill"
+    : "Build a feature";
+
+  return (
+    <div className="[letter-spacing:0em] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[13px]/5 text-[#707070]">
+      <Calligraph animation="smooth">{caption}</Calligraph>
+    </div>
+  );
+}
+
 function TerminalIllustration() {
-  const { phase, slid } = useAnimationPhase();
+  const { phase, slid, focused } = useAnimationPhase();
 
   return (
     <div className="flex flex-col items-center justify-center gap-4 text-xs/4 mt-11.5 p-3">
       <div className="relative w-68.5 h-46 shrink-0 overflow-visible">
-        <BrowserPreview slid={slid} />
+        <BrowserPreview slid={slid} focused={focused} />
         <motion.div
           className="flex flex-col items-start w-68.5 h-46 relative z-10 rounded-2xl pt-4.5 pr-3.75 pb-6.5 pl-3.75 overflow-clip bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]"
           animate={slid ? { x: 80 } : { x: 0 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
-          <div className="flex shrink-0 gap-1.5 relative z-20">
-            <div className="rounded-full bg-[#FF726A] shrink-0 size-2.5" />
-            <div className="rounded-full bg-[#FEBC2E] shrink-0 size-2.5" />
-            <div className="rounded-full bg-[#EAEAEA] shrink-0 size-2.5" />
-          </div>
-          <div className="absolute top-0 left-0 right-0 h-18 z-10 pointer-events-none rounded-t-2xl" style={{ background: 'linear-gradient(to bottom, white 38%, transparent 100%)' }} />
-          <div className="absolute bottom-0 left-0 right-0 h-8 z-10 pointer-events-none rounded-b-2xl" style={{ background: 'linear-gradient(to top, white 0%, transparent 100%)' }} />
+          <div suppressHydrationWarning className="absolute top-0 left-0 right-0 h-20 z-10 pointer-events-none select-none rounded-t-2xl" style={{ background: 'linear-gradient(to top, transparent 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.45) 75%, rgba(255,255,255,0.8) 100%)' }} />
+          <div suppressHydrationWarning className="absolute bottom-0 left-0 right-0 h-12 z-10 pointer-events-none select-none rounded-b-2xl" style={{ background: 'linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.45) 75%, rgba(255,255,255,0.8) 100%)' }} />
           <TerminalContent phase={phase} />
         </motion.div>
       </div>
+      <AnimationCaption phase={phase} focused={focused} />
     </div>
   );
 }
@@ -254,10 +280,14 @@ export default function () {
     selection.addRange(range);
   };
   return (
-    <div className="[font-synthesis:none] overflow-x-clip antialiased min-h-screen bg-white flex justify-center">
-      <div className="relative w-112.75 pt-10.25 pb-20">
-        <TerminalIllustration />
-        <div className="flex flex-col gap-2.5 mt-11.5">
+    <div className="[font-synthesis:none] overflow-x-clip antialiased min-h-screen bg-white flex flex-col items-center">
+      <div className="w-full bg-[#FAFAFA] pb-6">
+        <div className="w-112.75 mx-auto pt-2">
+          <TerminalIllustration />
+        </div>
+      </div>
+      <div className="relative w-112.75 pb-20">
+        <div className="flex flex-col gap-2.5 mt-10">
           <div className="w-112.75 tracking-[-0.03em] [white-space-collapse:preserve] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[22px]/9.5 text-[color(display-p3_0.248_0.248_0.248)]">
             Expect more from your agents
           </div>
@@ -326,11 +356,11 @@ export default function () {
           </div>
           <div onClick={handleSelectCommand} className="items-center flex [font-synthesis-small-caps:none] [font-synthesis-style:none] [font-synthesis-weight:none] justify-between w-107.25 rounded-[11px] pt-2.75 pr-3 pb-2.75 pl-3.5 overflow-clip cursor-text [box-shadow:#C9C9C933_0px_2px_3px,#E9E9E9_0px_0px_0px_0.75px] transition-colors hover:bg-[color(display-p3_0.991_0.991_0.991)]" style={{ backgroundImage: 'linear-gradient(in oklab 180deg, oklab(100% 0 0) 0%, oklab(100% 0 0 / 0%) 100%)' }}>
             <div className="items-start flex min-w-0 gap-1">
-              <div className="shrink-0 [letter-spacing:0px] w-3.75 font-['GeistMono-Medium','Geist_Mono',system-ui,sans-serif] font-medium text-sm/4.5 text-[#5C5C5C]">
+              <div className="shrink-0 [letter-spacing:0px] w-3.75 font-['JetBrains_Mono',system-ui,sans-serif] font-medium text-sm/4.5 text-[#5C5C5C]">
                 $
               </div>
               <div className="min-w-0 relative">
-                <div ref={commandRef} className="[letter-spacing:0px] w-max font-['GeistMono-Medium','Geist_Mono',system-ui,sans-serif] font-medium text-sm/4.5 text-[#323232]">
+                <div ref={commandRef} className="[letter-spacing:0px] w-max font-['JetBrains_Mono',system-ui,sans-serif] font-medium text-sm/4.5 text-[#323232]">
                   npx -y expect-cli@latest init
                 </div>
               </div>
@@ -361,7 +391,7 @@ export default function () {
           ].map((faq, index) => (
             <div key={index} onClick={() => setOpenFaqs((previous) => { const next = new Set(previous); if (next.has(index)) { next.delete(index); } else { next.add(index); } return next; })} className="cursor-pointer group/faq pb-2.75">
               <div className="flex justify-between items-start transition-colors group-hover/faq:text-[#1E1E1E] pt-2.75">
-                <div className={`[letter-spacing:0em] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[15px]/5.75 transition-colors group-hover/faq:text-[#1E1E1E] ${openFaqs.has(index) ? "text-[#1E1E1E]" : "text-[#5A5A5A]"}`}>
+                <div className={`[letter-spacing:0em] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[14px]/5.75 transition-colors group-hover/faq:text-[#1E1E1E] ${openFaqs.has(index) ? "text-[#1E1E1E]" : "text-[#5A5A5A]"}`}>
                   {faq.question}
                 </div>
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '20px', height: 'auto', flexShrink: '0' }} className={`group-hover/faq:text-[#1E1E1E] transition-all duration-200 ${openFaqs.has(index) ? "text-[#1E1E1E] rotate-45" : "text-[#5A5A5A]"}`}>
