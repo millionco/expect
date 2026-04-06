@@ -1,0 +1,42 @@
+packages/shared/src/prompts.ts
+  d42635fb407016c9 263-266,296
+packages/shared/tests/prompts.test.ts
+  d42635fb407016c9 67-76
+packages/shared/tests/dynamic-steps.test.ts
+  d42635fb407016c9 193-221
+apps/cli/src/components/screens/results-screen.tsx
+  d42635fb407016c9 249-258
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "e0801540da312a1c36103b052178211c9e9c7045",
+  "prompts": {
+    "617d46f905da96b5": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "6debbc68-892c-48fb-8106-c14fc67e05f7",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 0,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    },
+    "d42635fb407016c9": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "cfc853e1-e13e-4480-9b64-5c7c84df4260",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 65,
+      "total_deletions": 12,
+      "accepted_lines": 57,
+      "overriden_lines": 0
+    }
+  }
+}
