@@ -88,7 +88,7 @@ export const stripIdleFrames = Effect.fn("stripIdleFrames")(function* (
     yield* Effect.try({
       try: () => copyFileSync(inputPath, outputPath),
       catch: (error) => new VideoProcessError({ cause: String(error) }),
-    }).pipe(Effect.catchTag("VideoProcessError", () => Effect.void));
+    });
     return;
   }
 
@@ -123,7 +123,7 @@ export const frameWithWallpaper = Effect.fn("frameWithWallpaper")(function* (
     yield* Effect.try({
       try: () => copyFileSync(inputPath, outputPath),
       catch: (error) => new VideoProcessError({ cause: String(error) }),
-    }).pipe(Effect.catchTag("VideoProcessError", () => Effect.void));
+    });
     return;
   }
 
@@ -133,7 +133,7 @@ export const frameWithWallpaper = Effect.fn("frameWithWallpaper")(function* (
     yield* Effect.try({
       try: () => copyFileSync(inputPath, outputPath),
       catch: (error) => new VideoProcessError({ cause: String(error) }),
-    }).pipe(Effect.catchTag("VideoProcessError", () => Effect.void));
+    });
     return;
   }
 
@@ -173,7 +173,7 @@ export const concatVideos = Effect.fn("concatVideos")(function* (
     yield* Effect.try({
       try: () => copyFileSync(validPaths[0], outputPath),
       catch: (error) => new VideoProcessError({ cause: String(error) }),
-    }).pipe(Effect.catchTag("VideoProcessError", () => Effect.void));
+    });
     return;
   }
 
@@ -183,7 +183,7 @@ export const concatVideos = Effect.fn("concatVideos")(function* (
     yield* Effect.try({
       try: () => copyFileSync(validPaths[validPaths.length - 1], outputPath),
       catch: (error) => new VideoProcessError({ cause: String(error) }),
-    }).pipe(Effect.catchTag("VideoProcessError", () => Effect.void));
+    });
     return;
   }
 
@@ -196,7 +196,7 @@ export const concatVideos = Effect.fn("concatVideos")(function* (
   yield* Effect.try({
     try: () => writeFileSync(concatListPath, concatList),
     catch: (error) => new VideoProcessError({ cause: String(error) }),
-  }).pipe(Effect.catchTag("VideoProcessError", () => Effect.void));
+  });
 
   yield* runFfmpeg(ffmpegBinary, [
     "-f",
