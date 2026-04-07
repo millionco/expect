@@ -17,6 +17,7 @@ import { usePlanExecutionStore } from "../../stores/use-plan-execution-store";
 import { saveFlowFn } from "../../data/flow-storage-atom";
 import { formatElapsedTime } from "../../utils/format-elapsed-time";
 import { getStepElapsedMs, getTotalElapsedMs } from "../../utils/step-elapsed";
+import { RuledBox } from "../ui/ruled-box";
 
 interface ResultsScreenProps {
   report: TestReport;
@@ -41,6 +42,7 @@ export const ResultsScreen = ({
 
   const savePending = saveResult.waiting;
   const saveSucceeded = AsyncResult.isSuccess(saveResult);
+  const hasPullRequest = Option.isSome(report.pullRequest);
 
   const handlePostPullRequestComment = () => {
     if (!Option.isSome(report.pullRequest)) return;
@@ -55,9 +57,15 @@ export const ResultsScreen = ({
     const didCopy = copyToClipboard(report.toPlainText);
     if (didCopy) {
       trackEvent("results:copied_to_clipboard");
-      setStatusMessage({ text: `${figures.tick} Copied to clipboard`, color: COLORS.GREEN });
+      setStatusMessage({
+        text: `${figures.tick} Copied test summary. Paste it into your chat or PR.`,
+        color: COLORS.GREEN,
+      });
     } else {
-      setStatusMessage({ text: `${figures.cross} Failed to copy to clipboard`, color: COLORS.RED });
+      setStatusMessage({
+        text: `${figures.cross} Couldn't copy the test summary. Press y to try again.`,
+        color: COLORS.RED,
+      });
     }
   };
 
@@ -132,6 +140,25 @@ export const ResultsScreen = ({
           </Text>
         )}
       </Box>
+
+      <RuledBox color={COLORS.YELLOW} marginTop={1}>
+        <Text color={COLORS.YELLOW} bold>
+          Copy this summary now
+        </Text>
+        <Text color={COLORS.TEXT}>
+          Press <Text color={COLORS.PRIMARY} bold>y</Text> to copy the test summary so you can paste
+          it into your chat or PR.
+        </Text>
+        <Text color={COLORS.DIM}>
+          Press <Text color={COLORS.PRIMARY} bold>s</Text> to save this flow or{" "}
+          <Text color={COLORS.PRIMARY} bold>r</Text> to run it again.
+        </Text>
+        {hasPullRequest && (
+          <Text color={COLORS.DIM}>
+            Press <Text color={COLORS.PRIMARY} bold>p</Text> to post the summary to the PR.
+          </Text>
+        )}
+      </RuledBox>
 
       <Box flexDirection="column" marginTop={1}>
         {report.steps.map((step: TestPlanStep, stepIndex: number) => {
