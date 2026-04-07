@@ -393,12 +393,16 @@ function TerminalContent({
 function BrowserPreview({
   slid,
   focused,
+  fixing,
+  fixDiff,
   reloading,
   reloadDone,
   config,
 }: {
   slid: boolean;
   focused: boolean;
+  fixing: boolean;
+  fixDiff: boolean;
   reloading: boolean;
   reloadDone: boolean;
   config: AnimationConfig;
@@ -430,7 +434,7 @@ function BrowserPreview({
         mass: config.browserSpringMass / 1000,
       }}
     >
-      <div className="relative flex flex-col w-68.5 h-46 rounded-2xl pt-2.5 pr-2.25 pb-6.75 pl-4.75 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]">
+      <div className="relative flex flex-col w-68.5 h-46 rounded-2xl pt-2.5 pr-2.25 pb-6.75 pl-4.75 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] overflow-hidden">
         <div className="flex items-center -ml-1">
           <div className="flex items-center gap-1.5">
             <div className="rounded-full bg-[#FF726A] shrink-0 size-2.5" />
@@ -492,8 +496,81 @@ function BrowserPreview({
             </motion.div>
           )}
         </AnimatePresence>
+        <motion.div
+          className="absolute inset-0 bg-black pointer-events-none rounded-2xl"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: (focused || fixing) && !reloadDone ? 0.015 : 0 }}
+          transition={{ duration: reloading ? 0.15 : 0.3 }}
+        />
+        <motion.div
+          className="absolute bottom-0 left-0 right-0"
+          initial={{ y: "100%", opacity: 1 }}
+          animate={{
+            y: (focused || fixing || reloading || reloadDone) ? "0%" : "100%",
+            opacity: reloading && !reloadDone ? 0 : reloadDone ? 0 : 1,
+          }}
+          transition={{
+            y: { type: "spring", stiffness: 400, damping: 30 },
+            opacity: { duration: 0.15, ease: "easeOut" },
+          }}
+        >
+          <NetworkPanel fixed={fixDiff} />
+        </motion.div>
       </div>
     </motion.div>
+  );
+}
+
+function NetworkPanel({ fixed }: { fixed: boolean }) {
+  return (
+    <div className="[font-synthesis:none] flex flex-col bg-white [border-top-width:0.5px] border-t-solid border-t-[#E0E0E0] antialiased">
+      <div className="flex items-center justify-between relative pt-2.75 pr-3 pb-3.5 pl-3.75 h-10.75">
+        <div className="left-4.75 top-3.75 w-52.75 h-7 rounded-lg absolute bg-white filter-[grayscale(100%)]" />
+        <div className="flex left-0 top-0 items-center gap-1 relative p-0">
+          <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: '0' }}>
+            <path fillRule="evenodd" clipRule="evenodd" d="M11.132 4.432C11.482 4.099 11.773 4 12 4C12.227 4 12.518 4.099 12.868 4.432C13.222 4.769 13.587 5.304 13.915 6.042C14.476 7.305 14.873 9.033 14.974 11H9.026C9.127 9.033 9.524 7.305 10.085 6.042C10.413 5.304 10.778 4.769 11.132 4.432ZM7.023 11C7.126 8.796 7.568 6.782 8.258 5.23C8.318 5.094 8.381 4.961 8.446 4.831C6.095 5.999 4.4 8.289 4.062 11H7.023ZM4.062 13H7.023C7.126 15.204 7.568 17.218 8.258 18.77C8.318 18.906 8.381 19.039 8.446 19.169C6.095 18.001 4.4 15.711 4.062 13ZM2 12C2 6.477 6.477 2 12 2C17.523 2 22 6.477 22 12C22 17.523 17.523 22 12 22C6.477 22 2 17.523 2 12ZM19.938 11C19.6 8.289 17.905 5.999 15.554 4.831C15.619 4.961 15.682 5.094 15.742 5.23C16.432 6.782 16.874 8.796 16.977 11H19.938ZM16.977 13H19.938C19.6 15.711 17.905 18.001 15.554 19.169C15.619 19.039 15.682 18.906 15.742 18.77C16.432 17.218 16.874 15.204 16.977 13ZM14.974 13C14.873 14.966 14.476 16.695 13.915 17.958C13.587 18.696 13.222 19.231 12.868 19.568C12.518 19.901 12.227 20 12 20C11.773 20 11.482 19.901 11.132 19.568C10.778 19.231 10.413 18.696 10.085 17.958C9.524 16.695 9.127 14.966 9.026 13H14.974Z" fill="#949494" />
+          </svg>
+          <div className="[letter-spacing:-0.125px] w-max text-[color(display-p3_0.332_0.332_0.332)] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-xs/4.5">
+            Network
+          </div>
+        </div>
+        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" viewBox="0 0 15.847 15.496" width="15.847" height="15.496" style={{ left: '0px', top: '0px', width: '9px', height: 'auto', position: 'relative', flexShrink: '0' }}>
+          <g>
+            <path d="M0.253 15.243C0.594 15.575 1.161 15.575 1.493 15.243L7.743 8.993L13.993 15.243C14.325 15.575 14.901 15.585 15.233 15.243C15.565 14.901 15.565 14.345 15.233 14.012L8.983 7.753L15.233 1.503C15.565 1.171 15.575 0.604 15.233 0.272C14.891-0.07 14.325-0.07 13.993 0.272L7.743 6.522L1.493 0.272C1.161-0.07 0.585-0.079 0.253 0.272C-0.079 0.614-0.079 1.171 0.253 1.503L6.503 7.753L0.253 14.012C-0.079 14.345-0.089 14.911 0.253 15.243Z" fill="#939393D9" />
+          </g>
+        </svg>
+      </div>
+      <div className="flex flex-col relative pt-0.5 pr-2.25 pb-2.5 pl-3.75 gap-3.25 h-15.5">
+        <div className="left-4.75 top-4 w-19.5 h-6.25 rounded-lg absolute bg-[#FBFBFB] filter-[grayscale(100%)]" />
+        <motion.div
+          className="left-0 top-4.5 w-68.5 h-4.5 absolute"
+          style={{ backgroundImage: 'linear-gradient(in oklab 90deg, oklab(92.4% 0.044 0.024 / 0%) 2.47%, oklab(92.4% 0.044 0.024) 12.64%, oklab(92.4% 0.044 0.024 / 0%) 100%)' }}
+          animate={{ opacity: fixed ? 0 : 1 }}
+          transition={{ duration: 0.3 }}
+        />
+        <div className="flex items-center justify-between relative">
+          <div className="flex items-center gap-1">
+            <div className="rounded-full bg-[#E7E7E7] shrink-0 size-2" />
+            <div className="w-15.25 h-2 rounded-full bg-[#E7E7E7] shrink-0" />
+          </div>
+          <div className="w-4 h-2 rounded-full bg-[#E7E7E7] shrink-0" />
+        </div>
+        <div className="flex items-center justify-between relative">
+          <div className="flex items-center gap-1">
+            <motion.div className="rounded-full shrink-0 size-2" animate={{ backgroundColor: fixed ? "#E7E7E7" : "#FF6C58" }} transition={{ duration: 0.3 }} />
+            <motion.div className="w-27.5 h-2 rounded-full shrink-0" animate={{ backgroundColor: fixed ? "#E7E7E7" : "#FF9F8E" }} transition={{ duration: 0.3 }} />
+          </div>
+          <motion.div className="w-7.25 h-2 rounded-full shrink-0" animate={{ backgroundColor: fixed ? "#E7E7E7" : "#FFB1A2" }} transition={{ duration: 0.3 }} />
+        </div>
+        <div className="flex items-center justify-between relative">
+          <div className="flex items-center gap-1">
+            <div className="rounded-full bg-[#F1F1F1] shrink-0 size-2" />
+            <div className="w-7.75 h-2 rounded-full bg-[#F1F1F1] shrink-0" />
+          </div>
+          <div className="w-4 h-2 rounded-full bg-[#F1F1F1] shrink-0" />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -853,7 +930,34 @@ function TerminalIllustration() {
     cursorEntranceMass: DEFAULT_CONFIG.cursorEntranceMass,
   };
 
-  return <TerminalAnimationView key={cycle} config={config} cycle={cycle} onComplete={nextCycle} />;
+  const animState = useAnimationPhase(config);
+  const { cycle, phase, slid, focused, cursorVisible, cursorOnBrowser, cursorOnTerminal, clicking, clickingTerminal, labelVisible, cursorLabel, terminalFocused, fixing, fixDiff, reloading, reloadDone, looping, restart } = animState;
+  restartRef.current = restart;
+
+  return (
+    <div className="flex flex-col items-center justify-center gap-4 text-xs/4 mt-11.5 p-3">
+      <div className="relative w-68.5 h-46 shrink-0 overflow-visible">
+        <BrowserPreview slid={slid} focused={focused} fixing={fixing} fixDiff={fixDiff} reloading={reloading} reloadDone={reloadDone} config={config} />
+        <AnimatedCursor visible={cursorVisible} onBrowser={cursorOnBrowser} onTerminal={cursorOnTerminal} clicking={clicking} clickingTerminal={clickingTerminal} labelVisible={labelVisible} label={cursorLabel} config={config} />
+        <motion.div
+          className="flex flex-col items-start w-68.5 h-46 relative z-10 rounded-2xl pt-4.5 pr-3.75 pb-6.5 pl-3.75 overflow-clip bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]"
+          animate={slid ? { x: 80, scale: terminalFocused ? 1.04 : 1, zIndex: terminalFocused ? 20 : 10 } : { x: 0, scale: 1, zIndex: 10 }}
+          transition={{ type: "spring", stiffness: config.terminalSpringStiffness, damping: config.terminalSpringDamping, mass: config.terminalSpringMass / 1000 }}
+        >
+          <div suppressHydrationWarning className="absolute top-0 left-0 right-0 h-20 z-10 pointer-events-none select-none rounded-t-2xl" style={{ background: 'linear-gradient(to top, transparent 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.45) 75%, rgba(255,255,255,0.8) 100%)' }} />
+          <div suppressHydrationWarning className="absolute bottom-0 left-0 right-0 h-12 z-10 pointer-events-none select-none rounded-b-2xl" style={{ background: 'linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.45) 75%, rgba(255,255,255,0.8) 100%)' }} />
+          <TerminalContent key={cycle} cycle={cycle} phase={phase} fixing={fixing} fixDiff={fixDiff} looping={looping} config={config} />
+        </motion.div>
+      </div>
+      <div className="[letter-spacing:0em] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-sm/5.75 text-[#858585]">
+        {fixDiff
+          ? "Vulnerability fixed"
+          : focused
+            ? "Scanning security"
+            : "Agent writes code"}
+      </div>
+    </div>
+  );
 }
 
 export default function HomePage() {
