@@ -185,9 +185,6 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
-      lucide-react:
-        specifier: ^0.577.0
-        version: 0.577.0(react@19.2.4)
       motion:
         specifier: ^12.38.0
         version: 12.38.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -203,18 +200,12 @@ importers:
       react-dom:
         specifier: 19.2.4
         version: 19.2.4(react@19.2.4)
-      react-grab:
-        specifier: ^0.1.28
-        version: 0.1.28(@types/react@19.2.14)(react@19.2.4)
       shadcn:
         specifier: ^4.0.8
         version: 4.1.0(@types/node@20.19.37)(typescript@5.9.3)
       tailwind-merge:
         specifier: ^3.5.0
         version: 3.5.0
-      torph:
-        specifier: ^0.0.9
-        version: 0.0.9(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0
@@ -231,9 +222,6 @@ importers:
       '@types/react':
         specifier: ^19
         version: 19.2.14
-      '@types/react-dom':
-        specifier: ^19
-        version: 19.2.3(@types/react@19.2.14)
       eslint:
         specifier: ^9
         version: 9.39.4(jiti@2.6.1)
@@ -397,9 +385,6 @@ importers:
 
   packages/supervisor:
     dependencies:
-      '@ai-sdk/provider':
-        specifier: ^3.0.8
-        version: 3.0.8
       '@effect/platform-node':
         specifier: 4.0.0-beta.35
         version: 4.0.0-beta.35(effect@4.0.0-beta.35)(ioredis@5.10.0)
@@ -418,9 +403,6 @@ importers:
       oxc-resolver:
         specifier: ^11.19.1
         version: 11.19.1
-      pathe:
-        specifier: ^2.0.3
-        version: 2.0.3
       simple-git:
         specifier: ^3.33.0
         version: 3.33.0
@@ -534,10 +516,6 @@ packages:
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
-
-  '@antfu/ni@0.23.2':
-    resolution: {integrity: sha512-FSEVWXvwroExDXUu8qV6Wqp2X3D1nJ0Li4LFymCyvCVrm7I3lNfG0zZWSWvGU1RE7891eTnFTyh31L3igOwNKQ==}
-    hasBin: true
 
   '@anthropic-ai/claude-agent-sdk@0.2.84':
     resolution: {integrity: sha512-rvp3kZJM4IgDBE1zwj30H3N0bI3pYRF28tDJoyAVuWTLiWls7diNVCyFz7GeXZEAYYD87lCBE3vnQplLLluNHg==}
@@ -2472,10 +2450,6 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
-  '@react-grab/cli@0.1.28':
-    resolution: {integrity: sha512-IE4bTeH0mCq0FBRaYRUtdiIfvO7NCv14lHS4TiTY8YNG5tPYwHnLZZtniud0ElmLIWGP95Kk6E7A6J2uDmOY+Q==}
-    hasBin: true
-
   '@rollup/rollup-android-arm-eabi@4.59.0':
     resolution: {integrity: sha512-upnNBkA6ZH2VKGcBj9Fyl9IGNPULcjXRlg0LLeaioQWueH30p6IXtJEbKAgvyv+mJaMxSm1l6xwDXYjpEMiLMg==}
     cpu: [arm]
@@ -2826,16 +2800,6 @@ packages:
 
   '@types/prompts@2.4.9':
     resolution: {integrity: sha512-qTxFi6Buiu8+50/+3DGIWLHM6QuWsEKugJnnP6iv2Mc4ncxE4A/OJkjuVOA+5X0X1S/nq5VJRa8Lu+nwcvbrKA==}
-
-  '@types/react-dom@19.2.3':
-    resolution: {integrity: sha512-jp2L/eY6fn+KgVVQAOqYItbF0VY/YApe5Mz2F0aykSO8gx31bYCZyvSeYxCHKvzHG5eZjc+zyaS5BrBWya2+kQ==}
-    peerDependencies:
-      '@types/react': ^19.2.0
-
-  '@types/react-reconciler@0.28.9':
-    resolution: {integrity: sha512-HHM3nxyUZ3zAylX8ZEyrDNd2XZOnQ0D5XfunJF5FLQnZbHHYq4UWvW1QfelQNXv1ICNkwYhfxjwfnqivYB6bFg==}
-    peerDependencies:
-      '@types/react': '*'
 
   '@types/react@19.2.14':
     resolution: {integrity: sha512-ilcTH/UniCkMdtexkoCN0bI7pMcJDvmQFPvuPvmEaYA/NSfFTAgdUSLAoVjaRJm7+6PvcM+q1zYOwS4wTYMF9w==}
@@ -3510,11 +3474,6 @@ packages:
 
   bignumber.js@9.3.1:
     resolution: {integrity: sha512-Ko0uX15oIUS7wJ3Rb30Fs6SkVbLmPBAKdlm7q9+ak9bbIeFf0MwuBsQV6z7+X768/cHsfg+WlysDWJcmthjsjQ==}
-
-  bippy@0.5.32:
-    resolution: {integrity: sha512-yt1mC8eReTxjfg41YBZdN4PvsDwHFWxltoiQX0Q+Htlbf41aSniopb7ECZits01HwNAvXEh69RGk/ImlswDTEw==}
-    peerDependencies:
-      react: '>=17.0.1'
 
   bl@4.1.0:
     resolution: {integrity: sha512-1W07cM9gS6DcLperZfFSj+bWLtaPGSOHWhPiGzXmvVJbRLdG82sH/Kn8EtW1VqWVA54AKf2h5k5BbnIbwF3h6w==}
@@ -5092,9 +5051,6 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
-  jsonc-parser@3.3.1:
-    resolution: {integrity: sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==}
-
   jsonfile@4.0.0:
     resolution: {integrity: sha512-m6F1R3z8jjlf2imQHS2Qez5sjKWQzbuuhuJ/FKYFRZvPE3PuHcSMVZzfsLhGVOkfd20obL5SWEBew5ShlquNxg==}
 
@@ -5296,11 +5252,6 @@ packages:
   lru-cache@7.18.3:
     resolution: {integrity: sha512-jumlc0BIUrS3qJGgIkWZsyfAM7NCWiBcCDhnd+3NNM5KbBmLTgHVfWBcg6W+rLUsIpzpERPsvwUP7CckAQSOoA==}
     engines: {node: '>=12'}
-
-  lucide-react@0.577.0:
-    resolution: {integrity: sha512-4LjoFv2eEPwYDPg/CUdBJQSDfPyzXCRrVW1X7jrx/trgxnxkHFjnVZINbzvzxjN70dxychOfg+FTYwBiS3pQ5A==}
-    peerDependencies:
-      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
   macos-version@6.0.0:
     resolution: {integrity: sha512-O2S8voA+pMfCHhBn/TIYDXzJ1qNHpPDU32oFxglKnVdJABiYYITt45oLkV9yhwA3E2FDwn3tQqUFrTsr1p3sBQ==}
@@ -5816,9 +5767,6 @@ packages:
     resolution: {integrity: sha512-gDKb8aZMDeD/tZWs9P6+q0J9Mwkdl6xMV8TjnGP3qJVJ06bdMgkbBlLU8IdfOsIsFz2BW1rNVT3XuNEl8zPAvw==}
     engines: {node: '>=8'}
 
-  pathe@2.0.3:
-    resolution: {integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==}
-
   peberminta@0.9.0:
     resolution: {integrity: sha512-XIxfHpEuSJbITd1H3EeQwpcZbTLHc+VVr8ANI9t5sit565tsI4/xK3KWTUFE2e6QiangUkh3B0jihzmGnNrRsQ==}
 
@@ -6007,15 +5955,6 @@ packages:
     resolution: {integrity: sha512-AXJdLo8kgMbimY95O2aKQqsz2iWi9jMgKJhRBAxECE4IFxfcazB2LmzloIoibJI3C12IlY20+KFaLv+71bUJeQ==}
     peerDependencies:
       react: ^19.2.4
-
-  react-grab@0.1.28:
-    resolution: {integrity: sha512-u3fvu7a7ejHhuWKzf/N6sFavV04vcqwtbcqyxwNPtvd3ts9KSVerpHp1ZH0/XVKTsh3MZz1u1jyIt0KYC9L/Rg==}
-    hasBin: true
-    peerDependencies:
-      react: '>=17.0.0'
-    peerDependenciesMeta:
-      react:
-        optional: true
 
   react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
@@ -6215,16 +6154,6 @@ packages:
     resolution: {integrity: sha512-1gnZf7DFcoIcajTjTwjwuDjzuz4PPcY2StKPlsGAQ1+YH20IRVrBaXSWmdjowTJ6u8Rc01PoYOGHXfP1mYcZNQ==}
     engines: {node: '>= 18'}
 
-  seroval-plugins@1.5.1:
-    resolution: {integrity: sha512-4FbuZ/TMl02sqv0RTFexu0SP6V+ywaIe5bAWCCEik0fk17BhALgwvUDVF7e3Uvf9pxmwCEJsRPmlkUE6HdzLAw==}
-    engines: {node: '>=10'}
-    peerDependencies:
-      seroval: ^1.0
-
-  seroval@1.5.1:
-    resolution: {integrity: sha512-OwrZRZAfhHww0WEnKHDY8OM0U/Qs8OTfIDWhUD4BLpNJUfXK4cGmjiagGze086m+mhI+V2nD0gfbHEnJjb9STA==}
-    engines: {node: '>=10'}
-
   serve-static@2.2.1:
     resolution: {integrity: sha512-xRXBn0pPqQTVQiC8wyQrKs2MOlX24zQ0POGaj0kultvoOCstBQM5yvOhAVSUwOMjQtTvsPWoNCHfPGwaaQJhTw==}
     engines: {node: '>= 18'}
@@ -6326,10 +6255,6 @@ packages:
     resolution: {integrity: sha512-94hK0Hh8rPqQl2xXc3HsaBoOXKV20MToPkcXvwbISWLEs+64sBq5kFgn2kJDHb1Pry9yrP0dxrCI9RRci7RXKg==}
     engines: {node: '>= 6.0.0', npm: '>= 3.0.0'}
 
-  smol-toml@1.6.0:
-    resolution: {integrity: sha512-4zemZi0HvTnYwLfrpk/CF9LOd9Lt87kAt50GnqhMpyF9U3poDAP2+iukq2bZsO/ufegbYehBkqINbsWxj4l4cw==}
-    engines: {node: '>= 18'}
-
   socks-proxy-agent@8.0.5:
     resolution: {integrity: sha512-HehCEsotFqbPW9sJ8WVYB6UbmIMv7kUUORIF2Nncq4VQvBfNBLibW9YZR5dlYCSUhwcD628pRllm7n+E+YTzJw==}
     engines: {node: '>= 14'}
@@ -6337,9 +6262,6 @@ packages:
   socks@2.8.7:
     resolution: {integrity: sha512-HLpt+uLy/pxB+bum/9DzAgiKS8CX1EvbWxI4zlmgGCExImLdiad2iCwXT5Z4c9c3Eq8rP2318mPW2c+QbtjK8A==}
     engines: {node: '>= 10.0.0', npm: '>= 3.0.0'}
-
-  solid-js@1.9.11:
-    resolution: {integrity: sha512-WEJtcc5mkh/BnHA6Yrg4whlF8g6QwpmXXRg4P2ztPmcKeHHlH4+djYecBLhSpecZY2RRECXYUwIc/C2r3yzQ4Q==}
 
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
@@ -6633,23 +6555,6 @@ packages:
 
   toml@3.0.0:
     resolution: {integrity: sha512-y/mWCZinnvxjTKYhJ+pYxwD0mRLVvOtdS2Awbgxln6iEnt4rk0yBxeSBHkGJcPucRiG0e55mwWp+g/05rsrd6w==}
-
-  torph@0.0.9:
-    resolution: {integrity: sha512-WrFMtJwqXCfIXbLNuTOwHWff0XVm/Ewctb+71bFis3HykPvCXl1CHXapU0r67pQhAI323fsA1L2pGPeqxXeRRA==}
-    peerDependencies:
-      react: '>=18'
-      react-dom: '>=18'
-      svelte: '>=5'
-      vue: '>=3'
-    peerDependenciesMeta:
-      react:
-        optional: true
-      react-dom:
-        optional: true
-      svelte:
-        optional: true
-      vue:
-        optional: true
 
   totalist@3.0.1:
     resolution: {integrity: sha512-sf4i37nQ2LBx4m3wB74y+ubopq6W/dIzXg0FDGjsYnZHVa1Da8FH853wlL2gtUhg+xJXjfk3kUZS3BRoQeoQBQ==}
@@ -7153,8 +7058,6 @@ snapshots:
       is-fullwidth-code-point: 5.1.0
 
   '@alloc/quick-lru@5.2.0': {}
-
-  '@antfu/ni@0.23.2': {}
 
   '@anthropic-ai/claude-agent-sdk@0.2.84(zod@4.3.6)':
     dependencies:
@@ -9123,17 +9026,6 @@ snapshots:
       - react-native-b4a
       - supports-color
 
-  '@react-grab/cli@0.1.28':
-    dependencies:
-      '@antfu/ni': 0.23.2
-      commander: 14.0.3
-      ignore: 7.0.5
-      jsonc-parser: 3.3.1
-      ora: 8.2.0
-      picocolors: 1.1.1
-      prompts: 2.4.2
-      smol-toml: 1.6.0
-
   '@rollup/rollup-android-arm-eabi@4.59.0':
     optional: true
 
@@ -9391,14 +9283,6 @@ snapshots:
     dependencies:
       '@types/node': 22.19.15
       kleur: 3.0.3
-
-  '@types/react-dom@19.2.3(@types/react@19.2.14)':
-    dependencies:
-      '@types/react': 19.2.14
-
-  '@types/react-reconciler@0.28.9(@types/react@19.2.14)':
-    dependencies:
-      '@types/react': 19.2.14
 
   '@types/react@19.2.14':
     dependencies:
@@ -9948,13 +9832,6 @@ snapshots:
       is-windows: 1.0.2
 
   bignumber.js@9.3.1: {}
-
-  bippy@0.5.32(@types/react@19.2.14)(react@19.2.4):
-    dependencies:
-      '@types/react-reconciler': 0.28.9(@types/react@19.2.14)
-      react: 19.2.4
-    transitivePeerDependencies:
-      - '@types/react'
 
   bl@4.1.0:
     dependencies:
@@ -11807,8 +11684,6 @@ snapshots:
 
   json5@2.2.3: {}
 
-  jsonc-parser@3.3.1: {}
-
   jsonfile@4.0.0:
     optionalDependencies:
       graceful-fs: 4.2.11
@@ -11995,10 +11870,6 @@ snapshots:
       yallist: 3.1.1
 
   lru-cache@7.18.3: {}
-
-  lucide-react@0.577.0(react@19.2.4):
-    dependencies:
-      react: 19.2.4
 
   macos-version@6.0.0:
     dependencies:
@@ -12573,8 +12444,6 @@ snapshots:
 
   path-type@4.0.0: {}
 
-  pathe@2.0.3: {}
-
   peberminta@0.9.0: {}
 
   pend@1.2.0: {}
@@ -12795,17 +12664,6 @@ snapshots:
     dependencies:
       react: 19.2.4
       scheduler: 0.27.0
-
-  react-grab@0.1.28(@types/react@19.2.14)(react@19.2.4):
-    dependencies:
-      '@medv/finder': 4.0.2
-      '@react-grab/cli': 0.1.28
-      bippy: 0.5.32(@types/react@19.2.14)(react@19.2.4)
-      solid-js: 1.9.11
-    optionalDependencies:
-      react: 19.2.4
-    transitivePeerDependencies:
-      - '@types/react'
 
   react-is@16.13.1: {}
 
@@ -13079,12 +12937,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  seroval-plugins@1.5.1(seroval@1.5.1):
-    dependencies:
-      seroval: 1.5.1
-
-  seroval@1.5.1: {}
-
   serve-static@2.2.1:
     dependencies:
       encodeurl: 2.0.0
@@ -13280,8 +13132,6 @@ snapshots:
 
   smart-buffer@4.2.0: {}
 
-  smol-toml@1.6.0: {}
-
   socks-proxy-agent@8.0.5:
     dependencies:
       agent-base: 7.1.4
@@ -13294,12 +13144,6 @@ snapshots:
     dependencies:
       ip-address: 10.1.0
       smart-buffer: 4.2.0
-
-  solid-js@1.9.11:
-    dependencies:
-      csstype: 3.2.3
-      seroval: 1.5.1
-      seroval-plugins: 1.5.1(seroval@1.5.1)
 
   source-map-js@1.2.1: {}
 
@@ -13630,11 +13474,6 @@ snapshots:
   toidentifier@1.0.1: {}
 
   toml@3.0.0: {}
-
-  torph@0.0.9(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
-    optionalDependencies:
-      react: 19.2.4
-      react-dom: 19.2.4(react@19.2.4)
 
   totalist@3.0.1: {}
 
