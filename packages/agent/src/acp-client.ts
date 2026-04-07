@@ -872,7 +872,7 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
           yield* Queue.fail(
             updatesQueue,
             new AcpStreamError({
-              cause: `Agent produced no output for ${ACP_STREAM_INACTIVITY_TIMEOUT_MS / 1000}s — the agent may be stalled`,
+              cause: `Agent produced no output for ${ACP_STREAM_INACTIVITY_TIMEOUT_MS / 1000}s. This usually means the agent couldn't connect to the browser or the target URL is unreachable. Try: (1) verify your dev server is running, (2) use -u to set the correct URL, (3) run with --verbose for more details.`,
             }),
           );
         }
