@@ -4,12 +4,7 @@ import * as path from "node:path";
 import { execFileSync } from "node:child_process";
 import { Effect } from "effect";
 import { afterEach, describe, expect, it } from "vite-plus/test";
-import {
-  stripIdleFrames,
-  frameWithWallpaper,
-  runFfmpeg,
-  VideoProcessError,
-} from "../src/video-processor";
+import { stripIdleFrames, frameWithWallpaper, VideoProcessError } from "../src/video-processor";
 
 const FIXTURE_PATH = path.join(__dirname, "fixtures", "mixed-content.webm");
 
@@ -152,28 +147,6 @@ describe("video-processor", () => {
       },
       30_000,
     );
-  });
-
-  describe("runFfmpeg", () => {
-    it.skipIf(!ffmpegAvailable)("succeeds with valid args", async () => {
-      await Effect.runPromise(runFfmpeg(ffmpegPath, ["-version"]));
-    });
-
-    it("fails with VideoProcessError for invalid binary", async () => {
-      const error = await Effect.runPromise(
-        runFfmpeg("/nonexistent/ffmpeg", ["-version"]).pipe(Effect.flip),
-      );
-      expect(error._tag).toBe("VideoProcessError");
-    });
-
-    it.skipIf(!ffmpegAvailable)("fails with VideoProcessError for invalid input file", async () => {
-      const error = await Effect.runPromise(
-        runFfmpeg(ffmpegPath, ["-i", "/nonexistent/file.webm", "-f", "null", "-"]).pipe(
-          Effect.flip,
-        ),
-      );
-      expect(error._tag).toBe("VideoProcessError");
-    });
   });
 
   describe("VideoProcessError", () => {

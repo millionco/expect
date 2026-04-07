@@ -3,6 +3,7 @@ import * as fs from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Effect, Schema } from "effect";
+import which from "which";
 import { FFMPEG_TIMEOUT_MS, FRAME_PADDING_PX } from "./constants";
 
 const WALLPAPER_FILENAME = "wallpaper.webp";
@@ -30,39 +31,87 @@ export class VideoProcessError extends Schema.ErrorClass<VideoProcessError>("Vid
   message = `Video processing failed: ${String(this.cause)}`;
 }
 
-import which from "which";
+let cachedFfmpegMode: "system" | "wasm" | "none" | undefined;
+let cachedSystemPath: string | undefined;
 
-let cachedFfmpegPath: string | undefined;
-let ffmpegProbed = false;
-const resolveFfmpegPath = (): string | undefined => {
-  if (ffmpegProbed) return cachedFfmpegPath;
-  ffmpegProbed = true;
-  cachedFfmpegPath = which.sync("ffmpeg", { nothrow: true }) ?? undefined;
-  return cachedFfmpegPath;
+const probeSystemFfmpeg = (): string | undefined => {
+  return which.sync("ffmpeg", { nothrow: true }) ?? undefined;
 };
 
-export const runFfmpeg = Effect.fn("runFfmpeg")(function* (ffmpegBinary: string, args: string[]) {
+const runSystemFfmpeg = Effect.fn("runSystemFfmpeg")(function* (args: string[]) {
+  const binaryPath = cachedSystemPath;
+  if (!binaryPath) return yield* new VideoProcessError({ cause: "system ffmpeg not available" });
+
   yield* Effect.callback<void, VideoProcessError>((resume) => {
     const child = execFile(
-      ffmpegBinary,
+      binaryPath,
       args,
       { timeout: FFMPEG_TIMEOUT_MS },
       (error, _stdout, stderr) => {
         if (error) {
-          return resume(
-            Effect.fail(
-              new VideoProcessError({
-                cause: stderr || error.message,
-              }),
-            ),
-          );
+          return resume(Effect.fail(new VideoProcessError({ cause: stderr || error.message })));
         }
         resume(Effect.void);
       },
     );
-
     return Effect.sync(() => child.kill());
   });
+});
+
+const runWasmFfmpeg = Effect.fn("runWasmFfmpeg")(function* (
+  args: string[],
+  inputFiles: readonly string[],
+  outputFile: string,
+) {
+  yield* Effect.tryPromise({
+    try: async () => {
+      const { FFmpeg } = await import("@ffmpeg/ffmpeg");
+      const { fetchFile } = await import("@ffmpeg/util");
+
+      const ffmpeg = new FFmpeg();
+      await ffmpeg.load();
+
+      for (const filePath of inputFiles) {
+        const data = await fetchFile(filePath);
+        await ffmpeg.writeFile(filePath.split("/").pop()!, data);
+      }
+
+      const rewrittenArgs = args.map((arg) => {
+        for (const filePath of inputFiles) {
+          if (arg === filePath) return filePath.split("/").pop()!;
+        }
+        if (arg === outputFile) return "output" + outputFile.slice(outputFile.lastIndexOf("."));
+        return arg;
+      });
+
+      const outputName = "output" + outputFile.slice(outputFile.lastIndexOf("."));
+      await ffmpeg.exec(rewrittenArgs);
+
+      const outputData = await ffmpeg.readFile(outputName);
+      fs.writeFileSync(outputFile, Buffer.from(outputData as Uint8Array));
+      ffmpeg.terminate();
+    },
+    catch: (error) => new VideoProcessError({ cause: error }),
+  });
+});
+
+const runFfmpeg = Effect.fn("runFfmpeg")(function* (
+  args: string[],
+  inputFiles: readonly string[],
+  outputFile: string,
+) {
+  if (cachedFfmpegMode === undefined) {
+    cachedSystemPath = probeSystemFfmpeg();
+    cachedFfmpegMode = cachedSystemPath ? "system" : "wasm";
+  }
+
+  if (cachedFfmpegMode === "system") {
+    yield* runSystemFfmpeg(args);
+    return;
+  }
+
+  yield* Effect.logDebug("System ffmpeg not found, using wasm fallback");
+  yield* runWasmFfmpeg(args, inputFiles, outputFile);
 });
 
 // HACK: not currently called in the close handler because mpdecimate is too
@@ -78,27 +127,21 @@ export const stripIdleFrames = Effect.fn("stripIdleFrames")(function* (
     return yield* new VideoProcessError({ cause: `Input file not found: ${inputPath}` });
   }
 
-  const ffmpegBinary = resolveFfmpegPath();
-  if (!ffmpegBinary) {
-    yield* Effect.logDebug("ffmpeg not available, copying video without processing");
-    yield* Effect.try({
-      try: () => fs.copyFileSync(inputPath, outputPath),
-      catch: (error) => new VideoProcessError({ cause: error }),
-    });
-    return;
-  }
-
   yield* Effect.logInfo("Stripping idle frames from video", { inputPath });
 
-  yield* runFfmpeg(ffmpegBinary, [
-    "-i",
-    inputPath,
-    "-vf",
-    `mpdecimate=hi=${MPDECIMATE_HI}:lo=${MPDECIMATE_LO}:frac=${MPDECIMATE_FRAC},setpts=N/FRAME_RATE/TB`,
-    "-an",
-    "-y",
+  yield* runFfmpeg(
+    [
+      "-i",
+      inputPath,
+      "-vf",
+      `mpdecimate=hi=${MPDECIMATE_HI}:lo=${MPDECIMATE_LO}:frac=${MPDECIMATE_FRAC},setpts=N/FRAME_RATE/TB`,
+      "-an",
+      "-y",
+      outputPath,
+    ],
+    [inputPath],
     outputPath,
-  ]);
+  );
 
   yield* Effect.logInfo("Idle frames stripped", { outputPath });
 });
@@ -123,33 +166,27 @@ export const frameWithWallpaper = Effect.fn("frameWithWallpaper")(function* (
     return;
   }
 
-  const ffmpegBinary = resolveFfmpegPath();
-  if (!ffmpegBinary) {
-    yield* Effect.logDebug("ffmpeg not available, copying video without framing");
-    yield* Effect.try({
-      try: () => fs.copyFileSync(inputPath, outputPath),
-      catch: (error) => new VideoProcessError({ cause: error }),
-    });
-    return;
-  }
-
   yield* Effect.logInfo("Framing video with wallpaper", { inputPath });
 
-  yield* runFfmpeg(ffmpegBinary, [
-    "-i",
-    inputPath,
-    "-loop",
-    "1",
-    "-i",
-    wallpaperPath,
-    "-filter_complex",
-    `[1:v][0:v]scale2ref=iw+${FRAME_PADDING_PX * 2}:ih+${FRAME_PADDING_PX * 2}[bg][ref];[bg][ref]overlay=(W-w)/2:(H-h)/2:shortest=1[out]`,
-    "-map",
-    "[out]",
-    "-an",
-    "-y",
+  yield* runFfmpeg(
+    [
+      "-i",
+      inputPath,
+      "-loop",
+      "1",
+      "-i",
+      wallpaperPath,
+      "-filter_complex",
+      `[1:v][0:v]scale2ref=iw+${FRAME_PADDING_PX * 2}:ih+${FRAME_PADDING_PX * 2}[bg][ref];[bg][ref]overlay=(W-w)/2:(H-h)/2:shortest=1[out]`,
+      "-map",
+      "[out]",
+      "-an",
+      "-y",
+      outputPath,
+    ],
+    [inputPath, wallpaperPath],
     outputPath,
-  ]);
+  );
 
   yield* Effect.logInfo("Video framed with wallpaper", { outputPath });
 });
@@ -167,17 +204,7 @@ export const concatVideos = Effect.fn("concatVideos")(function* (
 
   if (validPaths.length === 1) {
     yield* Effect.try({
-      try: () => copyFileSync(validPaths[0], outputPath),
-      catch: (error) => new VideoProcessError({ cause: error }),
-    });
-    return;
-  }
-
-  const ffmpegBinary = resolveFfmpegPath();
-  if (!ffmpegBinary) {
-    yield* Effect.logDebug("ffmpeg not available, using last video segment");
-    yield* Effect.try({
-      try: () => copyFileSync(validPaths[validPaths.length - 1], outputPath),
+      try: () => fs.copyFileSync(validPaths[0], outputPath),
       catch: (error) => new VideoProcessError({ cause: error }),
     });
     return;
@@ -195,19 +222,11 @@ export const concatVideos = Effect.fn("concatVideos")(function* (
   });
 
   yield* Effect.ensuring(
-    runFfmpeg(ffmpegBinary, [
-      "-f",
-      "concat",
-      "-safe",
-      "0",
-      "-i",
-      concatListPath,
-      "-c",
-      "copy",
-      "-an",
-      "-y",
+    runFfmpeg(
+      ["-f", "concat", "-safe", "0", "-i", concatListPath, "-c", "copy", "-an", "-y", outputPath],
+      validPaths,
       outputPath,
-    ]),
+    ),
     Effect.try({
       try: () => fs.unlinkSync(concatListPath),
       catch: (error) => new VideoProcessError({ cause: error }),

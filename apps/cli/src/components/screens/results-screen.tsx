@@ -133,16 +133,30 @@ export const ResultsScreen = ({ report, videoUrl }: ResultsScreenProps) => {
           Copy this summary now
         </Text>
         <Text color={COLORS.TEXT}>
-          Press <Text color={COLORS.PRIMARY} bold>y</Text> to copy the test summary so you can paste
-          it into your chat or PR.
+          Press{" "}
+          <Text color={COLORS.PRIMARY} bold>
+            y
+          </Text>{" "}
+          to copy the test summary so you can paste it into your chat or PR.
         </Text>
         <Text color={COLORS.DIM}>
-          Press <Text color={COLORS.PRIMARY} bold>s</Text> to save this flow or{" "}
-          <Text color={COLORS.PRIMARY} bold>r</Text> to run it again.
+          Press{" "}
+          <Text color={COLORS.PRIMARY} bold>
+            s
+          </Text>{" "}
+          to save this flow or{" "}
+          <Text color={COLORS.PRIMARY} bold>
+            r
+          </Text>{" "}
+          to run it again.
         </Text>
         {hasPullRequest && (
           <Text color={COLORS.DIM}>
-            Press <Text color={COLORS.PRIMARY} bold>p</Text> to post the summary to the PR.
+            Press{" "}
+            <Text color={COLORS.PRIMARY} bold>
+              p
+            </Text>{" "}
+            to post the summary to the PR.
           </Text>
         )}
       </RuledBox>
