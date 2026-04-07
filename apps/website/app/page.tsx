@@ -469,7 +469,7 @@ function BrowserPreview({
           {loaded && (
             <motion.div
               initial={{ opacity: 0 }}
-              animate={{ opacity: reloading && !reloadDone ? 0 : 1 }}
+              animate={{ opacity: (reloading && !reloadDone) || ((focused || fixing) && !reloading) ? 0 : 1 }}
               transition={{ duration: reloading ? 0.15 : 0.4, ease: "easeOut" }}
             >
               <div className="tracking-[-0.03em] [white-space-collapse:preserve] mt-4.5 w-max text-[#474747] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-base/9">
@@ -482,7 +482,7 @@ function BrowserPreview({
         <motion.div
           className="absolute inset-0 bg-black pointer-events-none rounded-2xl"
           initial={{ opacity: 0 }}
-          animate={{ opacity: (focused || fixing) && !reloading ? 0.04 : 0 }}
+          animate={{ opacity: (focused || fixing) && !reloading ? 0.015 : 0 }}
           transition={{ duration: reloading ? 0.15 : 0.3 }}
         />
         <motion.div
@@ -506,7 +506,7 @@ function BrowserPreview({
 
 function NetworkPanel({ fixed }: { fixed: boolean }) {
   return (
-    <div className="[font-synthesis:none] flex flex-col bg-white antialiased [box-shadow:0_-1px_3px_rgba(0,0,0,0.04)]">
+    <div className="[font-synthesis:none] flex flex-col bg-white antialiased">
       <div className="flex items-center justify-between relative pt-2.75 pr-3 pb-3.5 pl-3.75 h-10.75">
         <div className="left-4.75 top-3.75 w-52.75 h-7 rounded-lg absolute bg-white filter-[grayscale(100%)]" />
         <div className="flex left-0 top-0 items-center gap-1 relative p-0">
