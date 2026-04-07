@@ -53,6 +53,7 @@ const createBrowserLayer = (options: {
     annotatedScreenshot: () => Effect.die("unused"),
     waitForNavigationSettle: () => Effect.void,
     preExtractCookies: options.preExtractCookies,
+    resolveProfile: () => Effect.die("unused"),
     resolveProfilePath: () => Effect.die("unused"),
   });
 

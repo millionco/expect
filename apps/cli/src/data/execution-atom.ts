@@ -45,7 +45,7 @@ const executeCore = (input: ExecuteInput) =>
       onConfigOptions: input.onConfigOptions,
     };
 
-    yield* analytics.capture("run:started", { plan_id: "direct" });
+    yield* analytics.capture("run:started");
 
     const finalExecuted = yield* executor.execute(executeOptions).pipe(
       Stream.tap((executed) =>
@@ -102,7 +102,6 @@ const executeCore = (input: ExecuteInput) =>
     });
 
     yield* analytics.capture("run:completed", {
-      plan_id: finalExecuted.id ?? "direct",
       passed: passedCount,
       failed: failedCount,
       step_count: finalExecuted.steps.length,
@@ -133,7 +132,6 @@ export const executeFn = cliAtomRuntime.fn<ExecuteInput>()((input) =>
               ? error.constructor.name
               : "UnknownError";
         yield* analytics.capture("run:failed", {
-          plan_id: "direct",
           error_tag: errorTag,
         });
       }).pipe(Effect.catchCause(() => Effect.void)),

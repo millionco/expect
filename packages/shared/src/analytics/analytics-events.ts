@@ -4,37 +4,30 @@ export interface CommonProperties {
 }
 
 export interface EventMap {
-  // Plan
-  "plan:draft_created": { readonly draft_id: string };
-  "plan:generated": { readonly plan_id: string; readonly step_count: number };
-  "plan:approved": { readonly plan_id: string };
-  "plan:rejected": { readonly plan_id: string };
-
   // Execution
-  "run:started": { readonly plan_id: string };
+  "run:started": undefined;
   "run:completed": {
-    readonly plan_id: string;
     readonly passed: number;
     readonly failed: number;
     readonly step_count: number;
     readonly file_count: number;
     readonly duration_ms: number;
   };
-  "run:failed": { readonly plan_id: string; readonly error_tag: string };
+  "run:failed": { readonly error_tag: string };
   "run:cancelled": undefined;
 
   // Steps
-  "step:started": { readonly step_id: string; readonly plan_id: string };
-  "step:completed": { readonly step_id: string; readonly plan_id: string };
-  "step:failed": { readonly step_id: string; readonly plan_id: string; readonly error_tag: string };
+  "step:started": { readonly step_id: string };
+  "step:completed": { readonly step_id: string };
+  "step:failed": { readonly step_id: string; readonly error_tag: string };
 
   // Browser
   "browser:launched": { readonly headless: boolean };
   "browser:opened": {
     readonly source: "mcp_open";
     readonly browser_type: "chromium" | "webkit" | "firefox";
-    readonly browser_headed: boolean;
-    readonly browser_headless: boolean;
+    readonly browser_name: string;
+    readonly browser_mode: "headed" | "headless";
     readonly connection_mode: "launched" | "cdp" | "system_chrome";
     readonly is_external_browser: boolean;
     readonly cookie_count: number;

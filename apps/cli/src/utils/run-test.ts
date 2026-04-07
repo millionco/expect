@@ -80,7 +80,7 @@ export const runHeadless = (options: HeadlessRunOptions) =>
             );
           }
 
-          yield* analytics.capture("run:started", { plan_id: "direct" });
+          yield* analytics.capture("run:started");
           const seenEvents = new Set<string>();
           const printNewEvents = (executed: ExecutedTestPlan) => {
             if (isJsonOutput) return;
@@ -216,7 +216,6 @@ export const runHeadless = (options: HeadlessRunOptions) =>
           const totalDurationMs = getTotalElapsedMs(report.steps);
 
           yield* analytics.capture("run:completed", {
-            plan_id: finalExecuted.id ?? "direct",
             passed: passedCount,
             failed: failedCount,
             step_count: finalExecuted.steps.length,

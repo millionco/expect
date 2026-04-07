@@ -79,8 +79,8 @@ export interface CloseResult {
 interface BrowserOpenAnalyticsProperties {
   readonly source: "mcp_open";
   readonly browser_type: BrowserEngine;
-  readonly browser_headed: boolean;
-  readonly browser_headless: boolean;
+  readonly browser_name: string;
+  readonly browser_mode: "headed" | "headless";
   readonly connection_mode: "launched" | "cdp" | "system_chrome";
   readonly is_external_browser: boolean;
   readonly cookie_count: number;
@@ -306,20 +306,20 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         engine === "chromium" &&
         !Option.isSome(explicitCdpUrl);
 
-      const { cdpUrl, chromeCleanup } = useSystemChrome
+      const { cdpUrl, chromeCleanup, browserName } = useSystemChrome
         ? yield* Effect.gen(function* () {
-            const resolvedProfilePath = yield* browserService
-              .resolveProfilePath(configuredProfileName)
+            const resolvedProfile = yield* browserService
+              .resolveProfile(configuredProfileName)
               .pipe(
                 Effect.tap((resolved) =>
                   Effect.logInfo("Resolved browser profile", {
                     profileName: configuredProfileName,
-                    profilePath: resolved,
+                    profilePath: resolved?.profilePath,
+                    browserName: resolved?._tag === "ChromiumBrowser" ? resolved.key : undefined,
                   }),
                 ),
               );
-
-            if (resolvedProfilePath === undefined) {
+            if (resolvedProfile === undefined) {
               return yield* Effect.die(
                 new Error(
                   `Chrome profile "${configuredProfileName}" not found. Available profiles can be found in your Chrome user data directory.`,
@@ -329,19 +329,21 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
 
             const chrome = yield* launchSystemChrome({
               headless: !headed,
-              profilePath: path.dirname(resolvedProfilePath),
-              profileDirectory: path.basename(resolvedProfilePath),
+              profilePath: path.dirname(resolvedProfile.profilePath),
+              profileDirectory: path.basename(resolvedProfile.profilePath),
             });
 
             yield* Effect.logInfo("System Chrome launched", {
               profileName: configuredProfileName,
-              profilePath: resolvedProfilePath,
+              profilePath: resolvedProfile.profilePath,
+              browserName: resolvedProfile.key,
               wsUrl: chrome.wsUrl,
             });
 
             return {
               cdpUrl: Option.some(chrome.wsUrl),
               chromeCleanup: killChromeProcess(chrome),
+              browserName: resolvedProfile.key,
             };
           }).pipe(
             Effect.catchTags({
@@ -349,7 +351,11 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
               ChromeLaunchTimeoutError: Effect.die,
             }),
           )
-        : { cdpUrl: explicitCdpUrl, chromeCleanup: Effect.void };
+        : {
+            cdpUrl: explicitCdpUrl,
+            chromeCleanup: Effect.void,
+            browserName: engine,
+          };
 
       const pageResult = yield* browserService.createPage(url, {
         headed,
@@ -437,8 +443,8 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       const analyticsProperties: BrowserOpenAnalyticsProperties = {
         source: "mcp_open",
         browser_type: engine,
-        browser_headed: headed,
-        browser_headless: !headed,
+        browser_name: browserName,
+        browser_mode: headed ? "headed" : "headless",
         connection_mode: connectionMode,
         is_external_browser: isExternalBrowser,
         cookie_count: injectedCookieCount,

@@ -497,15 +497,20 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
       return yield* extractDefaultBrowserCookies("", preferredProfile);
     });
 
-    const resolveProfilePath = Effect.fn("Browser.resolveProfilePath")(function* (
-      profileName: string,
-    ) {
+    const resolveProfile = Effect.fn("Browser.resolveProfile")(function* (profileName: string) {
       const browsers = yield* Browsers;
       const allBrowsers = yield* browsers.list;
       const chromiumProfile = allBrowsers.find(
         (browser) => browser._tag === "ChromiumBrowser" && browser.profileName === profileName,
       );
-      return chromiumProfile?._tag === "ChromiumBrowser" ? chromiumProfile.profilePath : undefined;
+      return chromiumProfile?._tag === "ChromiumBrowser" ? chromiumProfile : undefined;
+    }, Effect.provide(layerLive));
+
+    const resolveProfilePath = Effect.fn("Browser.resolveProfilePath")(function* (
+      profileName: string,
+    ) {
+      const chromiumProfile = yield* resolveProfile(profileName);
+      return chromiumProfile?.profilePath;
     }, Effect.provide(layerLive));
 
     return {
@@ -515,6 +520,7 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
       annotatedScreenshot,
       waitForNavigationSettle,
       preExtractCookies,
+      resolveProfile,
       resolveProfilePath,
     } as const;
   }),
