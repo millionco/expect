@@ -983,7 +983,7 @@ export default function () {
   const commandRef = useRef<HTMLDivElement>(null);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText("npx -y expect-cli@latest init");
+    await navigator.clipboard.writeText("npx expect-cli@latest init");
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
@@ -1032,7 +1032,7 @@ export default function () {
                   ref={commandRef}
                   className="[letter-spacing:0px] w-max font-['JetBrains_Mono',system-ui,sans-serif] font-medium text-sm/4.5 text-[#323232]"
                 >
-                  npx -y expect-cli@latest init
+                  npx expect-cli@latest init
                 </div>
               </div>
             </div>
@@ -1086,7 +1086,7 @@ export default function () {
           href="https://github.com/millionco/expect"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 mt-4 w-max rounded-lg px-3.5 py-2 font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-sm/5 text-[#24292f] bg-[#f6f8fa] border border-[#d1d9e0] transition-colors hover:bg-[#eaeef2] active:bg-[#d8dee4]"
+          className="flex items-center gap-2 mt-4 w-max rounded-lg px-3.5 py-1.5 font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-sm/5 text-white bg-[#1F1F1F] border border-[#1F1F1F] transition-colors hover:bg-[#333333] active:bg-[#0A0A0A]"
         >
           <svg
             width="16"
@@ -1097,7 +1097,7 @@ export default function () {
           >
             <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z" />
           </svg>
-          Star on GitHub
+          GitHub
         </a>
         <div className="flex flex-col w-107.25 mt-14">
           <div className="[letter-spacing:0em] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[15px]/5.75 text-[color(display-p3_0.248_0.248_0.248)] mb-2.75">
@@ -1110,15 +1110,12 @@ export default function () {
               answer: (
                 <div className="flex flex-col mt-1.5">
                   <div className="[letter-spacing:0em] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[14px]/5.5 text-[#858585] mb-2.5">
-                    Expect is a skill that spawns a CLI on your machine. When your coding agent
-                    invokes /expect, it reads your git changes, generates a test plan, opens a real
-                    browser with Playwright, and executes the plan. It uses your underlying coding
-                    agent (Claude Code, Codex, Cursor) to reason about what to test and how to fix
-                    issues. Everything runs locally, no code leaves your machine.
+                    A skill that reads your git changes, generates a test plan, and runs it in a
+                    real browser with Playwright.
                   </div>
-                  <div className="[letter-spacing:0em] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[14px]/5.5 text-[#858585] mb-4">
-                    You can also trigger it from CI by adding the GitHub Action to test every PR
-                    automatically before merge.
+                  <div className="[letter-spacing:0em] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[14px]/5.5 text-[#858585] mb-2.5">
+                    It hooks into your existing agent (Claude Code, Codex, Cursor) and runs entirely
+                    on your machine.
                   </div>
                   <div className="[letter-spacing:0em] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[14px]/5.5 text-[#858585] mb-2.5">
                     It checks for:

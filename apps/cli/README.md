@@ -16,29 +16,34 @@
 
 ## FAQ
 
-#### 1. How is this different from Puppeteer / Playwright / Cypress?
+#### What is Expect?
 
-Instead of writing scripts, maintaining selectors, and wiring up assertions, Expect reads your code changes and tests them in a real browser automatically. It's like having giving your agent QA superpowers.
+A skill that reads your git changes, generates a test plan, and runs it in a real browser with Playwright. It hooks into your existing agent (Claude Code, Codex, Cursor) and runs entirely on your machine.
 
-#### 2. How is this different from coding agents or computer-use tools?
+It checks for:
 
-Your agent needs to verify its work, and general-purpose browser tools rely on screenshots and mouse coordinates.
+- **Performance** - long animation frames, INP, LCP
+- **Security** - npm deps, CSRF attacks, vulns
+- **Design tweaks** - broken hover states, links, buttons
+- **App completeness** - missing metadata, dead links
 
-Expect is purpose-built for testing: it uses Playwright for fast DOM automation, reads your code changes, generates a test plan, and runs it with your real cookies, then reports back what's broken so the agent can fix it.
+#### Why not just use Puppeteer, Playwright, or Cypress directly?
 
-#### 3. How does it fit into my workflow?
+Instead of writing scripts, maintaining selectors, and wiring up assertions, Expect reads your code changes and tests them in a real browser automatically. It's like giving your agent QA superpowers.
 
-Your coding agent calls `/expect` as a skill whenever it needs to validate its work in a real browser. You can also trigger it from CI by adding the GitHub Action to test every PR automatically before merge.
+#### How is this different from computer-use agents?
 
-#### 5. Does it work in CI?
+General-purpose browser tools rely on screenshots and mouse coordinates. Expect is purpose-built for testing: it uses Playwright for fast DOM automation, reads your code changes, generates a test plan, and runs it with your real cookies, then reports back what's broken so the agent can fix it.
+
+#### Does it work in CI?
 
 Yes. Use `--ci` or the `add github-action` command to set up a workflow that tests every PR. In CI mode it runs headless, skips cookie extraction, auto-approves the plan, and enforces a 30-minute timeout.
 
-#### 6. Can this do mobile / desktop testing?
+#### Does it support mobile testing?
 
 Coming soon.
 
-#### 7. Is there a cloud or enterprise version?
+#### Is there a hosted or enterprise version?
 
 Coming soon. Email [aiden@million.dev](mailto:aiden@million.dev) if you have questions or ideas.
 
