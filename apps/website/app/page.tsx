@@ -127,18 +127,6 @@ function useAnimationPhase(config: AnimationConfig, onComplete: () => void) {
     const focusTimer = setTimeout(() => setFocused(true), focusTime);
     const alertTimer = setTimeout(() => setCursorLabel("alert"), alertTime);
     const fixingTime = alertTime + c.fixingDelay;
-    const cursorToTerminalTimer = setTimeout(() => {
-      setCursorOnBrowser(false);
-      setCursorOnTerminal(true);
-    }, fixingTime);
-    const clickTerminalTimer = setTimeout(
-      () => setClickingTerminal(true),
-      fixingTime + c.cursorClickDelay,
-    );
-    const clickTerminalEndTimer = setTimeout(
-      () => setClickingTerminal(false),
-      fixingTime + c.cursorClickDelay + 100,
-    );
     const fixingTimer = setTimeout(() => {
       setFixing(true);
       setTerminalFocused(true);
@@ -157,7 +145,6 @@ function useAnimationPhase(config: AnimationConfig, onComplete: () => void) {
     const resetTimer = setTimeout(() => {
       setCursorVisible(false);
       setLabelVisible(false);
-      setCursorOnTerminal(false);
       setLooping(true);
       setSlid(false);
       setFocused(false);
@@ -176,9 +163,6 @@ function useAnimationPhase(config: AnimationConfig, onComplete: () => void) {
       clearTimeout(labelShowTimer);
       clearTimeout(focusTimer);
       clearTimeout(alertTimer);
-      clearTimeout(cursorToTerminalTimer);
-      clearTimeout(clickTerminalTimer);
-      clearTimeout(clickTerminalEndTimer);
       clearTimeout(fixingTimer);
       clearTimeout(fixDiffTimer);
       clearTimeout(reloadTimer);
