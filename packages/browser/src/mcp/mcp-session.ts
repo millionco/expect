@@ -76,14 +76,6 @@ export interface CloseResult {
 
 const PLAYWRIGHT_VIDEO_SUBDIRECTORY = "playwright";
 
-const abandonAfter = <A>(promiseFn: () => Promise<A>, timeoutMs: number) =>
-  Effect.tryPromise(promiseFn).pipe(
-    Effect.timeoutOrElse({
-      duration: `${timeoutMs} millis`,
-      onTimeout: () => Effect.succeed(undefined),
-    }),
-  );
-
 const setupPageTracking = (page: Page, sessionData: BrowserSessionData) => {
   if (sessionData.trackedPages.has(page)) return;
   sessionData.trackedPages.add(page);
@@ -415,11 +407,19 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       }
 
       if (activeSession.isExternalBrowser) {
-        yield* abandonAfter(() => activeSession.page.close(), BROWSER_CLOSE_TIMEOUT_MS).pipe(
+        yield* Effect.tryPromise(() => activeSession.page.close()).pipe(
+          Effect.timeoutOrElse({
+            duration: `${BROWSER_CLOSE_TIMEOUT_MS} millis`,
+            onTimeout: () => Effect.succeed(undefined),
+          }),
           Effect.catchCause((cause) => Effect.logDebug("Failed to close page", { cause })),
         );
       } else {
-        yield* abandonAfter(() => activeSession.browser.close(), BROWSER_CLOSE_TIMEOUT_MS).pipe(
+        yield* Effect.tryPromise(() => activeSession.browser.close()).pipe(
+          Effect.timeoutOrElse({
+            duration: `${BROWSER_CLOSE_TIMEOUT_MS} millis`,
+            onTimeout: () => Effect.succeed(undefined),
+          }),
           Effect.catchCause((cause) => Effect.logDebug("Failed to close browser", { cause })),
         );
       }
@@ -434,7 +434,11 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       let tmpVideoPath: string | undefined;
 
       if (pageVideo) {
-        videoPath = yield* abandonAfter(() => pageVideo.path(), VIDEO_PATH_TIMEOUT_MS).pipe(
+        videoPath = yield* Effect.tryPromise(() => pageVideo.path()).pipe(
+          Effect.timeoutOrElse({
+            duration: `${VIDEO_PATH_TIMEOUT_MS} millis`,
+            onTimeout: () => Effect.succeed(undefined),
+          }),
           Effect.catchCause((cause) =>
             Effect.logDebug("Failed to resolve Playwright video path", { cause }).pipe(
               Effect.as(undefined),
