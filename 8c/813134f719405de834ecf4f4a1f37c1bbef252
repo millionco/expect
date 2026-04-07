@@ -1,0 +1,23 @@
+.github/workflows/publish-any-commit.yml
+  1de8a25462ae3a9c 28-29,31,33-36,39-40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "8c813134f719405de834ecf4f4a1f37c1bbef252",
+  "prompts": {
+    "1de8a25462ae3a9c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4b0e14d2-fd3d-4c22-bbe0-16f1f274e7d7",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 9,
+      "total_deletions": 14,
+      "accepted_lines": 9,
+      "overriden_lines": 0
+    }
+  }
+}
