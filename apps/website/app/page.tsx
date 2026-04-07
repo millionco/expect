@@ -92,8 +92,8 @@ function useAnimationPhase(config: AnimationConfig, onComplete: () => void) {
   const [clicking, setClicking] = useState(false);
   const [labelVisible, setLabelVisible] = useState(false);
   const [cursorLabel, setCursorLabel] = useState<CursorLabelState>("security");
-  const cursorOnTerminal = false;
-  const clickingTerminal = false;
+  const [cursorOnTerminal, setCursorOnTerminal] = useState(false);
+  const [clickingTerminal, setClickingTerminal] = useState(false);
   const [terminalFocused, setTerminalFocused] = useState(false);
   const [fixing, setFixing] = useState(false);
   const [fixDiff, setFixDiff] = useState(false);
@@ -127,6 +127,18 @@ function useAnimationPhase(config: AnimationConfig, onComplete: () => void) {
     const focusTimer = setTimeout(() => setFocused(true), focusTime);
     const alertTimer = setTimeout(() => setCursorLabel("alert"), alertTime);
     const fixingTime = alertTime + c.fixingDelay;
+    const cursorToTerminalTimer = setTimeout(() => {
+      setCursorOnBrowser(false);
+      setCursorOnTerminal(true);
+    }, fixingTime);
+    const clickTerminalTimer = setTimeout(
+      () => setClickingTerminal(true),
+      fixingTime + c.cursorClickDelay,
+    );
+    const clickTerminalEndTimer = setTimeout(
+      () => setClickingTerminal(false),
+      fixingTime + c.cursorClickDelay + 100,
+    );
     const fixingTimer = setTimeout(() => {
       setFixing(true);
       setTerminalFocused(true);
@@ -145,6 +157,7 @@ function useAnimationPhase(config: AnimationConfig, onComplete: () => void) {
     const resetTimer = setTimeout(() => {
       setCursorVisible(false);
       setLabelVisible(false);
+      setCursorOnTerminal(false);
       setLooping(true);
       setSlid(false);
       setFocused(false);
@@ -163,6 +176,9 @@ function useAnimationPhase(config: AnimationConfig, onComplete: () => void) {
       clearTimeout(labelShowTimer);
       clearTimeout(focusTimer);
       clearTimeout(alertTimer);
+      clearTimeout(cursorToTerminalTimer);
+      clearTimeout(clickTerminalTimer);
+      clearTimeout(clickTerminalEndTimer);
       clearTimeout(fixingTimer);
       clearTimeout(fixDiffTimer);
       clearTimeout(reloadTimer);
@@ -522,15 +538,23 @@ function AnimatedCursor({
       }
     >
       <motion.svg
-        width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '40px', height: 'auto' }}
+        width="32"
+        height="32"
+        viewBox="0 0 32 32"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        style={{ width: "40px", height: "auto" }}
         animate={
           isAlert
             ? { scale: 1, x: [0, -3, 3, -2, 2, -1, 1, 0] }
-            : { scale: (clicking || clickingTerminal) ? 0.85 : 1, x: 0 }
+            : { scale: clicking || clickingTerminal ? 0.85 : 1, x: 0 }
         }
         transition={
           isAlert
-            ? { x: { duration: 0.4, ease: "easeOut" }, scale: { duration: config.clickDuration / 1000, ease: "easeOut" } }
+            ? {
+                x: { duration: 0.4, ease: "easeOut" },
+                scale: { duration: config.clickDuration / 1000, ease: "easeOut" },
+              }
             : { duration: config.clickDuration / 1000, ease: "easeOut" }
         }
       >
@@ -727,7 +751,15 @@ function TerminalAnimationView({
         </motion.div>
       </div>
       <div className="[letter-spacing:0em] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-sm/5.75 text-[#858585]">
-        {fixDiff ? "Vulnerability fixed" : focused ? "Scanning security" : "Agent writes code"}
+        {fixDiff
+          ? "Vulnerability fixed"
+          : fixing
+            ? "Fixing vulnerability"
+            : cursorLabel === "alert"
+              ? "Vulnerability found"
+              : focused
+                ? "Scanning security"
+                : "Agent writes code"}
       </div>
     </div>
   );
@@ -863,7 +895,14 @@ export default function HomePage() {
           </div>
         </div>
         <div className="flex flex-col gap-2.75 mt-6">
-          <div onClick={handleSelectCommand} className="items-center flex [font-synthesis-small-caps:none] [font-synthesis-style:none] [font-synthesis-weight:none] justify-between w-107.25 rounded-[11px] pt-2.75 pr-3 pb-2.75 pl-3.5 overflow-clip cursor-text [box-shadow:#C9C9C933_0px_2px_3px,#E9E9E9_0px_0px_0px_0.75px] transition-colors hover:bg-[color(display-p3_0.991_0.991_0.991)]" style={{ backgroundImage: 'linear-gradient(in oklab 180deg, oklab(100% 0 0) 0%, oklab(100% 0 0 / 0%) 100%)' }}>
+          <div
+            onClick={handleSelectCommand}
+            className="items-center flex [font-synthesis-small-caps:none] [font-synthesis-style:none] [font-synthesis-weight:none] justify-between w-107.25 rounded-[11px] pt-2.75 pr-3 pb-2.75 pl-3.5 overflow-clip cursor-text [box-shadow:#C9C9C933_0px_2px_3px,#E9E9E9_0px_0px_0px_0.75px] transition-colors hover:bg-[color(display-p3_0.991_0.991_0.991)]"
+            style={{
+              backgroundImage:
+                "linear-gradient(in oklab 180deg, oklab(100% 0 0) 0%, oklab(100% 0 0 / 0%) 100%)",
+            }}
+          >
             <div className="items-start flex min-w-0 gap-1">
               <div className="shrink-0 [letter-spacing:0px] w-3.75 font-['JetBrains_Mono',system-ui,sans-serif] font-medium text-sm/4.5 text-[#5C5C5C]">
                 $
@@ -1033,7 +1072,9 @@ export default function HomePage() {
           </div>
         </div>
         <div className="flex flex-col w-107.25 mt-14">
-          <div className="[letter-spacing:0em] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[15px]/5.75 text-[color(display-p3_0.248_0.248_0.248)] mb-2.75">FAQ</div>
+          <div className="[letter-spacing:0em] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[15px]/5.75 text-[color(display-p3_0.248_0.248_0.248)] mb-2.75">
+            FAQ
+          </div>
           <div className="h-[0.5px] self-stretch shrink-0 bg-[#DDDDDD] mb-2.75" />
           {[
             {

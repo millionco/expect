@@ -8,5 +8,5 @@ export function ReactGrab() {
     import("react-grab").then(({ init }) => init());
   }, []);
 
-  return undefined;
+  return null;
 }
