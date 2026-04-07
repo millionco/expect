@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
+    "@types/which": "^3.0.4",
     "typescript": "^5.7.0"
   }
 }
