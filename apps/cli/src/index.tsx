@@ -20,12 +20,23 @@ import { highlighter } from "./utils/highlighter";
 import { logger } from "./utils/logger";
 import { hasInstalledExpectSkill } from "./utils/expect-skill";
 import { readExpectConfig } from "./utils/expect-config";
+import { resolveProjectRoot } from "./utils/project-root";
 
 try {
   fetch(`${VERSION_API_URL}?source=cli&t=${Date.now()}`).catch(() => {});
 } catch {}
 
-const expectConfig = readExpectConfig(process.cwd());
+const lazyExpectConfig = (() => {
+  let cached: ReturnType<typeof readExpectConfig> | undefined;
+  let resolved = false;
+  return () => {
+    if (!resolved) {
+      cached = readExpectConfig(resolveProjectRoot());
+      resolved = true;
+    }
+    return cached;
+  };
+})();
 
 const DEFAULT_INSTRUCTION =
   "Test all changes from main in the browser and verify they work correctly.";
@@ -92,7 +103,7 @@ Examples:
   );
 
 const resolveBrowserMode = (opts: CommanderOpts) =>
-  opts.headless ? ("headless" as const) : (expectConfig?.browserMode ?? "cdp");
+  opts.headless ? ("headless" as const) : (lazyExpectConfig()?.browserMode ?? "cdp");
 
 const seedStores = (opts: CommanderOpts, changesFor: ChangesFor) => {
   const browserMode = resolveBrowserMode(opts);
@@ -141,7 +152,7 @@ const runHeadlessForTarget = async (target: Target, opts: CommanderOpts) => {
 
 const promptSkillInstall = async () => {
   const agents = detectAvailableAgents();
-  if (hasInstalledExpectSkill(process.cwd(), agents)) return;
+  if (hasInstalledExpectSkill(resolveProjectRoot(), agents)) return;
 
   logger.break();
   const response = await prompts({

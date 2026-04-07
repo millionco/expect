@@ -5,6 +5,10 @@ import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { readExpectConfig } from "../src/utils/expect-config";
 
+vi.mock("../src/utils/project-root", () => ({
+  resolveProjectRoot: vi.fn().mockReturnValue("/tmp"),
+}));
+
 vi.mock("@expect/agent", () => ({
   detectAvailableAgents: vi.fn().mockReturnValue(["claude"]),
 }));
@@ -118,6 +122,8 @@ describe("init flow", () => {
     originalCwd = process.cwd;
     process.cwd = () => projectRoot;
 
+    const { resolveProjectRoot } = await import("../src/utils/project-root");
+    vi.mocked(resolveProjectRoot).mockReturnValue(projectRoot);
     const { detectAvailableAgents } = await import("@expect/agent");
     vi.mocked(detectAvailableAgents).mockReturnValue(["claude"]);
     const { runInstallCommand } = await import("../src/commands/update");
@@ -469,6 +475,8 @@ describe("init flow", () => {
       const symlinkRoot = path.join(os.tmpdir(), `init-symlink-${Date.now()}`);
       fs.symlinkSync(projectRoot, symlinkRoot);
       process.cwd = () => symlinkRoot;
+      const { resolveProjectRoot } = await import("../src/utils/project-root");
+      vi.mocked(resolveProjectRoot).mockReturnValue(symlinkRoot);
 
       try {
         const { runInit } = await import("../src/commands/init");
@@ -482,6 +490,8 @@ describe("init flow", () => {
     it("empty project directory — creates .expect from scratch", async () => {
       const emptyRoot = fs.mkdtempSync(path.join(os.tmpdir(), "init-empty-"));
       process.cwd = () => emptyRoot;
+      const { resolveProjectRoot } = await import("../src/utils/project-root");
+      vi.mocked(resolveProjectRoot).mockReturnValue(emptyRoot);
 
       try {
         const { runInit } = await import("../src/commands/init");

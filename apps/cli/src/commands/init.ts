@@ -14,6 +14,7 @@ import { logger } from "../utils/logger";
 import { prompts, setOnCancel } from "../utils/prompts";
 import { spinner } from "../utils/spinner";
 import { type BrowserMode, isValidBrowserMode, writeExpectConfig } from "../utils/expect-config";
+import { resolveProjectRoot } from "../utils/project-root";
 import { runAddSkill } from "./add-skill";
 import { detectPackageManager } from "./init-utils";
 import { formatInstallCommand, getGlobalInstallCommand, runInstallCommand } from "./update";
@@ -364,7 +365,7 @@ export const runInit = async (options: InitOptions = {}) => {
   }
 
   if (!options.dry) {
-    writeExpectConfig(process.cwd(), { browserMode });
+    writeExpectConfig(resolveProjectRoot(), { browserMode });
   }
 
   logger.break();

@@ -16,6 +16,7 @@ import {
   SKILL_TARBALL_URL,
 } from "../utils/expect-skill";
 import { SKILL_FETCH_TIMEOUT_MS } from "../constants";
+import { resolveProjectRoot } from "../utils/project-root";
 import { detectNonInteractive } from "./init-utils";
 const SKILL_BRANCH = "main";
 const SKILL_ARCHIVE_PREFIX = `expect-${SKILL_BRANCH}/${SKILL_SOURCE_DIR}/`;
@@ -213,7 +214,7 @@ export const ensureAgentSkillCopy = (
 };
 
 export const runAddSkill = async (options: AddSkillOptions) => {
-  const projectRoot = process.cwd();
+  const projectRoot = resolveProjectRoot();
   const nonInteractive = detectNonInteractive(options.yes ?? false);
   const selectedAgents = await selectAgents(options.agents, nonInteractive);
   if (selectedAgents.length === 0) return;
