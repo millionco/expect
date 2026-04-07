@@ -18,18 +18,14 @@
   "dependencies": {
     "@agentclientprotocol/claude-agent-acp": "^0.24.2",
     "@agentclientprotocol/sdk": "^0.16.1",
-    "@ai-sdk/provider": "^3.0.8",
-    "@expect/browser": "workspace:*",
     "@expect/shared": "workspace:*",
     "@github/copilot": "^1.0.12",
     "@google/gemini-cli": "^0.35.3",
     "@zed-industries/codex-acp": "^0.10.0",
-    "effect": "4.0.0-beta.35",
-    "which": "^6.0.1"
+    "effect": "4.0.0-beta.35"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
-    "@types/which": "^3.0.4",
     "typescript": "^5.7.0"
   }
 }

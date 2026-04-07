@@ -49,7 +49,6 @@ export const MAX_ELEMENT_TEXT_LENGTH = 100;
 export const MAX_CURSOR_INTERACTIVE_ELEMENTS = 100;
 export const OVERLAY_CONTAINER_ID = "__expect_annotation_overlay__";
 export const EVENT_COLLECT_INTERVAL_MS = 250;
-export const RRWEB_CHECKOUT_INTERVAL_MS = 10_000;
 
 export const REPLAY_PLAYER_WIDTH_PX = 960;
 export const REPLAY_PLAYER_HEIGHT_PX = 540;
