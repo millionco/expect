@@ -1,4 +1,4 @@
-import { Layer, References } from "effect";
+import { Layer } from "effect";
 import { Executor, Git } from "@expect/supervisor";
 import { Agent, type AgentBackend } from "@expect/agent";
 
@@ -9,6 +9,5 @@ export const layerSdk = (agentBackend: AgentBackend, rootDir: string) => {
 
   return Layer.mergeAll(executorLayer, gitLayer).pipe(
     Layer.provideMerge(agentLayer),
-    Layer.provideMerge(Layer.succeed(References.MinimumLogLevel, "Error")),
   );
 };

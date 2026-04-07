@@ -15,7 +15,7 @@ const EnsureDebugLogDirectoryLayer = Layer.effectDiscard(
   }),
 );
 
-export const DebugFileLoggerLayer = Logger.layer([DebugFileLogger]).pipe(
+export const DebugFileLoggerLayer = Logger.layer([Logger.consolePretty(), DebugFileLogger]).pipe(
   Layer.provide(EnsureDebugLogDirectoryLayer),
   Layer.provide(NodeFileSystem.layer),
 );
