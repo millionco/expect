@@ -1,0 +1,23 @@
+packages/browser/tests/chrome-launcher.test.ts
+  77d74889281289c4 13,18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "4b8c2dd74ffa523adc6e2e14be75c7fd0dc1dcdd",
+  "prompts": {
+    "77d74889281289c4": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "28f5a588-ca96-4845-a984-01d8abb1e72c",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 2,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}
