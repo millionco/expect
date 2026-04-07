@@ -804,12 +804,36 @@ export default function () {
           <div className="[letter-spacing:0em] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[15px]/5.75 text-[color(display-p3_0.248_0.248_0.248)] mb-2.75">FAQ</div>
           <div className="h-[0.5px] self-stretch shrink-0 bg-[#DDDDDD] mb-2.75" />
           {[
-            { question: "How is this different from Puppeteer / Playwright / Cypress?", answer: "Instead of writing scripts, maintaining selectors, and wiring up assertions, Expect reads your code changes and tests them in a real browser automatically. It's like giving your agent QA superpowers." },
-            { question: "How is this different from coding agents or computer-use tools?", answer: "Your agent needs to verify its work, and general-purpose browser tools rely on screenshots and mouse coordinates.\n\nExpect is purpose-built for testing: it uses Playwright for fast DOM automation, reads your code changes, generates a test plan, and runs it with your real cookies, then reports back what's broken so the agent can fix it." },
-            { question: "How does it fit into my workflow?", answer: "Your coding agent calls /expect as a skill whenever it needs to validate its work in a real browser. You can also trigger it from CI by adding the GitHub Action to test every PR automatically before merge." },
-            { question: "Does it work in CI?", answer: "Yes. Use --ci or the add github-action command to set up a workflow that tests every PR. In CI mode it runs headless, skips cookie extraction, auto-approves the plan, and enforces a 30-minute timeout." },
-            { question: "Can this do mobile / desktop testing?", answer: "Coming soon." },
-            { question: "Is there a cloud or enterprise version?", answer: "Coming soon. Email aiden@million.dev if you have questions or ideas." },
+            {
+              question: "What is Expect?",
+              answer:
+                "Expect is a skill that spawns a CLI on your machine. When your coding agent invokes /expect, it reads your git changes, generates a test plan, opens a real browser with Playwright, and executes the plan. Everything runs locally — no code leaves your machine.\n\nYou can also trigger it from CI by adding the GitHub Action to test every PR automatically before merge.",
+            },
+            {
+              question: "What does it check for?",
+              answer:
+                "Performance issues (long animation frames, INP, LCP), security vulnerabilities (npm deps, CSRF attacks), design issues (broken hover states, links, buttons), and app completeness (missing metadata, dead links). You can also write custom checks in your test plan.",
+            },
+            {
+              question: "Why not just use Puppeteer, Playwright, or Cypress directly?",
+              answer:
+                "Instead of writing scripts, maintaining selectors, and wiring up assertions, Expect reads your code changes and tests them in a real browser automatically. It's like giving your agent QA superpowers.",
+            },
+            {
+              question: "How is this different from computer-use agents?",
+              answer:
+                "General-purpose browser tools rely on screenshots and mouse coordinates. Expect is purpose-built for testing: it uses Playwright for fast DOM automation, reads your code changes, generates a test plan, and runs it with your real cookies, then reports back what's broken so the agent can fix it.",
+            },
+            {
+              question: "Does it work in CI?",
+              answer:
+                "Yes. Use --ci or the add github-action command to set up a workflow that tests every PR. In CI mode it runs headless, skips cookie extraction, auto-approves the plan, and enforces a 30-minute timeout.",
+            },
+            { question: "Does it support mobile testing?", answer: "Coming soon." },
+            {
+              question: "Is there a hosted or enterprise version?",
+              answer: "Coming soon. Email aiden@million.dev if you have questions or ideas.",
+            },
           ].map((faq, index) => (
             <div key={index} onClick={() => setOpenFaqs((previous) => { const next = new Set(previous); if (next.has(index)) { next.delete(index); } else { next.add(index); } return next; })} className="cursor-pointer group/faq pb-2.75">
               <div className="flex justify-between items-start transition-colors group-hover/faq:text-[#1E1E1E] pt-2.75">
