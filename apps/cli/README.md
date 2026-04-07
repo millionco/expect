@@ -67,9 +67,11 @@ Coming soon. Email [aiden@million.dev](mailto:aiden@million.dev) if you have que
 | `-v, --version`               | Print version                                                                          | -           |
 | `-h, --help`                  | Display help                                                                           | -           |
 
+
 ## Supported Agents
 
 Expect works with the following coding agents. It auto-detects which agents are installed on your `PATH`. If multiple are available, it defaults to the first one found. Use `-a <provider>` to pick a specific agent.
+
 
 | Agent                                                         | Flag          | Install                                    |
 | ------------------------------------------------------------- | ------------- | ------------------------------------------ |
@@ -80,6 +82,7 @@ Expect works with the following coding agents. It auto-detects which agents are 
 | [Cursor](https://cursor.com)                                  | `-a cursor`   | [cursor.com](https://cursor.com)           |
 | [OpenCode](https://opencode.ai)                               | `-a opencode` | `npm install -g opencode-ai`               |
 | [Factory Droid](https://factory.ai)                           | `-a droid`    | `npm install -g droid`                     |
+
 
 ## Resources & Contributing Back
 
