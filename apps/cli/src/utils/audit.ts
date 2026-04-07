@@ -16,13 +16,13 @@ export interface PackageAuditResult {
   results: ScriptResult[];
 }
 
-export interface AuditPackageEntry {
+interface AuditPackageEntry {
   packageName: string;
   directory: string;
   scripts: string[];
 }
 
-export interface AuditCallbacks {
+interface AuditCallbacks {
   onPackageStart: (packageName: string, scripts: string[]) => void;
   onScriptDone: (packageName: string, result: ScriptResult) => void;
 }

@@ -26,7 +26,7 @@ interface ExecuteInput {
   readonly onConfigOptions?: (configOptions: readonly AcpConfigOption[]) => void;
 }
 
-export interface ExecutionResult {
+interface ExecutionResult {
   readonly executedPlan: ExecutedTestPlan;
   readonly report: TestReport;
   readonly replayUrl?: string;

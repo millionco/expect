@@ -139,5 +139,3 @@ export const createCiReporter = (options: CiReporterOptions) => {
     timeoutError,
   } as const;
 };
-
-export type CiReporter = ReturnType<typeof createCiReporter>;
