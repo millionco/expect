@@ -19,8 +19,6 @@ import {
   tryRun,
 } from "./init-utils";
 
-export { detectAvailableAgents };
-
 interface InstallCommand {
   binary: string;
   args: readonly string[];
