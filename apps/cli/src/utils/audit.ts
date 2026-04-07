@@ -72,7 +72,9 @@ const readPackageJson = Effect.fn("Audit.readPackageJson")(function* (directory:
   });
 });
 
-const listWorkspaceDirectories = Effect.fn("Audit.listWorkspaceDirectories")(function* (rootDir: string) {
+const listWorkspaceDirectories = Effect.fn("Audit.listWorkspaceDirectories")(function* (
+  rootDir: string,
+) {
   const fileSystem = yield* FileSystem.FileSystem;
   const directories: string[] = [];
 

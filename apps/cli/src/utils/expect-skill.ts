@@ -52,7 +52,9 @@ export const formatSkillVersion = (version: string | undefined): string =>
 export const getInstalledSkillFilePath = (projectRoot: string): string =>
   path.join(projectRoot, AGENTS_SKILLS_DIR, SKILL_NAME, "SKILL.md");
 
-export const readInstalledSkill = Effect.fn("Skill.readInstalledSkill")(function* (projectRoot: string) {
+export const readInstalledSkill = Effect.fn("Skill.readInstalledSkill")(function* (
+  projectRoot: string,
+) {
   const installedSkillPath = getInstalledSkillFilePath(projectRoot);
   if (!fs.existsSync(installedSkillPath)) return undefined;
 

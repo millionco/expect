@@ -97,7 +97,10 @@ const tryDiscover = <A>(effect: Effect.Effect<A, CdpDiscoveryError>) =>
     Effect.catchTag("CdpDiscoveryError", () => Effect.succeed(Option.none<A>())),
   );
 
-export const discoverCdpUrl = Effect.fn("Chrome.discoverCdpUrl")(function* (host: string, port: number) {
+export const discoverCdpUrl = Effect.fn("Chrome.discoverCdpUrl")(function* (
+  host: string,
+  port: number,
+) {
   yield* Effect.annotateCurrentSpan({ host, port });
 
   const versionResult = yield* tryDiscover(discoverViaJsonVersion(host, port));
