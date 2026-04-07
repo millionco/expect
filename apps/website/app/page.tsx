@@ -331,7 +331,7 @@ function TerminalContent({
               <path d="M147.76 29.83H160.71V57.69H147.76V29.83Z" fill="#FFFFFF" />
             </svg>
           </div>
-          {!fixDiff && <ClaudeSpinner message="fixing security issues..." />}
+          {!fixDiff && <ClaudeSpinner message="fixing login issue..." />}
         </div>
       )}
       {fixDiff && (
@@ -947,13 +947,13 @@ function TerminalAnimationView({
       </div>
       <div className="[letter-spacing:0em] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[13px]/5.75 text-[#858585] mt-2 mb-8">
         {fixDiff
-          ? "Vulnerability fixed"
+          ? "Login fixed"
           : fixing
-            ? "Fixing vulnerability"
+            ? "Fixing login"
             : cursorLabel === "alert"
-              ? "Vulnerability found"
+              ? "Login failed"
               : focused
-                ? "Scanning security"
+                ? "Testing login"
                 : "Agent writes code"}
       </div>
     </div>
