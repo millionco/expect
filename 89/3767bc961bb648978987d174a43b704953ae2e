@@ -1,0 +1,25 @@
+apps/cli/src/utils/project-root.ts
+  709c7eb03beae976 1-2,4,6-8
+packages/supervisor/src/git/git.ts
+  709c7eb03beae976 473-481
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "893767bc961bb648978987d174a43b704953ae2e",
+  "prompts": {
+    "709c7eb03beae976": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "040d2bf8-91a7-4e3e-9c74-95f88b9c0f98",
+        "model": "gpt-5.3-codex-spark"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 16,
+      "total_deletions": 18,
+      "accepted_lines": 15,
+      "overriden_lines": 0
+    }
+  }
+}
