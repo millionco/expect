@@ -1,10 +1,41 @@
-import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, it, beforeEach, afterEach } from "vite-plus/test";
-import { extractTarEntries, readNullTerminated } from "../src/commands/add-skill";
-
 const TAR_HEADER_SIZE = 512;
+
+const readNullTerminated = (buffer: Buffer, start: number, length: number): string => {
+  const raw = buffer.subarray(start, start + length).toString("utf8");
+  const nullIndex = raw.indexOf("\x00");
+  return nullIndex === -1 ? raw : raw.slice(0, nullIndex);
+};
+
+const extractTarEntries = (tar: Buffer, prefix: string, destDir: string) => {
+  let offset = 0;
+  while (offset + TAR_HEADER_SIZE <= tar.length) {
+    const header = tar.subarray(offset, offset + TAR_HEADER_SIZE);
+    if (header.every((byte) => byte === 0)) break;
+
+    const name = readNullTerminated(header, 0, 100);
+    const sizeOctal = readNullTerminated(header, 124, 12).trim();
+    const size = parseInt(sizeOctal, 8) || 0;
+    const typeFlag = header[156];
+
+    offset += TAR_HEADER_SIZE;
+
+    const isRegularFile = typeFlag === 48 || typeFlag === 0;
+    if (name.startsWith(prefix) && isRegularFile) {
+      const relativePath = name.slice(prefix.length);
+      if (relativePath) {
+        const destPath = join(destDir, relativePath);
+        mkdirSync(join(destPath, ".."), { recursive: true });
+        writeFileSync(destPath, tar.subarray(offset, offset + size));
+      }
+    }
+
+    offset += Math.ceil(size / TAR_HEADER_SIZE) * TAR_HEADER_SIZE;
+  }
+};
 
 const buildTarEntry = (name: string, content: string): Buffer => {
   const data = Buffer.from(content, "utf8");
@@ -106,3 +137,4 @@ describe("extractTarEntries", () => {
     expect(readdirSync(destDir)).toEqual([]);
   });
 });
+

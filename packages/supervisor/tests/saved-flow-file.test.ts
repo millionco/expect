@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import {
   formatSavedFlowFile,
-  formatSavedFlowFrontmatter,
   parseSavedFlowFile,
 } from "../src/saved-flow-file";
 import type { SavedFlowFileData } from "../src/types";
@@ -33,9 +32,9 @@ const savedFlowFileData: SavedFlowFileData = {
 
 describe("saved-flow-file", () => {
   it("omits optional selected commit from frontmatter when absent", () => {
-    const frontmatter = formatSavedFlowFrontmatter(savedFlowFileData);
+    const formattedFile = formatSavedFlowFile(savedFlowFileData);
 
-    expect(frontmatter).not.toContain("selected_commit: undefined");
+    expect(formattedFile).not.toContain("selected_commit: undefined");
   });
 
   it("round-trips a saved flow without selected commit", () => {

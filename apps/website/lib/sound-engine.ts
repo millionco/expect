@@ -25,17 +25,17 @@ export async function decodeAudioData(dataUri: string): Promise<AudioBuffer> {
   return audioBuffer;
 }
 
-export interface PlaySoundOptions {
+interface PlaySoundOptions {
   volume?: number;
   playbackRate?: number;
   onEnd?: () => void;
 }
 
-export interface SoundPlayback {
+interface SoundPlayback {
   stop: () => void;
 }
 
-export async function playSound(
+async function playSound(
   dataUri: string,
   options: PlaySoundOptions = {},
 ): Promise<SoundPlayback> {
