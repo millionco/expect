@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "pasito/styles.css";
 
 @font-face {
   font-family: "ABC Diatype";
@@ -251,4 +252,15 @@
 .dialkit-root,
 .dialkit-root * {
   font-family: "Open Runde", system-ui, sans-serif !important;
+}
+
+.no-container-bg {
+  --pill-container-bg: transparent;
+  --pill-container-border: rgba(0, 0, 0, 0.04);
+  --pill-dot-size: 7px;
+  --pill-active-width: 22px;
+  --pill-gap: 5px;
+  --pill-bg: rgba(0, 0, 0, 0.12);
+  --pill-active-bg: rgba(0, 0, 0, 0.55);
+  padding: 10px 14px;
 }

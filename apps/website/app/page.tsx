@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { Stepper } from "pasito";
 
 import { useDialKit, DialRoot } from "dialkit";
 import "dialkit/styles.css";
@@ -887,7 +888,7 @@ function TerminalAnimationView({
   } = animState;
 
   return (
-    <div className="flex flex-col items-center justify-center gap-4 text-xs/4 mt-11.5 p-3 pb-6">
+    <div className="flex flex-col items-center justify-center gap-4 text-xs/4 mt-11.5 p-3 pb-14">
       <div className="relative w-68.5 h-46 shrink-0 overflow-visible">
         <BrowserPreview
           slid={slid}
@@ -933,10 +934,25 @@ function TerminalAnimationView({
   );
 }
 
+const formatStarCount = (count: number) => {
+  if (count >= 1000) return `${(count / 1000).toFixed(1).replace(/\.0$/, "")}k`;
+  return String(count);
+};
+
 export default function HomePage() {
   const [copied, setCopied] = useState(false);
   const [openFaqs, setOpenFaqs] = useState<Set<number>>(new Set());
+  const [starCount, setStarCount] = useState<string>("3k");
   const commandRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch("https://api.github.com/repos/millionco/expect")
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.stargazers_count) setStarCount(formatStarCount(data.stargazers_count));
+      })
+      .catch(() => {});
+  }, []);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText("npx -y expect-cli@latest init");
@@ -962,21 +978,6 @@ export default function HomePage() {
             <TerminalIllustration />
           </div>
         </div>
-        <div className="[font-synthesis:none] flex w-112.75 h-8.25 items-center justify-center antialiased mt-10 mb-4">
-          <div className="flex items-center justify-center rounded-full py-1.25 px-4 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#A4A4A452_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]">
-            <div className="[white-space-collapse:preserve] text-center top-0 left-0 w-max relative text-[#414141] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold shrink-0 text-[15px]/5.75">
-              Bugfix
-            </div>
-          </div>
-          <div className="w-5.25 shrink-0" />
-          <div className="[white-space-collapse:preserve] text-center top-0 left-0 w-max relative text-[#9B9B9B] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold shrink-0 text-[15px]/5.75">
-            Responsive
-          </div>
-          <div className="w-6.5 shrink-0" />
-          <div className="[white-space-collapse:preserve] text-center top-0 left-0 w-max relative text-[#9B9B9B] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold shrink-0 text-[15px]/5.75">
-            Accessibility
-          </div>
-        </div>
       </div>
       <div className="relative w-112.75 pb-20">
         <div className="flex flex-col gap-2.5 mt-13">
@@ -991,16 +992,16 @@ export default function HomePage() {
         <div className="flex flex-col gap-2.75 mt-6">
           <div
             onClick={handleSelectCommand}
-            className="[font-synthesis:none] items-center flex justify-between w-112.75 rounded-[11px] overflow-clip py-3.25 px-3.5 cursor-text bg-[color(display-p3_1_1_1)] [box-shadow:color(display-p3_0.550_0.550_0.550/20%)_0px_0px_0px_0.5px] antialiased"
+            className="[font-synthesis:none] items-center flex justify-between w-112.75 rounded-xl overflow-clip py-3.25 pr-3.5 pl-5 cursor-text bg-[color(display-p3_1_1_1)] [box-shadow:0px_0px_0px_1px_#0000000f,0px_1px_2px_-1px_#0000000f,0px_2px_4px_0px_#0000000a] antialiased"
           >
             <div className="items-start flex min-w-0 gap-1">
-              <div className="shrink-0 w-3.75 text-[#9A9A9A] font-['GeistMono-Medium','Geist_Mono',system-ui,sans-serif] font-medium text-sm/4.5">
+              <div className="shrink-0 w-3.75 text-[#9A9A9A] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[15.5px]/5.75">
                 $
               </div>
               <div className="min-w-0 relative overflow-clip">
                 <div
                   ref={commandRef}
-                  className="w-max text-[color(display-p3_0.254_0.254_0.254)] font-['JetBrainsMono-Regular_Medium','JetBrains_Mono',system-ui,sans-serif] font-medium text-sm/4.5"
+                  className="w-max text-[color(display-p3_0.254_0.254_0.254)] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[15.5px]/5.75"
                 >
                   npx -y expect-cli@latest init
                 </div>
@@ -1015,12 +1016,12 @@ export default function HomePage() {
               aria-label="Copy command"
             >
               {copied && (
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '17px', height: '17px' }}>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '20px', height: '20px' }}>
                   <path fillRule="evenodd" clipRule="evenodd" d="M10.28 3.22a.75.75 0 0 1 0 1.06l-5 5a.75.75 0 0 1-1.06 0l-2.5-2.5a.75.75 0 1 1 1.06-1.06L4.75 7.69l4.47-4.47a.75.75 0 0 1 1.06 0Z" fill="#059669" />
                 </svg>
               )}
               {!copied && (
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" color="#0A0A0A" style={{ flexShrink: '0', verticalAlign: 'middle', width: '17px', height: '17px', overflow: 'clip' }}>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" color="#0A0A0A" style={{ flexShrink: '0', verticalAlign: 'middle', width: '20px', height: '20px', overflow: 'clip' }}>
                   <path fillRule="evenodd" clipRule="evenodd" d="M3.25 2.25C3.25 1.698 3.698 1.25 4.25 1.25H9.25C10.079 1.25 10.75 1.922 10.75 2.75V7.75C10.75 8.302 10.302 8.75 9.75 8.75C9.474 8.75 9.25 8.526 9.25 8.25C9.25 7.974 9.474 7.75 9.75 7.75V2.75C9.75 2.474 9.526 2.25 9.25 2.25H4.25C4.25 2.526 4.026 2.75 3.75 2.75C3.474 2.75 3.25 2.526 3.25 2.25ZM1.25 4.75C1.25 3.922 1.922 3.25 2.75 3.25H7.25C8.078 3.25 8.75 3.922 8.75 4.75V9.25C8.75 10.079 8.078 10.75 7.25 10.75H2.75C1.922 10.75 1.25 10.079 1.25 9.25V4.75ZM2.75 4.25C2.474 4.25 2.25 4.474 2.25 4.75V9.25C2.25 9.526 2.474 9.75 2.75 9.75H7.25C7.526 9.75 7.75 9.526 7.75 9.25V4.75C7.75 4.474 7.526 4.25 7.25 4.25H2.75Z" fill="#CDCDCD" />
                 </svg>
               )}
@@ -1062,14 +1063,24 @@ export default function HomePage() {
           href="https://github.com/millionco/expect"
           target="_blank"
           rel="noopener noreferrer"
-          className="[font-synthesis:none] items-center flex [font-synthesis-small-caps:none] [font-synthesis-style:none] [font-synthesis-weight:none] justify-between w-fit rounded-full overflow-clip py-2.5 px-4 bg-[#3F3F3F] antialiased mt-8 transition-colors hover:bg-[#4A4A4A]"
+          className="group [font-synthesis:none] items-center flex justify-between mt-8 w-fit rounded-full overflow-clip gap-2.5 pl-3.25 pr-1.75 py-1.5 bg-white [box-shadow:#0000000F_0px_0px_0px_1px,#0000000F_0px_1px_2px_-1px,#0000000A_0px_2px_4px] antialiased transition-shadow hover:[box-shadow:#00000014_0px_0px_0px_1px,#00000014_0px_1px_2px_-1px,#0000000F_0px_2px_4px]"
         >
-          <div className="flex items-center gap-1.75">
-            <svg viewBox="0 0 1024 1024" fill="none" width="1024" height="1024" xmlns="http://www.w3.org/2000/svg" style={{ width: '15px', height: 'auto', flexShrink: '0' }}>
-              <path fill="#FFFFFF" fillRule="evenodd" d="M512 0C229.12 0 0 229.12 0 512c0 226.56 146.56 417.92 350.08 485.76 25.6 4.48 35.2-10.88 35.2-24.32 0-12.16-.64-52.48-.64-95.36-128.64 23.68-161.92-31.36-172.16-60.16-5.76-14.72-30.72-60.16-52.48-72.32-17.92-9.6-43.52-33.28-.64-33.92 40.32-.64 69.12 37.12 78.72 52.48 46.08 77.44 119.68 55.68 149.12 42.24 4.48-33.28 17.92-55.68 32.64-68.48-113.92-12.8-232.96-56.96-232.96-252.8 0-55.68 19.84-101.76 52.48-137.6-5.12-12.8-23.04-65.28 5.12-135.68 0 0 42.88-13.44 140.8 52.48 40.96-11.52 84.48-17.28 128-17.28s87.04 5.76 128 17.28c97.92-66.56 140.8-52.48 140.8-52.48 28.16 70.4 10.24 122.88 5.12 135.68 32.64 35.84 52.48 81.28 52.48 137.6 0 196.48-119.68 240-233.6 252.8 18.56 16 34.56 46.72 34.56 94.72 0 68.48-.64 123.52-.64 140.8 0 13.44 9.6 29.44 35.2 24.32C877.44 929.92 1024 737.92 1024 512 1024 229.12 794.88 0 512 0" clipRule="evenodd" />
+          <div className="items-center flex gap-1.25">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: '0', verticalAlign: 'middle', width: '15px', height: '15px', overflow: 'clip' }}>
+              <defs><clipPath id="_starclip"><rect width="12" height="12" fill="#fff"/></clipPath></defs>
+              <g clipPath="url(#_starclip)">
+                <path className="fill-[#C0C0C0] transition-colors group-hover:fill-[#FFC200]" fillRule="evenodd" clipRule="evenodd" d="M6.884 1.195C6.513 0.468 5.474 0.468 5.103 1.195L3.94 3.474L1.414 3.875C0.608 4.004 0.287 4.992 0.864 5.57L2.671 7.38L2.273 9.906C2.145 10.713 2.986 11.323 3.714 10.953L5.994 9.793L8.273 10.953C9.001 11.323 9.842 10.713 9.715 9.906L9.316 7.38L11.124 5.57C11.701 4.992 11.379 4.004 10.573 3.875L8.047 3.474L6.884 1.195Z" />
+              </g>
             </svg>
-            <div className="tracking-[-0.01em] w-max text-white font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-sm/4.5">
-              Star on Github
+            <div className="shrink-0 [letter-spacing:-0.14px] w-max text-[#323232] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[15px]/4.5">
+              GitHub
+            </div>
+          </div>
+          <div className="flex flex-col items-start gap-0 px-2 py-0.75 rounded-full bg-[color(display-p3_0.956_0.956_0.956)]">
+            <div className="items-center flex gap-1.25">
+              <div className="shrink-0 [letter-spacing:-0.14px] w-max text-[#323232] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-sm/4.5">
+                {starCount}
+              </div>
             </div>
           </div>
         </a>
