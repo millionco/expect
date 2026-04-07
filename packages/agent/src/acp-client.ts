@@ -385,7 +385,7 @@ export class AcpAdapter extends ServiceMap.Service<
         Effect.timeoutOrElse({
           duration: ACP_AUTH_CHECK_TIMEOUT,
           onTimeout: () =>
-            new AcpSessionCreateError({
+            new AcpConnectionInitError({
               cause:
                 "Cursor agent timed out during version check. Ensure `agent --version` runs quickly.",
             }).asEffect(),
@@ -394,7 +394,7 @@ export class AcpAdapter extends ServiceMap.Service<
           new AcpProviderNotInstalledError({ provider: "cursor" }).asEffect(),
         ),
         Effect.catchTag("PlatformError", (platformError) =>
-          new AcpSessionCreateError({
+          new AcpConnectionInitError({
             cause: `Cursor agent found but failed to run: ${platformError.message}`,
           }).asEffect(),
         ),
@@ -434,7 +434,7 @@ export class AcpAdapter extends ServiceMap.Service<
         Effect.timeoutOrElse({
           duration: ACP_AUTH_CHECK_TIMEOUT,
           onTimeout: () =>
-            new AcpSessionCreateError({
+            new AcpConnectionInitError({
               cause:
                 "Factory Droid timed out during version check. Ensure `droid --version` runs quickly.",
             }).asEffect(),
@@ -443,7 +443,7 @@ export class AcpAdapter extends ServiceMap.Service<
           new AcpProviderNotInstalledError({ provider: "droid" }).asEffect(),
         ),
         Effect.catchTag("PlatformError", (platformError) =>
-          new AcpSessionCreateError({
+          new AcpConnectionInitError({
             cause: `Factory Droid found but failed to run: ${platformError.message}`,
           }).asEffect(),
         ),
@@ -472,7 +472,7 @@ export class AcpAdapter extends ServiceMap.Service<
         Effect.timeoutOrElse({
           duration: ACP_AUTH_CHECK_TIMEOUT,
           onTimeout: () =>
-            new AcpSessionCreateError({
+            new AcpConnectionInitError({
               cause:
                 "OpenCode timed out during version check. Ensure `opencode --version` runs quickly.",
             }).asEffect(),
@@ -481,7 +481,7 @@ export class AcpAdapter extends ServiceMap.Service<
           new AcpProviderNotInstalledError({ provider: "opencode" }).asEffect(),
         ),
         Effect.catchTag("PlatformError", (platformError) =>
-          new AcpSessionCreateError({
+          new AcpConnectionInitError({
             cause: `OpenCode found but failed to run: ${platformError.message}`,
           }).asEffect(),
         ),
@@ -521,7 +521,7 @@ export class AcpAdapter extends ServiceMap.Service<
         Effect.timeoutOrElse({
           duration: ACP_AUTH_CHECK_TIMEOUT,
           onTimeout: () =>
-            new AcpSessionCreateError({
+            new AcpConnectionInitError({
               cause: "Pi timed out during version check. Ensure `pi --version` runs quickly.",
             }).asEffect(),
         }),
@@ -529,7 +529,7 @@ export class AcpAdapter extends ServiceMap.Service<
           new AcpProviderNotInstalledError({ provider: "pi" }).asEffect(),
         ),
         Effect.catchTag("PlatformError", (platformError) =>
-          new AcpSessionCreateError({
+          new AcpConnectionInitError({
             cause: `Pi found but failed to run: ${platformError.message}`,
           }).asEffect(),
         ),
