@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
-import net from "node:net";
-import os from "node:os";
+import * as net from "node:net";
+import * as os from "node:os";
 import { detectAvailableAgents } from "@expect/agent";
 import { isCommandAvailable } from "@expect/shared/is-command-available";
 import { BROWSER_CONFIGS } from "@expect/cookies";
@@ -11,7 +11,7 @@ import { highlighter } from "../utils/highlighter";
 import { logger } from "../utils/logger";
 import { prompts, setOnCancel } from "../utils/prompts";
 import { spinner } from "../utils/spinner";
-import { type BrowserMode, writeExpectConfig } from "../utils/expect-config";
+import { type BrowserMode, isValidBrowserMode, writeExpectConfig } from "../utils/expect-config";
 import { runAddSkill } from "./add-skill";
 import { detectPackageManager } from "./init-utils";
 import { formatInstallCommand, getGlobalInstallCommand, runInstallCommand } from "./update";
@@ -68,11 +68,10 @@ const CDP_SUPPORTED_BROWSERS = BROWSER_CONFIGS.filter((config) => config.kind ==
 );
 
 const resolveBrowserModeFromFlags = (options: InitOptions): BrowserMode | undefined => {
-  const flags = [
-    options.cdp && "cdp",
-    options.headed && "headed",
-    options.headless && "headless",
-  ].filter(Boolean) as BrowserMode[];
+  const flags: BrowserMode[] = [];
+  if (options.cdp) flags.push("cdp");
+  if (options.headed) flags.push("headed");
+  if (options.headless) flags.push("headless");
 
   if (flags.length > 1) {
     logger.warn(`  Multiple browser mode flags passed (${flags.join(", ")}). Using --${flags[0]}.`);
@@ -110,7 +109,8 @@ const promptBrowserMode = async (flagMode: BrowserMode | undefined): Promise<Bro
     initial: 0,
   });
 
-  return (response.browserMode as BrowserMode) ?? "cdp";
+  const selected: unknown = response.browserMode;
+  return isValidBrowserMode(selected) ? selected : "cdp";
 };
 
 const getCdpLaunchCommand = (): string => {

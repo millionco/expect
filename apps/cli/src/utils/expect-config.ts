@@ -12,7 +12,7 @@ const CONFIG_FILE = "config.json";
 
 const VALID_BROWSER_MODES: readonly BrowserMode[] = ["cdp", "headed", "headless"];
 
-const isValidBrowserMode = (value: unknown): value is BrowserMode =>
+export const isValidBrowserMode = (value: unknown): value is BrowserMode =>
   typeof value === "string" && VALID_BROWSER_MODES.includes(value as BrowserMode);
 
 export const readExpectConfig = (projectRoot: string): ExpectConfig | undefined => {
