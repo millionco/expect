@@ -19,7 +19,7 @@ import { prompts } from "./utils/prompts";
 import { highlighter } from "./utils/highlighter";
 import { logger } from "./utils/logger";
 import { hasInstalledExpectSkill } from "./utils/expect-skill";
-import { readExpectConfig } from "./utils/expect-config";
+import { isValidBrowserMode, readExpectConfig } from "./utils/expect-config";
 import { resolveProjectRoot } from "./utils/project-root";
 
 try {
@@ -54,7 +54,7 @@ interface CommanderOpts {
   agent?: AgentBackend;
   target?: Target;
   verbose?: boolean;
-  headless?: boolean;
+  browserMode?: string;
   profile?: string;
   noCookies?: boolean;
   ci?: boolean;
@@ -79,7 +79,7 @@ const program = new Command()
   )
   .option("-t, --target <target>", "what to test: unstaged, branch, or changes", "changes")
   .option("--verbose", "enable verbose logging")
-  .option("--headless", "run browser in headless mode")
+  .option("--browser-mode <mode>", "browser mode: cdp, headed, or headless")
   .option("--profile <name>", "reuse a Chrome profile by name (e.g. Default)")
   .option("--no-cookies", "skip system browser cookie extraction")
   .option("--ci", "force CI mode: headless, no cookies, auto-yes, 30-minute timeout")
@@ -92,18 +92,24 @@ const program = new Command()
 Examples:
   $ expect                                          open interactive TUI
   $ expect -m "test the login flow" -y              run immediately
-  $ expect --headless -m "smoke test" -y            run with headless browser
+  $ expect --browser-mode headless -m "smoke test"  run with headless browser
+  $ expect --browser-mode headed -m "test" -y       launch a fresh browser
   $ expect --target branch                          test all branch changes
-  $ expect --target unstaged                        test unstaged changes
   $ expect update                                   update to the latest CLI release
-  $ expect update 0.0.30                            install a specific CLI version
   $ expect --no-cookies -m "test" -y                skip system browser cookie extraction
   $ expect -u http://localhost:3000 -m "test" -y    specify dev server URL directly
   $ expect watch -m "test the login flow"           watch mode`,
   );
 
-const resolveBrowserMode = (opts: CommanderOpts) =>
-  opts.headless ? ("headless" as const) : (lazyExpectConfig()?.browserMode ?? "cdp");
+const resolveBrowserMode = (opts: CommanderOpts) => {
+  if (opts.browserMode) {
+    if (isValidBrowserMode(opts.browserMode)) return opts.browserMode;
+    logger.warn(
+      `  Unknown browser mode "${opts.browserMode}". Expected: cdp, headed, or headless.`,
+    );
+  }
+  return lazyExpectConfig()?.browserMode ?? "cdp";
+};
 
 const seedStores = (opts: CommanderOpts, changesFor: ChangesFor) => {
   const browserMode = resolveBrowserMode(opts);
@@ -141,7 +147,7 @@ const runHeadlessForTarget = async (target: Target, opts: CommanderOpts) => {
     instruction: opts.message ?? DEFAULT_INSTRUCTION,
     agent: opts.agent ?? "claude",
     verbose: opts.verbose ?? false,
-    headed: ciMode ? false : !opts.headless,
+    headed: ciMode ? false : resolveBrowserMode(opts) !== "headless",
     ci: ciMode,
     noCookies: opts.noCookies ?? ciMode,
     timeoutMs,
@@ -246,7 +252,7 @@ program
   )
   .option("-t, --target <target>", "what to test: unstaged, branch, or changes", "changes")
   .option("--verbose", "enable verbose logging")
-  .option("--headless", "run browser in headless mode")
+  .option("--browser-mode <mode>", "browser mode: cdp, headed, or headless")
   .option("--profile <name>", "reuse a Chrome profile by name (e.g. Default)")
   .option("--no-cookies", "skip system browser cookie extraction")
   .option("-u, --url <urls...>", "base URL(s) for the dev server")
