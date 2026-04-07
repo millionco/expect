@@ -1,0 +1,44 @@
+packages/browser/src/mcp/mcp-session.ts
+  30e673579b4b05ce 7,79-88,137,431-435,437-442,444-448
+packages/shared/src/analytics/analytics-events.ts
+  30e673579b4b05ce 33-41
+packages/browser/src/mcp/runtime.ts
+  30e673579b4b05ce 3,11
+packages/browser/tests/mcp-session.test.ts
+  30e673579b4b05ce 4,46-47,50,55-56,66,88-92,96,101,105-110,113-114,125,134-139,143-147,150,155,159-164,167-168,174-179
+packages/browser/tests/mcp-server.test.ts
+  30e673579b4b05ce 26,44-45,70-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "41a73a3252af1c9170d7139299886a8789af2c0e",
+  "prompts": {
+    "30e673579b4b05ce": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c4693d1d-4313-4d2d-9254-a253c5a23059",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 108,
+      "total_deletions": 43,
+      "accepted_lines": 99,
+      "overriden_lines": 1
+    },
+    "f4029477402ac35f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "65bd9674-eb9a-4f74-ab41-b3e3670d8a3c",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 34,
+      "overriden_lines": 0
+    }
+  }
+}
