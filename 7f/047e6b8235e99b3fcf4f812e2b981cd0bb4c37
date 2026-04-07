@@ -1,0 +1,31 @@
+apps/cli/src/program.tsx
+  e9ad1e5a29ebb13d 19
+packages/shared/src/launched-from.ts
+  e9ad1e5a29ebb13d 14-29
+packages/shared/src/analytics/analytics-events.ts
+  e9ad1e5a29ebb13d 49-50
+apps/cli/src/utils/run-test.ts
+  e9ad1e5a29ebb13d 5,45-46
+apps/cli/src/utils/session-analytics.ts
+  e9ad1e5a29ebb13d 3,27,30-31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "7f047e6b8235e99b3fcf4f812e2b981cd0bb4c37",
+  "prompts": {
+    "e9ad1e5a29ebb13d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "499ce50c-7d02-47bb-8ca5-954bad07331a",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 26,
+      "total_deletions": 5,
+      "accepted_lines": 26,
+      "overriden_lines": 0
+    }
+  }
+}
