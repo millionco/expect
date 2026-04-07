@@ -1,0 +1,63 @@
+apps/cli/tests/expect-skill.test.ts
+  fd528823e8d35d8e 133-159
+  9ad66728b888acba 49,74,109-110,114-132,160,164-166
+apps/cli/src/utils/expect-skill.ts
+  9ad66728b888acba 55-57,61-62,64-65,67-68,73-76,130
+  fd528823e8d35d8e 3,58-60,63,66,71,126,151,153-155,159
+packages/agent/src/index.ts
+  fd528823e8d35d8e 8
+apps/cli/src/commands/update.ts
+  9ad66728b888acba 125
+apps/cli/src/commands/add-skill.ts
+  9ad66728b888acba 46-56,117-123,155,157-241,243-254,257-262,264,267-268,274-275,277-279,284,286,289-290,292-297,307,336-340
+apps/cli/tests/add-skill.test.ts
+  9ad66728b888acba 13,19,136,146,153-163,166,176,181,191,195,205-207,210,220
+packages/agent/src/detect-agents.ts
+  fd528823e8d35d8e 32-34,36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "c3578563220b2b151e119b371da42b0fefe5307d",
+  "prompts": {
+    "9ad66728b888acba": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b6cd1621-0755-484b-8b00-8d231fce6007",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 294,
+      "total_deletions": 114,
+      "accepted_lines": 220,
+      "overriden_lines": 9
+    },
+    "f4029477402ac35f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "65bd9674-eb9a-4f74-ab41-b3e3670d8a3c",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 63,
+      "overriden_lines": 0
+    },
+    "fd528823e8d35d8e": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "",
+        "model": ""
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 45,
+      "total_deletions": 9,
+      "accepted_lines": 45,
+      "overriden_lines": 0
+    }
+  }
+}
