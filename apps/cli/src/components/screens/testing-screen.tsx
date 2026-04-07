@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Box, Static, Text, useInput } from "ink";
+import { Box, Text, useInput } from "ink";
 import figures from "figures";
 import { Cause, DateTime, Option } from "effect";
 import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
@@ -24,9 +24,8 @@ import { usePreferencesStore } from "../../stores/use-preferences";
 import { useNavigationStore, Screen } from "../../stores/use-navigation";
 import cliTruncate from "cli-truncate";
 import { formatElapsedTime } from "../../utils/format-elapsed-time";
-import { Image } from "../ui/image";
 import { ErrorMessage } from "../ui/error-message";
-import { executeFn, screenshotPathsAtom } from "../../data/execution-atom";
+import { executeFn } from "../../data/execution-atom";
 import { agentConfigOptionsAtom } from "../../data/config-options";
 import { agentProviderAtom } from "../../data/runtime";
 import { trackEvent } from "../../utils/session-analytics";
@@ -285,7 +284,6 @@ export const TestingScreen = ({
   const [executionResult, triggerExecute] = useAtom(executeFn, {
     mode: "promiseExit",
   });
-  const screenshotPaths = useAtomValue(screenshotPathsAtom);
   const [liveReplayUrl, setLiveReplayUrl] = useState<string | undefined>(undefined);
 
   const isExecuting = AsyncResult.isWaiting(executionResult);
@@ -554,13 +552,6 @@ export const TestingScreen = ({
 
   return (
     <>
-      <Static items={[...screenshotPaths]}>
-        {(screenshotPath) => (
-          <Box key={screenshotPath} paddingX={1}>
-            <Image src={screenshotPath} alt={screenshotPath} />
-          </Box>
-        )}
-      </Static>
       <Box flexDirection="column" width="100%">
         <Box flexDirection="column" width="100%" paddingY={1} paddingX={1}>
           <Box>

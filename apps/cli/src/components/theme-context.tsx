@@ -28,7 +28,6 @@ export const theme = {
   text: noColor ? "" : "white",
   textMuted: noColor ? "" : "gray",
   border: noColor ? "" : "gray",
-  borderActive: noColor ? "" : "white",
   borderSubtle: noColor ? "" : "blackBright",
   shimmerBase: noColor ? "" : "#555555",
   shimmerHighlight: noColor ? "" : "#ffffff",

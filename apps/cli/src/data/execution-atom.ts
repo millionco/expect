@@ -1,5 +1,4 @@
 import { Effect, Option, Stream } from "effect";
-import * as Atom from "effect/unstable/reactivity/Atom";
 import { ExecutedTestPlan, Executor, Git, Reporter, type ExecuteOptions } from "@expect/supervisor";
 import { Analytics } from "@expect/shared/observability";
 import type { AgentBackend } from "@expect/agent";
@@ -26,16 +25,13 @@ interface ExecuteInput {
   readonly onConfigOptions?: (configOptions: readonly AcpConfigOption[]) => void;
 }
 
-export interface ExecutionResult {
+interface ExecutionResult {
   readonly executedPlan: ExecutedTestPlan;
   readonly report: TestReport;
   readonly replayUrl?: string;
   readonly localReplayUrl?: string;
   readonly videoUrl?: string;
 }
-
-// HACK: atom is read by testing-screen.tsx but never populated — screenshots are saved via McpSession instead
-export const screenshotPathsAtom = Atom.make<readonly string[]>([]);
 
 const syncReplayProxy = Effect.fn("syncReplayProxy")(function* (
   replayUrl: string | undefined,
