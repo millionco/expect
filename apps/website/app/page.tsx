@@ -638,7 +638,7 @@ function AnimatedCursor({
       }
       transition={
         !visible
-          ? { duration: 0.25, ease: "easeOut" }
+          ? { duration: 0.2, ease: "easeOut" }
           : { duration: config.cursorMoveDuration / 1000, ease: [0.22, 1, 0.36, 1] }
       }
     >
@@ -966,7 +966,7 @@ export default function HomePage() {
   const commandRef = useRef<HTMLDivElement>(null);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText("npx expect-cli@latest init");
+    await navigator.clipboard.writeText("npx -y expect-cli@latest init");
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
@@ -1003,22 +1003,19 @@ export default function HomePage() {
         <div className="flex flex-col gap-2.75 mt-6">
           <div
             onClick={handleSelectCommand}
-            className="items-center flex [font-synthesis-small-caps:none] [font-synthesis-style:none] [font-synthesis-weight:none] justify-between w-107.25 rounded-[11px] pt-2.75 pr-3 pb-2.75 pl-3.5 overflow-clip cursor-text [box-shadow:#C9C9C933_0px_2px_3px,#E9E9E9_0px_0px_0px_0.75px] transition-colors hover:bg-[color(display-p3_0.991_0.991_0.991)]"
-            style={{
-              backgroundImage:
-                "linear-gradient(in oklab 180deg, oklab(100% 0 0) 0%, oklab(100% 0 0 / 0%) 100%)",
-            }}
+            className="items-center flex [font-synthesis-small-caps:none] [font-synthesis-style:none] [font-synthesis-weight:none] justify-between w-112.75 rounded-[11px] pt-2.75 pr-3 pb-3.25 pl-3.5 overflow-clip cursor-text bg-origin-border border-t border-t-solid border-t-[color(display-p3_0.242_0.242_0.242)] [outline:1px_solid_#000000]"
+            style={{ backgroundImage: 'linear-gradient(in oklab 180deg, oklab(18.3% 0 0) 0%, oklab(0% 0 0) 100%)' }}
           >
             <div className="items-start flex min-w-0 gap-1">
-              <div className="shrink-0 [letter-spacing:0px] w-3.75 font-['JetBrains_Mono',system-ui,sans-serif] font-medium text-sm/4.5 text-[#5C5C5C]">
+              <div className="shrink-0 [letter-spacing:0px] w-3.75 text-[#9A9A9A] font-['GeistMono-Medium','Geist_Mono',system-ui,sans-serif] font-medium text-sm/4.5">
                 $
               </div>
-              <div className="min-w-0 relative">
+              <div className="min-w-0 relative overflow-clip">
                 <div
                   ref={commandRef}
-                  className="[letter-spacing:0px] w-max font-['JetBrains_Mono',system-ui,sans-serif] font-medium text-sm/4.5 text-[#323232]"
+                  className="[letter-spacing:0px] w-max text-white font-['GeistMono-Medium','Geist_Mono',system-ui,sans-serif] font-medium text-sm/4.5"
                 >
-                  npx expect-cli@latest init
+                  npx -y expect-cli@latest init
                 </div>
               </div>
             </div>
@@ -1031,59 +1028,72 @@ export default function HomePage() {
               aria-label="Copy command"
             >
               {copied && (
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 12 12"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  style={{ width: "17px", height: "auto" }}
-                >
-                  <path
-                    fillRule="evenodd"
-                    clipRule="evenodd"
-                    d="M10.28 3.22a.75.75 0 0 1 0 1.06l-5 5a.75.75 0 0 1-1.06 0l-2.5-2.5a.75.75 0 1 1 1.06-1.06L4.75 7.69l4.47-4.47a.75.75 0 0 1 1.06 0Z"
-                    fill="#00C8B3"
-                  />
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '17px', height: 'auto' }}>
+                  <path fillRule="evenodd" clipRule="evenodd" d="M10.28 3.22a.75.75 0 0 1 0 1.06l-5 5a.75.75 0 0 1-1.06 0l-2.5-2.5a.75.75 0 1 1 1.06-1.06L4.75 7.69l4.47-4.47a.75.75 0 0 1 1.06 0Z" fill="#34D399" />
                 </svg>
               )}
               {!copied && (
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 12 12"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  style={{ width: "17px", height: "auto" }}
-                  className="text-[#989898] group-hover:text-[#555555] transition-colors"
-                >
-                  <path
-                    fillRule="evenodd"
-                    clipRule="evenodd"
-                    d="M3.25 2.25C3.25 1.698 3.698 1.25 4.25 1.25H9.25C10.079 1.25 10.75 1.922 10.75 2.75V7.75C10.75 8.302 10.302 8.75 9.75 8.75C9.474 8.75 9.25 8.526 9.25 8.25C9.25 7.974 9.474 7.75 9.75 7.75V2.75C9.75 2.474 9.526 2.25 9.25 2.25H4.25C4.25 2.526 4.026 2.75 3.75 2.75C3.474 2.75 3.25 2.526 3.25 2.25ZM1.25 4.75C1.25 3.922 1.922 3.25 2.75 3.25H7.25C8.078 3.25 8.75 3.922 8.75 4.75V9.25C8.75 10.079 8.078 10.75 7.25 10.75H2.75C1.922 10.75 1.25 10.079 1.25 9.25V4.75ZM2.75 4.25C2.474 4.25 2.25 4.474 2.25 4.75V9.25C2.25 9.526 2.474 9.75 2.75 9.75H7.25C7.526 9.75 7.75 9.526 7.75 9.25V4.75C7.75 4.474 7.526 4.25 7.25 4.25H2.75Z"
-                    fill="currentColor"
-                  />
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '17px', height: 'auto', flexShrink: '0' }}>
+                  <path fillRule="evenodd" clipRule="evenodd" d="M3.25 2.25C3.25 1.698 3.698 1.25 4.25 1.25H9.25C10.079 1.25 10.75 1.922 10.75 2.75V7.75C10.75 8.302 10.302 8.75 9.75 8.75C9.474 8.75 9.25 8.526 9.25 8.25C9.25 7.974 9.474 7.75 9.75 7.75V2.75C9.75 2.474 9.526 2.25 9.25 2.25H4.25C4.25 2.526 4.026 2.75 3.75 2.75C3.474 2.75 3.25 2.526 3.25 2.25ZM1.25 4.75C1.25 3.922 1.922 3.25 2.75 3.25H7.25C8.078 3.25 8.75 3.922 8.75 4.75V9.25C8.75 10.079 8.078 10.75 7.25 10.75H2.75C1.922 10.75 1.25 10.079 1.25 9.25V4.75ZM2.75 4.25C2.474 4.25 2.25 4.474 2.25 4.75V9.25C2.25 9.526 2.474 9.75 2.75 9.75H7.25C7.526 9.75 7.75 9.526 7.75 9.25V4.75C7.75 4.474 7.526 4.25 7.25 4.25H2.75Z" fill="#CDCDCD" />
                 </svg>
               )}
             </button>
+          </div>
+        </div>
+        <div className="[font-synthesis:none] flex w-107.25 h-fit flex-col gap-4.25 antialiased mt-14">
+          <div className="mb-0 left-0 top-0 w-107.25 [white-space-collapse:preserve] relative text-[#3F3F3F] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[15px]/5.75">
+            How to use Expect
+          </div>
+          <div className="flex flex-col gap-2.75">
+            <div className="flex items-center gap-2.75">
+              <div className="shrink-0 relative size-7">
+                <div className="left-0 top-0 rounded-full absolute bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#A4A4A452_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] size-7" />
+                <div className="[white-space-collapse:preserve] left-0 top-0.75 text-center w-7 absolute text-[#474747] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[15px]/5.75">
+                  1
+                </div>
+              </div>
+              <div className="[white-space-collapse:preserve] w-82.75 left-0 top-0 relative text-[#474747] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[15px]/5.75">
+                Lorem ipsum dolor init, latin ipsum
+              </div>
+            </div>
+            <div className="flex items-center gap-2.75">
+              <div className="shrink-0 relative size-7">
+                <div className="left-0 top-0 rounded-full absolute bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#A4A4A452_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] size-7" />
+                <div className="[white-space-collapse:preserve] left-0 top-0.75 text-center w-7 absolute text-[#474747] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[15px]/5.75">
+                  2
+                </div>
+              </div>
+              <div className="[white-space-collapse:preserve] w-82.75 left-0 top-0 relative text-[#474747] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[15px]/5.75">
+                Lorem ipsum dolor init
+              </div>
+            </div>
+            <div className="flex items-center gap-2.75">
+              <div className="shrink-0 relative size-7">
+                <div className="left-0 top-0 rounded-full absolute bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#A4A4A452_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] size-7" />
+                <div className="[white-space-collapse:preserve] left-0 top-0.75 text-center w-7 absolute text-[#474747] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[15px]/5.75">
+                  3
+                </div>
+              </div>
+              <div className="[white-space-collapse:preserve] w-82.75 left-0 top-0 relative text-[#474747] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[15px]/5.75">
+                Lorem ipsum dolor
+              </div>
+            </div>
           </div>
         </div>
         <a
           href="https://github.com/millionco/expect"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 mt-4 w-max rounded-lg px-3.5 py-1.5 font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-sm/5 text-white bg-[#1F1F1F] border border-[#1F1F1F] transition-colors hover:bg-[#333333] active:bg-[#0A0A0A]"
+          className="[font-synthesis:none] items-center flex [font-synthesis-small-caps:none] [font-synthesis-style:none] [font-synthesis-weight:none] justify-between w-fit rounded-[11px] overflow-clip py-2 px-3 bg-white [box-shadow:#E9E9E9_0px_0px_0px_0.75px] antialiased mt-8 transition-colors hover:bg-[color(display-p3_0.975_0.975_0.975)]"
         >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="currentColor"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z" />
-          </svg>
-          GitHub
+          <div className="flex items-center gap-1.75">
+            <svg viewBox="0 0 1024 1024" fill="none" width="1024" height="1024" xmlns="http://www.w3.org/2000/svg" style={{ width: '15px', height: 'auto', flexShrink: '0' }}>
+              <path fill="#1B1F23" fillRule="evenodd" d="M512 0C229.12 0 0 229.12 0 512c0 226.56 146.56 417.92 350.08 485.76 25.6 4.48 35.2-10.88 35.2-24.32 0-12.16-.64-52.48-.64-95.36-128.64 23.68-161.92-31.36-172.16-60.16-5.76-14.72-30.72-60.16-52.48-72.32-17.92-9.6-43.52-33.28-.64-33.92 40.32-.64 69.12 37.12 78.72 52.48 46.08 77.44 119.68 55.68 149.12 42.24 4.48-33.28 17.92-55.68 32.64-68.48-113.92-12.8-232.96-56.96-232.96-252.8 0-55.68 19.84-101.76 52.48-137.6-5.12-12.8-23.04-65.28 5.12-135.68 0 0 42.88-13.44 140.8 52.48 40.96-11.52 84.48-17.28 128-17.28s87.04 5.76 128 17.28c97.92-66.56 140.8-52.48 140.8-52.48 28.16 70.4 10.24 122.88 5.12 135.68 32.64 35.84 52.48 81.28 52.48 137.6 0 196.48-119.68 240-233.6 252.8 18.56 16 34.56 46.72 34.56 94.72 0 68.48-.64 123.52-.64 140.8 0 13.44 9.6 29.44 35.2 24.32C877.44 929.92 1024 737.92 1024 512 1024 229.12 794.88 0 512 0" clipRule="evenodd" />
+            </svg>
+            <div className="tracking-[-0.01em] w-max text-[#323232] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-sm/4.5">
+              Star on Github
+            </div>
+          </div>
         </a>
         <div className="flex flex-col w-107.25 mt-14">
           <div className="[letter-spacing:0em] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[15px]/5.75 text-[color(display-p3_0.248_0.248_0.248)] mb-2.75">
@@ -1213,7 +1223,7 @@ export default function HomePage() {
               ),
             },
             {
-              question: "Why not just use Puppeteer, Playwright, or Cypress directly?",
+              question: "Why not just use Puppeteer, Playwright, or Cypress?",
               answer:
                 "Instead of writing scripts, maintaining selectors, and wiring up assertions, Expect reads your code changes and tests them in a real browser automatically. It's like giving your agent QA superpowers.",
             },
