@@ -107,7 +107,9 @@ describe("McpSession cookie pre-extraction", () => {
     let preExtractCookiesCallCount = 0;
     const preExtractCookies: typeof Browser.Service.preExtractCookies = () => {
       preExtractCookiesCallCount++;
-      return Effect.promise(() => extractionPromise).pipe(Effect.map((cookies) => cookies as never));
+      return Effect.promise(() => extractionPromise).pipe(
+        Effect.map((cookies) => cookies as never),
+      );
     };
     const session = await runSession(
       createBrowserLayer({
