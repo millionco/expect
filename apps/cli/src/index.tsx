@@ -244,6 +244,15 @@ program
   });
 
 program
+  .command("mcp")
+  .description("start as a standalone MCP server (stdio transport)")
+  .action(async () => {
+    const { execFileSync } = await import("node:child_process");
+    const mcpBin = new URL("./browser-mcp.js", import.meta.url).pathname;
+    execFileSync(process.execPath, [mcpBin], { stdio: "inherit" });
+  });
+
+program
   .command("update")
   .description("update expect-cli globally")
   .argument("[version]", "version or dist-tag to install")
@@ -253,6 +262,7 @@ program
 
 program.action(async () => {
   const opts = program.opts<CommanderOpts>();
+
   const target = opts.target ?? "changes";
 
   if (!TARGETS.includes(target)) {
