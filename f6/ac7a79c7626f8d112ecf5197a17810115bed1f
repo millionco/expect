@@ -1,0 +1,23 @@
+packages/agent/src/agent.ts
+  77d74889281289c4 26-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "f6ac7a79c7626f8d112ecf5197a17810115bed1f",
+  "prompts": {
+    "77d74889281289c4": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "28f5a588-ca96-4845-a984-01d8abb1e72c",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 1,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}
