@@ -1,17 +1,15 @@
 import { spawn, spawnSync } from "node:child_process";
 import { detectAvailableAgents } from "@expect/agent";
 import { isCommandAvailable } from "@expect/shared/is-command-available";
-import { Effect } from "effect";
 import figures from "figures";
 import pc from "picocolors";
 import { PLAYWRIGHT_INSTALL_TIMEOUT_MS, VERSION } from "../constants";
 import { highlighter } from "../utils/highlighter";
 import { logger } from "../utils/logger";
-import { prompts, setOnCancel } from "../utils/prompts";
+import { setOnCancel } from "../utils/prompts";
 import { spinner } from "../utils/spinner";
 import { runAddSkill } from "./add-skill";
-import { runAddGithubAction } from "./add-github-action";
-import { detectNonInteractive, detectPackageManager, hasGitHubRemote } from "./init-utils";
+import { detectPackageManager } from "./init-utils";
 import { formatInstallCommand, getGlobalInstallCommand, runInstallCommand } from "./update";
 
 export { detectAvailableAgents };
@@ -43,7 +41,6 @@ const logUsageGuide = () => {
 };
 
 export const runInit = async (options: InitOptions = {}) => {
-  const nonInteractive = detectNonInteractive(options.yes ?? false);
   const packageManager = detectPackageManager();
   const installCommand = getGlobalInstallCommand(packageManager);
 
@@ -149,26 +146,6 @@ export const runInit = async (options: InitOptions = {}) => {
   logger.break();
 
   await runAddSkill({ yes: options.yes, agents: availableAgents });
-
-  logger.break();
-
-  if (await Effect.runPromise(hasGitHubRemote)) {
-    let setupGithubAction = nonInteractive;
-
-    if (!nonInteractive) {
-      const response = await prompts({
-        type: "confirm",
-        name: "setupGithubAction",
-        message: `Set up ${highlighter.info("GitHub Actions")} to continuously test every PR in CI?`,
-        initial: true,
-      });
-      setupGithubAction = response.setupGithubAction;
-    }
-
-    if (setupGithubAction) {
-      await runAddGithubAction({ yes: options.yes, agents: availableAgents });
-    }
-  }
 
   logger.break();
   logger.success("Setup complete!");
