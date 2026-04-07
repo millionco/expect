@@ -23,7 +23,8 @@ type AgentLayerError =
   | AcpProviderNotInstalledError
   | AcpProviderUnauthenticatedError
   | AcpConnectionInitError
-  | AcpAdapterNotFoundError;
+  | AcpAdapterNotFoundError
+  | AcpSessionCreateError;
 
 export type AgentBackend =
   | "claude"
