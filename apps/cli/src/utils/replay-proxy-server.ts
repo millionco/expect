@@ -6,7 +6,7 @@ import { Hono } from "hono";
 import { proxy } from "hono/proxy";
 import { serve } from "@hono/node-server";
 
-export class ReplayProxyStartError extends Schema.ErrorClass<ReplayProxyStartError>(
+class ReplayProxyStartError extends Schema.ErrorClass<ReplayProxyStartError>(
   "ReplayProxyStartError",
 )({
   _tag: Schema.tag("ReplayProxyStartError"),
@@ -20,7 +20,7 @@ interface StartReplayProxyOptions {
   readonly liveViewUrl: string;
 }
 
-export interface ReplayProxyHandle {
+interface ReplayProxyHandle {
   readonly url: string;
   readonly close: Effect.Effect<void>;
 }
