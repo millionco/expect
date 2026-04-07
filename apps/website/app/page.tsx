@@ -225,7 +225,7 @@ function TerminalContent({
 
   return (
     <motion.div
-      className="flex flex-col items-start w-61 text-xs/4 gap-1"
+      className="flex flex-col items-start w-49 text-xs/4 gap-1"
       initial={cycle > 0 ? { y: 120 } : false}
       animate={{ y: scrollY }}
       transition={{ duration: config.terminalScrollDuration / 1000, ease: [0.25, 0.1, 0.25, 1] }}
@@ -250,7 +250,7 @@ function TerminalContent({
       </div>
       <div className="h-2.5 shrink-0" />
       <div>
-        <div className="flex items-center w-61 h-7 shrink-0 rounded-xs px-2.5 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696952_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]">
+          <div className="flex items-center w-49 h-7 shrink-0 rounded-xs px-2.5 bg-white [box-shadow:#69696920_0px_0px_0px_0.5px]">
           <div className="[letter-spacing:-0.125px] inline-block text-[#323232] font-['JetBrains_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
             build signup form
           </div>
@@ -279,20 +279,20 @@ function TerminalContent({
               <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.040_0.361_0)] font-['JetBrains_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
                 12 +
               </div>
-              <div className="w-42.5 h-3.25 rounded-xs bg-[#B1E4AC] shrink-0" />
+              <div className="w-32 h-3.25 rounded-xs bg-[#B1E4AC] shrink-0" />
             </div>
             <div className="flex items-center gap-1.75">
               <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.040_0.361_0)] font-['JetBrains_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
                 13 +
               </div>
-              <div className="w-23.75 h-3.25 rounded-xs bg-[#B1E4AC] shrink-0" />
+              <div className="w-18 h-3.25 rounded-xs bg-[#B1E4AC] shrink-0" />
             </div>
           </div>
           <div className="flex items-center w-full rounded-[3px] py-0.75 px-2 gap-1.75 bg-[color(display-p3_1_0.879_0.854)]">
             <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.625_0_0)] font-['JetBrains_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
               61 -
             </div>
-            <div className="w-34 h-3.25 rounded-xs bg-[#F9BFB5] shrink-0" />
+            <div className="w-26 h-3.25 rounded-xs bg-[#F9BFB5] shrink-0" />
           </div>
         </>
       )}
@@ -353,19 +353,19 @@ function TerminalContent({
               <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.040_0.361_0)] font-['JetBrains_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
                 62 +
               </div>
-              <div className="w-38 h-3.25 rounded-xs bg-[#B1E4AC] shrink-0" />
+              <div className="w-28 h-3.25 rounded-xs bg-[#B1E4AC] shrink-0" />
             </div>
             <div className="flex items-center gap-1.75">
               <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.040_0.361_0)] font-['JetBrains_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
                 63 +
               </div>
-              <div className="w-28 h-3.25 rounded-xs bg-[#B1E4AC] shrink-0" />
+              <div className="w-20 h-3.25 rounded-xs bg-[#B1E4AC] shrink-0" />
             </div>
             <div className="flex items-center gap-1.75">
               <div className="[letter-spacing:-0.125px] [white-space-collapse:preserve] inline-block w-max text-[color(display-p3_0.040_0.361_0)] font-['JetBrains_Mono',system-ui,sans-serif] shrink-0 text-[12.5px]/4.5">
                 64 +
               </div>
-              <div className="w-20 h-3.25 rounded-xs bg-[#B1E4AC] shrink-0" />
+              <div className="w-14 h-3.25 rounded-xs bg-[#B1E4AC] shrink-0" />
             </div>
           </div>
         </>
@@ -407,8 +407,8 @@ function BrowserPreview({
       initial={false}
       animate={
         focused
-          ? { x: -100, y: -8, scale: 1.04, zIndex: 20 }
-          : { x: -100, y: -8, scale: 1, zIndex: 0 }
+          ? { x: -90, y: -8, scale: 1.04, zIndex: 20 }
+          : { x: -90, y: -8, scale: 1, zIndex: 0 }
       }
       transition={{
         type: "spring",
@@ -417,7 +417,7 @@ function BrowserPreview({
         mass: config.browserSpringMass / 1000,
       }}
     >
-      <div className="relative flex flex-col w-68.5 h-46 rounded-2xl pt-2.5 pr-2.25 pb-6.75 pl-4.75 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] overflow-hidden">
+      <div className={`relative flex flex-col w-68.5 h-46 rounded-2xl pt-2.5 pr-2.25 pb-6.75 pl-4.75 bg-white overflow-hidden ${focused ? "[box-shadow:#69696920_0px_0px_0px_0.5px,#C4C4C430_0px_2px_6px]" : "[box-shadow:#69696920_0px_0px_0px_0.5px]"}`}>
         <div className="flex items-center -ml-1">
           <div className="flex items-center gap-1.5">
             <div className="rounded-full bg-[#FF726A] shrink-0 size-2.5" />
@@ -425,7 +425,7 @@ function BrowserPreview({
             <div className="rounded-full bg-[#EAEAEA] shrink-0 size-2.5" />
           </div>
           <div className="w-3.5 shrink-0" />
-          <div className="relative w-36.25 h-6.5 rounded-full shrink-0 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#A4A4A452_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] overflow-hidden flex items-center justify-center">
+          <div className="relative w-36.25 h-6.5 rounded-full shrink-0 bg-white [box-shadow:#69696920_0px_0px_0px_0.5px] overflow-hidden flex items-center justify-center">
             <div className="absolute inset-0 flex items-center justify-center text-[12px] text-[#888888] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium">
               localhost
             </div>
@@ -463,7 +463,7 @@ function BrowserPreview({
             )}
           </div>
           <div className="w-2 shrink-0" />
-          <div className="w-10.5 h-6.5 rounded-full shrink-0 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#A4A4A452_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]" />
+          <div className="w-10.5 h-6.5 rounded-full shrink-0 bg-white [box-shadow:#69696920_0px_0px_0px_0.5px]" />
         </div>
         <AnimatePresence>
           {loaded && (
@@ -473,9 +473,9 @@ function BrowserPreview({
               transition={{ duration: reloading ? 0.15 : 0.4, ease: "easeOut" }}
             >
               <div className="tracking-[-0.03em] [white-space-collapse:preserve] mt-4.5 w-max text-[#474747] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-base/9">
-                sign up
+                login
               </div>
-              <div className="w-52.75 h-7 rounded-full bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696952_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] shrink-0" />
+              <div className="w-52.75 h-7 rounded-full bg-white [box-shadow:#69696920_0px_0px_0px_0.5px] shrink-0" />
             </motion.div>
           )}
         </AnimatePresence>
@@ -724,7 +724,7 @@ function AnimatedCursor({
         </defs>
       </motion.svg>
       <motion.div
-        className="absolute left-4 top-4 rounded-full px-2.5 py-1.5 font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[13px]/4.5 whitespace-nowrap bg-white [box-shadow:0_0_0_0.5px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.12)] flex items-center gap-1.5 origin-top-left"
+        className="absolute left-4 top-4 rounded-full px-2.5 py-1.5 font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[13px]/4.5 whitespace-nowrap bg-white [box-shadow:0_0_0_0.5px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.06)] flex items-center gap-1.5 origin-top-left"
         initial={{ opacity: 0, scale: 0.5 }}
         animate={{ opacity: labelVisible ? 1 : 0, scale: labelVisible ? 1 : 0.5 }}
         transition={{ duration: config.labelDuration / 1000 }}
@@ -887,7 +887,7 @@ function TerminalAnimationView({
   } = animState;
 
   return (
-    <div className="flex flex-col items-center justify-center gap-4 text-xs/4 mt-11.5 p-3">
+    <div className="flex flex-col items-center justify-center gap-4 text-xs/4 mt-11.5 p-3 pb-6">
       <div className="relative w-68.5 h-46 shrink-0 overflow-visible">
         <BrowserPreview
           slid={slid}
@@ -909,7 +909,7 @@ function TerminalAnimationView({
           config={config}
         />
         <motion.div
-          className="flex flex-col items-start w-68.5 h-46 relative z-10 rounded-2xl pt-4.5 pr-3.75 pb-6.5 pl-3.75 overflow-clip bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]"
+          className={`flex flex-col items-start w-56 h-46 relative z-10 rounded-2xl pt-4.5 pr-3.75 pb-6.5 pl-3.75 overflow-clip bg-white ${terminalFocused ? "[box-shadow:#69696920_0px_0px_0px_0.5px,#C4C4C430_0px_2px_6px]" : "[box-shadow:#69696920_0px_0px_0px_0.5px]"}`}
           style={{ x: 80 }}
           animate={{ scale: terminalFocused ? 1.04 : 1, zIndex: terminalFocused ? 20 : 10 }}
           transition={{
@@ -919,22 +919,6 @@ function TerminalAnimationView({
             mass: config.terminalSpringMass / 1000,
           }}
         >
-          <div
-            suppressHydrationWarning
-            className="absolute top-0 left-0 right-0 h-20 z-10 pointer-events-none select-none rounded-t-2xl"
-            style={{
-              background:
-                "linear-gradient(to top, transparent 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.45) 75%, rgba(255,255,255,0.8) 100%)",
-            }}
-          />
-          <div
-            suppressHydrationWarning
-            className="absolute bottom-0 left-0 right-0 h-12 z-10 pointer-events-none select-none rounded-b-2xl"
-            style={{
-              background:
-                "linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.45) 75%, rgba(255,255,255,0.8) 100%)",
-            }}
-          />
           <TerminalContent
             cycle={cycle}
             phase={phase}
@@ -944,17 +928,6 @@ function TerminalAnimationView({
             config={config}
           />
         </motion.div>
-      </div>
-      <div className="[letter-spacing:0em] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[13px]/5.75 text-[#858585] mt-2 mb-8">
-        {fixDiff
-          ? "Login fixed"
-          : fixing
-            ? "Fixing login"
-            : cursorLabel === "alert"
-              ? "Login failed"
-              : focused
-                ? "Testing login"
-                : "Agent writes code"}
       </div>
     </div>
   );
@@ -981,18 +954,33 @@ export default function HomePage() {
     selection.addRange(range);
   };
   return (
-    <div className="[font-synthesis:none] overflow-x-clip antialiased min-h-screen bg-[color(display-p3_0.986_0.986_0.986)] flex flex-col items-center">
+    <div className="[font-synthesis:none] overflow-x-clip antialiased min-h-screen bg-[color(display-p3_0.981_0.981_0.981)] flex flex-col items-center">
       <DialRoot position="top-right" theme="dark" />
-      <div className="w-full pb-6 bg-[#FAFAFA]">
-        <div className="w-112.75 mx-auto pt-2 flex items-center justify-center">
-          <div className="scale-[1.15] origin-top">
+      <div className="w-full pt-6 pb-4 bg-white/50 flex flex-col items-center">
+        <div className="w-112.75">
+          <div className="scale-[1.15] origin-top-left">
             <TerminalIllustration />
+          </div>
+        </div>
+        <div className="[font-synthesis:none] flex w-112.75 h-8.25 items-center justify-center antialiased mt-10 mb-4">
+          <div className="flex items-center justify-center rounded-full py-1.25 px-4 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#A4A4A452_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]">
+            <div className="[white-space-collapse:preserve] text-center top-0 left-0 w-max relative text-[#414141] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold shrink-0 text-[15px]/5.75">
+              Bugfix
+            </div>
+          </div>
+          <div className="w-5.25 shrink-0" />
+          <div className="[white-space-collapse:preserve] text-center top-0 left-0 w-max relative text-[#9B9B9B] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold shrink-0 text-[15px]/5.75">
+            Responsive
+          </div>
+          <div className="w-6.5 shrink-0" />
+          <div className="[white-space-collapse:preserve] text-center top-0 left-0 w-max relative text-[#9B9B9B] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold shrink-0 text-[15px]/5.75">
+            Accessibility
           </div>
         </div>
       </div>
       <div className="relative w-112.75 pb-20">
-        <div className="flex flex-col gap-2.5 mt-10">
-          <div className="w-112.75 tracking-[-0.03em] [white-space-collapse:preserve] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[21px]/9.5 text-[color(display-p3_0.248_0.248_0.248)]">
+        <div className="flex flex-col gap-2.5 mt-13">
+          <div className="w-112.75 tracking-[-0.03em] [white-space-collapse:preserve] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[23px]/9.5 text-[color(display-p3_0.248_0.248_0.248)]">
             Expect more from your agents
           </div>
           <div className="[letter-spacing:0em] w-102 [white-space-collapse:preserve] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[15px]/5.75 text-[#707070]">
@@ -1003,17 +991,16 @@ export default function HomePage() {
         <div className="flex flex-col gap-2.75 mt-6">
           <div
             onClick={handleSelectCommand}
-            className="items-center flex [font-synthesis-small-caps:none] [font-synthesis-style:none] [font-synthesis-weight:none] justify-between w-112.75 rounded-[11px] pt-2.75 pr-3 pb-3.25 pl-3.5 overflow-clip cursor-text bg-origin-border border-t border-t-solid border-t-[color(display-p3_0.242_0.242_0.242)] [outline:1px_solid_#000000]"
-            style={{ backgroundImage: 'linear-gradient(in oklab 180deg, oklab(18.3% 0 0) 0%, oklab(0% 0 0) 100%)' }}
+            className="[font-synthesis:none] items-center flex justify-between w-112.75 rounded-[11px] overflow-clip py-3.25 px-3.5 cursor-text bg-[color(display-p3_1_1_1)] [box-shadow:color(display-p3_0.550_0.550_0.550/20%)_0px_0px_0px_0.5px] antialiased"
           >
             <div className="items-start flex min-w-0 gap-1">
-              <div className="shrink-0 [letter-spacing:0px] w-3.75 text-[#9A9A9A] font-['GeistMono-Medium','Geist_Mono',system-ui,sans-serif] font-medium text-sm/4.5">
+              <div className="shrink-0 w-3.75 text-[#9A9A9A] font-['GeistMono-Medium','Geist_Mono',system-ui,sans-serif] font-medium text-sm/4.5">
                 $
               </div>
               <div className="min-w-0 relative overflow-clip">
                 <div
                   ref={commandRef}
-                  className="[letter-spacing:0px] w-max text-white font-['GeistMono-Medium','Geist_Mono',system-ui,sans-serif] font-medium text-sm/4.5"
+                  className="w-max text-[color(display-p3_0.254_0.254_0.254)] font-['JetBrainsMono-Regular_Medium','JetBrains_Mono',system-ui,sans-serif] font-medium text-sm/4.5"
                 >
                   npx -y expect-cli@latest init
                 </div>
@@ -1024,16 +1011,16 @@ export default function HomePage() {
                 event.stopPropagation();
                 handleCopy();
               }}
-              className="cursor-pointer shrink-0 group"
+              className="cursor-pointer shrink-0 content-center group"
               aria-label="Copy command"
             >
               {copied && (
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '17px', height: 'auto' }}>
-                  <path fillRule="evenodd" clipRule="evenodd" d="M10.28 3.22a.75.75 0 0 1 0 1.06l-5 5a.75.75 0 0 1-1.06 0l-2.5-2.5a.75.75 0 1 1 1.06-1.06L4.75 7.69l4.47-4.47a.75.75 0 0 1 1.06 0Z" fill="#34D399" />
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '17px', height: '17px' }}>
+                  <path fillRule="evenodd" clipRule="evenodd" d="M10.28 3.22a.75.75 0 0 1 0 1.06l-5 5a.75.75 0 0 1-1.06 0l-2.5-2.5a.75.75 0 1 1 1.06-1.06L4.75 7.69l4.47-4.47a.75.75 0 0 1 1.06 0Z" fill="#059669" />
                 </svg>
               )}
               {!copied && (
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '17px', height: 'auto', flexShrink: '0' }}>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" color="#0A0A0A" style={{ flexShrink: '0', verticalAlign: 'middle', width: '17px', height: '17px', overflow: 'clip' }}>
                   <path fillRule="evenodd" clipRule="evenodd" d="M3.25 2.25C3.25 1.698 3.698 1.25 4.25 1.25H9.25C10.079 1.25 10.75 1.922 10.75 2.75V7.75C10.75 8.302 10.302 8.75 9.75 8.75C9.474 8.75 9.25 8.526 9.25 8.25C9.25 7.974 9.474 7.75 9.75 7.75V2.75C9.75 2.474 9.526 2.25 9.25 2.25H4.25C4.25 2.526 4.026 2.75 3.75 2.75C3.474 2.75 3.25 2.526 3.25 2.25ZM1.25 4.75C1.25 3.922 1.922 3.25 2.75 3.25H7.25C8.078 3.25 8.75 3.922 8.75 4.75V9.25C8.75 10.079 8.078 10.75 7.25 10.75H2.75C1.922 10.75 1.25 10.079 1.25 9.25V4.75ZM2.75 4.25C2.474 4.25 2.25 4.474 2.25 4.75V9.25C2.25 9.526 2.474 9.75 2.75 9.75H7.25C7.526 9.75 7.75 9.526 7.75 9.25V4.75C7.75 4.474 7.526 4.25 7.25 4.25H2.75Z" fill="#CDCDCD" />
                 </svg>
               )}
@@ -1041,41 +1028,32 @@ export default function HomePage() {
           </div>
         </div>
         <div className="[font-synthesis:none] flex w-107.25 h-fit flex-col gap-4.25 antialiased mt-14">
-          <div className="mb-0 left-0 top-0 w-107.25 [white-space-collapse:preserve] relative text-[#3F3F3F] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[15px]/5.75">
+          <div className="mb-0 left-0 top-0 w-107.25 [white-space-collapse:preserve] relative text-[#3F3F3F] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[17px]/5.75">
             How to use Expect
           </div>
           <div className="flex flex-col gap-2.75">
-            <div className="flex items-center gap-2.75">
-              <div className="shrink-0 relative size-7">
-                <div className="left-0 top-0 rounded-full absolute bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#A4A4A452_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] size-7" />
-                <div className="[white-space-collapse:preserve] left-0 top-0.75 text-center w-7 absolute text-[#474747] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[15px]/5.75">
-                  1
-                </div>
+            <div className="flex items-center gap-2">
+              <div className="[white-space-collapse:preserve] h-5.75 relative w-3.75 text-[#8E8E8E] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[15px]/5.75">
+                1.
               </div>
               <div className="[white-space-collapse:preserve] w-82.75 left-0 top-0 relative text-[#474747] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[15px]/5.75">
                 Lorem ipsum dolor init, latin ipsum
               </div>
             </div>
-            <div className="flex items-center gap-2.75">
-              <div className="shrink-0 relative size-7">
-                <div className="left-0 top-0 rounded-full absolute bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#A4A4A452_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] size-7" />
-                <div className="[white-space-collapse:preserve] left-0 top-0.75 text-center w-7 absolute text-[#474747] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[15px]/5.75">
-                  2
-                </div>
+            <div className="flex items-center gap-2 w-107.25">
+              <div className="[white-space-collapse:preserve] h-5.75 relative w-3.75 text-[#8E8E8E] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[15px]/5.75">
+                2.
               </div>
-              <div className="[white-space-collapse:preserve] w-82.75 left-0 top-0 relative text-[#474747] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[15px]/5.75">
-                Lorem ipsum dolor init
+              <div className="[white-space-collapse:preserve] w-82.75 relative text-[#474747] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[15px]/5.75">
+                Lorem ipsum dolor init, latin ipsum
               </div>
             </div>
-            <div className="flex items-center gap-2.75">
-              <div className="shrink-0 relative size-7">
-                <div className="left-0 top-0 rounded-full absolute bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#A4A4A452_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] size-7" />
-                <div className="[white-space-collapse:preserve] left-0 top-0.75 text-center w-7 absolute text-[#474747] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[15px]/5.75">
-                  3
-                </div>
+            <div className="flex items-center gap-2">
+              <div className="[white-space-collapse:preserve] h-5.75 relative w-3.75 text-[#8E8E8E] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[15px]/5.75">
+                3.
               </div>
-              <div className="[white-space-collapse:preserve] w-82.75 left-0 top-0 relative text-[#474747] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[15px]/5.75">
-                Lorem ipsum dolor
+              <div className="[white-space-collapse:preserve] w-82.75 relative text-[#474747] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[15px]/5.75">
+                Lorem ipsum dolor init, latin ipsum
               </div>
             </div>
           </div>
@@ -1084,19 +1062,19 @@ export default function HomePage() {
           href="https://github.com/millionco/expect"
           target="_blank"
           rel="noopener noreferrer"
-          className="[font-synthesis:none] items-center flex [font-synthesis-small-caps:none] [font-synthesis-style:none] [font-synthesis-weight:none] justify-between w-fit rounded-[11px] overflow-clip py-2 px-3 bg-white [box-shadow:#E9E9E9_0px_0px_0px_0.75px] antialiased mt-8 transition-colors hover:bg-[color(display-p3_0.975_0.975_0.975)]"
+          className="[font-synthesis:none] items-center flex [font-synthesis-small-caps:none] [font-synthesis-style:none] [font-synthesis-weight:none] justify-between w-fit rounded-full overflow-clip py-2.5 px-4 bg-[#3F3F3F] antialiased mt-8 transition-colors hover:bg-[#4A4A4A]"
         >
           <div className="flex items-center gap-1.75">
             <svg viewBox="0 0 1024 1024" fill="none" width="1024" height="1024" xmlns="http://www.w3.org/2000/svg" style={{ width: '15px', height: 'auto', flexShrink: '0' }}>
-              <path fill="#1B1F23" fillRule="evenodd" d="M512 0C229.12 0 0 229.12 0 512c0 226.56 146.56 417.92 350.08 485.76 25.6 4.48 35.2-10.88 35.2-24.32 0-12.16-.64-52.48-.64-95.36-128.64 23.68-161.92-31.36-172.16-60.16-5.76-14.72-30.72-60.16-52.48-72.32-17.92-9.6-43.52-33.28-.64-33.92 40.32-.64 69.12 37.12 78.72 52.48 46.08 77.44 119.68 55.68 149.12 42.24 4.48-33.28 17.92-55.68 32.64-68.48-113.92-12.8-232.96-56.96-232.96-252.8 0-55.68 19.84-101.76 52.48-137.6-5.12-12.8-23.04-65.28 5.12-135.68 0 0 42.88-13.44 140.8 52.48 40.96-11.52 84.48-17.28 128-17.28s87.04 5.76 128 17.28c97.92-66.56 140.8-52.48 140.8-52.48 28.16 70.4 10.24 122.88 5.12 135.68 32.64 35.84 52.48 81.28 52.48 137.6 0 196.48-119.68 240-233.6 252.8 18.56 16 34.56 46.72 34.56 94.72 0 68.48-.64 123.52-.64 140.8 0 13.44 9.6 29.44 35.2 24.32C877.44 929.92 1024 737.92 1024 512 1024 229.12 794.88 0 512 0" clipRule="evenodd" />
+              <path fill="#FFFFFF" fillRule="evenodd" d="M512 0C229.12 0 0 229.12 0 512c0 226.56 146.56 417.92 350.08 485.76 25.6 4.48 35.2-10.88 35.2-24.32 0-12.16-.64-52.48-.64-95.36-128.64 23.68-161.92-31.36-172.16-60.16-5.76-14.72-30.72-60.16-52.48-72.32-17.92-9.6-43.52-33.28-.64-33.92 40.32-.64 69.12 37.12 78.72 52.48 46.08 77.44 119.68 55.68 149.12 42.24 4.48-33.28 17.92-55.68 32.64-68.48-113.92-12.8-232.96-56.96-232.96-252.8 0-55.68 19.84-101.76 52.48-137.6-5.12-12.8-23.04-65.28 5.12-135.68 0 0 42.88-13.44 140.8 52.48 40.96-11.52 84.48-17.28 128-17.28s87.04 5.76 128 17.28c97.92-66.56 140.8-52.48 140.8-52.48 28.16 70.4 10.24 122.88 5.12 135.68 32.64 35.84 52.48 81.28 52.48 137.6 0 196.48-119.68 240-233.6 252.8 18.56 16 34.56 46.72 34.56 94.72 0 68.48-.64 123.52-.64 140.8 0 13.44 9.6 29.44 35.2 24.32C877.44 929.92 1024 737.92 1024 512 1024 229.12 794.88 0 512 0" clipRule="evenodd" />
             </svg>
-            <div className="tracking-[-0.01em] w-max text-[#323232] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-sm/4.5">
+            <div className="tracking-[-0.01em] w-max text-white font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-sm/4.5">
               Star on Github
             </div>
           </div>
         </a>
         <div className="flex flex-col w-107.25 mt-14">
-          <div className="[letter-spacing:0em] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[15px]/5.75 text-[color(display-p3_0.248_0.248_0.248)] mb-2.75">
+          <div className="[letter-spacing:0em] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[17px]/5.75 text-[color(display-p3_0.248_0.248_0.248)] mb-2.75">
             FAQ
           </div>
           <div className="h-[0.5px] self-stretch shrink-0 bg-[#DDDDDD] mb-2.75" />
