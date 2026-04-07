@@ -79,7 +79,7 @@ export const extractTarEntries = (tar: Buffer, prefix: string, destDir: string) 
   }
 };
 
-const downloadSkill = Effect.fn("downloadSkill")(function* (skillDir: string) {
+const downloadSkill = Effect.fn("Skill.downloadSkill")(function* (skillDir: string) {
   yield* Effect.annotateCurrentSpan({ skillDir });
 
   const response: Response = yield* Effect.tryPromise({
@@ -142,7 +142,7 @@ const getExistingPathStats = (targetPath: string): fs.Stats | fs.Dirent | undefi
   try {
     return fs.lstatSync(targetPath);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") return undefined;
     throw error;
   }
 };

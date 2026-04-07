@@ -41,9 +41,8 @@ interface CommanderOpts {
   agent?: AgentBackend;
   target?: Target;
   verbose?: boolean;
-  headed?: boolean;
+  headless?: boolean;
   noCookies?: boolean;
-  replayHost?: string;
   ci?: boolean;
   timeout?: number;
   output?: OutputFormat;
@@ -64,20 +63,19 @@ const program = new Command()
   )
   .option("-t, --target <target>", "what to test: unstaged, branch, or changes", "changes")
   .option("--verbose", "enable verbose logging")
-  .option("--headed", "show a visible browser window during tests")
+  .option("--headless", "run browser in headless mode")
   .option("--no-cookies", "skip system browser cookie extraction")
   .option("--ci", "force CI mode: headless, no cookies, auto-yes, 30-minute timeout")
   .option("--timeout <ms>", "execution timeout in milliseconds", parseInt)
   .option("--output <format>", "output format: text (default) or json")
   .option("-u, --url <urls...>", "base URL(s) for the dev server (skips port picker)")
-  .option("--replay-host <url>", "website host for live replay viewer", "https://expect.dev")
   .addHelpText(
     "after",
     `
 Examples:
   $ expect                                          open interactive TUI
   $ expect -m "test the login flow" -y              run immediately
-  $ expect --headed -m "smoke test" -y              run with a visible browser
+  $ expect --headless -m "smoke test" -y            run with headless browser
   $ expect --target branch                          test all branch changes
   $ expect --target unstaged                        test unstaged changes
   $ expect update                                   update to the latest CLI release
@@ -90,8 +88,7 @@ Examples:
 const seedStores = (opts: CommanderOpts, changesFor: ChangesFor) => {
   usePreferencesStore.setState({
     verbose: opts.verbose ?? false,
-    browserHeaded: opts.headed ?? false,
-    replayHost: opts.replayHost ?? "https://expect.dev",
+    browserHeaded: !opts.headless,
   });
 
   if (opts.message) {
@@ -121,7 +118,7 @@ const runHeadlessForTarget = async (target: Target, opts: CommanderOpts) => {
     instruction: opts.message ?? DEFAULT_INSTRUCTION,
     agent: opts.agent ?? "claude",
     verbose: opts.verbose ?? false,
-    headed: ciMode ? false : (opts.headed ?? false),
+    headed: ciMode ? false : !opts.headless,
     ci: ciMode,
     noCookies: opts.noCookies ?? ciMode,
     timeoutMs,
@@ -211,10 +208,9 @@ program
   )
   .option("-t, --target <target>", "what to test: unstaged, branch, or changes", "changes")
   .option("--verbose", "enable verbose logging")
-  .option("--headed", "show a visible browser window during tests")
+  .option("--headless", "run browser in headless mode")
   .option("--no-cookies", "skip system browser cookie extraction")
   .option("-u, --url <urls...>", "base URL(s) for the dev server")
-  .option("--replay-host <url>", "website host for live replay viewer", "https://expect.dev")
   .action(async (opts: CommanderOpts) => {
     await runWatchCommand(opts);
   });
@@ -246,8 +242,7 @@ program.action(async () => {
   } else {
     usePreferencesStore.setState({
       verbose: opts.verbose ?? false,
-      browserHeaded: opts.headed ?? false,
-      replayHost: opts.replayHost ?? "https://expect.dev",
+      browserHeaded: !opts.headless,
     });
     if (opts.url) {
       usePreferencesStore.setState({ cliBaseUrls: opts.url });

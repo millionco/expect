@@ -40,7 +40,7 @@ const SYSTEM_CHROME_NAMES_LINUX = [
   "microsoft-edge",
 ] as const;
 
-export const findSystemChrome = Effect.fn("findSystemChrome")(function* () {
+export const findSystemChrome = Effect.fn("Chrome.findSystemChrome")(function* () {
   const platform = os.platform();
 
   if (platform === "darwin") {
@@ -80,7 +80,7 @@ export const findSystemChrome = Effect.fn("findSystemChrome")(function* () {
       programFiles && path.join(programFiles, "Microsoft", "Edge", "Application", "msedge.exe"),
       programFilesX86 &&
         path.join(programFilesX86, "Microsoft", "Edge", "Application", "msedge.exe"),
-    ].filter(Boolean) as string[];
+    ].filter((candidate): candidate is string => typeof candidate === "string");
 
     for (const candidate of candidates) {
       if (fs.existsSync(candidate)) {
@@ -170,7 +170,7 @@ const cleanupFailedLaunch = (child: ChildProcess, tempDir: string | undefined) =
     }
   });
 
-export const launchSystemChrome = Effect.fn("launchSystemChrome")(function* (options: {
+export const launchSystemChrome = Effect.fn("Chrome.launchSystemChrome")(function* (options: {
   headless: boolean;
   profilePath?: string;
 }) {
@@ -187,7 +187,11 @@ export const launchSystemChrome = Effect.fn("launchSystemChrome")(function* (opt
 
   yield* Effect.tryPromise(() =>
     fs.promises.rm(path.join(userDataDir, "DevToolsActivePort"), { force: true }),
-  ).pipe(Effect.catchTag("UnknownError", () => Effect.void));
+  ).pipe(
+    Effect.catchTag("UnknownError", (cause) =>
+      Effect.logDebug("Failed to remove stale DevToolsActivePort", { cause }),
+    ),
+  );
 
   const args = buildLaunchArgs({ headless: options.headless, userDataDir });
 

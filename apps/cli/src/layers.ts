@@ -2,7 +2,7 @@ import { Layer, References } from "effect";
 import { DevTools } from "effect/unstable/devtools";
 import { FlowStorage, Reporter, Updates, Watch } from "@expect/supervisor";
 import type { AgentBackend } from "@expect/agent";
-import { RrVideo } from "@expect/browser";
+
 import { Analytics, DebugFileLoggerLayer, Tracing } from "@expect/shared/observability";
 import { layerSdk } from "expect-sdk/effect";
 
@@ -17,7 +17,6 @@ export const layerCli = ({ verbose, agent }: { verbose: boolean; agent: AgentBac
     FlowStorage.layer,
     DevTools.layer(),
     Analytics.layerPostHog,
-    RrVideo.layer,
     watchLayer,
   ).pipe(
     Layer.provide(DebugFileLoggerLayer),

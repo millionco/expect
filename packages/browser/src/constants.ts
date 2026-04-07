@@ -48,11 +48,10 @@ export const ESTIMATED_CHARS_PER_TOKEN = 4;
 export const MAX_ELEMENT_TEXT_LENGTH = 100;
 export const MAX_CURSOR_INTERACTIVE_ELEMENTS = 100;
 export const OVERLAY_CONTAINER_ID = "__expect_annotation_overlay__";
-export const EVENT_COLLECT_INTERVAL_MS = 250;
-export const RRWEB_CHECKOUT_INTERVAL_MS = 10_000;
+export const AGENT_OVERLAY_CONTAINER_ID = "__expect_agent_overlay__";
 
-export const REPLAY_PLAYER_WIDTH_PX = 960;
-export const REPLAY_PLAYER_HEIGHT_PX = 540;
+export const VIDEO_WIDTH_PX = 1920;
+export const VIDEO_HEIGHT_PX = 1080;
 
 export const CDP_DISCOVERY_TIMEOUT_MS = 2_000;
 export const CDP_PORT_PROBE_TIMEOUT_MS = 500;
@@ -62,3 +61,8 @@ export const CDP_POLL_INTERVAL_MS = 50;
 
 export const HEADLESS_CHROME_WINDOW_WIDTH_PX = 1280;
 export const HEADLESS_CHROME_WINDOW_HEIGHT_PX = 720;
+
+export const OVERLAY_REINJECT_TIMEOUT_MS = 5_000;
+
+export const BROWSER_CLOSE_TIMEOUT_MS = 10_000;
+export const VIDEO_PATH_TIMEOUT_MS = 15_000;

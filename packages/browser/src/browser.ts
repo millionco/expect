@@ -7,14 +7,15 @@ import { Array as Arr, Effect, Layer, Option, ServiceMap } from "effect";
 
 const cookiesLayer = Layer.mergeAll(layerLive, Cookies.layer);
 import {
+  AGENT_OVERLAY_CONTAINER_ID,
   CONTENT_ROLES,
   HEADLESS_CHROMIUM_ARGS,
   INTERACTIVE_ROLES,
   NAVIGATION_DETECT_DELAY_MS,
   OVERLAY_CONTAINER_ID,
   POST_NAVIGATION_SETTLE_MS,
-  REPLAY_PLAYER_HEIGHT_PX,
-  REPLAY_PLAYER_WIDTH_PX,
+  VIDEO_HEIGHT_PX,
+  VIDEO_WIDTH_PX,
   REF_PREFIX,
   SNAPSHOT_TIMEOUT_MS,
 } from "./constants";
@@ -41,7 +42,7 @@ import type {
   RefMap,
   SnapshotOptions,
 } from "./types";
-import type { ScrollContainerResult } from "./runtime/scroll-detection";
+import type { ScrollContainerResult } from "./runtime/lib/scroll-detection";
 
 const BROWSER_ENGINES = { chromium, webkit, firefox } as const;
 
@@ -215,7 +216,7 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
         if (options.videoOutputDir) {
           contextOptions.recordVideo = {
             dir: options.videoOutputDir,
-            size: { width: REPLAY_PLAYER_WIDTH_PX, height: REPLAY_PLAYER_HEIGHT_PX },
+            size: { width: VIDEO_WIDTH_PX, height: VIDEO_HEIGHT_PX },
           };
         }
 
@@ -427,6 +428,9 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
         labelPositions.push({ label: labelCounter, x: box.x, y: box.y });
       }
 
+      yield* evaluateRuntime(page, "hideAgentOverlay", AGENT_OVERLAY_CONTAINER_ID).pipe(
+        Effect.ignore({ log: "Warn", message: "Failed to hide agent overlay for capture" }),
+      );
       yield* injectOverlayLabels(page, labelPositions);
       return yield* Effect.ensuring(
         Effect.tryPromise({
@@ -435,7 +439,15 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
         }).pipe(Effect.map((screenshotBuffer) => ({ screenshot: screenshotBuffer, annotations }))),
         // HACK: overlay removal is best-effort cleanup — evaluateRuntime uses Effect.promise which defects on failure
         evaluateRuntime(page, "removeOverlay", OVERLAY_CONTAINER_ID).pipe(
-          Effect.catchCause(() => Effect.void),
+          Effect.ignore({ log: "Warn", message: "Failed to remove annotation overlay" }),
+          Effect.tap(() =>
+            evaluateRuntime(page, "showAgentOverlay", AGENT_OVERLAY_CONTAINER_ID).pipe(
+              Effect.ignore({
+                log: "Warn",
+                message: "Failed to show agent overlay after capture",
+              }),
+            ),
+          ),
         ),
       );
     });

@@ -21,17 +21,10 @@ import { RuledBox } from "../ui/ruled-box";
 
 interface ResultsScreenProps {
   report: TestReport;
-  replayUrl?: string;
-  localReplayUrl?: string;
   videoUrl?: string;
 }
 
-export const ResultsScreen = ({
-  report,
-  replayUrl,
-  localReplayUrl,
-  videoUrl,
-}: ResultsScreenProps) => {
+export const ResultsScreen = ({ report, videoUrl }: ResultsScreenProps) => {
   const COLORS = useColors();
   const setScreen = useNavigationStore((state) => state.setScreen);
   const [statusMessage, setStatusMessage] = useState<{ text: string; color: string } | undefined>(
@@ -108,12 +101,6 @@ export const ResultsScreen = ({
   const statusIcon = isPassed ? figures.tick : figures.cross;
   const statusLabel = isPassed ? "Passed" : "Failed";
   const totalElapsedMs = getTotalElapsedMs(report.steps);
-  const displayedReplayUrl = replayUrl ?? localReplayUrl;
-  const showLocalReplayLine =
-    Boolean(replayUrl) &&
-    Boolean(localReplayUrl) &&
-    replayUrl !== localReplayUrl &&
-    localReplayUrl !== undefined;
 
   return (
     <Box flexDirection="column" width="100%" paddingY={1} paddingX={1}>
@@ -146,16 +133,30 @@ export const ResultsScreen = ({
           Copy this summary now
         </Text>
         <Text color={COLORS.TEXT}>
-          Press <Text color={COLORS.PRIMARY} bold>y</Text> to copy the test summary so you can paste
-          it into your chat or PR.
+          Press{" "}
+          <Text color={COLORS.PRIMARY} bold>
+            y
+          </Text>{" "}
+          to copy the test summary so you can paste it into your chat or PR.
         </Text>
         <Text color={COLORS.DIM}>
-          Press <Text color={COLORS.PRIMARY} bold>s</Text> to save this flow or{" "}
-          <Text color={COLORS.PRIMARY} bold>r</Text> to run it again.
+          Press{" "}
+          <Text color={COLORS.PRIMARY} bold>
+            s
+          </Text>{" "}
+          to save this flow or{" "}
+          <Text color={COLORS.PRIMARY} bold>
+            r
+          </Text>{" "}
+          to run it again.
         </Text>
         {hasPullRequest && (
           <Text color={COLORS.DIM}>
-            Press <Text color={COLORS.PRIMARY} bold>p</Text> to post the summary to the PR.
+            Press{" "}
+            <Text color={COLORS.PRIMARY} bold>
+              p
+            </Text>{" "}
+            to post the summary to the PR.
           </Text>
         )}
       </RuledBox>
@@ -237,28 +238,6 @@ export const ResultsScreen = ({
       {AsyncResult.isFailure(saveResult) && (
         <Box marginTop={1}>
           <Text color={COLORS.RED}>{figures.cross} Failed to save flow</Text>
-        </Box>
-      )}
-
-      {displayedReplayUrl && (
-        <Box flexDirection="column" paddingX={1} marginTop={1}>
-          <Text color={COLORS.DIM}>
-            Replay:{" "}
-            <Text color={COLORS.PRIMARY} bold>
-              {displayedReplayUrl}
-            </Text>
-          </Text>
-        </Box>
-      )}
-
-      {showLocalReplayLine && (
-        <Box flexDirection="column" paddingX={1}>
-          <Text color={COLORS.DIM}>
-            Local Replay:{" "}
-            <Text color={COLORS.PRIMARY} bold>
-              {localReplayUrl}
-            </Text>
-          </Text>
         </Box>
       )}
 

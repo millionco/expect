@@ -1,4 +1,3 @@
-import * as path from "node:path";
 import {
   AcpProviderUnauthenticatedError,
   AcpProviderUsageLimitError,
@@ -28,16 +27,14 @@ import {
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Git } from "./git/git";
 import {
-  EXPECT_LIVE_VIEW_URL_ENV_NAME,
   EXPECT_COOKIE_BROWSERS_ENV_NAME,
   EXPECT_BASE_URL_ENV_NAME,
+  EXPECT_HEADED_ENV_NAME,
 } from "@expect/browser/mcp";
 import {
   ALL_STEPS_TERMINAL_GRACE_MS,
   EXECUTION_CONTEXT_FILE_LIMIT,
   EXECUTION_RECENT_COMMIT_LIMIT,
-  EXPECT_REPLAY_OUTPUT_ENV_NAME,
-  EXPECT_STATE_DIR,
 } from "./constants";
 
 export class ExecutionError extends Schema.ErrorClass<ExecutionError>("@supervisor/ExecutionError")(
@@ -63,7 +60,6 @@ export interface ExecuteOptions {
   readonly baseUrl?: string;
   readonly savedFlow?: SavedFlow;
   readonly learnings?: string;
-  readonly liveViewUrl?: string;
   readonly testCoverage?: TestCoverageReport;
   readonly onConfigOptions?: (configOptions: readonly AcpConfigOption[]) => void;
   readonly modelPreference?: { configId: string; value: string };
@@ -153,12 +149,6 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
       });
 
       const planId = PlanId.makeUnsafe(crypto.randomUUID());
-      const replayOutputPath = path.join(
-        process.cwd(),
-        EXPECT_STATE_DIR,
-        "replays",
-        `${planId}.ndjson`,
-      );
 
       const syntheticPlan = new TestPlan({
         id: planId,
@@ -181,16 +171,14 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
         events: [new RunStarted({ plan: syntheticPlan })],
       });
 
-      const mcpEnv = [{ name: EXPECT_REPLAY_OUTPUT_ENV_NAME, value: replayOutputPath }];
+      const mcpEnv: Array<{ name: string; value: string }> = [];
       if (options.baseUrl) {
         mcpEnv.push({ name: EXPECT_BASE_URL_ENV_NAME, value: options.baseUrl });
       }
-      if (options.liveViewUrl) {
-        mcpEnv.push({
-          name: EXPECT_LIVE_VIEW_URL_ENV_NAME,
-          value: options.liveViewUrl,
-        });
-      }
+      mcpEnv.push({
+        name: EXPECT_HEADED_ENV_NAME,
+        value: options.isHeadless ? "false" : "true",
+      });
       if (options.cookieBrowserKeys.length > 0) {
         mcpEnv.push({
           name: EXPECT_COOKIE_BROWSERS_ENV_NAME,

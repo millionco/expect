@@ -1,5 +1,9 @@
 import { context } from "esbuild";
 import * as fs from "node:fs";
+import * as path from "node:path";
+import { createRequire } from "node:module";
+
+const esmRequire = createRequire(import.meta.url);
 
 const watchMode = process.argv.includes("--watch");
 
@@ -40,7 +44,7 @@ const generateRuntimeTypes = (exportNames) => {
 
 const emitPlugin = {
   name: "emit-runtime-script",
-  setup(build) {
+  setup: (build) => {
     build.onEnd((result) => {
       if (result.errors.length > 0) return;
       const runtimeCode =
@@ -58,6 +62,23 @@ const emitPlugin = {
   },
 };
 
+const cssTextPlugin = {
+  name: "css-text",
+  setup: (build) => {
+    build.onResolve({ filter: /\.css$/ }, (args) => {
+      const isRelative = args.path.startsWith(".") || args.path.startsWith("/");
+      const resolved = isRelative
+        ? path.resolve(args.resolveDir, args.path)
+        : esmRequire.resolve(args.path, { paths: [args.resolveDir] });
+      return { path: resolved, namespace: "css-text" };
+    });
+    build.onLoad({ namespace: "css-text", filter: /.*/ }, (args) => ({
+      contents: `export default ${JSON.stringify(fs.readFileSync(args.path, "utf-8"))};`,
+      loader: "js",
+    }));
+  },
+};
+
 const ctx = await context({
   entryPoints: ["src/runtime/index.ts"],
   bundle: true,
@@ -66,7 +87,8 @@ const ctx = await context({
   write: false,
   minify: true,
   target: "es2020",
-  plugins: [emitPlugin],
+  jsx: "automatic",
+  plugins: [cssTextPlugin, emitPlugin],
 });
 
 if (watchMode) {

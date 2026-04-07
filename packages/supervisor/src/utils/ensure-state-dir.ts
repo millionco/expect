@@ -2,7 +2,7 @@ import { Effect, FileSystem } from "effect";
 import * as path from "node:path";
 import { EXPECT_STATE_DIR } from "../constants";
 
-export const ensureStateDir = Effect.fn("ensureStateDir")(function* (
+export const ensureStateDir = Effect.fn("Git.ensureStateDir")(function* (
   fileSystem: FileSystem.FileSystem,
   baseDir: string,
 ) {

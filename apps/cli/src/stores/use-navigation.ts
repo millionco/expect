@@ -24,7 +24,7 @@ export type Screen = Data.TaggedEnum<{
     baseUrls?: readonly string[];
     devServerHints?: readonly DevServerHint[];
   };
-  Results: { report: TestReport; replayUrl?: string; localReplayUrl?: string; videoUrl?: string };
+  Results: { report: TestReport; videoUrl?: string };
   SavedFlowPicker: {};
   Watch: {
     changesFor: ChangesFor;

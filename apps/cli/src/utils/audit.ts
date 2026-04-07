@@ -32,7 +32,7 @@ const WORKSPACE_GLOBS = ["packages/*", "apps/*"];
 const isLintLikeScript = (scriptName: string): boolean =>
   AUDIT_LINT_KEYWORDS.some((keyword) => scriptName.includes(keyword));
 
-const detectAgent = Effect.fn("detectAgent")(function* (rootDir: string) {
+const detectAgent = Effect.fn("Audit.detectAgent")(function* (rootDir: string) {
   const fileSystem = yield* FileSystem.FileSystem;
 
   for (const [lockFile, agent] of Object.entries(LOCK_FILE_TO_AGENT)) {
@@ -62,7 +62,7 @@ const detectAgent = Effect.fn("detectAgent")(function* (rootDir: string) {
   return "npm";
 });
 
-const readPackageJson = Effect.fn("readPackageJson")(function* (directory: string) {
+const readPackageJson = Effect.fn("Audit.readPackageJson")(function* (directory: string) {
   const fileSystem = yield* FileSystem.FileSystem;
   const packageJsonPath = path.join(directory, "package.json");
   const content = yield* fileSystem.readFileString(packageJsonPath);
@@ -72,7 +72,9 @@ const readPackageJson = Effect.fn("readPackageJson")(function* (directory: strin
   });
 });
 
-const listWorkspaceDirectories = Effect.fn("listWorkspaceDirectories")(function* (rootDir: string) {
+const listWorkspaceDirectories = Effect.fn("Audit.listWorkspaceDirectories")(function* (
+  rootDir: string,
+) {
   const fileSystem = yield* FileSystem.FileSystem;
   const directories: string[] = [];
 
@@ -109,7 +111,7 @@ const runScript = (agent: string, directory: string, script: string): Promise<Sc
     );
   });
 
-const discoverPackages = Effect.fn("discoverPackages")(function* (rootDir: string) {
+const discoverPackages = Effect.fn("Audit.discoverPackages")(function* (rootDir: string) {
   const directories = yield* listWorkspaceDirectories(rootDir);
   const entries: AuditPackageEntry[] = [];
 

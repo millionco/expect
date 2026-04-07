@@ -126,14 +126,7 @@ export const App = ({ agent }: { agent: AgentBackend }) => {
           />
         );
       case "Results":
-        return (
-          <ResultsScreen
-            report={screen.report}
-            replayUrl={screen.replayUrl}
-            localReplayUrl={screen.localReplayUrl}
-            videoUrl={screen.videoUrl}
-          />
-        );
+        return <ResultsScreen report={screen.report} videoUrl={screen.videoUrl} />;
       case "SelectPr":
         return <PrPickerScreen />;
       case "CookieSyncConfirm":

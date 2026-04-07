@@ -347,7 +347,7 @@ export class Git extends ServiceMap.Service<Git>()("@supervisor/Git", {
     });
 
     /** @todo(rasmus): cleanup */
-    const ensureStateDir = Effect.fn("ensureStateDir")(function* (baseDir: string) {
+    const ensureStateDir = Effect.fn("Git.ensureStateDir")(function* (baseDir: string) {
       const stateDir = path.join(baseDir, EXPECT_STATE_DIR);
 
       yield* fileSystem

@@ -1,4 +1,4 @@
-import { Effect, Option, Stream } from "effect";
+import { Effect, Option, Predicate, Stream } from "effect";
 import * as Atom from "effect/unstable/reactivity/Atom";
 import { ExecutedTestPlan, Executor, Git, Reporter, type ExecuteOptions } from "@expect/supervisor";
 import { Analytics } from "@expect/shared/observability";
@@ -7,63 +7,23 @@ import type { AcpConfigOption, TestReport } from "@expect/shared/models";
 import { cliAtomRuntime } from "./runtime";
 import { stripUndefinedRequirement } from "../utils/strip-undefined-requirement";
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import { startReplayProxy } from "../utils/replay-proxy-server";
-import { toViewerRunState, pushStepState } from "../utils/push-step-state";
 import { extractCloseArtifacts } from "../utils/extract-close-artifacts";
-import { loadReplayEvents } from "../utils/load-replay-events";
-
-const LIVE_VIEW_PORT_MIN = 50000;
-const LIVE_VIEW_PORT_RANGE = 10000;
-
-const pickRandomPort = () => LIVE_VIEW_PORT_MIN + Math.floor(Math.random() * LIVE_VIEW_PORT_RANGE);
 
 interface ExecuteInput {
   readonly options: ExecuteOptions;
   readonly agentBackend: AgentBackend;
-  readonly replayHost?: string;
   readonly onUpdate: (executed: ExecutedTestPlan) => void;
-  readonly onReplayUrl?: (url: string) => void;
   readonly onConfigOptions?: (configOptions: readonly AcpConfigOption[]) => void;
 }
 
 export interface ExecutionResult {
   readonly executedPlan: ExecutedTestPlan;
   readonly report: TestReport;
-  readonly replayUrl?: string;
-  readonly localReplayUrl?: string;
   readonly videoUrl?: string;
 }
 
 // HACK: atom is read by testing-screen.tsx but never populated — screenshots are saved via McpSession instead
 export const screenshotPathsAtom = Atom.make<readonly string[]>([]);
-
-const syncReplayProxy = Effect.fn("syncReplayProxy")(function* (
-  replayUrl: string | undefined,
-  liveViewUrl: string,
-  replaySessionPath: string | undefined,
-  executed: ExecutedTestPlan,
-) {
-  if (!replayUrl) return;
-
-  const proxyBase = replayUrl.split("/replay")[0];
-  const replayEvents = yield* loadReplayEvents({ liveViewUrl, replaySessionPath });
-
-  if (replayEvents && replayEvents.length > 0) {
-    yield* Effect.tryPromise(() =>
-      fetch(`${proxyBase}/latest.json`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(replayEvents),
-      }),
-    ).pipe(
-      Effect.catchTag("UnknownError", (error) =>
-        Effect.logWarning("Failed to sync replay events to proxy", error),
-      ),
-    );
-  }
-
-  yield* pushStepState(proxyBase, toViewerRunState(executed));
-});
 
 const executeCore = (input: ExecuteInput) =>
   Effect.gen(function* () {
@@ -74,32 +34,14 @@ const executeCore = (input: ExecuteInput) =>
 
     yield* Effect.logInfo("Execution starting", {
       agentBackend: input.agentBackend,
-      hasReplayHost: Boolean(input.replayHost),
       instructionLength: input.options.instruction.length,
       changesFor: input.options.changesFor._tag,
     });
 
     const runStartedAt = Date.now();
 
-    const liveViewPort = pickRandomPort();
-    const liveViewUrl = `http://localhost:${liveViewPort}`;
-
-    let replayUrl: string | undefined;
-
-    if (input.replayHost) {
-      const proxyHandle = yield* startReplayProxy({
-        replayHost: input.replayHost,
-        liveViewUrl,
-      });
-      replayUrl = `${proxyHandle.url}/replay`;
-
-      yield* Effect.logInfo("Replay viewer available", { replayUrl });
-      yield* Effect.sync(() => input.onReplayUrl?.(`${replayUrl}?live=true`));
-    }
-
     const executeOptions: ExecuteOptions = {
       ...input.options,
-      liveViewUrl,
       onConfigOptions: input.onConfigOptions,
     };
 
@@ -107,9 +49,8 @@ const executeCore = (input: ExecuteInput) =>
 
     const finalExecuted = yield* executor.execute(executeOptions).pipe(
       Stream.tap((executed) =>
-        Effect.gen(function* () {
+        Effect.sync(() => {
           input.onUpdate(executed);
-          yield* pushStepState(liveViewUrl, toViewerRunState(executed));
         }),
       ),
       Stream.runLast,
@@ -140,8 +81,6 @@ const executeCore = (input: ExecuteInput) =>
     );
 
     const artifacts = extractCloseArtifacts(finalExecuted.events);
-
-    yield* syncReplayProxy(replayUrl, liveViewUrl, artifacts.replaySessionPath, finalExecuted);
 
     const report = yield* reporter.report(finalExecuted);
 
@@ -178,8 +117,6 @@ const executeCore = (input: ExecuteInput) =>
     return {
       executedPlan: finalExecuted,
       report,
-      replayUrl: replayUrl ?? artifacts.localReplayUrl,
-      localReplayUrl: artifacts.localReplayUrl,
       videoUrl: artifacts.videoUrl,
     } satisfies ExecutionResult;
   }).pipe(Effect.withSpan("expect.session"));
@@ -190,14 +127,10 @@ export const executeFn = cliAtomRuntime.fn<ExecuteInput>()((input) =>
       Effect.gen(function* () {
         const analytics = yield* Analytics;
         const errorTag =
-          typeof error === "object" &&
-          error !== null &&
-          "_tag" in error &&
-          typeof error._tag === "string"
+          Predicate.isObject(error) && "_tag" in error && typeof error._tag === "string"
             ? error._tag
-            : // ignore for now
-              (error as any) instanceof Error
-              ? (error as any).constructor.name
+            : Predicate.isError(error)
+              ? error.constructor.name
               : "UnknownError";
         yield* analytics.capture("run:failed", {
           plan_id: "direct",

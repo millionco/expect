@@ -12,8 +12,8 @@ interface WatchCommandOpts {
   target?: Target;
   verbose?: boolean;
   headed?: boolean;
+  headless?: boolean;
   noCookies?: boolean;
-  replayHost?: string;
   url?: string[];
 }
 
@@ -27,8 +27,7 @@ export const runWatchCommand = async (opts: WatchCommandOpts) => {
   usePreferencesStore.setState({
     ...(opts.agent ? { agentBackend: opts.agent } : {}),
     verbose: opts.verbose ?? false,
-    browserHeaded: opts.headed ?? false,
-    replayHost: opts.replayHost ?? "https://expect.dev",
+    browserHeaded: opts.headless ? false : (opts.headed ?? true),
   });
 
   useNavigationStore.setState({

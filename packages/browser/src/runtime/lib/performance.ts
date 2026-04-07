@@ -106,6 +106,8 @@ try {
 try {
   new PerformanceObserver((list) => {
     for (const entry of list.getEntries()) {
+      const element = (entry as PerformanceEntry & { element?: Element }).element;
+      if (element?.hasAttribute("data-expect-overlay")) continue;
       performanceState.lcp = entry.startTime;
     }
   }).observe({ type: "largest-contentful-paint", buffered: true });

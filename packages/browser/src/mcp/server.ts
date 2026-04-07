@@ -1,14 +1,15 @@
-import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod/v4";
 import { Effect, Option, type ManagedRuntime } from "effect";
+import { FileSystem } from "effect/FileSystem";
 import { evaluateRuntime } from "../utils/evaluate-runtime";
 import { runAccessibilityAudit } from "../accessibility";
 import { formatPerformanceTrace } from "../performance-trace";
 import { McpSession } from "./mcp-session";
-import { DUPLICATE_REQUEST_WINDOW_MS } from "./constants";
+import { OverlayController } from "./overlay-controller";
+import { DUPLICATE_REQUEST_WINDOW_MS, TMP_ARTIFACT_OUTPUT_DIRECTORY } from "./constants";
 import { registerRulesResources } from "./rules-resources";
 
 const textResult = (text: string) => ({
@@ -36,14 +37,16 @@ const imageResult = (base64: string) => ({
   content: [{ type: "image" as const, data: base64, mimeType: "image/png" }],
 });
 
+// HACK: get AsyncFunction constructor for dynamic code evaluation in playwright tool
 const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
 
-// Tool annotations (readOnlyHint, destructiveHint) enable parallel execution in the Claude Agent SDK.
-// See: https://platform.claude.com/docs/en/agent-sdk/agent-loop#parallel-tool-execution
+// HACK: tool annotations (readOnlyHint, destructiveHint) are required for parallel execution in the Claude Agent SDK
 export const createBrowserMcpServer = <E>(
-  runtime: ManagedRuntime.ManagedRuntime<McpSession, E>,
+  runtime: ManagedRuntime.ManagedRuntime<McpSession | OverlayController | FileSystem, E>,
 ) => {
-  const runMcp = <A>(effect: Effect.Effect<A, unknown, McpSession>) => runtime.runPromise(effect);
+  const runMcp = <A>(
+    effect: Effect.Effect<A, unknown, McpSession | OverlayController | FileSystem>,
+  ) => runtime.runPromise(effect);
 
   const server = new McpServer({
     name: "expect",
@@ -85,8 +88,11 @@ export const createBrowserMcpServer = <E>(
       runMcp(
         Effect.gen(function* () {
           const session = yield* McpSession;
+          const overlay = yield* OverlayController;
 
           if (session.hasSession()) {
+            const page = yield* session.requirePage();
+            yield* overlay.updateLabel(page, `Navigating to ${url}`);
             yield* session.navigate(url, { waitUntil });
             return textResult(`Navigated to ${url}`);
           }
@@ -119,6 +125,12 @@ export const createBrowserMcpServer = <E>(
         "Execute Playwright code in the Node.js context. Available globals: page (Page), context (BrowserContext), browser (Browser), ref (function: ref ID from snapshot → Playwright Locator). Use `return` to send a value back as JSON. Supports await. Set snapshotAfter=true to automatically take a fresh ARIA snapshot after execution and get updated refs — useful after actions that change the DOM (opening dropdowns, dialogs, navigating).",
       inputSchema: {
         code: z.string().describe("Playwright code to execute"),
+        description: z
+          .string()
+          .optional()
+          .describe(
+            "Short human-readable description of what this action does (e.g. 'Click the login button'). Shown in the overlay tooltip.",
+          ),
         snapshotAfter: z
           .boolean()
           .optional()
@@ -127,11 +139,20 @@ export const createBrowserMcpServer = <E>(
           ),
       },
     },
-    ({ code, snapshotAfter }) =>
+    ({ code, description, snapshotAfter }) =>
       runMcp(
         Effect.gen(function* () {
           const session = yield* McpSession;
+          const overlay = yield* OverlayController;
           const sessionData = yield* session.requireSession();
+          const cursorLabel = description ?? "Working…";
+
+          yield* overlay.positionCursorForCode(
+            sessionData.page,
+            code,
+            cursorLabel,
+            sessionData.lastSnapshot,
+          );
 
           const ref = (refId: string) => {
             if (!sessionData.lastSnapshot)
@@ -156,6 +177,8 @@ export const createBrowserMcpServer = <E>(
               };
             }
           });
+
+          yield* overlay.logAction(sessionData.page, cursorLabel, code);
 
           if (!codeResult.success) {
             return textResult(`Error: ${codeResult.error}`);
@@ -214,13 +237,16 @@ export const createBrowserMcpServer = <E>(
       runMcp(
         Effect.gen(function* () {
           const session = yield* McpSession;
+          const overlay = yield* OverlayController;
           const page = yield* session.requirePage();
           const resolvedMode = mode ?? "screenshot";
+          yield* overlay.updateLabel(page, `Taking ${resolvedMode}`);
 
           if (resolvedMode === "snapshot") {
-            const result = yield* session.snapshot(page, {
-              viewportAware: !fullPage,
-            });
+            const result = yield* overlay.withHidden(
+              page,
+              session.snapshot(page, { viewportAware: !fullPage }),
+            );
             yield* session.updateLastSnapshot(result);
             return jsonResult({ tree: result.tree, refs: result.refs, stats: result.stats });
           }
@@ -248,8 +274,9 @@ export const createBrowserMcpServer = <E>(
             };
           }
 
-          const buffer = yield* Effect.tryPromise(() =>
-            page.screenshot({ fullPage, scale: "css" }),
+          const buffer = yield* overlay.withHidden(
+            page,
+            Effect.tryPromise(() => page.screenshot({ fullPage, scale: "css" })),
           );
           yield* session.saveScreenshot(buffer);
           return imageResult(buffer.toString("base64"));
@@ -276,7 +303,9 @@ export const createBrowserMcpServer = <E>(
       runMcp(
         Effect.gen(function* () {
           const session = yield* McpSession;
+          const overlay = yield* OverlayController;
           const sessionData = yield* session.requireSession();
+          yield* overlay.updateLabel(sessionData.page, "Reading console logs");
           const entries = type
             ? sessionData.consoleMessages.filter((entry) => entry.type === type)
             : sessionData.consoleMessages;
@@ -316,7 +345,9 @@ export const createBrowserMcpServer = <E>(
       runMcp(
         Effect.gen(function* () {
           const session = yield* McpSession;
+          const overlay = yield* OverlayController;
           const sessionData = yield* session.requireSession();
+          yield* overlay.updateLabel(sessionData.page, "Checking network requests");
           const normalizedMethod = method?.toUpperCase();
           const normalizedResourceType = resourceType?.toLowerCase();
           const entries = sessionData.networkRequests.filter(
@@ -394,7 +425,9 @@ export const createBrowserMcpServer = <E>(
       runMcp(
         Effect.gen(function* () {
           const session = yield* McpSession;
+          const overlay = yield* OverlayController;
           const page = yield* session.requirePage();
+          yield* overlay.updateLabel(page, "Collecting performance metrics");
           const trace = yield* evaluateRuntime(page, "getPerformanceTrace");
 
           const hasMetrics = trace.webVitals.fcp || trace.webVitals.lcp || trace.webVitals.inp;
@@ -403,12 +436,15 @@ export const createBrowserMcpServer = <E>(
           }
 
           const traceDocument = formatPerformanceTrace(trace);
-          const traceDir = "/tmp/expect-replays";
-          const tracePath = path.join(traceDir, `performance-trace-${Date.now()}.md`);
-          yield* Effect.sync(() => {
-            mkdirSync(traceDir, { recursive: true });
-            writeFileSync(tracePath, traceDocument);
-          });
+          const tracePath = path.join(
+            TMP_ARTIFACT_OUTPUT_DIRECTORY,
+            `performance-trace-${Date.now()}.md`,
+          );
+          const fileSystem = yield* FileSystem;
+          yield* fileSystem
+            .makeDirectory(TMP_ARTIFACT_OUTPUT_DIRECTORY, { recursive: true })
+            .pipe(Effect.catchCause(() => Effect.void));
+          yield* fileSystem.writeFileString(tracePath, traceDocument);
 
           const summary = [`Performance trace written to: ${tracePath}`, "", "Web Vitals:"];
           const { webVitals } = trace;
@@ -465,7 +501,9 @@ export const createBrowserMcpServer = <E>(
       runMcp(
         Effect.gen(function* () {
           const session = yield* McpSession;
+          const overlay = yield* OverlayController;
           const page = yield* session.requirePage();
+          yield* overlay.updateLabel(page, "Running accessibility audit");
           const result = yield* runAccessibilityAudit(page, { selector, tags });
           if (result.violations.length === 0) {
             return textResult("No accessibility violations found.");
@@ -487,15 +525,14 @@ export const createBrowserMcpServer = <E>(
       runMcp(
         Effect.gen(function* () {
           const session = yield* McpSession;
+          const overlay = yield* OverlayController;
+          if (session.hasSession()) {
+            const page = yield* session.requirePage();
+            yield* overlay.updateLabel(page, "Closing browser");
+          }
           const result = yield* session.close();
           if (!result) return textResult("No browser open.");
           const lines = ["Browser closed."];
-          if (result.tmpReplaySessionPath) {
-            lines.push(`rrweb replay: ${result.tmpReplaySessionPath}`);
-          }
-          if (result.tmpReportPath) {
-            lines.push(`rrweb report: ${result.tmpReportPath}`);
-          }
           if (result.tmpVideoPath) {
             lines.push(`Playwright video: ${result.tmpVideoPath}`);
           } else if (result.videoPath) {
@@ -515,7 +552,7 @@ export const createBrowserMcpServer = <E>(
 };
 
 export const startBrowserMcpServer = async <E>(
-  runtime: ManagedRuntime.ManagedRuntime<McpSession, E>,
+  runtime: ManagedRuntime.ManagedRuntime<McpSession | OverlayController | FileSystem, E>,
 ) => {
   const server = createBrowserMcpServer(runtime);
   const transport = new StdioServerTransport();
