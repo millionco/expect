@@ -1,0 +1,23 @@
+apps/cli/src/commands/init.ts
+  d6ad85956dbea697 136-141,144,146-148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "24818723451f74770a304e19e14a30ff1fd5efbb",
+  "prompts": {
+    "d6ad85956dbea697": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "eb76357b-240f-4411-92a0-b165cdc24291",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 10,
+      "total_deletions": 2,
+      "accepted_lines": 10,
+      "overriden_lines": 0
+    }
+  }
+}
