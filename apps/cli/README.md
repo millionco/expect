@@ -3,7 +3,12 @@
 [![version](https://img.shields.io/npm/v/expect-cli?style=flat&colorA=000000&colorB=000000)](https://npmjs.com/package/expect-cli)
 [![downloads](https://img.shields.io/npm/dt/expect-cli.svg?style=flat&colorA=000000&colorB=000000)](https://npmjs.com/package/expect-cli)
 
-**Expect** is a skill for testing your agent's code in a real browser.
+Expect is a skill for testing your agent's code in a real browser.
+
+- Run `/expect` inside Claude Code, Codex, [and more](https://github.com/millionco/expect#supported-agents)
+- Spawns agents simulating real logged-in users to find issues and regressions.
+- No more writing Playwright by hand or token-hungry computer use tools.
+- Get video recordings and GitHub Actions out of the box.
 
 ### **[Demo →](https://expect.dev)**
 
@@ -72,7 +77,6 @@ Coming soon. Email [aiden@million.dev](mailto:aiden@million.dev) if you have que
 
 Expect works with the following coding agents. It auto-detects which agents are installed on your `PATH`. If multiple are available, it defaults to the first one found. Use `-a <provider>` to pick a specific agent.
 
-
 | Agent                                                         | Flag          | Install                                    |
 | ------------------------------------------------------------- | ------------- | ------------------------------------------ |
 | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `-a claude`   | `npm install -g @anthropic-ai/claude-code` |
@@ -82,7 +86,6 @@ Expect works with the following coding agents. It auto-detects which agents are 
 | [Cursor](https://cursor.com)                                  | `-a cursor`   | [cursor.com](https://cursor.com)           |
 | [OpenCode](https://opencode.ai)                               | `-a opencode` | `npm install -g opencode-ai`               |
 | [Factory Droid](https://factory.ai)                           | `-a droid`    | `npm install -g droid`                     |
-
 
 ## Resources & Contributing Back
 
