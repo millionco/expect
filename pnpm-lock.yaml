@@ -240,12 +240,6 @@ importers:
       '@agentclientprotocol/sdk':
         specifier: ^0.16.1
         version: 0.16.1(zod@4.3.6)
-      '@ai-sdk/provider':
-        specifier: ^3.0.8
-        version: 3.0.8
-      '@expect/browser':
-        specifier: workspace:*
-        version: link:../browser
       '@expect/shared':
         specifier: workspace:*
         version: link:../shared
@@ -413,27 +407,15 @@ importers:
 
   packages/typescript-sdk:
     dependencies:
-      '@agentclientprotocol/claude-agent-acp':
-        specifier: ^0.24.2
-        version: 0.24.2
       '@effect/platform-node':
         specifier: 4.0.0-beta.35
         version: 4.0.0-beta.35(effect@4.0.0-beta.35)(ioredis@5.10.0)
-      '@github/copilot':
-        specifier: ^1.0.12
-        version: 1.0.12
-      '@google/gemini-cli':
-        specifier: ^0.35.3
-        version: 0.35.3(@types/react@19.2.14)(express@5.2.1)
       '@modelcontextprotocol/sdk':
         specifier: ^1.27.1
         version: 1.27.1(zod@4.3.6)
       '@standard-schema/spec':
         specifier: ^1.1.0
         version: 1.1.0
-      '@zed-industries/codex-acp':
-        specifier: ^0.10.0
-        version: 0.10.0
       effect:
         specifier: 4.0.0-beta.35
         version: 4.0.0-beta.35
@@ -444,9 +426,6 @@ importers:
       '@expect/agent':
         specifier: workspace:*
         version: link:../agent
-      '@expect/browser':
-        specifier: workspace:*
-        version: link:../browser
       '@expect/cookies':
         specifier: workspace:*
         version: link:../cookies
@@ -501,10 +480,6 @@ packages:
     resolution: {integrity: sha512-inBMYAEd9t4E+ULZK2os9kmLG5jbPvMLbPvY71XDDem1YteW/uDwkahg6OwsGR3tvvgVhYbRJ9mJCp2VXqG4xQ==}
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
-
-  '@ai-sdk/provider@3.0.8':
-    resolution: {integrity: sha512-oGMAgGoQdBXbZqNG0Ze56CHjDZ1IDYOwGYxYjO5KLSlz5HiNQ9udIXsPZ61VWaHGZ5XW/jyjmr6t2xz2jGVwbQ==}
-    engines: {node: '>=18'}
 
   '@alcalzone/ansi-tokenize@0.2.5':
     resolution: {integrity: sha512-3NX/MpTdroi0aKz134A6RC2Gb2iXVECN4QaAXnvCIxxIm3C3AVB1mkUe8NaaiyvOpDfsrqWhYtj+Q6a62RrTsw==}
@@ -5029,9 +5004,6 @@ packages:
   json-schema-typed@8.0.2:
     resolution: {integrity: sha512-fQhoXdcvc3V28x7C7BMs4P5+kNlgUURe2jmUT1T//oBRMDrqy1QPelJimwZGo7Hg9VPV3EQV5Bnq4hbFy2vetA==}
 
-  json-schema@0.4.0:
-    resolution: {integrity: sha512-es94M3nTIfsEPisRafak+HDLfHXnKBhV3vU5eqPcS3flIWqcxJWgXHXiey3YrpaNsanY5ei1VoYEbOzijuq9BA==}
-
   json-stable-stringify-without-jsonify@1.0.1:
     resolution: {integrity: sha512-Bdboy+l7tA3OGW6FjyFHWkP5LuByj1Tk33Ljyq0axyzdk9//JSi2u3fP1QSmd1KNwq6VOKYGlAu87CisVir6Pw==}
 
@@ -7044,10 +7016,6 @@ snapshots:
   '@agentclientprotocol/sdk@0.17.0(zod@4.3.6)':
     dependencies:
       zod: 4.3.6
-
-  '@ai-sdk/provider@3.0.8':
-    dependencies:
-      json-schema: 0.4.0
 
   '@alcalzone/ansi-tokenize@0.2.5':
     dependencies:
@@ -11662,8 +11630,6 @@ snapshots:
   json-schema-traverse@1.0.0: {}
 
   json-schema-typed@8.0.2: {}
-
-  json-schema@0.4.0: {}
 
   json-stable-stringify-without-jsonify@1.0.1: {}
 

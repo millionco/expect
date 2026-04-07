@@ -1,4 +1,5 @@
-export type { SavedFlow, SavedFlowStep } from "@expect/shared/models";
+type SavedFlow = import("@expect/shared/models").SavedFlow;
+type SavedFlowStep = import("@expect/shared/models").SavedFlowStep;
 
 export interface SavedFlowEnvironment {
   baseUrl: string;

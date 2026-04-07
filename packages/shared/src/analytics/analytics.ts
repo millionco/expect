@@ -17,7 +17,7 @@ const posthogClient = new PostHog(POSTHOG_API_KEY, {
 // AnalyticsProvider — abstract provider that Analytics delegates to
 // ---------------------------------------------------------------------------
 
-export interface AnalyticsProviderShape {
+interface AnalyticsProviderShape {
   readonly capture: (event: {
     readonly eventName: string;
     readonly properties: Record<string, unknown>;

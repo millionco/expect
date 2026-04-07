@@ -3,7 +3,7 @@ import { basename, join, resolve } from "node:path";
 import { Predicate } from "effect";
 import { LOCK_FILE_TO_AGENT, PROJECT_SCAN_MAX_DEPTH, type PackageManager } from "../constants";
 
-export type WebFramework =
+type WebFramework =
   | "next"
   | "vite"
   | "remix"
@@ -14,9 +14,7 @@ export type WebFramework =
   | "svelte"
   | "webpack";
 
-export type { PackageManager } from "../constants";
-
-export interface DetectedProject {
+interface DetectedProject {
   readonly name: string;
   readonly path: string;
   readonly framework: WebFramework;

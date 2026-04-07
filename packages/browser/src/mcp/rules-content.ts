@@ -17,7 +17,7 @@ const extractDescription = (content: string): string => {
   return descriptionMatch[1].trim().replace(/\n\s*/g, " ");
 };
 
-export interface RuleDefinition {
+interface RuleDefinition {
   readonly slug: string;
   readonly description: string;
   readonly subRuleDir?: "rules" | "references";
