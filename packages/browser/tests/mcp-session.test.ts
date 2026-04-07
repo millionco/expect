@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Effect, Fiber, Layer } from "effect";
+import { Analytics } from "@expect/shared/observability";
 import { Browser } from "../src/browser";
 import { McpSession } from "../src/mcp/mcp-session";
 
@@ -42,16 +43,17 @@ const preExtractedCookies = [
 ];
 
 const createBrowserLayer = (options: {
-  readonly createPageMock: ReturnType<typeof vi.fn>;
-  readonly preExtractCookiesMock: ReturnType<typeof vi.fn>;
+  readonly createPage: typeof Browser.Service.createPage;
+  readonly preExtractCookies: typeof Browser.Service.preExtractCookies;
 }) =>
   Layer.succeed(Browser, {
-    createPage: options.createPageMock,
+    createPage: options.createPage,
     snapshot: () => Effect.die("unused"),
     act: () => Effect.die("unused"),
     annotatedScreenshot: () => Effect.die("unused"),
     waitForNavigationSettle: () => Effect.void,
-    preExtractCookies: options.preExtractCookiesMock,
+    preExtractCookies: options.preExtractCookies,
+    resolveProfilePath: () => Effect.die("unused"),
   });
 
 const runSession = (browserLayer: Layer.Layer<Browser>) =>
@@ -61,6 +63,7 @@ const runSession = (browserLayer: Layer.Layer<Browser>) =>
     }).pipe(
       Effect.provide(Layer.effect(McpSession)(McpSession.make)),
       Effect.provide(browserLayer),
+      Effect.provide(Analytics.layerDev),
       Effect.provide(NodeServices.layer),
     ),
   );
@@ -82,27 +85,33 @@ describe("McpSession cookie pre-extraction", () => {
       resolvePreExtractedCookies = resolve;
     });
 
-    const createPageMock = vi.fn((_url: string, options: { cookies?: unknown }) =>
-      Effect.succeed({
-        browser: {},
+    const createPageCalls: Array<{ url: string | undefined; cookies: unknown }> = [];
+    const createPage: typeof Browser.Service.createPage = (url, options = {}) => {
+      createPageCalls.push({ url, cookies: options.cookies });
+      return Effect.succeed({
+        browser: {} as never,
         context: {
           cookies: () =>
             Promise.resolve(Array.isArray(options.cookies) ? options.cookies : preExtractedCookies),
-        },
+        } as never,
         page: {
           on: () => {},
           isClosed: () => false,
           video: () => undefined,
-        },
+        } as never,
         cleanup: Effect.void,
         isExternalBrowser: false,
-      }),
-    );
-    const preExtractCookiesMock = vi.fn(() => Effect.promise(() => extractionPromise));
+      });
+    };
+    let preExtractCookiesCallCount = 0;
+    const preExtractCookies: typeof Browser.Service.preExtractCookies = () => {
+      preExtractCookiesCallCount++;
+      return Effect.promise(() => extractionPromise).pipe(Effect.map((cookies) => cookies as never));
+    };
     const session = await runSession(
       createBrowserLayer({
-        createPageMock,
-        preExtractCookiesMock,
+        createPage,
+        preExtractCookies,
       }),
     );
 
@@ -113,7 +122,7 @@ describe("McpSession cookie pre-extraction", () => {
           .pipe(Effect.forkChild);
 
         yield* Effect.sleep("10 millis");
-        expect(createPageMock).not.toHaveBeenCalled();
+        expect(createPageCalls).toHaveLength(0);
 
         resolvePreExtractedCookies(preExtractedCookies);
 
@@ -122,43 +131,51 @@ describe("McpSession cookie pre-extraction", () => {
       }),
     );
 
-    expect(preExtractCookiesMock).toHaveBeenCalledTimes(1);
-    expect(createPageMock).toHaveBeenCalledWith(
-      "https://example.com",
-      expect.objectContaining({ cookies: preExtractedCookies }),
-    );
+    expect(preExtractCookiesCallCount).toBe(1);
+    expect(createPageCalls).toHaveLength(1);
+    expect(createPageCalls[0]).toMatchObject({
+      url: "https://example.com",
+      cookies: preExtractedCookies,
+    });
   });
 
   it("reuses an empty completed pre-extraction result without passing boolean cookies", async () => {
-    const createPageMock = vi.fn((_url: string, options: { cookies?: unknown }) =>
-      Effect.succeed({
-        browser: {},
+    const createPageCalls: Array<{ url: string | undefined; cookies: unknown }> = [];
+    const createPage: typeof Browser.Service.createPage = (url, options = {}) => {
+      createPageCalls.push({ url, cookies: options.cookies });
+      return Effect.succeed({
+        browser: {} as never,
         context: {
           cookies: () => Promise.resolve([]),
-        },
+        } as never,
         page: {
           on: () => {},
           isClosed: () => false,
           video: () => undefined,
-        },
+        } as never,
         cleanup: Effect.void,
         isExternalBrowser: false,
-      }),
-    );
-    const preExtractCookiesMock = vi.fn(() => Effect.succeed([]));
+      });
+    };
+    let preExtractCookiesCallCount = 0;
+    const preExtractCookies: typeof Browser.Service.preExtractCookies = () => {
+      preExtractCookiesCallCount++;
+      return Effect.succeed([] as never);
+    };
     const session = await runSession(
       createBrowserLayer({
-        createPageMock,
-        preExtractCookiesMock,
+        createPage,
+        preExtractCookies,
       }),
     );
 
     await Effect.runPromise(session.open("https://example.com", { cookies: true }));
 
-    expect(preExtractCookiesMock).toHaveBeenCalledTimes(1);
-    expect(createPageMock).toHaveBeenCalledWith(
-      "https://example.com",
-      expect.objectContaining({ cookies: [] }),
-    );
+    expect(preExtractCookiesCallCount).toBe(1);
+    expect(createPageCalls).toHaveLength(1);
+    expect(createPageCalls[0]).toMatchObject({
+      url: "https://example.com",
+      cookies: [],
+    });
   });
 });

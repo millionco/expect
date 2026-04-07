@@ -4,8 +4,9 @@ import { Config, Deferred, Effect, Layer, Option, Ref, ServiceMap } from "effect
 import type { Cookie } from "@expect/cookies";
 import { FileSystem } from "effect/FileSystem";
 import { isRunningInAgent } from "@expect/shared/launched-from";
+import { Analytics } from "@expect/shared/observability";
 import { Browser } from "../browser";
-import { ChromeLaunchTimeoutError, ChromeNotFoundError, NavigationError } from "../errors";
+import { NavigationError } from "../errors";
 import { launchSystemChrome, killChromeProcess } from "../chrome-launcher";
 import { evaluateRuntime } from "../utils/evaluate-runtime";
 import {
@@ -75,6 +76,16 @@ export interface CloseResult {
   readonly screenshotPaths: readonly string[];
 }
 
+interface BrowserOpenAnalyticsProperties {
+  readonly source: "mcp_open";
+  readonly browser_type: BrowserEngine;
+  readonly browser_headed: boolean;
+  readonly browser_headless: boolean;
+  readonly connection_mode: "launched" | "cdp" | "system_chrome";
+  readonly is_external_browser: boolean;
+  readonly cookie_count: number;
+}
+
 const PLAYWRIGHT_VIDEO_SUBDIRECTORY = "playwright";
 
 const setupPageTracking = (page: Page, sessionData: BrowserSessionData) => {
@@ -123,6 +134,7 @@ const setupPageTracking = (page: Page, sessionData: BrowserSessionData) => {
 export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSession", {
   make: Effect.gen(function* () {
     const browserService = yield* Browser;
+    const analytics = yield* Analytics;
     const fileSystem = yield* FileSystem;
     const cookieBrowsersConfig = yield* Config.option(
       Config.string(EXPECT_COOKIE_BROWSERS_ENV_NAME),
@@ -415,6 +427,25 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
           Effect.logDebug("Failed to count cookies", { cause }).pipe(Effect.as(0)),
         ),
       );
+
+      const connectionMode: BrowserOpenAnalyticsProperties["connection_mode"] = useSystemChrome
+        ? "system_chrome"
+        : Option.isSome(cdpUrl)
+          ? "cdp"
+          : "launched";
+      const isExternalBrowser = useSystemChrome ? true : pageResult.isExternalBrowser;
+      const analyticsProperties: BrowserOpenAnalyticsProperties = {
+        source: "mcp_open",
+        browser_type: engine,
+        browser_headed: headed,
+        browser_headless: !headed,
+        connection_mode: connectionMode,
+        is_external_browser: isExternalBrowser,
+        cookie_count: injectedCookieCount,
+      };
+
+      yield* Effect.logInfo("MCP browser session opened", analyticsProperties);
+      yield* analytics.capture("browser:opened", analyticsProperties);
 
       return {
         injectedCookieCount,

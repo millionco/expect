@@ -30,6 +30,15 @@ export interface EventMap {
 
   // Browser
   "browser:launched": { readonly headless: boolean };
+  "browser:opened": {
+    readonly source: "mcp_open";
+    readonly browser_type: "chromium" | "webkit" | "firefox";
+    readonly browser_headed: boolean;
+    readonly browser_headless: boolean;
+    readonly connection_mode: "launched" | "cdp" | "system_chrome";
+    readonly is_external_browser: boolean;
+    readonly cookie_count: number;
+  };
   "browser:closed": { readonly session_duration_ms: number };
   "browser:cookies_injected": { readonly cookie_count: number };
 
