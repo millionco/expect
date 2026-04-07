@@ -119,7 +119,7 @@ export class Analytics extends ServiceMap.Service<Analytics>()("@expect/Analytic
 
         yield* provider.capture({
           eventName: eventName as string,
-          properties: { ...commonProperties, ...properties },
+          properties: { ...commonProperties, ...(properties ?? {}) },
           distinctId,
         });
       }).pipe(

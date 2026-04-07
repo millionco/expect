@@ -78,10 +78,10 @@ describe("findSystemChrome", () => {
     const result = await Effect.runPromise(findSystemChrome());
 
     expect(result).toBe("/usr/bin/chromium");
-    expect(whichSyncMock).toHaveBeenCalledWith("google-chrome", { nothrow: true });
-    expect(whichSyncMock).toHaveBeenCalledWith("google-chrome-stable", { nothrow: true });
-    expect(whichSyncMock).toHaveBeenCalledWith("chromium-browser", { nothrow: true });
-    expect(whichSyncMock).toHaveBeenCalledWith("chromium", { nothrow: true });
+    expect(whichSyncMock).toHaveBeenNthCalledWith(1, "google-chrome", { nothrow: true });
+    expect(whichSyncMock).toHaveBeenNthCalledWith(2, "google-chrome-stable", { nothrow: true });
+    expect(whichSyncMock).toHaveBeenNthCalledWith(3, "chromium-browser", { nothrow: true });
+    expect(whichSyncMock).toHaveBeenNthCalledWith(4, "chromium", { nothrow: true });
   });
 
   it("fails with ChromeNotFoundError when no browser is found on macOS", async () => {

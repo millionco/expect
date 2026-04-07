@@ -278,7 +278,7 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
           });
         }
 
-        return { browser, context, page, cleanup: Effect.void, isExternalBrowser: false };
+        return { browser, context, page, cleanup: Effect.void, isExternalBrowser: isCdpConnected };
       });
 
       return yield* setupPage.pipe(

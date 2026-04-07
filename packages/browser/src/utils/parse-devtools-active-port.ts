@@ -8,7 +8,7 @@ export const parseDevToolsActivePort = (content: string): DevToolsActivePort | u
   const portStr = lines[0]?.trim();
   if (!portStr) return undefined;
   const port = Number.parseInt(portStr, 10);
-  if (Number.isNaN(port)) return undefined;
+  if (Number.isNaN(port) || port < 1 || port > 65535) return undefined;
   const wsPath = lines[1]?.trim() ?? "/devtools/browser";
   return { port, wsPath };
 };

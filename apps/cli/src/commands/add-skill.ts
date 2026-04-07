@@ -161,8 +161,13 @@ export const ensureAgentSymlink = (
     if (existingPathStats?.isSymbolicLink()) {
       if (fs.readlinkSync(symlinkPath) === targetPath) return "already-linked";
       fs.unlinkSync(symlinkPath);
-    } else if (existingPathStats !== undefined) {
+    } else if (existingPathStats?.isDirectory()) {
+      if (!fs.existsSync(path.join(symlinkPath, "SKILL.md"))) {
+        return `${symlinkPath} exists and is not an expect skill directory`;
+      }
       fs.rmSync(symlinkPath, { recursive: true, force: true });
+    } else if (existingPathStats !== undefined) {
+      fs.unlinkSync(symlinkPath);
     }
 
     fs.mkdirSync(path.dirname(symlinkPath), { recursive: true });

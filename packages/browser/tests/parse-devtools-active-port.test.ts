@@ -36,7 +36,19 @@ describe("parseDevToolsActivePort", () => {
     expect(parseDevToolsActivePort("abc\n/devtools/browser/123")).toBeUndefined();
   });
 
-  it("parses high port numbers", () => {
+  it("returns undefined for port zero", () => {
+    expect(parseDevToolsActivePort("0\n/devtools/browser/123")).toBeUndefined();
+  });
+
+  it("returns undefined for negative port", () => {
+    expect(parseDevToolsActivePort("-1\n/devtools/browser/123")).toBeUndefined();
+  });
+
+  it("returns undefined for port above 65535", () => {
+    expect(parseDevToolsActivePort("70000\n/devtools/browser/123")).toBeUndefined();
+  });
+
+  it("parses high port numbers within valid range", () => {
     const result = parseDevToolsActivePort("49152\n/devtools/browser/uuid");
 
     expect(result).toEqual({ port: 49152, wsPath: "/devtools/browser/uuid" });
