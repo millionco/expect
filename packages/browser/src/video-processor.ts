@@ -30,19 +30,19 @@ export class VideoProcessError extends Schema.ErrorClass<VideoProcessError>("Vid
   message = `Video processing failed: ${String(this.cause)}`;
 }
 
-// HACK: require() instead of import because @ffmpeg-installer/ffmpeg uses
-// CJS-only exports with a dynamic platform-specific binary path that can't
-// be statically resolved by ESM import at build time.
+import which from "which";
+
 let cachedFfmpegPath: string | undefined;
 let ffmpegProbed = false;
 const resolveFfmpegPath = (): string | undefined => {
   if (ffmpegProbed) return cachedFfmpegPath;
   ffmpegProbed = true;
+  const resolved = which.sync("ffmpeg", { nothrow: true });
+  if (!resolved) return undefined;
   try {
-    const binaryPath = (require("@ffmpeg-installer/ffmpeg") as { path: string }).path;
-    execFileSync(binaryPath, ["-version"], { timeout: 5_000, stdio: "ignore" });
-    cachedFfmpegPath = binaryPath;
-    return binaryPath;
+    execFileSync(resolved, ["-version"], { timeout: 5_000, stdio: "ignore" });
+    cachedFfmpegPath = resolved;
+    return resolved;
   } catch {
     return undefined;
   }

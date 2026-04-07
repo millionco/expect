@@ -13,13 +13,9 @@ import {
 
 const FIXTURE_PATH = path.join(__dirname, "fixtures", "mixed-content.webm");
 
-const ffmpegPath: string = (() => {
-  try {
-    return require("@ffmpeg-installer/ffmpeg").path;
-  } catch {
-    return "ffmpeg";
-  }
-})();
+import which from "which";
+
+const ffmpegPath: string = which.sync("ffmpeg", { nothrow: true }) ?? "ffmpeg";
 
 const ffmpegAvailable = (() => {
   try {
