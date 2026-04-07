@@ -8,6 +8,7 @@ interface PreferencesStore {
   agentBackend: AgentBackend;
   verbose: boolean;
   browserHeaded: boolean;
+  browserProfile: string | undefined;
   autoSaveFlows: boolean;
   notifications: boolean | undefined;
   instructionHistory: string[];
@@ -26,6 +27,7 @@ export const usePreferencesStore = create<PreferencesStore>()(
       agentBackend: "claude",
       verbose: false,
       browserHeaded: true,
+      browserProfile: undefined,
       autoSaveFlows: true,
       notifications: undefined,
       instructionHistory: [],

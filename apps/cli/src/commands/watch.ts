@@ -13,6 +13,7 @@ interface WatchCommandOpts {
   verbose?: boolean;
   headed?: boolean;
   headless?: boolean;
+  profile?: string;
   noCookies?: boolean;
   url?: string[];
 }
@@ -28,6 +29,7 @@ export const runWatchCommand = async (opts: WatchCommandOpts) => {
     ...(opts.agent ? { agentBackend: opts.agent } : {}),
     verbose: opts.verbose ?? false,
     browserHeaded: opts.headless ? false : (opts.headed ?? true),
+    browserProfile: opts.profile,
   });
 
   useNavigationStore.setState({

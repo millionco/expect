@@ -102,7 +102,11 @@ const readDevToolsActivePort = (userDataDir: string) => {
   }
 };
 
-const buildLaunchArgs = (options: { headless: boolean; userDataDir: string }): string[] => {
+const buildLaunchArgs = (options: {
+  headless: boolean;
+  userDataDir: string;
+  profileDirectory?: string;
+}): string[] => {
   const args = [
     "--remote-debugging-port=0",
     "--no-first-run",
@@ -122,6 +126,10 @@ const buildLaunchArgs = (options: { headless: boolean; userDataDir: string }): s
     "--use-mock-keychain",
     `--user-data-dir=${options.userDataDir}`,
   ];
+
+  if (options.profileDirectory) {
+    args.push(`--profile-directory=${options.profileDirectory}`);
+  }
 
   if (options.headless) {
     args.push(
@@ -173,6 +181,7 @@ const cleanupFailedLaunch = (child: ChildProcess, tempDir: string | undefined) =
 export const launchSystemChrome = Effect.fn("Chrome.launchSystemChrome")(function* (options: {
   headless: boolean;
   profilePath?: string;
+  profileDirectory?: string;
 }) {
   const chromePath = yield* findSystemChrome();
 
@@ -193,7 +202,11 @@ export const launchSystemChrome = Effect.fn("Chrome.launchSystemChrome")(functio
     ),
   );
 
-  const args = buildLaunchArgs({ headless: options.headless, userDataDir });
+  const args = buildLaunchArgs({
+    headless: options.headless,
+    userDataDir,
+    profileDirectory: options.profileDirectory,
+  });
 
   yield* Effect.logInfo("Launching system Chrome", { chromePath, userDataDir });
 

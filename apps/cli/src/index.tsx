@@ -42,6 +42,7 @@ interface CommanderOpts {
   target?: Target;
   verbose?: boolean;
   headless?: boolean;
+  profile?: string;
   noCookies?: boolean;
   ci?: boolean;
   timeout?: number;
@@ -64,6 +65,7 @@ const program = new Command()
   .option("-t, --target <target>", "what to test: unstaged, branch, or changes", "changes")
   .option("--verbose", "enable verbose logging")
   .option("--headless", "run browser in headless mode")
+  .option("--profile <name>", "reuse a Chrome profile by name (e.g. Default)")
   .option("--no-cookies", "skip system browser cookie extraction")
   .option("--ci", "force CI mode: headless, no cookies, auto-yes, 30-minute timeout")
   .option("--timeout <ms>", "execution timeout in milliseconds", parseInt)
@@ -89,6 +91,7 @@ const seedStores = (opts: CommanderOpts, changesFor: ChangesFor) => {
   usePreferencesStore.setState({
     verbose: opts.verbose ?? false,
     browserHeaded: !opts.headless,
+    browserProfile: opts.profile,
   });
 
   if (opts.message) {
@@ -209,6 +212,7 @@ program
   .option("-t, --target <target>", "what to test: unstaged, branch, or changes", "changes")
   .option("--verbose", "enable verbose logging")
   .option("--headless", "run browser in headless mode")
+  .option("--profile <name>", "reuse a Chrome profile by name (e.g. Default)")
   .option("--no-cookies", "skip system browser cookie extraction")
   .option("-u, --url <urls...>", "base URL(s) for the dev server")
   .action(async (opts: CommanderOpts) => {
@@ -243,6 +247,7 @@ program.action(async () => {
     usePreferencesStore.setState({
       verbose: opts.verbose ?? false,
       browserHeaded: !opts.headless,
+      browserProfile: opts.profile,
     });
     if (opts.url) {
       usePreferencesStore.setState({ cliBaseUrls: opts.url });

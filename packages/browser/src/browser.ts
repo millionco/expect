@@ -18,6 +18,7 @@ import {
   VIDEO_WIDTH_PX,
   REF_PREFIX,
   SNAPSHOT_TIMEOUT_MS,
+  CDP_CONNECT_TIMEOUT_MS,
 } from "./constants";
 import {
   BrowserLaunchError,
@@ -187,7 +188,16 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
                   endpointUrl: cdpUrl.value,
                   cause: cause instanceof Error ? cause.message : String(cause),
                 }),
-            })
+            }).pipe(
+              Effect.timeoutOrElse({
+                duration: `${CDP_CONNECT_TIMEOUT_MS} millis`,
+                onTimeout: () =>
+                  new CdpConnectionError({
+                    endpointUrl: cdpUrl.value,
+                    cause: `Connection timed out after ${CDP_CONNECT_TIMEOUT_MS}ms`,
+                  }).asEffect(),
+              }),
+            )
           : yield* Effect.tryPromise({
               try: () =>
                 browserType.launch({
@@ -209,7 +219,9 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
             ? defaultBrowserContext.preferredProfile.locale
             : undefined;
 
-        const contextOptions: Parameters<typeof browser.newContext>[0] = {};
+        const contextOptions: Parameters<typeof browser.newContext>[0] = {
+          ignoreHTTPSErrors: true,
+        };
         if (profileLocale) {
           contextOptions.locale = profileLocale;
         }
@@ -485,6 +497,17 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
       return yield* extractDefaultBrowserCookies("", preferredProfile);
     });
 
+    const resolveProfilePath = Effect.fn("Browser.resolveProfilePath")(function* (
+      profileName: string,
+    ) {
+      const browsers = yield* Browsers;
+      const allBrowsers = yield* browsers.list;
+      const chromiumProfile = allBrowsers.find(
+        (browser) => browser._tag === "ChromiumBrowser" && browser.profileName === profileName,
+      );
+      return chromiumProfile?._tag === "ChromiumBrowser" ? chromiumProfile.profilePath : undefined;
+    }, Effect.provide(layerLive));
+
     return {
       createPage,
       snapshot,
@@ -492,6 +515,7 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
       annotatedScreenshot,
       waitForNavigationSettle,
       preExtractCookies,
+      resolveProfilePath,
     } as const;
   }),
 }) {

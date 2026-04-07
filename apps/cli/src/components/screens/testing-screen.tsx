@@ -280,6 +280,7 @@ export const TestingScreen = ({
     (state) => state.modelPreferences[agentBackend]?.value,
   );
   const browserHeaded = usePreferencesStore((state) => state.browserHeaded);
+  const browserProfile = usePreferencesStore((state) => state.browserProfile);
   const toggleNotifications = usePreferencesStore((state) => state.toggleNotifications);
   const [executionResult, triggerExecute] = useAtom(executeFn, {
     mode: "promiseExit",
@@ -419,6 +420,7 @@ export const TestingScreen = ({
         changesFor,
         instruction,
         isHeadless: !browserHeaded,
+        profileName: browserProfile,
         cookieBrowserKeys: [...cookieBrowserKeys],
         savedFlow,
         baseUrl,

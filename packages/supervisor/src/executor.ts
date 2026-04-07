@@ -30,6 +30,7 @@ import {
   EXPECT_COOKIE_BROWSERS_ENV_NAME,
   EXPECT_BASE_URL_ENV_NAME,
   EXPECT_HEADED_ENV_NAME,
+  EXPECT_PROFILE_ENV_NAME,
 } from "@expect/browser/mcp";
 import {
   ALL_STEPS_TERMINAL_GRACE_MS,
@@ -58,6 +59,7 @@ export interface ExecuteOptions {
   readonly isHeadless: boolean;
   readonly cookieBrowserKeys: readonly string[];
   readonly baseUrl?: string;
+  readonly profileName?: string;
   readonly savedFlow?: SavedFlow;
   readonly learnings?: string;
   readonly testCoverage?: TestCoverageReport;
@@ -179,6 +181,9 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
         name: EXPECT_HEADED_ENV_NAME,
         value: options.isHeadless ? "false" : "true",
       });
+      if (options.profileName) {
+        mcpEnv.push({ name: EXPECT_PROFILE_ENV_NAME, value: options.profileName });
+      }
       if (options.cookieBrowserKeys.length > 0) {
         mcpEnv.push({
           name: EXPECT_COOKIE_BROWSERS_ENV_NAME,

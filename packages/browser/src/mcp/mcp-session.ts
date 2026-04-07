@@ -5,7 +5,8 @@ import type { Cookie } from "@expect/cookies";
 import { FileSystem } from "effect/FileSystem";
 import { isRunningInAgent } from "@expect/shared/launched-from";
 import { Browser } from "../browser";
-import { NavigationError } from "../errors";
+import { ChromeLaunchTimeoutError, ChromeNotFoundError, NavigationError } from "../errors";
+import { launchSystemChrome, killChromeProcess } from "../chrome-launcher";
 import { evaluateRuntime } from "../utils/evaluate-runtime";
 import {
   AGENT_OVERLAY_CONTAINER_ID,
@@ -24,6 +25,7 @@ import {
   EXPECT_CDP_URL_ENV_NAME,
   EXPECT_BASE_URL_ENV_NAME,
   EXPECT_HEADED_ENV_NAME,
+  EXPECT_PROFILE_ENV_NAME,
   TMP_ARTIFACT_OUTPUT_DIRECTORY,
 } from "./constants";
 import { McpSessionNotOpenError } from "./errors";
@@ -133,6 +135,8 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       onNone: () => !isRunningInAgent(),
       onSome: (value) => value !== "false",
     });
+    const profileConfig = yield* Config.option(Config.string(EXPECT_PROFILE_ENV_NAME));
+    const configuredProfileName = Option.getOrUndefined(profileConfig);
     const cookieBrowserKeys = Option.match(cookieBrowsersConfig, {
       onNone: (): string[] => [],
       onSome: (value) => value.split(",").filter(Boolean),
@@ -280,9 +284,60 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
           ),
         );
 
-      const cdpUrl = Option.orElse(options.cdpUrl ?? Option.none(), () => defaultCdpUrl);
+      const explicitCdpUrl = Option.orElse(options.cdpUrl ?? Option.none(), () => defaultCdpUrl);
       const headed = options.headed ?? isHeadedDefault;
+      const engine = options.browserType ?? "chromium";
       yield* Ref.set(isHeadedRef, headed);
+
+      const useSystemChrome =
+        configuredProfileName !== undefined &&
+        engine === "chromium" &&
+        !Option.isSome(explicitCdpUrl);
+
+      const { cdpUrl, chromeCleanup } = useSystemChrome
+        ? yield* Effect.gen(function* () {
+            const resolvedProfilePath = yield* browserService
+              .resolveProfilePath(configuredProfileName)
+              .pipe(
+                Effect.tap((resolved) =>
+                  Effect.logInfo("Resolved browser profile", {
+                    profileName: configuredProfileName,
+                    profilePath: resolved,
+                  }),
+                ),
+              );
+
+            if (resolvedProfilePath === undefined) {
+              return yield* Effect.die(
+                new Error(
+                  `Chrome profile "${configuredProfileName}" not found. Available profiles can be found in your Chrome user data directory.`,
+                ),
+              );
+            }
+
+            const chrome = yield* launchSystemChrome({
+              headless: !headed,
+              profilePath: path.dirname(resolvedProfilePath),
+              profileDirectory: path.basename(resolvedProfilePath),
+            });
+
+            yield* Effect.logInfo("System Chrome launched", {
+              profileName: configuredProfileName,
+              profilePath: resolvedProfilePath,
+              wsUrl: chrome.wsUrl,
+            });
+
+            return {
+              cdpUrl: Option.some(chrome.wsUrl),
+              chromeCleanup: killChromeProcess(chrome),
+            };
+          }).pipe(
+            Effect.catchTags({
+              ChromeNotFoundError: Effect.die,
+              ChromeLaunchTimeoutError: Effect.die,
+            }),
+          )
+        : { cdpUrl: explicitCdpUrl, chromeCleanup: Effect.void };
 
       const pageResult = yield* browserService.createPage(url, {
         headed,
@@ -290,15 +345,15 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         waitUntil: options.waitUntil,
         videoOutputDir,
         cdpUrl,
-        browserType: options.browserType,
+        browserType: engine,
       });
 
       const sessionData: BrowserSessionData = {
         browser: pageResult.browser,
         context: pageResult.context,
         page: pageResult.page,
-        cleanup: pageResult.cleanup,
-        isExternalBrowser: pageResult.isExternalBrowser,
+        cleanup: useSystemChrome ? chromeCleanup : pageResult.cleanup,
+        isExternalBrowser: useSystemChrome ? true : pageResult.isExternalBrowser,
         consoleMessages: [],
         networkRequests: [],
         trackedPages: new Set(),

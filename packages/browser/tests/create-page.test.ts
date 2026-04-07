@@ -160,7 +160,7 @@ describe("Browser.createPage cookie reuse", () => {
 
     await runBrowser((browser) => browser.createPage("https://github.com", { cookies: true }));
 
-    expect(newContextMock).toHaveBeenCalledWith({ locale: "en-US" });
+    expect(newContextMock).toHaveBeenCalledWith({ ignoreHTTPSErrors: true, locale: "en-US" });
     expect(cookieExtractMock).toHaveBeenCalledWith(heliumProfile);
     expect(cookieExtractMock).not.toHaveBeenCalledWith(workProfile);
     expect(addCookiesMock).toHaveBeenCalledWith(
