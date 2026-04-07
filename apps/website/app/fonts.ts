@@ -14,13 +14,6 @@ export const berkeleyMonoRegular = localFont({
   style: "normal",
 });
 
-export const openRundeBold = localFont({
-  src: "../public/fonts/OpenRunde-Bold.otf",
-  display: "swap",
-  weight: "700",
-  style: "normal",
-});
-
 export const testSignifierRegular = localFont({
   src: "../public/fonts/TestSignifier-Regular.otf",
   display: "swap",
