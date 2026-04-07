@@ -83,8 +83,7 @@ const DEFAULT_CONFIG: AnimationConfig = {
 type AnimationPhase = "coding" | "diff" | "expect";
 type CursorLabelState = "expect" | "security" | "alert" | "fixed";
 
-function useAnimationPhase(config: AnimationConfig) {
-  const [cycle, setCycle] = useState(0);
+function useAnimationPhase(config: AnimationConfig, onComplete: () => void) {
   const [phase, setPhase] = useState<AnimationPhase>("coding");
   const [slid, setSlid] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -102,27 +101,13 @@ function useAnimationPhase(config: AnimationConfig) {
   const [reloadDone, setReloadDone] = useState(false);
   const [looping, setLooping] = useState(false);
 
-  const configRef = useRef(config);
-  configRef.current = config;
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  });
 
   useEffect(() => {
-    const c = configRef.current;
-    setPhase("coding");
-    setSlid(false);
-    setFocused(false);
-    setCursorVisible(false);
-    setCursorOnBrowser(false);
-    setClicking(false);
-    setLabelVisible(false);
-    setCursorLabel("security");
-    setCursorOnTerminal(false);
-    setClickingTerminal(false);
-    setTerminalFocused(false);
-    setFixing(false);
-    setFixDiff(false);
-    setReloading(false);
-    setReloadDone(false);
-    setLooping(false);
+    const c = config;
 
     const expectTime = c.codingDuration + c.diffDuration;
     const cursorAppearTime = expectTime + c.cursorAppearDelay;
@@ -142,6 +127,18 @@ function useAnimationPhase(config: AnimationConfig) {
     const focusTimer = setTimeout(() => setFocused(true), focusTime);
     const alertTimer = setTimeout(() => setCursorLabel("alert"), alertTime);
     const fixingTime = alertTime + c.fixingDelay;
+    const cursorToTerminalTimer = setTimeout(() => {
+      setCursorOnBrowser(false);
+      setCursorOnTerminal(true);
+    }, fixingTime);
+    const clickTerminalTimer = setTimeout(
+      () => setClickingTerminal(true),
+      fixingTime + c.cursorClickDelay,
+    );
+    const clickTerminalEndTimer = setTimeout(
+      () => setClickingTerminal(false),
+      fixingTime + c.cursorClickDelay + 100,
+    );
     const fixingTimer = setTimeout(() => {
       setFixing(true);
       setTerminalFocused(true);
@@ -160,13 +157,14 @@ function useAnimationPhase(config: AnimationConfig) {
     const resetTimer = setTimeout(() => {
       setCursorVisible(false);
       setLabelVisible(false);
+      setCursorOnTerminal(false);
       setLooping(true);
       setSlid(false);
       setFocused(false);
       setTerminalFocused(false);
     }, resetTime);
     const loopTime = resetTime + c.loopDelay;
-    const loopTimer = setTimeout(() => setCycle((previous) => previous + 1), loopTime);
+    const loopTimer = setTimeout(() => onCompleteRef.current(), loopTime);
     return () => {
       clearTimeout(diffTimer);
       clearTimeout(slideTimer);
@@ -178,6 +176,9 @@ function useAnimationPhase(config: AnimationConfig) {
       clearTimeout(labelShowTimer);
       clearTimeout(focusTimer);
       clearTimeout(alertTimer);
+      clearTimeout(cursorToTerminalTimer);
+      clearTimeout(clickTerminalTimer);
+      clearTimeout(clickTerminalEndTimer);
       clearTimeout(fixingTimer);
       clearTimeout(fixDiffTimer);
       clearTimeout(reloadTimer);
@@ -185,12 +186,10 @@ function useAnimationPhase(config: AnimationConfig) {
       clearTimeout(resetTimer);
       clearTimeout(loopTimer);
     };
-  }, [cycle]);
-
-  const restart = () => setCycle((previous) => previous + 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return {
-    cycle,
     phase,
     slid,
     focused,
@@ -207,20 +206,7 @@ function useAnimationPhase(config: AnimationConfig) {
     reloading,
     reloadDone,
     looping,
-    restart,
   };
-}
-
-function TerminalLine({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.05, delay }}
-    >
-      {children}
-    </motion.div>
-  );
 }
 
 function TerminalContent({
@@ -784,7 +770,8 @@ function AnimatedCursor({
 }
 
 function TerminalIllustration() {
-  const restartRef = useRef(() => {});
+  const [cycle, setCycle] = useState(0);
+  const nextCycle = () => setCycle((previous) => previous + 1);
 
   const dial = useDialKit(
     "Animation",
@@ -830,7 +817,7 @@ function TerminalIllustration() {
     },
     {
       onAction: (action) => {
-        if (action === "restart") restartRef.current();
+        if (action === "restart") nextCycle();
       },
     },
   );
@@ -870,9 +857,20 @@ function TerminalIllustration() {
     cursorEntranceMass: DEFAULT_CONFIG.cursorEntranceMass,
   };
 
-  const animState = useAnimationPhase(config);
+  return <TerminalAnimationView key={cycle} config={config} cycle={cycle} onComplete={nextCycle} />;
+}
+
+function TerminalAnimationView({
+  config,
+  cycle,
+  onComplete,
+}: {
+  config: AnimationConfig;
+  cycle: number;
+  onComplete: () => void;
+}) {
+  const animState = useAnimationPhase(config, onComplete);
   const {
-    cycle,
     phase,
     slid,
     focused,
@@ -889,9 +887,7 @@ function TerminalIllustration() {
     reloading,
     reloadDone,
     looping,
-    restart,
   } = animState;
-  restartRef.current = restart;
 
   return (
     <div className="flex flex-col items-center justify-center gap-4 text-xs/4 mt-11.5 p-3">
@@ -937,7 +933,6 @@ function TerminalIllustration() {
             }}
           />
           <TerminalContent
-            key={cycle}
             cycle={cycle}
             phase={phase}
             fixing={fixing}
@@ -948,13 +943,21 @@ function TerminalIllustration() {
         </motion.div>
       </div>
       <div className="[letter-spacing:0em] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-sm/5.75 text-[#858585]">
-        {fixDiff ? "Vulnerability fixed" : focused ? "Scanning security" : "Agent writes code"}
+        {fixDiff
+          ? "Vulnerability fixed"
+          : fixing
+            ? "Fixing vulnerability"
+            : cursorLabel === "alert"
+              ? "Vulnerability found"
+              : focused
+                ? "Scanning security"
+                : "Agent writes code"}
       </div>
     </div>
   );
 }
 
-export default function () {
+export default function HomePage() {
   const [copied, setCopied] = useState(false);
   const [openFaqs, setOpenFaqs] = useState<Set<number>>(new Set());
   const commandRef = useRef<HTMLDivElement>(null);
@@ -988,7 +991,7 @@ export default function () {
             Expect more from your agents
           </div>
           <div className="[letter-spacing:0em] w-102 [white-space-collapse:preserve] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[15px]/5.75 text-[#707070]">
-            Expect is an agent skill that tests your app in a browser so you don't have to.
+            Expect is an agent skill that tests your app in a browser so you don&apos;t have to.
           </div>
         </div>
         <div className="flex flex-col gap-2.75 mt-6">
