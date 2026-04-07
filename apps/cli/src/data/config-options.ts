@@ -10,4 +10,5 @@ export const agentConfigOptionsAtom = Atom.make<Record<AgentBackend, AcpConfigOp
   cursor: [],
   opencode: [],
   droid: [],
+  pi: [],
 });

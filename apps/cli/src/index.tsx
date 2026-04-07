@@ -5,7 +5,6 @@ import { runHeadless } from "./utils/run-test";
 import { runInit } from "./commands/init";
 import { runAddGithubAction } from "./commands/add-github-action";
 import { runAddSkill } from "./commands/add-skill";
-import { runAuditCommand } from "./commands/audit";
 import { runWatchCommand } from "./commands/watch";
 import { runUpdateCommand } from "./commands/update";
 import { isRunningInAgent } from "@expect/shared/launched-from";
@@ -65,7 +64,7 @@ const program = new Command()
   .option("-y, --yes", "run immediately without confirmation")
   .option(
     "-a, --agent <provider>",
-    "agent provider to use (claude, codex, copilot, gemini, cursor, opencode, or droid)",
+    "agent provider to use (claude, codex, copilot, gemini, cursor, opencode, droid, or pi)",
   )
   .option("-t, --target <target>", "what to test: unstaged, branch, or changes", "changes")
   .option("--verbose", "enable verbose logging")
@@ -227,19 +226,12 @@ addCommand
   });
 
 program
-  .command("audit")
-  .description("audit your workspace for lint, type, and formatting issues")
-  .action(async () => {
-    await runAuditCommand();
-  });
-
-program
   .command("watch")
   .description("watch for file changes and auto-run browser tests")
   .option("-m, --message <instruction>", "natural language instruction for what to test")
   .option(
     "-a, --agent <provider>",
-    "agent provider to use (claude, codex, copilot, gemini, cursor, opencode, or droid)",
+    "agent provider to use (claude, codex, copilot, gemini, cursor, opencode, droid, or pi)",
   )
   .option("-t, --target <target>", "what to test: unstaged, branch, or changes", "changes")
   .option("--verbose", "enable verbose logging")

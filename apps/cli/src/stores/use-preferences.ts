@@ -42,6 +42,7 @@ export const usePreferencesStore = create<PreferencesStore>()(
         cursor: undefined,
         opencode: undefined,
         droid: undefined,
+        pi: undefined,
       },
       cliBaseUrls: undefined,
       setAgentBackend: (backend: AgentBackend) => set({ agentBackend: backend }),

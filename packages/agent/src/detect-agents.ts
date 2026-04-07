@@ -7,7 +7,8 @@ export type SupportedAgent =
   | "gemini"
   | "cursor"
   | "opencode"
-  | "droid";
+  | "droid"
+  | "pi";
 
 interface AgentMeta {
   readonly binaries: readonly string[];
@@ -27,6 +28,7 @@ const SUPPORTED_AGENTS: Record<SupportedAgent, AgentMeta> = {
   cursor: { binaries: ["cursor", "agent"], displayName: "Cursor", skillDir: ".cursor/skills" },
   opencode: { binaries: ["opencode"], displayName: "OpenCode", skillDir: ".opencode/skills" },
   droid: { binaries: ["droid"], displayName: "Factory Droid", skillDir: ".droid/skills" },
+  pi: { binaries: ["pi", "omegon"], displayName: "Pi", skillDir: ".pi/skills" },
 };
 
 export const detectAvailableAgents = (): SupportedAgent[] =>

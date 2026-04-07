@@ -32,7 +32,8 @@ export type AgentBackend =
   | "gemini"
   | "cursor"
   | "opencode"
-  | "droid";
+  | "droid"
+  | "pi";
 
 export class Agent extends ServiceMap.Service<
   Agent,
@@ -94,6 +95,7 @@ export class Agent extends ServiceMap.Service<
   static layerCursor = Agent.layerAcp.pipe(Layer.provide(AcpAdapter.layerCursor));
   static layerOpencode = Agent.layerAcp.pipe(Layer.provide(AcpAdapter.layerOpencode));
   static layerDroid = Agent.layerAcp.pipe(Layer.provide(AcpAdapter.layerDroid));
+  static layerPi = Agent.layerAcp.pipe(Layer.provide(AcpAdapter.layerPi));
 
   static layerFor = (backend: AgentBackend): Layer.Layer<Agent, AgentLayerError> => {
     const layers: Record<AgentBackend, Layer.Layer<Agent, AgentLayerError>> = {
@@ -104,6 +106,7 @@ export class Agent extends ServiceMap.Service<
       cursor: Agent.layerCursor,
       opencode: Agent.layerOpencode,
       droid: Agent.layerDroid,
+      pi: Agent.layerPi,
     };
     return layers[backend];
   };
