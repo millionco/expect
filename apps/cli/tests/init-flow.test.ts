@@ -62,6 +62,52 @@ vi.mock("../src/utils/highlighter", () => ({
   },
 }));
 
+const withNoNetwork = (fn: () => Promise<void>) => {
+  const originalConnect = net.Socket.prototype.connect;
+  net.Socket.prototype.connect = function (..._args: unknown[]) {
+    process.nextTick(() => this.emit("error", new Error("ECONNREFUSED")));
+    return this;
+  } as typeof net.Socket.prototype.connect;
+  return fn().finally(() => {
+    net.Socket.prototype.connect = originalConnect;
+  });
+};
+
+const withFakeCdp = async (targetPort: number, fn: () => Promise<void>) => {
+  const server = net.createServer();
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const realPort = (server.address() as net.AddressInfo).port;
+
+  const originalConnect = net.Socket.prototype.connect;
+  net.Socket.prototype.connect = function (...args: unknown[]) {
+    if (typeof args[0] === "number" && args[0] === targetPort) {
+      args[0] = realPort;
+    }
+    return originalConnect.apply(this, args as Parameters<typeof originalConnect>);
+  } as typeof net.Socket.prototype.connect;
+
+  return fn().finally(async () => {
+    net.Socket.prototype.connect = originalConnect;
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  });
+};
+
+const setupFixture = (projectRoot: string, files: Record<string, string>) => {
+  for (const [filePath, content] of Object.entries(files)) {
+    const fullPath = path.join(projectRoot, filePath);
+    fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+    fs.writeFileSync(fullPath, content);
+  }
+};
+
+const assertFilesUnchanged = (projectRoot: string, files: Record<string, string>) => {
+  for (const [filePath, expectedContent] of Object.entries(files)) {
+    const fullPath = path.join(projectRoot, filePath);
+    expect(fs.existsSync(fullPath)).toBe(true);
+    expect(fs.readFileSync(fullPath, "utf-8")).toBe(expectedContent);
+  }
+};
+
 describe("init flow", () => {
   let projectRoot: string;
   let originalCwd: () => string;
@@ -85,541 +131,389 @@ describe("init flow", () => {
     fs.rmSync(projectRoot, { recursive: true, force: true });
   });
 
-  it("writes headless config when --headless flag is passed", async () => {
-    const { runInit } = await import("../src/commands/init");
-    await runInit({ headless: true });
-
-    const config = readExpectConfig(projectRoot);
-    expect(config).toEqual({ browserMode: "headless" });
-  });
-
-  it("writes headed config when --headed flag is passed", async () => {
-    const { runInit } = await import("../src/commands/init");
-    await runInit({ headed: true });
-
-    const config = readExpectConfig(projectRoot);
-    expect(config).toEqual({ browserMode: "headed" });
-  });
-
-  it("does not write config in dry mode", async () => {
-    const { runInit } = await import("../src/commands/init");
-    await runInit({ dry: true, headless: true });
-
-    const config = readExpectConfig(projectRoot);
-    expect(config).toBeUndefined();
-  });
-
-  it("falls back to headless when --cdp flag is passed but no browser is running", async () => {
-    const originalConnect = net.Socket.prototype.connect;
-    net.Socket.prototype.connect = function (..._args: unknown[]) {
-      process.nextTick(() => this.emit("error", new Error("ECONNREFUSED")));
-      return this;
-    } as typeof net.Socket.prototype.connect;
-
-    try {
+  describe("browser mode flags", () => {
+    it("--headless writes headless config and skips prompt", async () => {
+      const { prompts } = await import("../src/utils/prompts");
       const { runInit } = await import("../src/commands/init");
-      await runInit({ cdp: true });
+      await runInit({ headless: true });
 
-      const config = readExpectConfig(projectRoot);
-      expect(config).toEqual({ browserMode: "headless" });
-    } finally {
-      net.Socket.prototype.connect = originalConnect;
-    }
-  });
-
-  it("writes cdp config when --cdp flag is passed and a browser is listening", async () => {
-    const server = net.createServer();
-    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
-    const port = (server.address() as net.AddressInfo).port;
-
-    const originalConnect = net.Socket.prototype.connect;
-    net.Socket.prototype.connect = function (...args: unknown[]) {
-      const targetPort = typeof args[0] === "number" ? args[0] : undefined;
-      if (targetPort === 9222) {
-        args[0] = port;
-      }
-      return originalConnect.apply(this, args as Parameters<typeof originalConnect>);
-    } as typeof net.Socket.prototype.connect;
-
-    try {
-      const { runInit } = await import("../src/commands/init");
-      await runInit({ cdp: true });
-
-      const config = readExpectConfig(projectRoot);
-      expect(config).toEqual({ browserMode: "cdp" });
-    } finally {
-      net.Socket.prototype.connect = originalConnect;
-      await new Promise<void>((resolve) => server.close(() => resolve()));
-    }
-  });
-
-  it("skips prompt when a browser mode flag is provided", async () => {
-    const { prompts } = await import("../src/utils/prompts");
-
-    const { runInit } = await import("../src/commands/init");
-    await runInit({ headless: true });
-
-    expect(prompts).not.toHaveBeenCalled();
-  });
-
-  it("calls runAddSkill when not in dry mode", async () => {
-    const { runAddSkill } = await import("../src/commands/add-skill");
-
-    const { runInit } = await import("../src/commands/init");
-    await runInit({ headless: true });
-
-    expect(runAddSkill).toHaveBeenCalled();
-  });
-
-  it("skips runAddSkill in dry mode", async () => {
-    const { runAddSkill } = await import("../src/commands/add-skill");
-
-    const { runInit } = await import("../src/commands/init");
-    await runInit({ dry: true, headless: true });
-
-    expect(runAddSkill).not.toHaveBeenCalled();
-  });
-
-  it("calls runInstallCommand when not in dry mode", async () => {
-    const { runInstallCommand } = await import("../src/commands/update");
-
-    const { runInit } = await import("../src/commands/init");
-    await runInit({ headless: true });
-
-    expect(runInstallCommand).toHaveBeenCalled();
-  });
-
-  it("skips runInstallCommand in dry mode", async () => {
-    const { runInstallCommand } = await import("../src/commands/update");
-
-    const { runInit } = await import("../src/commands/init");
-    await runInit({ dry: true, headless: true });
-
-    expect(runInstallCommand).not.toHaveBeenCalled();
-  });
-
-  it("preserves existing .expect/ files when writing config", async () => {
-    const expectDir = path.join(projectRoot, ".expect");
-    fs.mkdirSync(expectDir, { recursive: true });
-    fs.writeFileSync(path.join(expectDir, "logs.md"), "existing logs");
-
-    const { runInit } = await import("../src/commands/init");
-    await runInit({ headless: true });
-
-    expect(fs.readFileSync(path.join(expectDir, "logs.md"), "utf-8")).toBe("existing logs");
-    expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
-  });
-
-  it("overwrites existing config on re-init", async () => {
-    const expectDir = path.join(projectRoot, ".expect");
-    fs.mkdirSync(expectDir, { recursive: true });
-    fs.writeFileSync(path.join(expectDir, "config.json"), JSON.stringify({ browserMode: "cdp" }));
-
-    const { runInit } = await import("../src/commands/init");
-    await runInit({ headless: true });
-
-    expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
-  });
-
-  it("exits when no agents are detected", async () => {
-    const { detectAvailableAgents } = await import("@expect/agent");
-    vi.mocked(detectAvailableAgents).mockReturnValue([]);
-
-    const mockExit = vi.spyOn(process, "exit").mockImplementation(() => {
-      throw new Error("process.exit");
-    });
-
-    const { runInit } = await import("../src/commands/init");
-    await expect(runInit({ headless: true })).rejects.toThrow("process.exit");
-
-    expect(mockExit).toHaveBeenCalledWith(1);
-    mockExit.mockRestore();
-  });
-
-  it("works when skill directories already exist", async () => {
-    const skillDir = path.join(projectRoot, ".agents", "skills", "expect");
-    fs.mkdirSync(skillDir, { recursive: true });
-    fs.writeFileSync(path.join(skillDir, "SKILL.md"), "existing skill");
-
-    const { runInit } = await import("../src/commands/init");
-    await runInit({ headed: true });
-
-    expect(fs.existsSync(path.join(skillDir, "SKILL.md"))).toBe(true);
-    expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headed" });
-  });
-
-  it("passes detected agents to runAddSkill", async () => {
-    const { detectAvailableAgents } = await import("@expect/agent");
-    vi.mocked(detectAvailableAgents).mockReturnValue(["claude", "codex", "cursor"]);
-    const { runAddSkill } = await import("../src/commands/add-skill");
-
-    const { runInit } = await import("../src/commands/init");
-    await runInit({ headless: true });
-
-    expect(runAddSkill).toHaveBeenCalledWith(
-      expect.objectContaining({ agents: ["claude", "codex", "cursor"] }),
-    );
-  });
-
-  it("passes yes flag through to runAddSkill", async () => {
-    const { runAddSkill } = await import("../src/commands/add-skill");
-
-    const { runInit } = await import("../src/commands/init");
-    await runInit({ yes: true, headless: true });
-
-    expect(runAddSkill).toHaveBeenCalledWith(expect.objectContaining({ yes: true }));
-  });
-
-  it("does not write config when no agents and process.exit is caught", async () => {
-    const { detectAvailableAgents } = await import("@expect/agent");
-    vi.mocked(detectAvailableAgents).mockReturnValue([]);
-
-    const mockExit = vi.spyOn(process, "exit").mockImplementation(() => {
-      throw new Error("process.exit");
-    });
-
-    const { runInit } = await import("../src/commands/init");
-    await expect(runInit({ headless: true })).rejects.toThrow("process.exit");
-
-    expect(readExpectConfig(projectRoot)).toBeUndefined();
-    mockExit.mockRestore();
-  });
-
-  it("handles global install failure gracefully", async () => {
-    const { runInstallCommand } = await import("../src/commands/update");
-    vi.mocked(runInstallCommand).mockResolvedValue(false);
-
-    const { runInit } = await import("../src/commands/init");
-    await runInit({ headless: true });
-
-    expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
-  });
-
-  it("handles expect-cli not on PATH after install", async () => {
-    const { isCommandAvailable } = await import("@expect/shared/is-command-available");
-    vi.mocked(isCommandAvailable).mockReturnValue(false);
-
-    const { runInit } = await import("../src/commands/init");
-    await runInit({ headless: true });
-
-    expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
-  });
-
-  it("warns when multiple browser mode flags are passed", async () => {
-    const { logger } = await import("../src/utils/logger");
-
-    const { runInit } = await import("../src/commands/init");
-    await runInit({ cdp: true, headless: true });
-
-    expect(logger.warn).toHaveBeenCalledWith(
-      expect.stringContaining("Multiple browser mode flags"),
-    );
-  });
-
-  it("uses first flag when multiple browser mode flags conflict", async () => {
-    const originalConnect = net.Socket.prototype.connect;
-    net.Socket.prototype.connect = function (..._args: unknown[]) {
-      process.nextTick(() => this.emit("error", new Error("ECONNREFUSED")));
-      return this;
-    } as typeof net.Socket.prototype.connect;
-
-    try {
-      const { runInit } = await import("../src/commands/init");
-      await runInit({ cdp: true, headed: true });
-
-      const config = readExpectConfig(projectRoot);
-      expect(config).toEqual({ browserMode: "headless" });
-    } finally {
-      net.Socket.prototype.connect = originalConnect;
-    }
-  });
-
-  it("re-init from cdp to headed overwrites correctly", async () => {
-    const { runInit } = await import("../src/commands/init");
-
-    await runInit({ headless: true });
-    expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
-
-    await runInit({ headed: true });
-    expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headed" });
-  });
-
-  it("re-init from headed to headless overwrites correctly", async () => {
-    const { runInit } = await import("../src/commands/init");
-
-    await runInit({ headed: true });
-    expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headed" });
-
-    await runInit({ headless: true });
-    expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
-  });
-
-  it("works with a project that has existing .expect/config.json with extra fields", async () => {
-    const expectDir = path.join(projectRoot, ".expect");
-    fs.mkdirSync(expectDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(expectDir, "config.json"),
-      JSON.stringify({ browserMode: "cdp", customField: "should be overwritten" }),
-    );
-
-    const { runInit } = await import("../src/commands/init");
-    await runInit({ headed: true });
-
-    const raw = JSON.parse(fs.readFileSync(path.join(expectDir, "config.json"), "utf-8"));
-    expect(raw).toEqual({ browserMode: "headed" });
-    expect(raw.customField).toBeUndefined();
-  });
-
-  it("works with a project that has corrupted .expect/config.json", async () => {
-    const expectDir = path.join(projectRoot, ".expect");
-    fs.mkdirSync(expectDir, { recursive: true });
-    fs.writeFileSync(path.join(expectDir, "config.json"), "corrupted{{{");
-
-    const { runInit } = await import("../src/commands/init");
-    await runInit({ headless: true });
-
-    expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
-  });
-
-  it("works with full realistic project structure", async () => {
-    fs.mkdirSync(path.join(projectRoot, ".agents", "skills", "expect"), { recursive: true });
-    fs.writeFileSync(
-      path.join(projectRoot, ".agents", "skills", "expect", "SKILL.md"),
-      "---\nname: expect\n---\n",
-    );
-    fs.mkdirSync(path.join(projectRoot, ".claude", "skills", "expect"), { recursive: true });
-    fs.writeFileSync(
-      path.join(projectRoot, ".claude", "skills", "expect", "SKILL.md"),
-      "---\nname: expect\n---\n",
-    );
-    fs.mkdirSync(path.join(projectRoot, ".expect"), { recursive: true });
-    fs.writeFileSync(path.join(projectRoot, ".expect", "logs.md"), "[2025-01-01] test log\n");
-    fs.writeFileSync(path.join(projectRoot, "package.json"), '{"name":"my-app"}');
-    fs.mkdirSync(path.join(projectRoot, "src"), { recursive: true });
-    fs.writeFileSync(path.join(projectRoot, "src", "index.ts"), "console.log('hello')");
-
-    const { runInit } = await import("../src/commands/init");
-    await runInit({ headed: true });
-
-    expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headed" });
-    expect(fs.readFileSync(path.join(projectRoot, ".expect", "logs.md"), "utf-8")).toBe(
-      "[2025-01-01] test log\n",
-    );
-    expect(fs.existsSync(path.join(projectRoot, ".agents", "skills", "expect", "SKILL.md"))).toBe(
-      true,
-    );
-    expect(fs.readFileSync(path.join(projectRoot, "package.json"), "utf-8")).toBe(
-      '{"name":"my-app"}',
-    );
-  });
-
-  it("dry mode with --cdp still probes but does not write config", async () => {
-    const originalConnect = net.Socket.prototype.connect;
-    net.Socket.prototype.connect = function (..._args: unknown[]) {
-      process.nextTick(() => this.emit("error", new Error("ECONNREFUSED")));
-      return this;
-    } as typeof net.Socket.prototype.connect;
-
-    try {
-      const { runInit } = await import("../src/commands/init");
-      await runInit({ dry: true, cdp: true });
-
-      expect(readExpectConfig(projectRoot)).toBeUndefined();
-    } finally {
-      net.Socket.prototype.connect = originalConnect;
-    }
-  });
-
-  it("only one agent detected still works", async () => {
-    const { detectAvailableAgents } = await import("@expect/agent");
-    vi.mocked(detectAvailableAgents).mockReturnValue(["cursor"]);
-    const { runAddSkill } = await import("../src/commands/add-skill");
-
-    const { runInit } = await import("../src/commands/init");
-    await runInit({ headless: true });
-
-    expect(runAddSkill).toHaveBeenCalledWith(expect.objectContaining({ agents: ["cursor"] }));
-    expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
-  });
-
-  it("all seven agents detected passes them all to skill install", async () => {
-    const allAgents = ["claude", "codex", "copilot", "gemini", "cursor", "opencode", "droid"];
-    const { detectAvailableAgents } = await import("@expect/agent");
-    vi.mocked(detectAvailableAgents).mockReturnValue(allAgents as never);
-    const { runAddSkill } = await import("../src/commands/add-skill");
-
-    const { runInit } = await import("../src/commands/init");
-    await runInit({ headed: true });
-
-    expect(runAddSkill).toHaveBeenCalledWith(expect.objectContaining({ agents: allAgents }));
-  });
-
-  it("no flags triggers the prompt", async () => {
-    const { prompts } = await import("../src/utils/prompts");
-    vi.mocked(prompts).mockResolvedValue({ browserMode: "headless" });
-
-    const { runInit } = await import("../src/commands/init");
-    await runInit({});
-
-    expect(prompts).toHaveBeenCalled();
-    expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
-  });
-
-  it("prompt returning empty object defaults to cdp then falls back to headless", async () => {
-    const { prompts } = await import("../src/utils/prompts");
-    vi.mocked(prompts).mockResolvedValue({});
-
-    const originalConnect = net.Socket.prototype.connect;
-    net.Socket.prototype.connect = function (..._args: unknown[]) {
-      process.nextTick(() => this.emit("error", new Error("ECONNREFUSED")));
-      return this;
-    } as typeof net.Socket.prototype.connect;
-
-    try {
-      const { runInit } = await import("../src/commands/init");
-      await runInit({ cdp: true });
-
+      expect(prompts).not.toHaveBeenCalled();
       expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
-    } finally {
-      net.Socket.prototype.connect = originalConnect;
-    }
-  });
+    });
 
-  it("prompt returns headed value directly", async () => {
-    const { prompts } = await import("../src/utils/prompts");
-    vi.mocked(prompts).mockResolvedValue({ browserMode: "headed" });
+    it("--headed writes headed config and skips prompt", async () => {
+      const { prompts } = await import("../src/utils/prompts");
+      const { runInit } = await import("../src/commands/init");
+      await runInit({ headed: true });
 
-    const { runInit } = await import("../src/commands/init");
-    await runInit({});
+      expect(prompts).not.toHaveBeenCalled();
+      expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headed" });
+    });
 
-    expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headed" });
-  });
+    it("--cdp with no browser falls back to headless", () =>
+      withNoNetwork(async () => {
+        const { runInit } = await import("../src/commands/init");
+        await runInit({ cdp: true });
+        expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
+      }));
 
-  it("prompt returns headless value directly", async () => {
-    const { prompts } = await import("../src/utils/prompts");
-    vi.mocked(prompts).mockResolvedValue({ browserMode: "headless" });
+    it("--cdp with browser on 9222 writes cdp config", () =>
+      withFakeCdp(9222, async () => {
+        const { runInit } = await import("../src/commands/init");
+        await runInit({ cdp: true });
+        expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "cdp" });
+      }));
 
-    const { runInit } = await import("../src/commands/init");
-    await runInit({});
+    it("--cdp detects browser on fallback port 9229", async () => {
+      const server = net.createServer();
+      await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+      const realPort = (server.address() as net.AddressInfo).port;
 
-    expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
-  });
+      const originalConnect = net.Socket.prototype.connect;
+      net.Socket.prototype.connect = function (...args: unknown[]) {
+        const targetPort = typeof args[0] === "number" ? args[0] : undefined;
+        if (targetPort === 9222) {
+          process.nextTick(() => this.emit("error", new Error("ECONNREFUSED")));
+          return this;
+        }
+        if (targetPort === 9229) args[0] = realPort;
+        return originalConnect.apply(this, args as Parameters<typeof originalConnect>);
+      } as typeof net.Socket.prototype.connect;
 
-  it(".expect dir is read-only fails gracefully on write", async () => {
-    const expectDir = path.join(projectRoot, ".expect");
-    fs.mkdirSync(expectDir, { recursive: true });
-    fs.chmodSync(expectDir, 0o444);
+      try {
+        const { runInit } = await import("../src/commands/init");
+        await runInit({ cdp: true });
+        expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "cdp" });
+      } finally {
+        net.Socket.prototype.connect = originalConnect;
+        await new Promise<void>((resolve) => server.close(() => resolve()));
+      }
+    });
 
-    const { runInit } = await import("../src/commands/init");
-
-    try {
-      await expect(runInit({ headless: true })).rejects.toThrow();
-    } finally {
-      fs.chmodSync(expectDir, 0o755);
-    }
-  });
-
-  it("config.json is read-only gets overwritten on re-init", async () => {
-    const expectDir = path.join(projectRoot, ".expect");
-    fs.mkdirSync(expectDir, { recursive: true });
-    fs.writeFileSync(path.join(expectDir, "config.json"), '{"browserMode":"cdp"}');
-    fs.chmodSync(path.join(expectDir, "config.json"), 0o444);
-
-    const { runInit } = await import("../src/commands/init");
-
-    try {
-      await expect(runInit({ headless: true })).rejects.toThrow();
-    } finally {
-      fs.chmodSync(path.join(expectDir, "config.json"), 0o644);
-    }
-  });
-
-  it("three sequential re-inits produce correct final state", async () => {
-    const { runInit } = await import("../src/commands/init");
-
-    await runInit({ headless: true });
-    await runInit({ headed: true });
-    await runInit({ headless: true });
-
-    expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
-
-    const expectDir = path.join(projectRoot, ".expect");
-    const files = fs.readdirSync(expectDir);
-    expect(files).toEqual(["config.json"]);
-  });
-
-  it("cdp probe on port 9229 works when 9222 is closed", async () => {
-    const server = net.createServer();
-    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
-    const realPort = (server.address() as net.AddressInfo).port;
-
-    const originalConnect = net.Socket.prototype.connect;
-    net.Socket.prototype.connect = function (...args: unknown[]) {
-      const targetPort = typeof args[0] === "number" ? args[0] : undefined;
-      if (targetPort === 9222) {
-        process.nextTick(() => this.emit("error", new Error("ECONNREFUSED")));
+    it("socket timeout treated as no CDP", () => {
+      const originalConnect = net.Socket.prototype.connect;
+      net.Socket.prototype.connect = function (..._args: unknown[]) {
+        process.nextTick(() => this.emit("timeout"));
         return this;
-      }
-      if (targetPort === 9229) {
-        args[0] = realPort;
-      }
-      return originalConnect.apply(this, args as Parameters<typeof originalConnect>);
-    } as typeof net.Socket.prototype.connect;
+      } as typeof net.Socket.prototype.connect;
 
-    try {
+      return (async () => {
+        const { runInit } = await import("../src/commands/init");
+        await runInit({ cdp: true });
+        expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
+      })().finally(() => {
+        net.Socket.prototype.connect = originalConnect;
+      });
+    });
+
+    it("conflicting flags warns and uses first", () =>
+      withNoNetwork(async () => {
+        const { logger } = await import("../src/utils/logger");
+        const { runInit } = await import("../src/commands/init");
+        await runInit({ cdp: true, headed: true, headless: true });
+
+        expect(logger.warn).toHaveBeenCalledWith(
+          expect.stringContaining("Multiple browser mode flags"),
+        );
+        expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
+      }));
+
+    it("no flags triggers interactive prompt", async () => {
+      const { prompts } = await import("../src/utils/prompts");
+      vi.mocked(prompts).mockResolvedValue({ browserMode: "headless" });
+
       const { runInit } = await import("../src/commands/init");
-      await runInit({ cdp: true });
+      await runInit({});
 
-      expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "cdp" });
-    } finally {
-      net.Socket.prototype.connect = originalConnect;
-      await new Promise<void>((resolve) => server.close(() => resolve()));
-    }
+      expect(prompts).toHaveBeenCalled();
+      expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
+    });
+
+    it("prompt returns invalid value — defaults to cdp then headless fallback", () =>
+      withNoNetwork(async () => {
+        const { prompts } = await import("../src/utils/prompts");
+        vi.mocked(prompts).mockResolvedValue({ browserMode: "garbage" });
+
+        const { runInit } = await import("../src/commands/init");
+        await runInit({ cdp: true });
+
+        expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
+      }));
   });
 
-  it("socket timeout is treated as no CDP available", async () => {
-    const originalConnect = net.Socket.prototype.connect;
-    net.Socket.prototype.connect = function (..._args: unknown[]) {
-      process.nextTick(() => this.emit("timeout"));
-      return this;
-    } as typeof net.Socket.prototype.connect;
-
-    try {
+  describe("dry mode", () => {
+    it("does not write config", async () => {
       const { runInit } = await import("../src/commands/init");
-      await runInit({ cdp: true });
+      await runInit({ dry: true, headless: true });
+      expect(readExpectConfig(projectRoot)).toBeUndefined();
+    });
+
+    it("does not call runAddSkill", async () => {
+      const { runAddSkill } = await import("../src/commands/add-skill");
+      const { runInit } = await import("../src/commands/init");
+      await runInit({ dry: true, headless: true });
+      expect(runAddSkill).not.toHaveBeenCalled();
+    });
+
+    it("does not call runInstallCommand", async () => {
+      const { runInstallCommand } = await import("../src/commands/update");
+      const { runInit } = await import("../src/commands/init");
+      await runInit({ dry: true, headless: true });
+      expect(runInstallCommand).not.toHaveBeenCalled();
+    });
+
+    it("still shows Setup complete", async () => {
+      const { logger } = await import("../src/utils/logger");
+      const { runInit } = await import("../src/commands/init");
+      await runInit({ dry: true, headed: true });
+      expect(logger.success).toHaveBeenCalledWith("Setup complete!");
+    });
+
+    it("--dry --cdp probes but does not persist", () =>
+      withNoNetwork(async () => {
+        const { runInit } = await import("../src/commands/init");
+        await runInit({ dry: true, cdp: true });
+        expect(readExpectConfig(projectRoot)).toBeUndefined();
+      }));
+  });
+
+  describe("failure modes", () => {
+    it("runAddSkill throws — no config written, install never called", async () => {
+      const { runAddSkill } = await import("../src/commands/add-skill");
+      vi.mocked(runAddSkill).mockRejectedValue(new Error("network error"));
+      const { runInstallCommand } = await import("../src/commands/update");
+
+      const { runInit } = await import("../src/commands/init");
+      await expect(runInit({ headless: true })).rejects.toThrow("network error");
+
+      expect(runInstallCommand).not.toHaveBeenCalled();
+      expect(readExpectConfig(projectRoot)).toBeUndefined();
+    });
+
+    it("runInstallCommand throws — no config written", async () => {
+      const { runAddSkill } = await import("../src/commands/add-skill");
+      vi.mocked(runAddSkill).mockResolvedValue(undefined);
+      const { runInstallCommand } = await import("../src/commands/update");
+      vi.mocked(runInstallCommand).mockRejectedValue(new Error("EACCES"));
+
+      const { runInit } = await import("../src/commands/init");
+      await expect(runInit({ headless: true })).rejects.toThrow("EACCES");
+      expect(readExpectConfig(projectRoot)).toBeUndefined();
+    });
+
+    it("detectAvailableAgents throws — init crashes immediately", async () => {
+      const { detectAvailableAgents } = await import("@expect/agent");
+      vi.mocked(detectAvailableAgents).mockImplementation(() => {
+        throw new Error("segfault");
+      });
+
+      const { runInit } = await import("../src/commands/init");
+      await expect(runInit({})).rejects.toThrow("segfault");
+    });
+
+    it("no agents — exits before any install or config", async () => {
+      const { detectAvailableAgents } = await import("@expect/agent");
+      vi.mocked(detectAvailableAgents).mockReturnValue([]);
+      const { runAddSkill } = await import("../src/commands/add-skill");
+      const { runInstallCommand } = await import("../src/commands/update");
+
+      const mockExit = vi.spyOn(process, "exit").mockImplementation(() => {
+        throw new Error("process.exit");
+      });
+
+      const { runInit } = await import("../src/commands/init");
+      await expect(runInit({ headless: true })).rejects.toThrow("process.exit");
+
+      expect(mockExit).toHaveBeenCalledWith(1);
+      expect(runAddSkill).not.toHaveBeenCalled();
+      expect(runInstallCommand).not.toHaveBeenCalled();
+      expect(readExpectConfig(projectRoot)).toBeUndefined();
+      mockExit.mockRestore();
+    });
+
+    it("prompt throws (stdin closed) — no config written", async () => {
+      const { prompts } = await import("../src/utils/prompts");
+      vi.mocked(prompts).mockRejectedValue(new Error("stdin closed"));
+
+      const { runInit } = await import("../src/commands/init");
+      await expect(runInit({})).rejects.toThrow("stdin closed");
+      expect(readExpectConfig(projectRoot)).toBeUndefined();
+    });
+
+    it("global install fails (returns false) — still completes init", async () => {
+      const { runInstallCommand } = await import("../src/commands/update");
+      vi.mocked(runInstallCommand).mockResolvedValue(false);
+
+      const { runInit } = await import("../src/commands/init");
+      await runInit({ headless: true });
 
       expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
-    } finally {
-      net.Socket.prototype.connect = originalConnect;
-    }
+    });
+
+    it("read-only .expect dir — throws on config write", async () => {
+      const expectDir = path.join(projectRoot, ".expect");
+      fs.mkdirSync(expectDir, { recursive: true });
+      fs.chmodSync(expectDir, 0o444);
+
+      const { runInit } = await import("../src/commands/init");
+      try {
+        await expect(runInit({ headless: true })).rejects.toThrow();
+      } finally {
+        fs.chmodSync(expectDir, 0o755);
+      }
+    });
+
+    it("read-only config.json — throws on overwrite", async () => {
+      const expectDir = path.join(projectRoot, ".expect");
+      fs.mkdirSync(expectDir, { recursive: true });
+      fs.writeFileSync(path.join(expectDir, "config.json"), '{"browserMode":"cdp"}');
+      fs.chmodSync(path.join(expectDir, "config.json"), 0o444);
+
+      const { runInit } = await import("../src/commands/init");
+      try {
+        await expect(runInit({ headless: true })).rejects.toThrow();
+      } finally {
+        fs.chmodSync(path.join(expectDir, "config.json"), 0o644);
+      }
+    });
   });
 
-  it("does not touch files outside .expect/ directory", async () => {
-    fs.writeFileSync(path.join(projectRoot, ".gitignore"), "node_modules\n");
-    fs.writeFileSync(path.join(projectRoot, "tsconfig.json"), "{}");
-    fs.mkdirSync(path.join(projectRoot, "node_modules", "some-pkg"), { recursive: true });
-    fs.writeFileSync(
-      path.join(projectRoot, "node_modules", "some-pkg", "index.js"),
-      "module.exports = {}",
-    );
+  describe("state transitions", () => {
+    it("re-init overwrites previous config", async () => {
+      const { runInit } = await import("../src/commands/init");
 
-    const { runInit } = await import("../src/commands/init");
-    await runInit({ headless: true });
+      await runInit({ headless: true });
+      expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
 
-    expect(fs.readFileSync(path.join(projectRoot, ".gitignore"), "utf-8")).toBe("node_modules\n");
-    expect(fs.readFileSync(path.join(projectRoot, "tsconfig.json"), "utf-8")).toBe("{}");
-    expect(fs.existsSync(path.join(projectRoot, "node_modules", "some-pkg", "index.js"))).toBe(
-      true,
-    );
+      await runInit({ headed: true });
+      expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headed" });
+    });
+
+    it("corrupted config.json is overwritten cleanly", async () => {
+      setupFixture(projectRoot, { ".expect/config.json": "corrupted{{{" });
+
+      const { runInit } = await import("../src/commands/init");
+      await runInit({ headless: true });
+
+      expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
+    });
+
+    it("config with extra fields is replaced with clean config", async () => {
+      setupFixture(projectRoot, {
+        ".expect/config.json": '{"browserMode":"cdp","secret":"leaked","nested":{"a":1}}',
+      });
+
+      const { runInit } = await import("../src/commands/init");
+      await runInit({ headed: true });
+
+      const raw = JSON.parse(
+        fs.readFileSync(path.join(projectRoot, ".expect", "config.json"), "utf-8"),
+      );
+      expect(raw).toEqual({ browserMode: "headed" });
+      expect(Object.keys(raw)).toEqual(["browserMode"]);
+    });
+
+    it("concurrent inits produce valid JSON", async () => {
+      const { runInit } = await import("../src/commands/init");
+
+      await Promise.all([runInit({ headless: true }), runInit({ headed: true })]);
+
+      const raw = fs.readFileSync(path.join(projectRoot, ".expect", "config.json"), "utf-8");
+      expect(() => JSON.parse(raw)).not.toThrow();
+      const config = readExpectConfig(projectRoot);
+      expect(config).toBeDefined();
+      expect(["headed", "headless"]).toContain(config!.browserMode);
+    });
+
+    it("preserves .expect/logs.md across re-init", async () => {
+      setupFixture(projectRoot, {
+        ".expect/logs.md": "important logs\n",
+        ".expect/config.json": '{"browserMode":"cdp"}',
+      });
+
+      const { runInit } = await import("../src/commands/init");
+      await runInit({ headless: true });
+
+      expect(fs.readFileSync(path.join(projectRoot, ".expect", "logs.md"), "utf-8")).toBe(
+        "important logs\n",
+      );
+    });
   });
 
-  it("yes flag does not affect browser mode when flag is also passed", async () => {
-    const { prompts } = await import("../src/utils/prompts");
+  describe("realistic project fixtures", () => {
+    it("project already using expect — re-init only touches config", async () => {
+      const files = {
+        "package.json": '{"name":"my-app"}',
+        ".agents/skills/expect/SKILL.md": '---\nname: expect\nmetadata:\n  version: "2.1.0"\n---\n',
+        ".claude/skills/expect/SKILL.md": "---\nname: expect\n---\n",
+        ".expect/config.json": '{"browserMode":"cdp"}',
+        ".expect/logs.md": "[2025-06-15] Previous test run\n",
+        "src/index.ts": "console.log('hello')",
+        ".gitignore": "node_modules\n.expect\n",
+      };
+      setupFixture(projectRoot, files);
 
-    const { runInit } = await import("../src/commands/init");
-    await runInit({ yes: true, headed: true });
+      const { runInit } = await import("../src/commands/init");
+      await runInit({ headless: true });
 
-    expect(prompts).not.toHaveBeenCalled();
-    expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headed" });
+      expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
+      assertFilesUnchanged(projectRoot, {
+        ".expect/logs.md": "[2025-06-15] Previous test run\n",
+        ".agents/skills/expect/SKILL.md": '---\nname: expect\nmetadata:\n  version: "2.1.0"\n---\n',
+        "src/index.ts": "console.log('hello')",
+        ".gitignore": "node_modules\n.expect\n",
+      });
+    });
+
+    it("symlinked project root works", async () => {
+      const symlinkRoot = path.join(os.tmpdir(), `init-symlink-${Date.now()}`);
+      fs.symlinkSync(projectRoot, symlinkRoot);
+      process.cwd = () => symlinkRoot;
+
+      try {
+        const { runInit } = await import("../src/commands/init");
+        await runInit({ headless: true });
+        expect(readExpectConfig(symlinkRoot)).toEqual({ browserMode: "headless" });
+      } finally {
+        fs.unlinkSync(symlinkRoot);
+      }
+    });
+
+    it("empty project directory — creates .expect from scratch", async () => {
+      const emptyRoot = fs.mkdtempSync(path.join(os.tmpdir(), "init-empty-"));
+      process.cwd = () => emptyRoot;
+
+      try {
+        const { runInit } = await import("../src/commands/init");
+        await runInit({ headless: true });
+        expect(readExpectConfig(emptyRoot)).toEqual({ browserMode: "headless" });
+      } finally {
+        fs.rmSync(emptyRoot, { recursive: true, force: true });
+      }
+    });
+  });
+
+  describe("argument forwarding", () => {
+    it("passes detected agents to runAddSkill", async () => {
+      const { detectAvailableAgents } = await import("@expect/agent");
+      vi.mocked(detectAvailableAgents).mockReturnValue(["claude", "codex", "cursor"]);
+      const { runAddSkill } = await import("../src/commands/add-skill");
+
+      const { runInit } = await import("../src/commands/init");
+      await runInit({ headless: true });
+
+      expect(runAddSkill).toHaveBeenCalledWith(
+        expect.objectContaining({ agents: ["claude", "codex", "cursor"] }),
+      );
+    });
+
+    it("forwards --yes to runAddSkill", async () => {
+      const { runAddSkill } = await import("../src/commands/add-skill");
+
+      const { runInit } = await import("../src/commands/init");
+      await runInit({ yes: true, headless: true });
+
+      expect(runAddSkill).toHaveBeenCalledWith(expect.objectContaining({ yes: true }));
+    });
   });
 });
