@@ -1,0 +1,56 @@
+{
+  "name": "expect-mcp",
+  "version": "0.0.26",
+  "description": "MCP server for browser testing with Expect",
+  "keywords": [
+    "agents",
+    "ai",
+    "browser-automation",
+    "mcp",
+    "playwright",
+    "testing"
+  ],
+  "homepage": "https://expect.dev",
+  "license": "FSL-1.1-MIT",
+  "author": "Million Software <founders@million.dev>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/millionco/expect",
+    "directory": "apps/mcp"
+  },
+  "bin": {
+    "expect-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "vp pack",
+    "dev": "vp pack --watch",
+    "lint": "vp lint && tsc --noEmit",
+    "format": "vp fmt",
+    "format:check": "vp fmt --check",
+    "check": "vp check",
+    "test": "vp test",
+    "typecheck": "tsgo --noEmit"
+  },
+  "dependencies": {
+    "@effect/platform-node": "4.0.0-beta.35",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "accessibility-checker-engine": "^4.0.16",
+    "effect": "4.0.0-beta.35",
+    "playwright": "^1.52.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@expect/browser": "workspace:*",
+    "@expect/shared": "workspace:*",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
