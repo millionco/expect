@@ -1,14 +1,4 @@
-import {
-  type Dirent,
-  lstatSync,
-  mkdirSync,
-  readlinkSync,
-  rmSync,
-  type Stats,
-  symlinkSync,
-  unlinkSync,
-  writeFileSync,
-} from "node:fs";
+import * as fs from "node:fs";
 import path from "node:path";
 import { gunzipSync } from "node:zlib";
 import { type SupportedAgent, toDisplayName, toSkillDir } from "@expect/agent";
@@ -80,8 +70,8 @@ export const extractTarEntries = (tar: Buffer, prefix: string, destDir: string) 
       const relativePath = name.slice(prefix.length);
       if (relativePath) {
         const destPath = path.join(destDir, relativePath);
-        mkdirSync(path.dirname(destPath), { recursive: true });
-        writeFileSync(destPath, tar.subarray(offset, offset + size));
+        fs.mkdirSync(path.dirname(destPath), { recursive: true });
+        fs.writeFileSync(destPath, tar.subarray(offset, offset + size));
       }
     }
 
@@ -116,7 +106,7 @@ const downloadSkill = Effect.fn("downloadSkill")(function* (skillDir: string) {
   yield* Effect.try({
     try: () => {
       const tar = gunzipSync(Buffer.from(compressed));
-      mkdirSync(skillDir, { recursive: true });
+      fs.mkdirSync(skillDir, { recursive: true });
       extractTarEntries(tar, SKILL_ARCHIVE_PREFIX, skillDir);
     },
     catch: (cause) => new ExpectSkillDownloadError({ reason: String(cause) }),
@@ -148,9 +138,9 @@ const selectAgents = async (agents: readonly SupportedAgent[], nonInteractive: b
 
 type AgentSymlinkResult = "linked" | "already-linked" | string;
 
-const getExistingPathStats = (targetPath: string): Stats | Dirent | undefined => {
+const getExistingPathStats = (targetPath: string): fs.Stats | fs.Dirent | undefined => {
   try {
-    return lstatSync(targetPath);
+    return fs.lstatSync(targetPath);
   } catch (error) {
     if (error instanceof Error && "code" in error && error.code === "ENOENT") return undefined;
     throw error;
@@ -169,14 +159,14 @@ export const ensureAgentSymlink = (
   try {
     const existingPathStats = getExistingPathStats(symlinkPath);
     if (existingPathStats?.isSymbolicLink()) {
-      if (readlinkSync(symlinkPath) === targetPath) return "already-linked";
-      unlinkSync(symlinkPath);
+      if (fs.readlinkSync(symlinkPath) === targetPath) return "already-linked";
+      fs.unlinkSync(symlinkPath);
     } else if (existingPathStats !== undefined) {
-      rmSync(symlinkPath, { recursive: true, force: true });
+      fs.rmSync(symlinkPath, { recursive: true, force: true });
     }
 
-    mkdirSync(path.dirname(symlinkPath), { recursive: true });
-    symlinkSync(targetPath, symlinkPath);
+    fs.mkdirSync(path.dirname(symlinkPath), { recursive: true });
+    fs.symlinkSync(targetPath, symlinkPath);
     return "linked";
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);

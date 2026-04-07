@@ -85,12 +85,10 @@ Examples:
   $ expect watch -m "test the login flow"           watch mode`,
   );
 
-const resolveBrowserHeaded = (opts: CommanderOpts): boolean => !opts.headless;
-
 const seedStores = (opts: CommanderOpts, changesFor: ChangesFor) => {
   usePreferencesStore.setState({
     verbose: opts.verbose ?? false,
-    browserHeaded: resolveBrowserHeaded(opts),
+    browserHeaded: !opts.headless,
   });
 
   if (opts.message) {
@@ -120,7 +118,7 @@ const runHeadlessForTarget = async (target: Target, opts: CommanderOpts) => {
     instruction: opts.message ?? DEFAULT_INSTRUCTION,
     agent: opts.agent ?? "claude",
     verbose: opts.verbose ?? false,
-    headed: ciMode ? false : resolveBrowserHeaded(opts),
+    headed: ciMode ? false : !opts.headless,
     ci: ciMode,
     noCookies: opts.noCookies ?? ciMode,
     timeoutMs,
@@ -244,7 +242,7 @@ program.action(async () => {
   } else {
     usePreferencesStore.setState({
       verbose: opts.verbose ?? false,
-      browserHeaded: resolveBrowserHeaded(opts),
+      browserHeaded: !opts.headless,
     });
     if (opts.url) {
       usePreferencesStore.setState({ cliBaseUrls: opts.url });

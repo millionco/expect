@@ -1,6 +1,6 @@
-import { mkdtempSync, rmSync, existsSync, statSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 import { execFileSync } from "node:child_process";
 import { Effect } from "effect";
 import { afterEach, describe, expect, it } from "vite-plus/test";
@@ -11,7 +11,7 @@ import {
   VideoProcessError,
 } from "../src/video-processor";
 
-const FIXTURE_PATH = join(__dirname, "fixtures", "mixed-content.webm");
+const FIXTURE_PATH = path.join(__dirname, "fixtures", "mixed-content.webm");
 
 const ffmpegPath: string = (() => {
   try {
@@ -30,14 +30,14 @@ const ffmpegAvailable = (() => {
   }
 })();
 
-const fixtureAvailable = existsSync(FIXTURE_PATH);
+const fixtureAvailable = fs.existsSync(FIXTURE_PATH);
 
 describe("video-processor", () => {
   let tempDir: string | undefined;
 
   afterEach(() => {
     if (tempDir) {
-      rmSync(tempDir, { recursive: true, force: true });
+      fs.rmSync(tempDir, { recursive: true, force: true });
       tempDir = undefined;
     }
   });
@@ -54,14 +54,14 @@ describe("video-processor", () => {
     it.skipIf(!ffmpegAvailable || !fixtureAvailable)(
       "processes the mixed-content fixture and produces a smaller output",
       async () => {
-        tempDir = mkdtempSync(join(tmpdir(), "video-processor-test-"));
-        const outputPath = join(tempDir, "output.webm");
-        const inputSize = statSync(FIXTURE_PATH).size;
+        tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "video-processor-test-"));
+        const outputPath = path.join(tempDir, "output.webm");
+        const inputSize = fs.statSync(FIXTURE_PATH).size;
 
         await Effect.runPromise(stripIdleFrames(FIXTURE_PATH, outputPath));
 
-        expect(existsSync(outputPath)).toBe(true);
-        const outputSize = statSync(outputPath).size;
+        expect(fs.existsSync(outputPath)).toBe(true);
+        const outputSize = fs.statSync(outputPath).size;
         expect(outputSize).toBeGreaterThan(0);
         expect(outputSize).toBeLessThan(inputSize);
       },
@@ -71,8 +71,8 @@ describe("video-processor", () => {
     it.skipIf(!ffmpegAvailable || !fixtureAvailable)(
       "output file is a valid webm",
       async () => {
-        tempDir = mkdtempSync(join(tmpdir(), "video-processor-test-"));
-        const outputPath = join(tempDir, "output.webm");
+        tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "video-processor-test-"));
+        const outputPath = path.join(tempDir, "output.webm");
 
         await Effect.runPromise(stripIdleFrames(FIXTURE_PATH, outputPath));
 
@@ -89,9 +89,9 @@ describe("video-processor", () => {
     it.skipIf(!ffmpegAvailable)(
       "overwrites existing output file",
       async () => {
-        tempDir = mkdtempSync(join(tmpdir(), "video-processor-test-"));
-        const inputPath = join(tempDir, "input.webm");
-        const outputPath = join(tempDir, "output.webm");
+        tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "video-processor-test-"));
+        const inputPath = path.join(tempDir, "input.webm");
+        const outputPath = path.join(tempDir, "output.webm");
 
         execFileSync(
           ffmpegPath,
@@ -104,17 +104,17 @@ describe("video-processor", () => {
           { timeout: 10_000 },
         );
 
-        expect(existsSync(outputPath)).toBe(true);
+        expect(fs.existsSync(outputPath)).toBe(true);
         await Effect.runPromise(stripIdleFrames(inputPath, outputPath));
-        expect(existsSync(outputPath)).toBe(true);
+        expect(fs.existsSync(outputPath)).toBe(true);
       },
       30_000,
     );
   });
 
   describe("frameWithWallpaper", () => {
-    const wallpaperPath = join(__dirname, "..", "assets", "wallpaper.webp");
-    const wallpaperAvailable = existsSync(wallpaperPath);
+    const wallpaperPath = path.join(__dirname, "..", "assets", "wallpaper.webp");
+    const wallpaperAvailable = fs.existsSync(wallpaperPath);
 
     it("fails with VideoProcessError when input file does not exist", async () => {
       const error = await Effect.runPromise(
@@ -129,13 +129,13 @@ describe("video-processor", () => {
     it.skipIf(!ffmpegAvailable || !fixtureAvailable || !wallpaperAvailable)(
       "frames the fixture video with the wallpaper",
       async () => {
-        tempDir = mkdtempSync(join(tmpdir(), "video-processor-test-"));
-        const outputPath = join(tempDir, "framed.webm");
+        tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "video-processor-test-"));
+        const outputPath = path.join(tempDir, "framed.webm");
 
         await Effect.runPromise(frameWithWallpaper(FIXTURE_PATH, outputPath, wallpaperPath));
 
-        expect(existsSync(outputPath)).toBe(true);
-        const outputSize = statSync(outputPath).size;
+        expect(fs.existsSync(outputPath)).toBe(true);
+        const outputSize = fs.statSync(outputPath).size;
         expect(outputSize).toBeGreaterThan(0);
       },
       30_000,
@@ -144,15 +144,15 @@ describe("video-processor", () => {
     it.skipIf(!ffmpegAvailable || !fixtureAvailable)(
       "copies video when wallpaper does not exist",
       async () => {
-        tempDir = mkdtempSync(join(tmpdir(), "video-processor-test-"));
-        const outputPath = join(tempDir, "output.webm");
+        tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "video-processor-test-"));
+        const outputPath = path.join(tempDir, "output.webm");
 
         await Effect.runPromise(
           frameWithWallpaper(FIXTURE_PATH, outputPath, "/nonexistent/wallpaper.webp"),
         );
 
-        expect(existsSync(outputPath)).toBe(true);
-        expect(statSync(outputPath).size).toBe(statSync(FIXTURE_PATH).size);
+        expect(fs.existsSync(outputPath)).toBe(true);
+        expect(fs.statSync(outputPath).size).toBe(fs.statSync(FIXTURE_PATH).size);
       },
       30_000,
     );

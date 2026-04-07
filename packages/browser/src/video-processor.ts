@@ -1,5 +1,5 @@
 import { execFile, execFileSync } from "node:child_process";
-import { copyFileSync, existsSync, unlinkSync, writeFileSync } from "node:fs";
+import * as fs from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Effect, Schema } from "effect";
@@ -13,7 +13,7 @@ export const resolveWallpaperPath = (): string | undefined => {
     return [
       join(currentDir, "..", "assets", WALLPAPER_FILENAME),
       join(currentDir, "assets", WALLPAPER_FILENAME),
-    ].find(existsSync);
+    ].find(fs.existsSync);
   } catch {
     return undefined;
   }
@@ -81,7 +81,7 @@ export const stripIdleFrames = Effect.fn("stripIdleFrames")(function* (
 ) {
   yield* Effect.annotateCurrentSpan({ inputPath, outputPath });
 
-  if (!existsSync(inputPath)) {
+  if (!fs.existsSync(inputPath)) {
     return yield* new VideoProcessError({ cause: `Input file not found: ${inputPath}` });
   }
 
@@ -89,7 +89,7 @@ export const stripIdleFrames = Effect.fn("stripIdleFrames")(function* (
   if (!ffmpegBinary) {
     yield* Effect.logDebug("ffmpeg not available, copying video without processing");
     yield* Effect.try({
-      try: () => copyFileSync(inputPath, outputPath),
+      try: () => fs.copyFileSync(inputPath, outputPath),
       catch: (error) => new VideoProcessError({ cause: error }),
     });
     return;
@@ -117,14 +117,14 @@ export const frameWithWallpaper = Effect.fn("frameWithWallpaper")(function* (
 ) {
   yield* Effect.annotateCurrentSpan({ inputPath, outputPath });
 
-  if (!existsSync(inputPath)) {
+  if (!fs.existsSync(inputPath)) {
     return yield* new VideoProcessError({ cause: `Input file not found: ${inputPath}` });
   }
 
-  if (!wallpaperPath || !existsSync(wallpaperPath)) {
+  if (!wallpaperPath || !fs.existsSync(wallpaperPath)) {
     yield* Effect.logDebug("Wallpaper not found, copying video without framing");
     yield* Effect.try({
-      try: () => copyFileSync(inputPath, outputPath),
+      try: () => fs.copyFileSync(inputPath, outputPath),
       catch: (error) => new VideoProcessError({ cause: error }),
     });
     return;
@@ -134,7 +134,7 @@ export const frameWithWallpaper = Effect.fn("frameWithWallpaper")(function* (
   if (!ffmpegBinary) {
     yield* Effect.logDebug("ffmpeg not available, copying video without framing");
     yield* Effect.try({
-      try: () => copyFileSync(inputPath, outputPath),
+      try: () => fs.copyFileSync(inputPath, outputPath),
       catch: (error) => new VideoProcessError({ cause: error }),
     });
     return;
@@ -167,7 +167,7 @@ export const concatVideos = Effect.fn("concatVideos")(function* (
 ) {
   yield* Effect.annotateCurrentSpan({ inputCount: inputPaths.length, outputPath });
 
-  const validPaths = inputPaths.filter((filePath) => existsSync(filePath));
+  const validPaths = inputPaths.filter((filePath) => fs.existsSync(filePath));
   if (validPaths.length === 0) {
     return yield* new VideoProcessError({ cause: "No valid input videos to concatenate" });
   }
@@ -197,7 +197,7 @@ export const concatVideos = Effect.fn("concatVideos")(function* (
     .map((filePath) => `file '${filePath.replaceAll("'", "'\\''")}'`)
     .join("\n");
   yield* Effect.try({
-    try: () => writeFileSync(concatListPath, concatList),
+    try: () => fs.writeFileSync(concatListPath, concatList),
     catch: (error) => new VideoProcessError({ cause: error }),
   });
 
@@ -216,7 +216,7 @@ export const concatVideos = Effect.fn("concatVideos")(function* (
       outputPath,
     ]),
     Effect.try({
-      try: () => unlinkSync(concatListPath),
+      try: () => fs.unlinkSync(concatListPath),
       catch: (error) => new VideoProcessError({ cause: error }),
     }).pipe(
       Effect.catchTag("VideoProcessError", (error) =>
