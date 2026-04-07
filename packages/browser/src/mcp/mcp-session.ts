@@ -77,9 +77,11 @@ export interface CloseResult {
 const PLAYWRIGHT_VIDEO_SUBDIRECTORY = "playwright";
 
 const abandonAfter = <A>(promiseFn: () => Promise<A>, timeoutMs: number) =>
-  Effect.race(
-    Effect.tryPromise(promiseFn),
-    Effect.sleep(`${timeoutMs} millis`).pipe(Effect.as(undefined)),
+  Effect.tryPromise(promiseFn).pipe(
+    Effect.timeoutOrElse({
+      duration: `${timeoutMs} millis`,
+      onTimeout: () => Effect.succeed(undefined),
+    }),
   );
 
 const setupPageTracking = (page: Page, sessionData: BrowserSessionData) => {
