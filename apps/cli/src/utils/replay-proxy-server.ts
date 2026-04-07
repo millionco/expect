@@ -20,7 +20,7 @@ interface StartReplayProxyOptions {
   readonly liveViewUrl: string;
 }
 
-export interface ReplayProxyHandle {
+interface ReplayProxyHandle {
   readonly url: string;
   readonly close: Effect.Effect<void>;
 }

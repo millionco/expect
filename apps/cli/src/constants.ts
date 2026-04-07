@@ -17,8 +17,6 @@ export const FALLBACK_TERMINAL_COLUMNS = 80;
 export const FALLBACK_TERMINAL_ROWS = 24;
 export const CONTEXT_PICKER_VISIBLE_COUNT = 8;
 
-export const TEST_FILE_SCAN_LIMIT = 50;
-
 export const AUDIT_LINT_KEYWORDS = ["lint", "check", "format", "typecheck", "type-check"];
 export const AUDIT_SCRIPT_TIMEOUT_MS = 120_000;
 
