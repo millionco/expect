@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Effect, FileSystem, Layer, ServiceMap } from "effect";
 import * as Arr from "effect/Array";
@@ -14,7 +15,7 @@ import {
   FileStat,
   GitState,
 } from "@expect/shared/models";
-import { EXPECT_STATE_DIR, TESTED_FINGERPRINT_FILE } from "../constants";
+import { EXPECT_STATE_DIR, GIT_TIMEOUT_MS, TESTED_FINGERPRINT_FILE } from "../constants";
 import { GitError, FindRepoRootError } from "./errors";
 
 // ── GitRepoRoot context service ──────────────────────────────────────
@@ -22,6 +23,20 @@ import { GitError, FindRepoRootError } from "./errors";
 export class GitRepoRoot extends ServiceMap.Service<GitRepoRoot, string>()(
   "@supervisor/GitRepoRoot",
 ) {}
+
+export const checkoutBranch = (cwd: string, branch: string): boolean => {
+  try {
+    execFileSync("git", ["checkout", branch], {
+      cwd,
+      encoding: "utf-8",
+      timeout: GIT_TIMEOUT_MS,
+      stdio: "pipe",
+    });
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 // ── Git Service ──────────────────────────────────────────────────────
 
