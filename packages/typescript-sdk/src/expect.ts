@@ -1,7 +1,13 @@
-import { Effect, Option, Stream } from "effect";
+import { Effect, Layer, Option, Stream } from "effect";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Executor, type ExecuteOptions } from "@expect/supervisor";
-import { type ExecutedTestPlan, type ExecutionEvent, ChangesFor } from "@expect/shared/models";
+import {
+  type ExecutedTestPlan,
+  type ExecutionEvent,
+  ChangesFor,
+  CurrentPlanId,
+  PlanId,
+} from "@expect/shared/models";
 import {
   Cookies as CookiesService,
   Browsers,
@@ -278,7 +284,10 @@ const runExecution = (
     after?: TestInput["after"];
     page?: Page;
   },
-): { promise: Promise<TestResult>; subscribe: () => AsyncIterableIterator<TestEvent> } => {
+): {
+  promise: Promise<TestResult>;
+  subscribe: () => AsyncIterableIterator<TestEvent>;
+} => {
   const config = getGlobalConfig();
   const timeoutMs = input.timeout ?? config.timeout ?? DEFAULT_TIMEOUT_MS;
   const isHeadless = (input.mode ?? config.mode ?? "headless") === "headless";
@@ -286,7 +295,9 @@ const runExecution = (
   const rootDir = config.rootDir ?? process.cwd();
 
   const eventBuffer: TestEvent[] = [];
-  const resolveWaiter: { current: (() => void) | undefined } = { current: undefined };
+  const resolveWaiter: { current: (() => void) | undefined } = {
+    current: undefined,
+  };
   let finished = false;
   let executionError: unknown;
 
@@ -311,7 +322,8 @@ const runExecution = (
       changesFor: ChangesFor.makeUnsafe({ _tag: "WorkingTree" }),
       instruction,
       isHeadless,
-      cookieBrowserKeys: [...resolved.browserKeys],
+      // @todo(Aiden): add back, we have to pass in the specific profile we wanna use
+      cookieImportProfiles: [],
       baseUrl: url,
     };
 

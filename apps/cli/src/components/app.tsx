@@ -113,7 +113,7 @@ export const App = ({ agent }: { agent: AgentBackend }) => {
             changesFor={screen.changesFor}
             instruction={screen.instruction}
             savedFlow={screen.savedFlow}
-            cookieBrowserKeys={screen.cookieBrowserKeys}
+            cookieImportProfiles={screen.cookieImportProfiles}
           />
         );
       case "Testing":
@@ -122,7 +122,7 @@ export const App = ({ agent }: { agent: AgentBackend }) => {
             changesFor={screen.changesFor}
             instruction={screen.instruction}
             savedFlow={screen.savedFlow}
-            cookieBrowserKeys={screen.cookieBrowserKeys}
+            cookieImportProfiles={screen.cookieImportProfiles}
             baseUrls={screen.baseUrls}
             devServerHints={screen.devServerHints}
           />
@@ -153,7 +153,7 @@ export const App = ({ agent }: { agent: AgentBackend }) => {
           <WatchScreen
             changesFor={screen.changesFor}
             instruction={screen.instruction}
-            cookieBrowserKeys={screen.cookieBrowserKeys}
+            cookieImportProfiles={screen.cookieImportProfiles}
             baseUrl={screen.baseUrl}
           />
         );

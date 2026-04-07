@@ -1,15 +1,18 @@
 import { describe, expect, it } from "vite-plus/test";
-import { Effect, Option, Stream } from "effect";
+import { Effect, Layer, Option, Stream } from "effect";
 import { Agent } from "../src/agent";
 import { AgentStreamOptions } from "../src/types";
 import { isCommandAvailable } from "@expect/shared/is-command-available";
+import { CurrentPlanId, PlanId } from "@expect/shared/models";
 
 const hasCodex = isCommandAvailable("codex");
 const hasClaude = isCommandAvailable("claude");
 
+const testPlanId = Layer.succeed(CurrentPlanId, PlanId.makeUnsafe(crypto.randomUUID()));
+
 const TEST_LAYERS = [
-  ["codex-acp", Agent.layerCodex, hasCodex],
-  ["claude-acp", Agent.layerClaude, hasClaude],
+  ["codex-acp", Agent.layerCodex.pipe(Layer.provide(testPlanId)), hasCodex],
+  ["claude-acp", Agent.layerClaude.pipe(Layer.provide(testPlanId)), hasClaude],
 ] as const;
 
 const makeOptions = (prompt: string): AgentStreamOptions =>

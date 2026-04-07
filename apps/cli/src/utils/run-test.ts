@@ -1,21 +1,20 @@
-import { Config, Effect, Option, Schema, Stream } from "effect";
-import { type ChangesFor, CiResultOutput, CiStepResult } from "@expect/shared/models";
-import { Executor, ExecutedTestPlan, Reporter, Github } from "@expect/supervisor";
+import { Effect, Option, Stream, Schema, Cause } from "effect";
+import type { ChangesFor } from "@expect/shared/models";
+import { Browsers } from "@expect/cookies";
+import { Executor, OutputReporter, Reporter } from "@expect/supervisor";
 import { Analytics } from "@expect/shared/observability";
 import type { AgentBackend } from "@expect/agent";
-import { ExpectTimeoutError } from "expect-sdk/effect";
-import { VERSION, CI_HEARTBEAT_INTERVAL_MS } from "../constants";
 import { layerCli } from "../layers";
 import { playSound } from "./play-sound";
-import { stripUndefinedRequirement } from "./strip-undefined-requirement";
-import { extractCloseArtifacts } from "./extract-close-artifacts";
-import { RrVideo } from "@expect/browser";
-import { createCiReporter } from "./ci-reporter";
-import { writeGhaOutputs, writeGhaStepSummary } from "./gha-output";
-import { getStepElapsedMs, getTotalElapsedMs } from "./step-elapsed";
-import { formatElapsedTime } from "./format-elapsed-time";
 
-const COMMENT_MARKER = "<!-- expect-ci-result -->";
+class ExecutionTimeoutError extends Schema.ErrorClass<ExecutionTimeoutError>(
+  "ExecutionTimeoutError",
+)({
+  _tag: Schema.tag("ExecutionTimeoutError"),
+  timeoutMs: Schema.Number,
+}) {
+  message = `expect execution timed out after ${this.timeoutMs}ms`;
+}
 
 interface HeadlessRunOptions {
   changesFor: ChangesFor;
@@ -25,392 +24,93 @@ interface HeadlessRunOptions {
   headed: boolean;
   ci: boolean;
   noCookies: boolean;
+  browserProfileIds: readonly string[];
   timeoutMs: Option.Option<number>;
-  output: "text" | "json";
-  baseUrl?: string;
+  reporter?: "json" | "github-actions";
+  replayHost?: string;
+  testId?: string;
 }
 
 export const runHeadless = (options: HeadlessRunOptions) =>
-  Effect.runPromise(
-    stripUndefinedRequirement(
-      Effect.scoped(
-        Effect.gen(function* () {
-          const executor = yield* Executor;
-          const reporter = yield* Reporter;
-          const analytics = yield* Analytics;
+  Effect.gen(function* () {
+    const executor = yield* Executor;
+    const reporter = yield* Reporter;
+    const outputReporter = yield* OutputReporter;
+    const analytics = yield* Analytics;
+    const browsers = yield* Browsers;
 
-          const sessionStartedAt = Date.now();
-          yield* analytics.capture("session:started", {
-            mode: "headless",
-            skip_planning: false,
-            browser_headed: options.headed,
-          });
+    const cookieImportProfiles =
+      options.noCookies || options.browserProfileIds.length === 0
+        ? []
+        : yield* Effect.forEach(options.browserProfileIds, (id) => browsers.findById(id));
 
-          const isGitHubActions =
-            (yield* Config.string("GITHUB_ACTIONS").pipe(Config.withDefault(""))) !== "";
-          const isJsonOutput = options.output === "json";
+    const sessionStartedAt = Date.now();
+    yield* analytics.capture("session:started", {
+      mode: "headless",
+      skip_planning: false,
+      browser_headed: options.headed,
+    });
 
-          const timeoutMs = Option.getOrUndefined(options.timeoutMs);
-          const ciReporter = createCiReporter({
-            version: VERSION,
-            agent: options.agent,
-            timeoutMs,
-            isGitHubActions,
-          });
+    yield* analytics.capture("run:started", { plan_id: "direct" });
 
-          if (!isJsonOutput) {
-            ciReporter.header();
-            ciReporter.groupOpen();
-          }
+    const executeStream = executor
+      .execute({
+        changesFor: options.changesFor,
+        instruction: options.instruction,
+        isHeadless: !options.headed,
+        cookieImportProfiles,
+      })
+      .pipe(Stream.runLast);
 
-          const runStartedAt = Date.now();
-          let lastOutputAt = Date.now();
-
-          if (options.ci && !isJsonOutput) {
-            yield* Effect.acquireRelease(
-              Effect.sync(() =>
-                setInterval(() => {
-                  const now = Date.now();
-                  if (now - lastOutputAt >= CI_HEARTBEAT_INTERVAL_MS) {
-                    ciReporter.heartbeat(now - runStartedAt);
-                    lastOutputAt = now;
-                  }
-                }, CI_HEARTBEAT_INTERVAL_MS),
-              ),
-              (interval) => Effect.sync(() => clearInterval(interval)),
-            );
-          }
-
-          yield* analytics.capture("run:started", { plan_id: "direct" });
-          const seenEvents = new Set<string>();
-          const printNewEvents = (executed: ExecutedTestPlan) => {
-            if (isJsonOutput) return;
-            for (const event of executed.events) {
-              if (seenEvents.has(event.id)) continue;
-              seenEvents.add(event.id);
-              lastOutputAt = Date.now();
-              switch (event._tag) {
-                case "RunStarted":
-                  ciReporter.planTitle(event.plan.title, Option.getOrUndefined(event.plan.baseUrl));
-                  break;
-                case "StepStarted":
-                  ciReporter.stepStarted(event.title);
-                  break;
-                case "StepCompleted": {
-                  const step = executed.steps.find((step) => step.id === event.stepId);
-                  const elapsed = step ? getStepElapsedMs(step) : undefined;
-                  ciReporter.stepCompleted(event.summary, elapsed);
-                  break;
-                }
-                case "StepFailed": {
-                  const failedStep = executed.steps.find((step) => step.id === event.stepId);
-                  const failedTitle = failedStep?.title ?? event.stepId;
-                  const failedElapsed = failedStep ? getStepElapsedMs(failedStep) : undefined;
-                  ciReporter.stepFailed(failedTitle, event.message, failedElapsed);
-                  break;
-                }
-                case "StepSkipped": {
-                  const skippedStep = executed.steps.find((step) => step.id === event.stepId);
-                  const skippedTitle = skippedStep?.title ?? event.stepId;
-                  ciReporter.stepSkipped(skippedTitle, event.reason);
-                  break;
-                }
-              }
-            }
-          };
-
-          const executeStream = executor
-            .execute({
-              changesFor: options.changesFor,
-              instruction: options.instruction,
-              isHeadless: !options.headed,
-              cookieBrowserKeys: [],
-              baseUrl: options.baseUrl,
-            })
-            .pipe(
-              Stream.tap((executed) => Effect.sync(() => printNewEvents(executed))),
-              Stream.runLast,
-              Effect.map((option) =>
-                Option.getOrElse(
-                  option,
-                  () =>
-                    new ExecutedTestPlan({
-                      id: "" as never,
-                      changesFor: options.changesFor,
-                      currentBranch: "",
-                      diffPreview: "",
-                      fileStats: [],
-                      instruction: options.instruction,
-                      baseUrl: undefined as never,
-                      isHeadless: !options.headed,
-                      cookieBrowserKeys: [],
-                      testCoverage: Option.none(),
-                      title: options.instruction,
-                      rationale: "Direct execution",
-                      steps: [],
-                      events: [],
-                    }),
-                )
-                  .finalizeTextBlock()
-                  .synthesizeRunFinished(),
-              ),
-            );
-
-          const executeWithTimeout =
-            timeoutMs !== undefined
-              ? executeStream.pipe(
-                  Effect.timeoutOrElse({
-                    duration: `${timeoutMs} millis`,
-                    onTimeout: () => Effect.fail(new ExpectTimeoutError({ timeoutMs })),
-                  }),
-                )
-              : executeStream;
-
-          const finalExecuted = yield* executeWithTimeout.pipe(
-            Effect.tapError(() =>
-              Effect.sync(() => {
-                if (!isJsonOutput) ciReporter.groupClose();
-              }),
-            ),
-            Effect.catchTag("ExpectTimeoutError", (error) => {
-              if (isJsonOutput) {
-                const resultOutput = new CiResultOutput({
-                  version: VERSION,
-                  status: "failed" as const,
-                  title: options.instruction,
-                  duration_ms: error.timeoutMs,
-                  steps: [],
-                  artifacts: {},
-                  summary: `Timed out after ${formatElapsedTime(error.timeoutMs)}`,
-                });
-                const jsonString = JSON.stringify(
-                  Schema.encodeSync(CiResultOutput)(resultOutput),
-                  undefined,
-                  2,
-                );
-                process.stdout.write(jsonString + "\n");
-              } else {
-                ciReporter.timeoutError(error.timeoutMs);
-              }
-              return Effect.sync(() => process.exit(1));
+    const timeoutMs = Option.getOrUndefined(options.timeoutMs);
+    const executeWithTimeout =
+      timeoutMs !== undefined
+        ? executeStream.pipe(
+            Effect.timeoutOrElse({
+              duration: `${timeoutMs} millis`,
+              onTimeout: () => Effect.fail(new ExecutionTimeoutError({ timeoutMs })),
             }),
-          );
+          )
+        : executeStream;
 
-          printNewEvents(finalExecuted);
+    const finalExecuted = yield* executeWithTimeout.pipe(
+      Effect.flatMap((executedTestPlanOption) => executedTestPlanOption.asEffect()),
+    );
 
-          if (!isJsonOutput) {
-            ciReporter.groupClose();
-          }
+    const report = yield* reporter.report(finalExecuted);
 
-          const report = yield* reporter.report(finalExecuted);
+    yield* analytics.capture("run:completed", {
+      plan_id: finalExecuted.id ?? "direct",
+      passed: report.passedStepCount,
+      failed: report.failedStepCount,
+      step_count: finalExecuted.steps.length,
+      file_count: 0,
+      duration_ms: Date.now() - sessionStartedAt,
+    });
 
-          const statuses = report.stepStatuses;
-          const passedCount = report.steps.filter(
-            (step) => statuses.get(step.id)?.status === "passed",
-          ).length;
-          const failedCount = report.steps.filter(
-            (step) => statuses.get(step.id)?.status === "failed",
-          ).length;
-          const skippedCount = report.steps.filter(
-            (step) => statuses.get(step.id)?.status === "skipped",
-          ).length;
-          const totalDurationMs = getTotalElapsedMs(report.steps);
+    yield* analytics.capture("session:ended", {
+      session_ms: Date.now() - sessionStartedAt,
+    });
+    yield* analytics.flush;
 
-          yield* analytics.capture("run:completed", {
-            plan_id: finalExecuted.id ?? "direct",
-            passed: passedCount,
-            failed: failedCount,
-            step_count: finalExecuted.steps.length,
-            file_count: 0,
-            duration_ms: Date.now() - runStartedAt,
-          });
-
-          yield* analytics.capture("session:ended", {
-            session_ms: Date.now() - sessionStartedAt,
-          });
-          yield* analytics.flush;
-
-          const artifacts = extractCloseArtifacts(finalExecuted.events);
-
-          let generatedVideoPath: string | undefined;
-          if (artifacts.replaySessionPath && artifacts.replaySessionPath.endsWith(".ndjson")) {
-            const latestJsonPath = artifacts.replaySessionPath.replace(/\.ndjson$/, "-latest.json");
-            const videoOutputPath = artifacts.replaySessionPath.replace(/\.ndjson$/, ".mp4");
-            const rrvideo = yield* RrVideo;
-            generatedVideoPath = yield* rrvideo
-              .convert({
-                inputPath: latestJsonPath,
-                outputPath: videoOutputPath,
-                skipInactive: true,
-                speed: 1,
-              })
-              .pipe(
-                Effect.catchTag("RrVideoConvertError", (error) =>
-                  Effect.sync(() => {
-                    if (!isJsonOutput) {
-                      process.stderr.write(`Warning: video generation failed: ${error.message}\n`);
-                    }
-                    return undefined;
-                  }),
-                ),
-              );
-          }
-
-          const effectiveVideoPath = generatedVideoPath ?? artifacts.videoPath;
-
-          if (!isJsonOutput) {
-            ciReporter.summary(
-              passedCount,
-              failedCount,
-              skippedCount,
-              report.steps.length,
-              totalDurationMs,
-            );
-            ciReporter.artifacts(
-              effectiveVideoPath,
-              artifacts.localReplayUrl,
-              artifacts.screenshotPaths,
-            );
-            for (const screenshotPath of artifacts.screenshotPaths) {
-              process.stdout.write(`Screenshot: ${screenshotPath}\n`);
-            }
-          }
-
-          if (isGitHubActions) {
-            yield* writeGhaOutputs(report.status, effectiveVideoPath, artifacts.replayPath);
-            yield* writeGhaStepSummary(
-              report.toPlainText,
-              report.status,
-              effectiveVideoPath,
-              artifacts.replayPath,
-            );
-
-            yield* Effect.gen(function* () {
-              const github = yield* Github;
-              const cwd = process.cwd();
-              const currentBranch = finalExecuted.currentBranch;
-              if (!currentBranch) return;
-
-              const pullRequest = yield* github.findPullRequest(cwd, {
-                _tag: "Branch",
-                branchName: currentBranch,
-              });
-              if (Option.isNone(pullRequest)) return;
-
-              const statusEmoji = report.status === "passed" ? "\u2705" : "\u274c";
-              const statusLabel = report.status === "passed" ? "Passed" : "Failed";
-              const escapeTableCell = (text: string) =>
-                text.replace(/\|/g, "\\|").replace(/\n/g, " ");
-              const stepRows = report.steps
-                .map((step) => {
-                  const entry = statuses.get(step.id);
-                  const stepStatus = entry?.status ?? "not-run";
-                  const stepIcon =
-                    stepStatus === "passed"
-                      ? "\u2713"
-                      : stepStatus === "failed"
-                        ? "\u2717"
-                        : stepStatus === "skipped"
-                          ? "\u2192"
-                          : "\u2013";
-                  const stepSummary = entry?.summary ?? "";
-                  const stepTime = getStepElapsedMs(step);
-                  const timeLabel = stepTime !== undefined ? formatElapsedTime(stepTime) : "-";
-                  const statusCell =
-                    stepStatus === "failed"
-                      ? `${stepIcon} ${escapeTableCell(stepSummary)}`
-                      : stepIcon;
-                  return `| ${escapeTableCell(step.title)} | ${statusCell} | ${timeLabel} |`;
-                })
-                .join("\n");
-
-              const videoSection = effectiveVideoPath
-                ? `\n**Video:** see workflow artifacts\n`
-                : "";
-
-              const maxBacktickRun = (report.toPlainText.match(/`+/g) ?? []).reduce(
-                (max, run) => Math.max(max, run.length),
-                2,
-              );
-              const fence = "`".repeat(maxBacktickRun + 1);
-
-              const commentBody = [
-                COMMENT_MARKER,
-                `## expect test results`,
-                "",
-                `**${statusEmoji} ${statusLabel}** \u2014 ${report.steps.length} step${report.steps.length === 1 ? "" : "s"} in ${formatElapsedTime(totalDurationMs)}`,
-                "",
-                "| Step | Status | Time |",
-                "|------|--------|------|",
-                stepRows,
-                videoSection,
-                "<details><summary>Full output</summary>",
-                "",
-                fence,
-                report.toPlainText,
-                fence,
-                "",
-                "</details>",
-              ].join("\n");
-
-              yield* github.upsertComment(cwd, pullRequest.value, COMMENT_MARKER, commentBody);
-            }).pipe(
-              Effect.provide(Github.layer),
-              Effect.catchTag("GitHubCommandError", (error) =>
-                Effect.logWarning("PR comment failed", { error: error.message }),
-              ),
-            );
-          }
-
-          if (isJsonOutput) {
-            const stepResults = report.steps.map((step) => {
-              const entry = statuses.get(step.id);
-              const stepStatus = entry?.status ?? ("not-run" as const);
-              const elapsed = getStepElapsedMs(step);
-              return new CiStepResult({
-                title: step.title,
-                status: stepStatus,
-                ...(elapsed !== undefined ? { duration_ms: elapsed } : {}),
-                ...(stepStatus === "failed" && entry?.summary ? { error: entry.summary } : {}),
-              });
-            });
-
-            const summaryParts = [`${passedCount} passed`, `${failedCount} failed`];
-            if (skippedCount > 0) summaryParts.push(`${skippedCount} skipped`);
-            const summaryText = `${summaryParts.join(", ")} out of ${report.steps.length} step${report.steps.length === 1 ? "" : "s"}`;
-
-            const resultOutput = new CiResultOutput({
-              version: VERSION,
-              status: report.status,
-              title: report.title,
-              duration_ms: totalDurationMs,
-              steps: stepResults,
-              artifacts: {
-                ...(effectiveVideoPath ? { video: effectiveVideoPath } : {}),
-                ...(artifacts.replayPath ? { replay: artifacts.replayPath } : {}),
-                ...(artifacts.screenshotPaths.length > 0
-                  ? { screenshots: [...artifacts.screenshotPaths] }
-                  : {}),
-              },
-              summary: summaryText,
-            });
-
-            const jsonString = JSON.stringify(
-              Schema.encodeSync(CiResultOutput)(resultOutput),
-              undefined,
-              2,
-            );
-            process.stdout.write(jsonString + "\n");
-          }
-
-          yield* Effect.promise(() => playSound());
-          return report.status;
-        }).pipe(
-          Effect.withSpan("expect.session"),
-          Effect.provide(layerCli({ verbose: options.verbose, agent: options.agent })),
-        ),
-      ),
+    yield* outputReporter.onComplete(report);
+    yield* Effect.promise(() => playSound());
+    yield* report.assertSuccess();
+  }).pipe(
+    Effect.withSpan("expect.session"),
+    Effect.provide(
+      layerCli({
+        verbose: options.verbose,
+        agent: options.agent,
+        reporter: options.reporter,
+        timeoutMs: Option.getOrUndefined(options.timeoutMs),
+        replayHost: options.replayHost,
+        testId: options.testId,
+      }),
     ),
-  ).then((status) => {
-    process.exit(status === "passed" ? 0 : 1);
-  });
+    Effect.catchCause((cause) =>
+      Cause.hasInterruptsOnly(cause) ? Effect.void : Effect.die(cause),
+    ),
+    Effect.tapCause((cause) => Effect.logFatal(cause)),
+    Effect.runPromise,
+  );

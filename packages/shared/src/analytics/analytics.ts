@@ -37,8 +37,8 @@ export class AnalyticsProvider extends ServiceMap.Service<
 >()("@expect/AnalyticsProvider") {
   static layerPostHog = Layer.succeed(this)({
     capture: (event) =>
-      Effect.sync(() => {
-        posthogClient.captureImmediate({
+      Effect.promise(() => {
+        return posthogClient.captureImmediate({
           event: event.eventName,
           properties: event.properties,
           distinctId: event.distinctId,
@@ -105,9 +105,9 @@ export class Analytics extends ServiceMap.Service<Analytics>()("@expect/Analytic
       return machineId();
     }).pipe(
       Effect.catchTag("UnknownError", (cause) =>
-        Effect.logWarning("Failed to get machine ID, using fallback", { cause }).pipe(
-          Effect.as(globalThis.crypto.randomUUID()),
-        ),
+        Effect.logWarning("Failed to get machine ID, using fallback", {
+          cause,
+        }).pipe(Effect.as(globalThis.crypto.randomUUID())),
       ),
     );
 
@@ -158,7 +158,11 @@ export class Analytics extends ServiceMap.Service<Analytics>()("@expect/Analytic
           );
         })) as never;
 
-    return { capture, track, flush: telemetryDisabled ? Effect.void : provider.flush } as const;
+    return {
+      capture,
+      track,
+      flush: telemetryDisabled ? Effect.void : provider.flush,
+    } as const;
   }),
 }) {
   static layerPostHog = Layer.effect(this)(this.make).pipe(

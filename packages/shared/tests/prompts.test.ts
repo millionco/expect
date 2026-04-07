@@ -22,7 +22,7 @@ const makeDefaultOptions = (
   diffPreview: "diff --git a/src/auth/login.ts\n+export const login = () => {}",
   baseUrl: "http://localhost:3000",
   isHeadless: false,
-  cookieBrowserKeys: [],
+  cookieImportProfiles: [],
   ...overrides,
 });
 
@@ -192,6 +192,7 @@ describe("buildExecutionPrompt", () => {
     expect(prompt).toContain("<coverage_rules>");
     expect(prompt).toContain("<execution_strategy>");
     expect(prompt).toContain("<ui_quality_rules>");
+    expect(prompt).toContain("<burden_of_proof>");
     expect(prompt).toContain("<tools");
     expect(prompt).toContain("<snapshot_workflow>");
     expect(prompt).toContain("<status_markers>");

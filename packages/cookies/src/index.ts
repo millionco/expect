@@ -1,5 +1,5 @@
 export { Cookies } from "./cookies";
-export { Browsers } from "./browser-detector";
+export { Browsers, BrowserProfileNotFoundError } from "./browser-detector";
 export { CdpClient } from "./cdp-client";
 export { SqliteClient, SqliteEngine } from "./sqlite-client";
 export { ChromiumSource, ChromiumPlatform } from "./chromium";
@@ -31,17 +31,9 @@ export {
   FirefoxBrowser,
   SafariBrowser,
   Browser,
+  BrowserJson,
   Cookie,
   SameSitePolicy,
-  browserKeyOf,
-} from "./types";
+} from "@expect/shared/models";
 
-export type { ExtractOptions } from "./types";
-
-import { configByKey } from "./browser-config";
-import { browserKeyOf, type Browser } from "./types";
-
-export const browserDisplayName = (browser: Browser): string => {
-  const config = configByKey(browserKeyOf(browser));
-  return config?.displayName ?? browserKeyOf(browser);
-};
+export type { ExtractOptions } from "@expect/shared/models";

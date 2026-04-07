@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
-import { readFileSync, realpathSync } from "node:fs";
-import { join } from "node:path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import type { Plugin } from "rolldown";
 import { defineConfig } from "vite-plus";
 import { reactCompilerPlugin } from "./react-compiler-plugin";
@@ -25,9 +25,9 @@ const findPackageDir = (packageName: string): string | undefined => {
   if (!searchPaths) return undefined;
 
   for (const searchPath of searchPaths) {
-    const candidate = join(searchPath, packageName);
+    const candidate = path.join(searchPath, packageName);
     try {
-      realpathSync(candidate);
+      fs.realpathSync(candidate);
       return candidate;
     } catch {
       continue;
@@ -52,9 +52,9 @@ const buildExpectSubpathMap = (): Record<string, string> => {
     const packageDir = findPackageDir(packageName);
     if (!packageDir) continue;
 
-    const packageJsonPath = join(packageDir, "package.json");
+    const packageJsonPath = path.join(packageDir, "package.json");
     const packageJson: { exports?: Record<string, unknown> } = JSON.parse(
-      readFileSync(realpathSync(packageJsonPath), "utf8"),
+      fs.readFileSync(fs.realpathSync(packageJsonPath), "utf8"),
     );
     if (!packageJson.exports) continue;
 
@@ -64,7 +64,7 @@ const buildExpectSubpathMap = (): Record<string, string> => {
       const specifier = `${packageName}/${subpath.slice(2)}`;
       const file = resolveExportFile(packageJson.exports[subpath]);
       if (file) {
-        map[specifier] = join(realpathSync(packageDir), distToSource(file));
+        map[specifier] = path.join(fs.realpathSync(packageDir), distToSource(file));
       }
     }
   }

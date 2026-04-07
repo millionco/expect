@@ -1,6 +1,7 @@
 export { Updates } from "./updates";
 export { Executor, ExecutionError, type ExecuteOptions } from "./executor";
 export { Reporter } from "./reporter";
+export { OutputReporter, OutputReporterHooks } from "./output-reporter";
 export {
   AgentProvider,
   type ChangedFile,
@@ -44,3 +45,5 @@ export {
   type WatchDecision,
   type WatchOptions,
 } from "./watch";
+export { ArtifactStore } from "./artifact-store";
+export { ArtifactRpcsLive } from "./rpc/artifact.rpc.layer";

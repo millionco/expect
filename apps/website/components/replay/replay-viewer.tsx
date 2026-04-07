@@ -4,8 +4,18 @@ import { Calligraph } from "calligraph";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { eventWithTime } from "@posthog/rrweb";
 import type { Replayer } from "@posthog/rrweb";
-import { animate, AnimatePresence, motion, useMotionValue, useTransform } from "motion/react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  animate,
+  AnimatePresence,
+  motion,
+  useMotionValue,
+  useTransform,
+} from "motion/react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { formatTime } from "@/lib/format-time";
 
 import { useMountEffect } from "@/hooks/use-mount-effect";
@@ -23,20 +33,25 @@ const IDLE_SPEED_TIERS = [
   { afterMs: 20000, speed: 8 },
   { afterMs: 40000, speed: 16 },
 ] as const;
-const LIVE_PLAYBACK_BAR_SHADOW = "color(display-p3 0.281 0.281 0.281 / 22%) 0px 0px 0px 1px";
-const LIVE_PLAYBACK_BAR_BUTTON_SHADOW = "color(display-p3 0.847 0.847 0.847) 0px 0px 0px 0.5px";
+const LIVE_PLAYBACK_BAR_SHADOW =
+  "color(display-p3 0.281 0.281 0.281 / 22%) 0px 0px 0px 1px";
+const LIVE_PLAYBACK_BAR_BUTTON_SHADOW =
+  "color(display-p3 0.847 0.847 0.847) 0px 0px 0px 0.5px";
 const LIVE_PLAYBACK_BAR_MARKER_INTERVAL_MS = 10_000;
-const LIVE_PASSED_STEP_MARKER_OUTLINE = "2px solid color(display-p3 0.249 0.701 0.193 / 30%)";
+const LIVE_PASSED_STEP_MARKER_OUTLINE =
+  "2px solid color(display-p3 0.249 0.701 0.193 / 30%)";
 const LIVE_PASSED_STEP_MARKER_BACKGROUND_IMAGE =
   "linear-gradient(in oklab 180deg, oklab(66.4% -0.197 0.139) 0%, oklab(72.7% -0.252 0.178) 100%)";
 const LIVE_FAILED_STEP_MARKER_OUTLINE = "2px solid #FC272F4D";
 const LIVE_FAILED_STEP_MARKER_BACKGROUND_IMAGE =
   "linear-gradient(in oklab 180deg, oklab(63.6% 0.216 0.107) 0%, oklab(67.1% 0.194 0.096) 100%)";
-const LIVE_PLAYBACK_PROGRESS_SHADOW = "color(display-p3 0.615 0.615 0.615 / 20%) 0px 0px 3px";
+const LIVE_PLAYBACK_PROGRESS_SHADOW =
+  "color(display-p3 0.615 0.615 0.615 / 20%) 0px 0px 3px";
 const LIVE_PLAYBACK_PROGRESS_RIGHT_EDGE_SHADOW =
   "inset -1px 0px 0px color(display-p3 0.725 0.725 0.725 / 80%)";
 const LIVE_PLAYBACK_PROGRESS_RIGHT_EDGE_HIDE_PERCENT = 99;
-const VIEWER_SHELL_SHADOW = "color(display-p3 0.788 0.788 0.788 / 20%) 0px 2px 3px";
+const VIEWER_SHELL_SHADOW =
+  "color(display-p3 0.788 0.788 0.788 / 20%) 0px 2px 3px";
 const CONTROL_FONT_FAMILY =
   '"SF Pro Display", "SFProDisplay-Medium", "Inter Variable", system-ui, sans-serif';
 const REPLAY_BACKDROP_STYLE = {
@@ -49,7 +64,8 @@ const PAPER_TIME_LENGTH = 5;
 const LIVE_PLAYBACK_BAR_SURFACE_COLOR = "color(display-p3 0.938 0.938 0.938)";
 const LIVE_PLAYBACK_PROGRESS_BACKGROUND_IMAGE =
   "linear-gradient(in oklab 180deg, oklab(100% 0 0) 0%, oklab(100% 0 0 / 61%) 100%)";
-const ACTIVE_STEP_CARD_SHADOW = "color(display-p3 0.847 0.847 0.847) 0px 0px 0px 0.5px";
+const ACTIVE_STEP_CARD_SHADOW =
+  "color(display-p3 0.847 0.847 0.847) 0px 0px 0px 0.5px";
 const ACTIVE_STEP_CARD_TRANSITION = {
   type: "tween",
   duration: 0.16,
@@ -113,7 +129,10 @@ const extractReplayActions = (events: eventWithTime[]): ReplayAction[] => {
     if (event.type === RRWEB_EVENT_META && typeof data.href === "string") {
       try {
         const url = new URL(data.href);
-        const displayPath = url.pathname === "/" ? url.hostname : `${url.hostname}${url.pathname}`;
+        const displayPath =
+          url.pathname === "/"
+            ? url.hostname
+            : `${url.hostname}${url.pathname}`;
         actions.push({
           id: `nav-${event.timestamp}`,
           label: `Navigated to ${displayPath}`,
@@ -131,7 +150,11 @@ const extractReplayActions = (events: eventWithTime[]): ReplayAction[] => {
       const interactionType = data.type as number;
       const label = MOUSE_INTERACTION_LABELS[interactionType];
       if (label) {
-        actions.push({ id: `mouse-${interactionType}-${event.timestamp}`, label, relativeMs });
+        actions.push({
+          id: `mouse-${interactionType}-${event.timestamp}`,
+          label,
+          relativeMs,
+        });
       }
       continue;
     }
@@ -139,10 +162,12 @@ const extractReplayActions = (events: eventWithTime[]): ReplayAction[] => {
     if (data.source === RRWEB_SOURCE_INPUT) {
       if (event.timestamp - lastInputTs > INPUT_DEBOUNCE_MS) {
         const rawText = typeof data.text === "string" ? data.text : "";
-        const displayText = rawText.length > 30 ? `${rawText.slice(0, 30)}…` : rawText;
+        const displayText =
+          rawText.length > 30 ? `${rawText.slice(0, 30)}…` : rawText;
         actions.push({
           id: `input-${event.timestamp}`,
-          label: displayText.length > 0 ? `Typed "${displayText}"` : "Typed input",
+          label:
+            displayText.length > 0 ? `Typed "${displayText}"` : "Typed input",
           relativeMs: relativeMs + INPUT_ACTION_OFFSET_MS,
         });
       }
@@ -152,7 +177,11 @@ const extractReplayActions = (events: eventWithTime[]): ReplayAction[] => {
 
     if (data.source === RRWEB_SOURCE_SCROLL) {
       if (event.timestamp - lastScrollTs > SCROLL_DEBOUNCE_MS) {
-        actions.push({ id: `scroll-${event.timestamp}`, label: "Scrolled", relativeMs });
+        actions.push({
+          id: `scroll-${event.timestamp}`,
+          label: "Scrolled",
+          relativeMs,
+        });
       }
       lastScrollTs = event.timestamp;
       continue;
@@ -175,8 +204,8 @@ const extractReplayActions = (events: eventWithTime[]): ReplayAction[] => {
         mediaType === RRWEB_MEDIA_PLAY
           ? "Played media"
           : mediaType === RRWEB_MEDIA_PAUSE
-            ? "Paused media"
-            : undefined;
+          ? "Paused media"
+          : undefined;
       if (label) {
         actions.push({ id: `media-${event.timestamp}`, label, relativeMs });
       }
@@ -184,7 +213,11 @@ const extractReplayActions = (events: eventWithTime[]): ReplayAction[] => {
     }
 
     if (data.source === RRWEB_SOURCE_DRAG) {
-      actions.push({ id: `drag-${event.timestamp}`, label: "Dragged", relativeMs });
+      actions.push({
+        id: `drag-${event.timestamp}`,
+        label: "Dragged",
+        relativeMs,
+      });
       continue;
     }
   }
@@ -195,7 +228,10 @@ const extractReplayActions = (events: eventWithTime[]): ReplayAction[] => {
 const getReplayDuration = (replayEvents: eventWithTime[]) => {
   if (replayEvents.length < 2) return 0;
 
-  return Math.max(replayEvents[replayEvents.length - 1].timestamp - replayEvents[0].timestamp, 0);
+  return Math.max(
+    replayEvents[replayEvents.length - 1].timestamp - replayEvents[0].timestamp,
+    0
+  );
 };
 
 const isTransparentBackground = (backgroundColor: string) =>
@@ -203,7 +239,7 @@ const isTransparentBackground = (backgroundColor: string) =>
 
 const getElementBackground = (
   element: Element | null | undefined,
-  frameWindow: Window,
+  frameWindow: Window
 ): string | undefined => {
   if (!element || element.nodeType !== Node.ELEMENT_NODE) return undefined;
 
@@ -233,7 +269,10 @@ const getReplayFrameBackground = (replayer: Replayer | undefined) => {
   ];
 
   for (const samplePoint of samplePoints) {
-    const sampleElement = frameDocument.elementFromPoint(samplePoint.x, samplePoint.y);
+    const sampleElement = frameDocument.elementFromPoint(
+      samplePoint.x,
+      samplePoint.y
+    );
     const background = getElementBackground(sampleElement, frameWindow);
     if (background) {
       return background;
@@ -243,25 +282,33 @@ const getReplayFrameBackground = (replayer: Replayer | undefined) => {
   return getElementBackground(frameDocument.body, frameWindow);
 };
 
-const formatPaperTime = (timeMs: number) => formatTime(timeMs).padStart(PAPER_TIME_LENGTH, "0");
+const formatPaperTime = (timeMs: number) =>
+  formatTime(timeMs).padStart(PAPER_TIME_LENGTH, "0");
 
 const getStepRelativeTime = (step: ViewerStepEvent, replayStartMs: number) => {
   const startMs =
-    step.startedAtMs !== undefined ? Math.max(0, step.startedAtMs - replayStartMs) : undefined;
+    step.startedAtMs !== undefined
+      ? Math.max(0, step.startedAtMs - replayStartMs)
+      : undefined;
   const endMs =
-    step.endedAtMs !== undefined ? Math.max(0, step.endedAtMs - replayStartMs) : undefined;
+    step.endedAtMs !== undefined
+      ? Math.max(0, step.endedAtMs - replayStartMs)
+      : undefined;
   return { startMs, endMs };
 };
 
 const getPlaybackStepIndex = (
   stepEvents: readonly ViewerStepEvent[] | undefined,
   replayStartMs: number,
-  currentTime: number,
+  currentTime: number
 ) => {
   if (!stepEvents || stepEvents.length === 0) return -1;
 
   for (let index = stepEvents.length - 1; index >= 0; index--) {
-    const { startMs, endMs } = getStepRelativeTime(stepEvents[index], replayStartMs);
+    const { startMs, endMs } = getStepRelativeTime(
+      stepEvents[index],
+      replayStartMs
+    );
     const stepTimeMs = startMs ?? endMs;
     if (stepTimeMs === undefined) continue;
     if (stepTimeMs <= currentTime) {
@@ -275,15 +322,22 @@ const getPlaybackStepIndex = (
 const getPlaybackBarRubberBandStretch = (
   playbackBarRect: DOMRect,
   clientX: number,
-  direction: -1 | 1,
+  direction: -1 | 1
 ) => {
   const distancePastEdge =
-    direction < 0 ? playbackBarRect.left - clientX : clientX - playbackBarRect.right;
-  const overflowPx = Math.max(0, distancePastEdge - PLAYBACK_BAR_RUBBER_BAND_DEAD_ZONE_PX);
+    direction < 0
+      ? playbackBarRect.left - clientX
+      : clientX - playbackBarRect.right;
+  const overflowPx = Math.max(
+    0,
+    distancePastEdge - PLAYBACK_BAR_RUBBER_BAND_DEAD_ZONE_PX
+  );
   return (
     direction *
     PLAYBACK_BAR_RUBBER_BAND_MAX_STRETCH_PX *
-    Math.sqrt(Math.min(overflowPx / PLAYBACK_BAR_RUBBER_BAND_CURSOR_RANGE_PX, 1))
+    Math.sqrt(
+      Math.min(overflowPx / PLAYBACK_BAR_RUBBER_BAND_CURSOR_RANGE_PX, 1)
+    )
   );
 };
 
@@ -292,7 +346,12 @@ interface ControlIconProps {
 }
 
 const PlayIcon = ({ className }: ControlIconProps) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" className={className}>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    className={className}
+  >
     <path
       fillRule="evenodd"
       clipRule="evenodd"
@@ -320,7 +379,12 @@ const PauseIcon = ({ className }: ControlIconProps) => (
 );
 
 const FullscreenIcon = ({ className }: ControlIconProps) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" className={className}>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    className={className}
+  >
     <path
       d="M2 19V17C2 16.448 2.448 16 3 16C3.552 16 4 16.448 4 17V19C4 19.552 4.448 20 5 20H7C7.552 20 8 20.448 8 21C8 21.552 7.552 22 7 22H5C3.343 22 2 20.657 2 19ZM20 19V17C20 16.448 20.448 16 21 16C21.552 16 22 16.448 22 17V19C22 20.657 20.657 22 19 22H17C16.448 22 16 21.552 16 21C16 20.448 16.448 20 17 20H19C19.552 20 20 19.552 20 19ZM2 7V5C2 3.343 3.343 2 5 2H7C7.552 2 8 2.448 8 3C8 3.552 7.552 4 7 4H5C4.448 4 4 4.448 4 5V7C4 7.552 3.552 8 3 8C2.448 8 2 7.552 2 7ZM20 7V5C20 4.448 19.552 4 19 4H17C16.448 4 16 3.552 16 3C16 2.448 16.448 2 17 2H19C20.657 2 22 3.343 22 5V7C22 7.552 21.552 8 21 8C20.448 8 20 7.552 20 7Z"
       fill="currentColor"
@@ -347,9 +411,9 @@ export const ReplayViewer = ({
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(1);
-  const [browserFrameBackground, setBrowserFrameBackground] = useState<string | undefined>(
-    undefined,
-  );
+  const [browserFrameBackground, setBrowserFrameBackground] = useState<
+    string | undefined
+  >(undefined);
   const playbackBarRef = useRef<HTMLDivElement>(null);
   const replayRef = useRef<HTMLDivElement>(null);
   const viewerShellRef = useRef<HTMLDivElement>(null);
@@ -360,8 +424,12 @@ export const ReplayViewer = ({
   const liveRef = useRef(live);
   liveRef.current = live;
   const playPauseRef = useRef<(() => Promise<void>) | undefined>(undefined);
-  const stepNavigationRef = useRef<((direction: "up" | "down") => void) | undefined>(undefined);
-  const stepJumpRef = useRef<((stepNumber: number) => void) | undefined>(undefined);
+  const stepNavigationRef = useRef<
+    ((direction: "up" | "down") => void) | undefined
+  >(undefined);
+  const stepJumpRef = useRef<((stepNumber: number) => void) | undefined>(
+    undefined
+  );
   const isIdleSpeedRef = useRef(false);
   const userSpeedRef = useRef<(typeof SPEEDS)[number]>(1);
   const lastCursorPosRef = useRef("");
@@ -371,15 +439,18 @@ export const ReplayViewer = ({
   const stepListDraggedStepIdRef = useRef<string | undefined>(undefined);
   const playbackBarRectRef = useRef<DOMRect | undefined>(undefined);
   const playbackBarPointerActiveRef = useRef(false);
-  const playbackBarRubberResetRef = useRef<{ stop: () => void } | undefined>(undefined);
+  const playbackBarRubberResetRef = useRef<{ stop: () => void } | undefined>(
+    undefined
+  );
   const browserFrameBackgroundRef = useRef<string | undefined>(undefined);
   const playbackBarRubberStretchPx = useMotionValue(0);
   const playbackBarRubberBandWidth = useTransform(
     playbackBarRubberStretchPx,
-    (stretchPx) => `calc(100% + ${Math.abs(stretchPx)}px)`,
+    (stretchPx) => `calc(100% + ${Math.abs(stretchPx)}px)`
   );
-  const playbackBarRubberBandX = useTransform(playbackBarRubberStretchPx, (stretchPx) =>
-    stretchPx < 0 ? stretchPx : 0,
+  const playbackBarRubberBandX = useTransform(
+    playbackBarRubberStretchPx,
+    (stretchPx) => (stretchPx < 0 ? stretchPx : 0)
   );
 
   const destroyReplay = () => {
@@ -512,7 +583,8 @@ export const ReplayViewer = ({
       }
 
       const eventTarget = event.target;
-      const targetElement = eventTarget instanceof HTMLElement ? eventTarget : null;
+      const targetElement =
+        eventTarget instanceof HTMLElement ? eventTarget : null;
       const targetUsesArrowKeys =
         targetElement?.isContentEditable ||
         targetElement?.tagName === "INPUT" ||
@@ -575,7 +647,9 @@ export const ReplayViewer = ({
     if (!replayRef.current) return undefined;
 
     const replayContainer = replayRef.current;
-    const wrapper = replayContainer.querySelector(".replayer-wrapper") as HTMLElement | undefined;
+    const wrapper = replayContainer.querySelector(".replayer-wrapper") as
+      | HTMLElement
+      | undefined;
     if (!wrapper) return undefined;
 
     const iframe = wrapper.querySelector("iframe");
@@ -587,9 +661,18 @@ export const ReplayViewer = ({
       const containerWidth = replayContainer.clientWidth;
       const containerHeight = replayContainer.clientHeight;
 
-      if (!recordedWidth || !recordedHeight || !containerWidth || !containerHeight) return;
+      if (
+        !recordedWidth ||
+        !recordedHeight ||
+        !containerWidth ||
+        !containerHeight
+      )
+        return;
 
-      const fitScale = Math.min(containerWidth / recordedWidth, containerHeight / recordedHeight);
+      const fitScale = Math.min(
+        containerWidth / recordedWidth,
+        containerHeight / recordedHeight
+      );
 
       const scaledWidth = recordedWidth * fitScale;
       const scaledHeight = recordedHeight * fitScale;
@@ -616,7 +699,9 @@ export const ReplayViewer = ({
       attributeFilter: ["width", "height"],
     });
 
-    const cursorEl = wrapper.querySelector(".replayer-mouse") as HTMLElement | undefined;
+    const cursorEl = wrapper.querySelector(".replayer-mouse") as
+      | HTMLElement
+      | undefined;
     if (cursorEl) {
       cleanupIdleObserverRef.current = setupIdleSpeedObserver(cursorEl);
     }
@@ -638,7 +723,8 @@ export const ReplayViewer = ({
         clearInterval(timerRef.current);
         setPlaying(false);
       } else {
-        const resumeTime = !liveRef.current && currentTime >= replayDuration ? 0 : currentTime;
+        const resumeTime =
+          !liveRef.current && currentTime >= replayDuration ? 0 : currentTime;
         replayerRef.current.play(resumeTime);
         setCurrentTime(resumeTime);
         startTimer();
@@ -664,11 +750,16 @@ export const ReplayViewer = ({
     if (replayIframe) {
       const currentSandbox = replayIframe.getAttribute("sandbox") ?? "";
       if (!currentSandbox.includes("allow-scripts")) {
-        replayIframe.setAttribute("sandbox", `${currentSandbox} allow-scripts`.trim());
+        replayIframe.setAttribute(
+          "sandbox",
+          `${currentSandbox} allow-scripts`.trim()
+        );
       }
     }
 
-    const startTime = liveRef.current ? replayDuration : Math.min(currentTime, replayDuration);
+    const startTime = liveRef.current
+      ? replayDuration
+      : Math.min(currentTime, replayDuration);
     setCurrentTime(startTime);
     replayer.play(startTime);
     syncBrowserFrameBackground();
@@ -709,26 +800,35 @@ export const ReplayViewer = ({
 
     if (clientX < playbackBarRect.left) {
       playbackBarRubberStretchPx.jump(
-        getPlaybackBarRubberBandStretch(playbackBarRect, clientX, -1),
+        getPlaybackBarRubberBandStretch(playbackBarRect, clientX, -1)
       );
       return;
     }
 
     if (clientX > playbackBarRect.right) {
-      playbackBarRubberStretchPx.jump(getPlaybackBarRubberBandStretch(playbackBarRect, clientX, 1));
+      playbackBarRubberStretchPx.jump(
+        getPlaybackBarRubberBandStretch(playbackBarRect, clientX, 1)
+      );
       return;
     }
 
     playbackBarRubberStretchPx.jump(0);
   };
 
-  const finishPlaybackBarPointerInteraction = (target?: HTMLInputElement, pointerId?: number) => {
+  const finishPlaybackBarPointerInteraction = (
+    target?: HTMLInputElement,
+    pointerId?: number
+  ) => {
     if (!playbackBarPointerActiveRef.current) return;
 
     playbackBarPointerActiveRef.current = false;
     playbackBarRectRef.current = undefined;
 
-    if (target && pointerId !== undefined && target.hasPointerCapture(pointerId)) {
+    if (
+      target &&
+      pointerId !== undefined &&
+      target.hasPointerCapture(pointerId)
+    ) {
       target.releasePointerCapture(pointerId);
     }
 
@@ -740,11 +840,13 @@ export const ReplayViewer = ({
     playbackBarRubberResetRef.current = animate(
       playbackBarRubberStretchPx,
       0,
-      PLAYBACK_BAR_RUBBER_BAND_TRANSITION,
+      PLAYBACK_BAR_RUBBER_BAND_TRANSITION
     );
   };
 
-  const handlePlaybackBarPointerDown = (event: React.PointerEvent<HTMLInputElement>) => {
+  const handlePlaybackBarPointerDown = (
+    event: React.PointerEvent<HTMLInputElement>
+  ) => {
     const playbackBarRect = playbackBarRef.current?.getBoundingClientRect();
     if (!playbackBarRect) return;
 
@@ -756,16 +858,22 @@ export const ReplayViewer = ({
     updatePlaybackBarRubberBand(event.clientX);
   };
 
-  const handlePlaybackBarPointerMove = (event: React.PointerEvent<HTMLInputElement>) => {
+  const handlePlaybackBarPointerMove = (
+    event: React.PointerEvent<HTMLInputElement>
+  ) => {
     if (!playbackBarPointerActiveRef.current) return;
     updatePlaybackBarRubberBand(event.clientX);
   };
 
-  const handlePlaybackBarPointerUp = (event: React.PointerEvent<HTMLInputElement>) => {
+  const handlePlaybackBarPointerUp = (
+    event: React.PointerEvent<HTMLInputElement>
+  ) => {
     finishPlaybackBarPointerInteraction(event.currentTarget, event.pointerId);
   };
 
-  const handlePlaybackBarPointerCancel = (event: React.PointerEvent<HTMLInputElement>) => {
+  const handlePlaybackBarPointerCancel = (
+    event: React.PointerEvent<HTMLInputElement>
+  ) => {
     finishPlaybackBarPointerInteraction(event.currentTarget, event.pointerId);
   };
 
@@ -799,17 +907,25 @@ export const ReplayViewer = ({
   };
 
   const replayStartMs =
-    events.length > 0 ? events[0].timestamp : (steps?.steps[0]?.startedAtMs ?? 0);
+    events.length > 0 ? events[0].timestamp : steps?.steps[0]?.startedAtMs ?? 0;
   const hasEvents = events.length > 1;
   const totalTime = getReplayDuration(events);
   const replayActions = extractReplayActions(events);
-  const stepActions: ReplayAction[] = (steps?.steps ?? []).flatMap((step, index) => {
-    if (step.startedAtMs === undefined) return [];
-    const relativeMs = Math.max(0, step.startedAtMs - replayStartMs);
-    return [{ id: `step-${step.stepId}`, label: `Step ${index + 1}: ${step.title}`, relativeMs }];
-  });
+  const stepActions: ReplayAction[] = (steps?.steps ?? []).flatMap(
+    (step, index) => {
+      if (step.startedAtMs === undefined) return [];
+      const relativeMs = Math.max(0, step.startedAtMs - replayStartMs);
+      return [
+        {
+          id: `step-${step.stepId}`,
+          label: `Step ${index + 1}: ${step.title}`,
+          relativeMs,
+        },
+      ];
+    }
+  );
   const allActions = [...replayActions, ...stepActions].sort(
-    (left, right) => left.relativeMs - right.relativeMs,
+    (left, right) => left.relativeMs - right.relativeMs
   );
   const visibleActions = allActions
     .filter((action) => {
@@ -844,8 +960,13 @@ export const ReplayViewer = ({
       ? LIVE_PLAYBACK_PROGRESS_SHADOW
       : `${LIVE_PLAYBACK_PROGRESS_RIGHT_EDGE_SHADOW}, ${LIVE_PLAYBACK_PROGRESS_SHADOW}`;
 
-  const activeStepIndex = getPlaybackStepIndex(steps?.steps, replayStartMs, currentTime);
-  const currentStep = steps && activeStepIndex >= 0 ? steps.steps[activeStepIndex] : undefined;
+  const activeStepIndex = getPlaybackStepIndex(
+    steps?.steps,
+    replayStartMs,
+    currentTime
+  );
+  const currentStep =
+    steps && activeStepIndex >= 0 ? steps.steps[activeStepIndex] : undefined;
   const currentStepLabel = currentStep ? `Step ${activeStepIndex + 1}` : "";
   const currentStepTitle = currentStep?.title ?? "";
   const stepList =
@@ -863,19 +984,19 @@ export const ReplayViewer = ({
           step.status === "failed"
             ? "bg-[color(display-p3_0.988_0.153_0.184)]"
             : step.status === "passed"
-              ? "bg-[color(display-p3_0.249_0.701_0.193)]"
-              : "bg-[color(display-p3_0.787_0.787_0.787)]",
+            ? "bg-[color(display-p3_0.249_0.701_0.193)]"
+            : "bg-[color(display-p3_0.787_0.787_0.787)]",
       };
     }) ?? [];
   stepNavigationRef.current = (direction) => {
     if (!hasEvents) return;
     const navigableStepIndices = stepList.flatMap((step, index) =>
-      step.timeMs !== undefined ? [index] : [],
+      step.timeMs !== undefined ? [index] : []
     );
     if (navigableStepIndices.length === 0) return;
 
     const currentNavigablePosition = navigableStepIndices.findIndex(
-      (index) => index === activeStepIndex,
+      (index) => index === activeStepIndex
     );
     if (currentNavigablePosition === -1) {
       if (direction === "down") {
@@ -891,7 +1012,7 @@ export const ReplayViewer = ({
     const stepOffset = direction === "down" ? 1 : -1;
     const nextPosition = Math.min(
       Math.max(currentNavigablePosition + stepOffset, 0),
-      navigableStepIndices.length - 1,
+      navigableStepIndices.length - 1
     );
     const nextStepIndex = navigableStepIndices[nextPosition];
     if (nextStepIndex === activeStepIndex) return;
@@ -912,7 +1033,7 @@ export const ReplayViewer = ({
     if (!(element instanceof HTMLElement)) return false;
 
     const stepButton = element.closest<HTMLElement>(
-      "[data-replay-step-id][data-replay-step-time-ms]",
+      "[data-replay-step-id][data-replay-step-time-ms]"
     );
     const stepId = stepButton?.dataset.replayStepId;
     const stepTimeMs = stepButton?.dataset.replayStepTimeMs;
@@ -923,17 +1044,26 @@ export const ReplayViewer = ({
     seekTo(Number(stepTimeMs));
     return true;
   };
-  const finishStepListPointerInteraction = (target?: HTMLDivElement, pointerId?: number) => {
+  const finishStepListPointerInteraction = (
+    target?: HTMLDivElement,
+    pointerId?: number
+  ) => {
     if (!stepListPointerActiveRef.current) return;
 
     stepListPointerActiveRef.current = false;
     stepListDraggedStepIdRef.current = undefined;
 
-    if (target && pointerId !== undefined && target.hasPointerCapture(pointerId)) {
+    if (
+      target &&
+      pointerId !== undefined &&
+      target.hasPointerCapture(pointerId)
+    ) {
       target.releasePointerCapture(pointerId);
     }
   };
-  const handleStepListPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handleStepListPointerDown = (
+    event: React.PointerEvent<HTMLDivElement>
+  ) => {
     if (event.pointerType !== "mouse" || !hasEvents) return;
 
     event.preventDefault();
@@ -942,19 +1072,27 @@ export const ReplayViewer = ({
     event.currentTarget.setPointerCapture(event.pointerId);
     seekToDraggedStepListItem(event.target);
   };
-  const handleStepListPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handleStepListPointerMove = (
+    event: React.PointerEvent<HTMLDivElement>
+  ) => {
     if (!stepListPointerActiveRef.current) return;
     if (event.buttons === 0) {
       finishStepListPointerInteraction(event.currentTarget, event.pointerId);
       return;
     }
 
-    seekToDraggedStepListItem(document.elementFromPoint(event.clientX, event.clientY));
+    seekToDraggedStepListItem(
+      document.elementFromPoint(event.clientX, event.clientY)
+    );
   };
-  const handleStepListPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handleStepListPointerUp = (
+    event: React.PointerEvent<HTMLDivElement>
+  ) => {
     finishStepListPointerInteraction(event.currentTarget, event.pointerId);
   };
-  const handleStepListPointerCancel = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handleStepListPointerCancel = (
+    event: React.PointerEvent<HTMLDivElement>
+  ) => {
     finishStepListPointerInteraction(event.currentTarget, event.pointerId);
   };
   const handleStepListLostPointerCapture = () => {
@@ -962,16 +1100,19 @@ export const ReplayViewer = ({
   };
   const playbackBarFillVisible = hasEvents && playbackBarValue > 0;
   const browserFrameSurfaceStyle =
-    browserFrameBackground !== undefined ? { background: browserFrameBackground } : undefined;
+    browserFrameBackground !== undefined
+      ? { background: browserFrameBackground }
+      : undefined;
   const playbackBarFillClassName =
     playbackBarValue >= playbackBarMax ? "rounded-full" : "rounded-l-full";
   const playbackBarMarkerCount = Math.max(
     0,
-    Math.floor((playbackBarMax - 1) / LIVE_PLAYBACK_BAR_MARKER_INTERVAL_MS),
+    Math.floor((playbackBarMax - 1) / LIVE_PLAYBACK_BAR_MARKER_INTERVAL_MS)
   );
   const playbackBarMarkerPositions = Array.from(
     { length: playbackBarMarkerCount },
-    (_, index) => `${(((index + 1) / (playbackBarMarkerCount + 1)) * 100).toFixed(2)}%`,
+    (_, index) =>
+      `${(((index + 1) / (playbackBarMarkerCount + 1)) * 100).toFixed(2)}%`
   );
   const visiblePlaybackBarMarkerPositions = playbackBarMarkerPositions.slice(1);
   const playbackStepMarkers =
@@ -985,7 +1126,7 @@ export const ReplayViewer = ({
 
           const markerPercent = Math.min(
             Math.max((markerTimeMs / playbackBarMax) * 100, 0),
-            100,
+            100
           ).toFixed(2);
 
           return [
@@ -1003,7 +1144,8 @@ export const ReplayViewer = ({
   const showFirstStepLabel = Boolean(steps && steps.steps.length > 0);
   const firstPlaybackStep = stepList[0];
   const firstPlaybackStepTimeMs = firstPlaybackStep?.timeMs;
-  const firstPlaybackStepLabelDisabled = !hasEvents || firstPlaybackStepTimeMs === undefined;
+  const firstPlaybackStepLabelDisabled =
+    !hasEvents || firstPlaybackStepTimeMs === undefined;
   const playbackStepLabelClassName =
     "pointer-events-auto absolute top-full -mt-[17px] h-4.5 appearance-none bg-transparent p-0 [letter-spacing:0em] font-['SFProDisplay-Semibold','SF_Pro_Display',system-ui,sans-serif] text-[11.5px]/4.5 font-semibold text-[color(display-p3_0.553_0.553_0.553)] transition-opacity duration-150 ease-out hover:opacity-70 focus-visible:opacity-70 disabled:cursor-default disabled:opacity-50";
   const playbackBar = (
@@ -1106,7 +1248,10 @@ export const ReplayViewer = ({
               }}
             />
             <MacWindow surfaceStyle={browserFrameSurfaceStyle}>
-              <div ref={replayRef} className="relative h-full w-full overflow-hidden" />
+              <div
+                ref={replayRef}
+                className="relative h-full w-full overflow-hidden"
+              />
             </MacWindow>
           </div>
           <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-end justify-end gap-2 p-2 md:p-5">
@@ -1138,7 +1283,9 @@ export const ReplayViewer = ({
                 </span>
               )}
               {!live && (
-                <span className="text-sm font-medium text-white/90 drop-shadow-sm">No events</span>
+                <span className="text-sm font-medium text-white/90 drop-shadow-sm">
+                  No events
+                </span>
               )}
             </div>
           )}
@@ -1146,7 +1293,9 @@ export const ReplayViewer = ({
       </div>
 
       <div
-        className={`flex flex-col gap-2 rounded-[28px] px-3 pt-2 pb-3 md:gap-3 md:pr-6 md:pt-3 md:pb-5 ${stepList.length > 0 ? "md:pl-[295px]" : "md:pl-6"}`}
+        className={`flex flex-col gap-2 rounded-[28px] px-3 pt-2 pb-3 md:gap-3 md:pr-6 md:pt-3 md:pb-5 ${
+          stepList.length > 0 ? "md:pl-[295px]" : "md:pl-6"
+        }`}
         style={{ fontFamily: CONTROL_FONT_FAMILY }}
       >
         <div className="mt-1 flex items-center justify-between gap-2 p-0 antialiased [font-synthesis:none] md:mt-1.5 md:gap-4">
@@ -1173,12 +1322,18 @@ export const ReplayViewer = ({
           </div>
           <div className="flex shrink-0 items-center gap-1.5 md:gap-3">
             <span className="inline-flex items-center gap-1.5 text-[13px] leading-4.5 font-medium tracking-[0em] tabular-nums text-[color(display-p3_0.361_0.361_0.361)] md:gap-2.5 md:text-[15px]">
-              <Calligraph variant="number" autoSize={false} className="tabular-nums">
+              <Calligraph
+                variant="number"
+                autoSize={false}
+                className="tabular-nums"
+              >
                 {timeLabel}
               </Calligraph>
               {(!live || !isAtLiveEdge) && (
                 <>
-                  <span className="text-[color(display-p3_0.727_0.727_0.727)]">/</span>
+                  <span className="text-[color(display-p3_0.727_0.727_0.727)]">
+                    /
+                  </span>
                   <span>{totalTimeLabel}</span>
                 </>
               )}
@@ -1190,7 +1345,9 @@ export const ReplayViewer = ({
                 className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-red-500/10 px-2.5 py-1 transition-opacity hover:bg-red-500/20 active:scale-[0.97]"
               >
                 <span
-                  className={`size-1.5 rounded-full bg-red-500 ${isAtLiveEdge ? "animate-pulse" : ""}`}
+                  className={`size-1.5 rounded-full bg-red-500 ${
+                    isAtLiveEdge ? "animate-pulse" : ""
+                  }`}
                 />
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-red-500">
                   Live
@@ -1327,7 +1484,9 @@ export const ReplayViewer = ({
                 seekTo(firstPlaybackStepTimeMs);
               }}
               disabled={firstPlaybackStepLabelDisabled}
-              aria-label={`Jump to step 1: ${firstPlaybackStep?.title ?? "Step 1"}`}
+              aria-label={`Jump to step 1: ${
+                firstPlaybackStep?.title ?? "Step 1"
+              }`}
               className={`${playbackStepLabelClassName} left-0`}
             >
               1

@@ -1,7 +1,7 @@
 import type { eventWithTime } from "@rrweb/types";
 import type { Effect } from "effect";
-import type { Cookie } from "@expect/cookies";
 import type { Locator, Page } from "playwright";
+import type { Cookie } from "@expect/shared/models";
 import type { RefNotFoundError } from "./errors";
 
 export type AriaRole = Parameters<Page["getByRole"]>[0];
@@ -42,18 +42,6 @@ export interface SnapshotResult {
   refs: RefMap;
   stats: SnapshotStats;
   locator: (ref: string) => Effect.Effect<Locator, RefNotFoundError>;
-}
-
-export type BrowserEngine = "chromium" | "webkit" | "firefox";
-
-export interface CreatePageOptions {
-  headed?: boolean;
-  executablePath?: string;
-  cookies?: boolean | Cookie[];
-  waitUntil?: "load" | "domcontentloaded" | "networkidle" | "commit";
-  videoOutputDir?: string;
-  cdpUrl?: string;
-  browserType?: BrowserEngine;
 }
 
 export interface AnnotatedScreenshotOptions extends SnapshotOptions {

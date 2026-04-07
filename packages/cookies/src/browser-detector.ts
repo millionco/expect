@@ -1,8 +1,20 @@
-import { Effect, identity, Layer, Option, ServiceMap, Array as Arr } from "effect";
+import { Effect, identity, Layer, Option, Schema, ServiceMap, Array as Arr } from "effect";
 import getDefaultBrowser from "default-browser";
 import { configByBundleId, configByDesktopFile } from "./browser-config";
 import { ListBrowsersError } from "./errors";
-import type { Browser } from "./types";
+import type { Browser } from "@expect/shared/models";
+
+export class BrowserProfileNotFoundError extends Schema.ErrorClass<BrowserProfileNotFoundError>(
+  "BrowserProfileNotFoundError",
+)({
+  _tag: Schema.tag("BrowserProfileNotFoundError"),
+  profileId: Schema.String,
+  availableProfileIds: Schema.Array(Schema.String),
+}) {
+  message = `Browser profile not found: ${
+    this.profileId
+  }. Available profiles: ${this.availableProfileIds.join(", ")}`;
+}
 
 export class Browsers extends ServiceMap.Service<Browsers>()("@cookies/Browsers", {
   make: Effect.gen(function* () {
@@ -15,7 +27,30 @@ export class Browsers extends ServiceMap.Service<Browsers>()("@cookies/Browsers"
 
     const list = Effect.forEach(sources, identity, {
       concurrency: "unbounded",
-    }).pipe(Effect.map(Arr.flatten), Effect.withSpan("Browsers.list"));
+    }).pipe(
+      Effect.map(Arr.flatten),
+      /** @note(rasmus): we filter out System Profile, because usually this one doesn't contain any cookies and arent actually used by users. */
+      Effect.map(
+        Arr.filter((browser) =>
+          browser._tag === "ChromiumBrowser" && browser.profileName === "System Profile"
+            ? false
+            : true,
+        ),
+      ),
+      Effect.withSpan("Browsers.list"),
+    );
+
+    const findById = Effect.fn("Browsers.findById")(function* (profileId: string) {
+      const browsers = yield* list;
+      const match = Arr.findFirst(browsers, (browser) => browser.id === profileId);
+      if (Option.isNone(match)) {
+        return yield* new BrowserProfileNotFoundError({
+          profileId,
+          availableProfileIds: browsers.map((b) => b.id),
+        });
+      }
+      return match.value;
+    });
 
     const defaultBrowser = Effect.fn("Browsers.defaultBrowser")(function* () {
       const result = yield* Effect.tryPromise({
@@ -23,9 +58,9 @@ export class Browsers extends ServiceMap.Service<Browsers>()("@cookies/Browsers"
         catch: (cause) => new ListBrowsersError({ cause: String(cause) }),
       }).pipe(
         Effect.catchTag("ListBrowsersError", (error) =>
-          Effect.logWarning("Default browser detection failed", { cause: error.cause }).pipe(
-            Effect.as(undefined),
-          ),
+          Effect.logWarning("Default browser detection failed", {
+            cause: error.cause,
+          }).pipe(Effect.as(undefined)),
         ),
       );
 
@@ -47,7 +82,7 @@ export class Browsers extends ServiceMap.Service<Browsers>()("@cookies/Browsers"
       );
     });
 
-    return { register, list, defaultBrowser };
+    return { register, list, findById, defaultBrowser };
   }),
 }) {
   static layer = Layer.effect(this, this.make);

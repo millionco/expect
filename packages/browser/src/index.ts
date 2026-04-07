@@ -1,7 +1,8 @@
-export { Browser, runBrowser } from "./browser";
-export { buildReplayViewerHtml } from "./replay-viewer";
+export { Playwright, type OpenOptions } from "./playwright";
+export { Artifacts } from "./artifacts";
+export { ArtifactStorage } from "./artifact-storage";
+export { layerMcpServer } from "./mcp-server";
 export { diffSnapshots } from "./diff";
-export { collectEvents, collectAllEvents, loadSession } from "./recorder";
 export { autoDiscoverCdp, discoverCdpUrl } from "./cdp-discovery";
 export { RrVideo, RrVideoConvertError } from "./rrvideo";
 export type {
@@ -13,9 +14,12 @@ export type {
 export {
   ActionTimeoutError,
   ActionUnknownError,
+  BrowserAlreadyOpenError,
   BrowserLaunchError,
   CdpConnectionError,
   CdpDiscoveryError,
+  BrowserNotOpenError,
+  McpServerStartError,
   NavigationError,
   RecorderInjectionError,
   RefAmbiguousError,
@@ -31,9 +35,7 @@ export type {
   AnnotatedScreenshotOptions,
   AnnotatedScreenshotResult,
   AriaRole,
-  BrowserEngine,
   CollectResult,
-  CreatePageOptions,
   RefEntry,
   RefMap,
   SnapshotDiff,

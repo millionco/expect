@@ -1,4 +1,7 @@
+import type { NewSessionMeta } from "@agentclientprotocol/claude-agent-acp";
 import type { AgentProvider } from "@expect/shared/models";
+
+const BROWSER_MCP_SERVER_NAME = "browser";
 
 interface BuildSessionMetaOptions {
   readonly provider: AgentProvider;
@@ -9,14 +12,20 @@ interface BuildSessionMetaOptions {
 }
 
 export const buildSessionMeta = ({ provider, systemPrompt, metadata }: BuildSessionMetaOptions) => {
-  const meta = {
+  const meta: NewSessionMeta = {
     ...(systemPrompt ? { systemPrompt } : {}),
-    ...(metadata?.isGitHubActions && provider === "claude"
+    ...(provider === "claude"
       ? {
           claudeCode: {
             options: {
-              effort: "high" as const,
-              thinking: { type: "adaptive" as const },
+              tools: [],
+              settings: {
+                allowedMcpServers: [{ serverName: BROWSER_MCP_SERVER_NAME }],
+              },
+              ...(metadata?.isGitHubActions && {
+                effort: "high" as const,
+                thinking: { type: "adaptive" as const },
+              }),
             },
           },
         }

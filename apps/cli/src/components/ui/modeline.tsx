@@ -17,7 +17,7 @@ import { agentProviderAtom } from "../../data/runtime";
 
 const useHintSegments = (screen: Screen, gitState: GitState | undefined): HintSegment[] => {
   const COLORS = useColors();
-  const cookieBrowserKeys = useProjectPreferencesStore((state) => state.cookieBrowserKeys);
+  const cookieImportProfiles = useProjectPreferencesStore((state) => state.cookieImportProfiles);
   const notifications = usePreferencesStore((state) => state.notifications);
   const expanded = usePlanExecutionStore((state) => state.expanded);
   const agentProviderValue = useAtomValue(agentProviderAtom);
@@ -32,7 +32,9 @@ const useHintSegments = (screen: Screen, gitState: GitState | undefined): HintSe
         {
           key: "ctrl+k",
           label:
-            cookieBrowserKeys.length > 0 ? `cookies (${cookieBrowserKeys.length})` : "cookies off",
+            cookieImportProfiles.length > 0
+              ? `cookies (${cookieImportProfiles.length})`
+              : "cookies off",
           cta: true,
         },
         { key: "ctrl+r", label: "saved flows", cta: true },

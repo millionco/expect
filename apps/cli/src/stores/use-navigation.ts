@@ -2,6 +2,7 @@ import { create } from "zustand";
 import * as Data from "effect/Data";
 import type { ChangesFor, SavedFlow, TestReport } from "@expect/shared/models";
 import type { DevServerHint } from "@expect/shared/prompts";
+import type { Browser } from "@expect/cookies";
 import { containsUrl } from "../utils/detect-url";
 
 export type { DevServerHint } from "@expect/shared/prompts";
@@ -14,13 +15,13 @@ export type Screen = Data.TaggedEnum<{
     changesFor: ChangesFor;
     instruction: string;
     savedFlow?: SavedFlow;
-    cookieBrowserKeys?: readonly string[];
+    cookieImportProfiles?: readonly Browser[];
   };
   Testing: {
     changesFor: ChangesFor;
     instruction: string;
     savedFlow?: SavedFlow;
-    cookieBrowserKeys?: readonly string[];
+    cookieImportProfiles?: readonly Browser[];
     baseUrls?: readonly string[];
     devServerHints?: readonly DevServerHint[];
   };
@@ -29,7 +30,7 @@ export type Screen = Data.TaggedEnum<{
   Watch: {
     changesFor: ChangesFor;
     instruction: string;
-    cookieBrowserKeys?: readonly string[];
+    cookieImportProfiles?: readonly Browser[];
     baseUrl?: string;
   };
   AgentPicker: {};
@@ -40,13 +41,8 @@ export const screenForTestingOrPortPicker = (props: {
   changesFor: ChangesFor;
   instruction: string;
   savedFlow?: SavedFlow;
-  cookieBrowserKeys?: readonly string[];
-  baseUrls?: readonly string[];
-}): Screen => {
-  if (props.baseUrls && props.baseUrls.length > 0) return Screen.Testing(props);
-  if (containsUrl(props.instruction)) return Screen.Testing(props);
-  return Screen.PortPicker(props);
-};
+  cookieImportProfiles?: readonly Browser[];
+}): Screen => (containsUrl(props.instruction) ? Screen.Testing(props) : Screen.PortPicker(props));
 
 interface NavigationStore {
   screen: Screen;

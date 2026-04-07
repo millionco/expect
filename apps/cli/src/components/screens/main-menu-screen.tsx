@@ -71,9 +71,9 @@ export const MainMenu = ({ gitState }: MainMenuProps) => {
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [savedCurrentInput, setSavedCurrentInput] = useState("");
-  const cookieBrowserKeys = useProjectPreferencesStore((state) => state.cookieBrowserKeys);
-  const clearCookieBrowserKeys = useProjectPreferencesStore(
-    (state) => state.clearCookieBrowserKeys,
+  const cookieImportProfiles = useProjectPreferencesStore((state) => state.cookieImportProfiles);
+  const clearCookieImportProfiles = useProjectPreferencesStore(
+    (state) => state.clearCookieImportProfiles,
   );
   const { data: testCoverage } = useTestCoverage(gitState);
 
@@ -158,13 +158,12 @@ export const MainMenu = ({ gitState }: MainMenuProps) => {
 
     usePreferencesStore.getState().rememberInstruction(trimmed);
 
-    if (cookieBrowserKeys.length > 0 || containsUrl(trimmed) || cliBaseUrls) {
+    if (cookieImportProfiles.length > 0 || containsUrl(trimmed)) {
       setScreen(
         screenForTestingOrPortPicker({
           changesFor,
           instruction: trimmed,
-          cookieBrowserKeys,
-          baseUrls: cliBaseUrls ? [...cliBaseUrls] : undefined,
+          cookieImportProfiles,
         }),
       );
     } else {
@@ -231,8 +230,8 @@ export const MainMenu = ({ gitState }: MainMenuProps) => {
       }
 
       if (key.ctrl && input === "k") {
-        if (cookieBrowserKeys.length > 0) {
-          clearCookieBrowserKeys();
+        if (cookieImportProfiles.length > 0) {
+          clearCookieImportProfiles();
           trackEvent("cookies:cleared");
           trackEvent("cookies:toggled", { enabled: false });
         } else {

@@ -35,7 +35,7 @@ const makeTestPlan = (): TestPlan =>
     instruction: "test",
     baseUrl: Option.none(),
     isHeadless: false,
-    cookieBrowserKeys: [],
+    cookieImportProfiles: [],
     testCoverage: Option.none(),
   } as any);
 
@@ -68,7 +68,7 @@ const fixtureUpdates = [
     status: "completed",
     rawOutput: { content: "{ ... }" },
   },
-].map((update) => decode(update));
+].map((update) => decode(update as typeof AcpSessionUpdate.Type));
 
 describe("reducer", () => {
   it("reduces AcpSessionUpdates into ExecutedTestPlan", () => {

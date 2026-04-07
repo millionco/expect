@@ -1,13 +1,5 @@
-import {
-  existsSync,
-  lstatSync,
-  mkdirSync,
-  readlinkSync,
-  symlinkSync,
-  unlinkSync,
-  writeFileSync,
-} from "node:fs";
-import { dirname, join, relative } from "node:path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { gunzipSync } from "node:zlib";
 import { type SupportedAgent, toDisplayName, toSkillDir } from "@expect/agent";
 import { highlighter } from "../utils/highlighter";
@@ -65,9 +57,9 @@ export const extractTarEntries = (tar: Buffer, prefix: string, destDir: string) 
     if (name.startsWith(prefix) && isRegularFile) {
       const relativePath = name.slice(prefix.length);
       if (relativePath) {
-        const destPath = join(destDir, relativePath);
-        mkdirSync(dirname(destPath), { recursive: true });
-        writeFileSync(destPath, tar.subarray(offset, offset + size));
+        const destPath = path.join(destDir, relativePath);
+        fs.mkdirSync(path.dirname(destPath), { recursive: true });
+        fs.writeFileSync(destPath, tar.subarray(offset, offset + size));
       }
     }
 
@@ -83,7 +75,7 @@ const downloadSkill = async (skillDir: string): Promise<boolean> => {
     const compressed = Buffer.from(await response.arrayBuffer());
     const tar = gunzipSync(compressed);
 
-    mkdirSync(skillDir, { recursive: true });
+    fs.mkdirSync(skillDir, { recursive: true });
     extractTarEntries(tar, SKILL_ARCHIVE_PREFIX, skillDir);
     return true;
   } catch {
@@ -115,21 +107,21 @@ const selectAgents = async (agents: readonly SupportedAgent[], nonInteractive: b
 };
 
 const ensureAgentSymlink = (projectRoot: string, agent: SupportedAgent): boolean | string => {
-  const skillSourceDir = join(projectRoot, AGENTS_SKILLS_DIR, SKILL_NAME);
-  const agentSkillDir = join(projectRoot, toSkillDir(agent));
-  const symlinkPath = join(agentSkillDir, SKILL_NAME);
-  const targetPath = relative(dirname(symlinkPath), skillSourceDir);
+  const skillSourceDir = path.join(projectRoot, AGENTS_SKILLS_DIR, SKILL_NAME);
+  const agentSkillDir = path.join(projectRoot, toSkillDir(agent));
+  const symlinkPath = path.join(agentSkillDir, SKILL_NAME);
+  const targetPath = path.relative(path.dirname(symlinkPath), skillSourceDir);
 
   try {
-    if (existsSync(symlinkPath)) {
-      const stats = lstatSync(symlinkPath);
+    if (fs.existsSync(symlinkPath)) {
+      const stats = fs.lstatSync(symlinkPath);
       if (!stats.isSymbolicLink()) return `${symlinkPath} exists and is not a symlink`;
-      if (readlinkSync(symlinkPath) === targetPath) return true;
-      unlinkSync(symlinkPath);
+      if (fs.readlinkSync(symlinkPath) === targetPath) return true;
+      fs.unlinkSync(symlinkPath);
     }
 
-    mkdirSync(dirname(symlinkPath), { recursive: true });
-    symlinkSync(targetPath, symlinkPath);
+    fs.mkdirSync(path.dirname(symlinkPath), { recursive: true });
+    fs.symlinkSync(targetPath, symlinkPath);
     return true;
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
@@ -144,7 +136,7 @@ export const runAddSkill = async (options: AddSkillOptions) => {
   if (selectedAgents.length === 0) return;
 
   const skillSpinner = spinner("Downloading skill from GitHub...").start();
-  const skillDir = join(projectRoot, AGENTS_SKILLS_DIR, SKILL_NAME);
+  const skillDir = path.join(projectRoot, AGENTS_SKILLS_DIR, SKILL_NAME);
   const downloaded = await downloadSkill(skillDir);
 
   if (!downloaded) {

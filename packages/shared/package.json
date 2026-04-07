@@ -9,6 +9,7 @@
     "./prompts": "./src/prompts.ts",
     "./observability": "./src/observability/exports.ts",
     "./utils": "./src/utils.ts",
+    "./rpcs": "./src/rpcs.ts",
     "./launched-from": "./src/launched-from.ts",
     "./is-command-available": "./src/is-command-available.ts"
   },

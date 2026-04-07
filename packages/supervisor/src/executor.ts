@@ -1,4 +1,3 @@
-import * as path from "node:path";
 import {
   AcpProviderUnauthenticatedError,
   AcpProviderUsageLimitError,
@@ -7,38 +6,55 @@ import {
   Agent,
   AgentStreamOptions,
 } from "@expect/agent";
-import { Effect, Layer, Option, Schema, ServiceMap, Stream } from "effect";
+import {
+  Effect,
+  FileSystem,
+  Layer,
+  Option,
+  Schema,
+  ServiceMap,
+  Stream,
+  String as Str,
+  Array,
+  pipe,
+  identity,
+} from "effect";
+import { ArtifactStore } from "./artifact-store";
+import { OutputReporter } from "./output-reporter";
 import {
   type AcpConfigOption,
+  AcpSessionUpdate,
   type ChangesFor,
   type ChangedFile,
   type CommitSummary,
+  CurrentPlanId,
+  Done,
   ExecutedTestPlan,
+  InitialPlan,
   PlanId,
   RunStarted,
   type SavedFlow,
+  SessionUpdate,
   type TestCoverageReport,
   TestPlan,
 } from "@expect/shared/models";
-import {
-  buildExecutionPrompt,
-  buildExecutionSystemPrompt,
-  type DevServerHint,
-} from "@expect/shared/prompts";
+import { buildExecutionPrompt, type DevServerHint } from "@expect/shared/prompts";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Git } from "./git/git";
-import {
-  EXPECT_LIVE_VIEW_URL_ENV_NAME,
-  EXPECT_COOKIE_BROWSERS_ENV_NAME,
-  EXPECT_BASE_URL_ENV_NAME,
-} from "@expect/browser/mcp";
+import { EXPECT_BASE_URL_ENV_NAME } from "@expect/browser/mcp";
+import { BrowserJson, type Browser } from "@expect/cookies";
+import { EXPECT_BROWSER_PROFILE_ENV_NAME, EXPECT_HEADED_ENV_NAME } from "@expect/browser/mcp";
 import {
   ALL_STEPS_TERMINAL_GRACE_MS,
   EXECUTION_CONTEXT_FILE_LIMIT,
   EXECUTION_RECENT_COMMIT_LIMIT,
-  EXPECT_REPLAY_OUTPUT_ENV_NAME,
-  EXPECT_STATE_DIR,
 } from "./constants";
+
+const encodeSessionUpdate = Schema.encodeEffect(
+  Schema.fromJsonString(Schema.toCodecJson(AcpSessionUpdate)),
+);
+
+const encodeBrowserProfile = Schema.encodeEffect(BrowserJson);
 
 export class ExecutionError extends Schema.ErrorClass<ExecutionError>("@supervisor/ExecutionError")(
   {
@@ -59,15 +75,15 @@ export interface ExecuteOptions {
   readonly changesFor: ChangesFor;
   readonly instruction: string;
   readonly isHeadless: boolean;
-  readonly cookieBrowserKeys: readonly string[];
+  readonly cookieImportProfiles: readonly Browser[];
   readonly baseUrl?: string;
   readonly savedFlow?: SavedFlow;
   readonly learnings?: string;
-  readonly liveViewUrl?: string;
   readonly testCoverage?: TestCoverageReport;
   readonly onConfigOptions?: (configOptions: readonly AcpConfigOption[]) => void;
   readonly modelPreference?: { configId: string; value: string };
   readonly devServerHints?: readonly DevServerHint[];
+  readonly captureFixturePath?: string;
 }
 
 interface ExecutorAccumState {
@@ -84,6 +100,10 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
   make: Effect.gen(function* () {
     const agent = yield* Agent;
     const git = yield* Git;
+    const artifactStore = yield* ArtifactStore;
+    const outputReporter = yield* OutputReporter;
+    const fileSystem = yield* FileSystem.FileSystem;
+    const planId = yield* CurrentPlanId;
 
     const gatherContext = Effect.fn("Executor.gatherContext")(function* (changesFor: ChangesFor) {
       yield* Effect.annotateCurrentSpan({ changesFor: changesFor._tag });
@@ -128,12 +148,10 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
         instructionLength: options.instruction.length,
         changesFor: options.changesFor._tag,
         isHeadless: options.isHeadless,
-        cookieBrowserCount: options.cookieBrowserKeys.length,
+        cookieBrowserCount: options.cookieImportProfiles.length,
       });
 
       const context = yield* gatherContext(options.changesFor);
-
-      const systemPrompt = buildExecutionSystemPrompt();
 
       const prompt = buildExecutionPrompt({
         userInstruction: options.instruction,
@@ -145,20 +163,15 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
         diffPreview: context.diffPreview,
         baseUrl: options.baseUrl,
         isHeadless: options.isHeadless,
-        cookieBrowserKeys: options.cookieBrowserKeys,
+        cookieImportProfiles: options.cookieImportProfiles,
         savedFlow: options.savedFlow,
         learnings: options.learnings,
         testCoverage: options.testCoverage,
         devServerHints: options.devServerHints,
       });
 
-      const planId = PlanId.makeUnsafe(crypto.randomUUID());
-      const replayOutputPath = path.join(
-        process.cwd(),
-        EXPECT_STATE_DIR,
-        "replays",
-        `${planId}.ndjson`,
-      );
+      console.log("USER PROMPT: ");
+      console.log(prompt);
 
       const syntheticPlan = new TestPlan({
         id: planId,
@@ -169,7 +182,7 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
         instruction: options.instruction,
         baseUrl: options.baseUrl ? Option.some(options.baseUrl) : Option.none(),
         isHeadless: options.isHeadless,
-        cookieBrowserKeys: options.cookieBrowserKeys,
+        cookieImportProfiles: options.cookieImportProfiles,
         testCoverage: options.testCoverage ? Option.some(options.testCoverage) : Option.none(),
         title: options.instruction,
         rationale: "Direct execution",
@@ -181,20 +194,25 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
         events: [new RunStarted({ plan: syntheticPlan })],
       });
 
-      const mcpEnv = [{ name: EXPECT_REPLAY_OUTPUT_ENV_NAME, value: replayOutputPath }];
+      yield* artifactStore.push(planId, new InitialPlan({ plan: syntheticPlan }));
+
+      const mcpEnv: Array<{ name: string; value: string }> = [];
       if (options.baseUrl) {
-        mcpEnv.push({ name: EXPECT_BASE_URL_ENV_NAME, value: options.baseUrl });
-      }
-      if (options.liveViewUrl) {
         mcpEnv.push({
-          name: EXPECT_LIVE_VIEW_URL_ENV_NAME,
-          value: options.liveViewUrl,
+          name: EXPECT_BASE_URL_ENV_NAME,
+          value: options.baseUrl,
         });
       }
-      if (options.cookieBrowserKeys.length > 0) {
+      if (!options.isHeadless) {
+        mcpEnv.push({ name: EXPECT_HEADED_ENV_NAME, value: "true" });
+      }
+      if (options.cookieImportProfiles.length > 0) {
+        const profileJson = yield* encodeBrowserProfile(options.cookieImportProfiles[0]).pipe(
+          Effect.orDie,
+        );
         mcpEnv.push({
-          name: EXPECT_COOKIE_BROWSERS_ENV_NAME,
-          value: options.cookieBrowserKeys.join(","),
+          name: EXPECT_BROWSER_PROFILE_ENV_NAME,
+          value: profileJson,
         });
       }
 
@@ -208,44 +226,54 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
         cwd: process.cwd(),
         sessionId: Option.none(),
         prompt,
-        systemPrompt: Option.some(systemPrompt),
+        systemPrompt: Option.none(),
         mcpEnv,
         modelPreference: options.modelPreference,
       });
 
       return agent.stream(streamOptions).pipe(
         Stream.tap((update) => {
+          if (update.sessionUpdate === "tool_call_update") {
+            const CONTEXT_LINES = 5;
+            const lines = pipe(
+              Array.fromIterable(Str.linesIterator(JSON.stringify(update, null, 2))),
+              Array.take(CONTEXT_LINES + 1),
+              Array.map((line) => `    ${line}`),
+              Array.join("\n"),
+            );
+
+            return Effect.logDebug(`Tool call update:\n${lines}`);
+          }
+          if (update.sessionUpdate === "tool_call") {
+            return Effect.logDebug(`    Tool call: ${update.title}`);
+          }
           const callback = options.onConfigOptions;
           if (update.sessionUpdate === "config_option_update" && callback) {
             return Effect.sync(() => callback(update.configOptions));
           }
           return Effect.void;
         }),
+        Stream.tap((update) => artifactStore.push(planId, new SessionUpdate({ update }))),
         Stream.mapAccum(
-          (): ExecutorAccumState => ({
-            plan: initial,
-            allTerminalSince: undefined,
-          }),
-          (state, part) => {
-            const updated = state.plan.addEvent(part);
-            const terminalTimestamp = resolveTerminalTimestamp(updated, state.allTerminalSince);
-            const finalized =
-              terminalTimestamp !== undefined &&
-              !updated.hasRunFinished &&
-              Date.now() - terminalTimestamp >= ALL_STEPS_TERMINAL_GRACE_MS
-                ? updated.synthesizeRunFinished()
-                : updated;
-
-            return [{ plan: finalized, allTerminalSince: terminalTimestamp }, [finalized]] as const;
+          () => initial,
+          (executed, part) => {
+            const next = executed.addEvent(part);
+            return [next, [next]] as const;
           },
         ),
+        Stream.tap((executed) => outputReporter.onExecutedPlan(executed)),
         Stream.takeUntil((executed) => executed.hasRunFinished),
         Stream.mapError((reason) => new ExecutionError({ reason })),
+        Stream.ensuring(artifactStore.push(planId, new Done())),
       );
     }, Stream.unwrap);
 
     return { execute } as const;
   }),
 }) {
-  static layer = Layer.effect(this)(this.make).pipe(Layer.provide(NodeServices.layer));
+  static layer = Layer.effect(this)(this.make).pipe(
+    Layer.provide(ArtifactStore.layer),
+    Layer.provide(NodeServices.layer),
+    Layer.provide(Git.layer),
+  );
 }

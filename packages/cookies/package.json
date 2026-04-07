@@ -11,12 +11,13 @@
     "format": "vp fmt",
     "format:check": "vp fmt --check",
     "check": "vp check",
-    "test": "vp test run",
+    "test": "vp test run --no-file-parallelism",
     "test:watch": "vp test",
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
     "@effect/platform-node": "4.0.0-beta.35",
+    "@expect/shared": "workspace:*",
     "default-browser": "^5.5.0",
     "effect": "4.0.0-beta.35",
     "get-port": "^7.1.0",

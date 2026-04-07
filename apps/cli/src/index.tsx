@@ -1,14 +1,17 @@
-import { existsSync } from "node:fs";
-import { join } from "node:path";
-import { Option } from "effect";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { Effect, Option } from "effect";
+import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Command } from "commander";
 import { ChangesFor } from "@expect/supervisor";
+import { Browsers, layerLive } from "@expect/cookies";
 import { runHeadless } from "./utils/run-test";
 import { runInit } from "./commands/init";
 import { runAddGithubAction } from "./commands/add-github-action";
 import { runAddSkill } from "./commands/add-skill";
 import { runAuditCommand } from "./commands/audit";
 import { runWatchCommand } from "./commands/watch";
+import { runViewer } from "./commands/viewer";
 import { isRunningInAgent } from "@expect/shared/launched-from";
 import { isHeadless } from "./utils/is-headless";
 import { type AgentBackend, detectAvailableAgents } from "@expect/agent";
@@ -20,6 +23,7 @@ import { CI_EXECUTION_TIMEOUT_MS, VERSION, VERSION_API_URL } from "./constants";
 import { prompts } from "./utils/prompts";
 import { highlighter } from "./utils/highlighter";
 import { logger } from "./utils/logger";
+import { DEFAULT_REPLAY_HOST } from "@expect/shared";
 
 try {
   fetch(`${VERSION_API_URL}?source=cli&t=${Date.now()}`).catch(() => {});
@@ -43,11 +47,15 @@ interface CommanderOpts {
   verbose?: boolean;
   headed?: boolean;
   noCookies?: boolean;
+  browserProfile?: string[];
   replayHost?: string;
   ci?: boolean;
+  tui?: boolean;
   timeout?: number;
   output?: OutputFormat;
   url?: string[];
+  reporter?: "json" | "github-actions";
+  testId?: string;
 }
 
 // HACK: when adding or changing options/commands below, update the Options and Commands tables in README-new.md
@@ -66,11 +74,26 @@ const program = new Command()
   .option("--verbose", "enable verbose logging")
   .option("--headed", "show a visible browser window during tests")
   .option("--no-cookies", "skip system browser cookie extraction")
+  .option(
+    "-b, --browser-profile <id...>",
+    "browser profile(s) to import cookies from (run `expect list-browsers` to see available profiles)",
+  )
   .option("--ci", "force CI mode: headless, no cookies, auto-yes, 30-minute timeout")
+  .option(
+    "--tui <enabled>",
+    "enable or disable the interactive TUI",
+    (value) => value !== "false",
+    true,
+  )
   .option("--timeout <ms>", "execution timeout in milliseconds", parseInt)
   .option("--output <format>", "output format: text (default) or json")
   .option("-u, --url <urls...>", "base URL(s) for the dev server (skips port picker)")
-  .option("--replay-host <url>", "website host for live replay viewer", "https://expect.dev")
+  .option("--reporter <type>", "reporter: json, github-actions")
+  .option(
+    "--test-id <id>",
+    "override the test plan ID — determines the path for test data, e.g. .expect/artifacts/<test-id>.ndjson",
+  )
+  .option("--replay-host <url>", "website host for live replay viewer", DEFAULT_REPLAY_HOST)
   .addHelpText(
     "after",
     `
@@ -89,12 +112,15 @@ const seedStores = (opts: CommanderOpts, changesFor: ChangesFor) => {
   usePreferencesStore.setState({
     verbose: opts.verbose ?? false,
     browserHeaded: opts.headed ?? false,
-    replayHost: opts.replayHost ?? "https://expect.dev",
   });
 
   if (opts.message) {
     useNavigationStore.setState({
-      screen: Screen.Testing({ changesFor, instruction: opts.message, baseUrls: opts.url }),
+      screen: Screen.Testing({
+        changesFor,
+        instruction: opts.message,
+        baseUrls: opts.url,
+      }),
     });
   } else {
     useNavigationStore.setState({ screen: Screen.Main() });
@@ -105,8 +131,14 @@ const seedStores = (opts: CommanderOpts, changesFor: ChangesFor) => {
   }
 };
 
+const shouldRunHeadless = (opts: CommanderOpts): boolean => {
+  if (opts.tui === false) return true;
+  if (opts.ci) return true;
+  return isRunningInAgent() || isHeadless();
+};
+
 const runHeadlessForTarget = async (target: Target, opts: CommanderOpts) => {
-  const ciMode = opts.ci || isRunningInAgent() || isHeadless();
+  const ciMode = shouldRunHeadless(opts);
   const timeoutMs = opts.timeout
     ? Option.some(opts.timeout)
     : ciMode
@@ -122,15 +154,18 @@ const runHeadlessForTarget = async (target: Target, opts: CommanderOpts) => {
     headed: ciMode ? false : (opts.headed ?? false),
     ci: ciMode,
     noCookies: opts.noCookies ?? ciMode,
+    browserProfileIds: opts.browserProfile ?? [],
     timeoutMs,
-    output: opts.output ?? "text",
-    baseUrl: opts.url?.join(", "),
+    reporter: opts.reporter,
+    replayHost: opts.replayHost,
+    testId: opts.testId,
   });
 };
 
-const SKILL_DIR = join(".agents", "skills", "expect");
+const SKILL_DIR = path.join(".agents", "skills", "expect");
 
-const isSkillInstalled = (): boolean => existsSync(join(process.cwd(), SKILL_DIR, "SKILL.md"));
+const isSkillInstalled = (): boolean =>
+  fs.existsSync(path.join(process.cwd(), SKILL_DIR, "SKILL.md"));
 
 const promptSkillInstall = async () => {
   if (isSkillInstalled()) return;
@@ -204,6 +239,28 @@ program
   });
 
 program
+  .command("list-browsers")
+  .description("list detected browser profiles available for --browser-profile")
+  .action(async () => {
+    const browsers = await Browsers.use((b) => b.list).pipe(
+      Effect.provide(layerLive),
+      Effect.provide(NodeServices.layer),
+      Effect.runPromise,
+    );
+
+    if (browsers.length === 0) {
+      console.log("No browser profiles detected.");
+      return;
+    }
+
+    console.log("Detected browser profiles:\n");
+    for (const browser of browsers) {
+      console.log(`  ${browser.displayName} (id: ${browser.id})`);
+    }
+    console.log(`\nUsage: expect --browser-profile ${browsers[0].id}`);
+  });
+
+program
   .command("watch")
   .description("watch for file changes and auto-run browser tests")
   .option("-m, --message <instruction>", "natural language instruction for what to test")
@@ -216,9 +273,27 @@ program
   .option("--headed", "show a visible browser window during tests")
   .option("--no-cookies", "skip system browser cookie extraction")
   .option("-u, --url <urls...>", "base URL(s) for the dev server")
-  .option("--replay-host <url>", "website host for live replay viewer", "https://expect.dev")
+  .option("--replay-host <url>", "website host for live replay viewer", DEFAULT_REPLAY_HOST)
   .action(async (opts: CommanderOpts) => {
     await runWatchCommand(opts);
+  });
+
+program
+  .command("viewer")
+  .description("open the replay viewer to watch recorded test sessions")
+  .option("--verbose", "enable verbose logging")
+  .option(
+    "-a, --agent <provider>",
+    "agent provider to use (claude, codex, copilot, gemini, cursor, opencode, or droid)",
+  )
+  .option("--replay-host <url>", "website host for live replay viewer")
+  .action((...args: Array<unknown>) => {
+    const opts = args[0] as {
+      verbose?: boolean;
+      agent?: AgentBackend;
+      replayHost?: string;
+    };
+    runViewer(opts);
   });
 
 program.action(async () => {
@@ -229,7 +304,7 @@ program.action(async () => {
     program.error(`Unknown target: ${target}. Use ${TARGETS.join(", ")}.`);
   }
 
-  if (opts.ci || isRunningInAgent() || isHeadless()) return runHeadlessForTarget(target, opts);
+  if (shouldRunHeadless(opts)) return runHeadlessForTarget(target, opts);
 
   await promptSkillInstall();
 
@@ -241,7 +316,6 @@ program.action(async () => {
     usePreferencesStore.setState({
       verbose: opts.verbose ?? false,
       browserHeaded: opts.headed ?? false,
-      replayHost: opts.replayHost ?? "https://expect.dev",
     });
     if (opts.url) {
       usePreferencesStore.setState({ cliBaseUrls: opts.url });

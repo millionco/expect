@@ -1,7 +1,6 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
-import path from "node:path";
-// @ts-expect-error node:sqlite lacks type declarations
+import * as path from "node:path";
 import * as sqlite from "node:sqlite";
 import { assert, describe, it } from "vite-plus/test";
 import { Effect, Layer, Option } from "effect";
@@ -10,7 +9,7 @@ import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Cookies } from "../src/cookies";
 import { BROWSER_CONFIGS } from "../src/browser-config";
 import { parseBinaryCookies } from "../src/utils/binary-cookies";
-import { FirefoxBrowser, SafariBrowser } from "../src/types";
+import { FirefoxBrowser, SafariBrowser } from "@expect/shared/models";
 
 const CookiesTestRuntime = Layer.merge(Cookies.layerTest, NodeServices.layer);
 

@@ -1,9 +1,9 @@
-import path from "node:path";
+import * as path from "node:path";
 import * as os from "node:os";
 import { parse } from "ini";
 import { Effect, Layer, Predicate, Schema, ServiceMap } from "effect";
 import * as FileSystem from "effect/FileSystem";
-import { FirefoxBrowser } from "./types";
+import { FirefoxBrowser } from "@expect/shared/models";
 import { FIREFOX_CONFIG } from "./browser-config";
 import { ListBrowsersError } from "./errors";
 import { Browsers } from "./browser-detector";

@@ -35,3 +35,7 @@ export const getAllEvents = (): eventWithTime[] => {
 export const getEventCount = (): number => {
   return eventBuffer.length;
 };
+
+export const isRecording = (): boolean => {
+  return stopFn !== undefined;
+};
