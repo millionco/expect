@@ -69,27 +69,29 @@ const runWasmFfmpeg = Effect.fn("runWasmFfmpeg")(function* (
       const { fetchFile } = await import("@ffmpeg/util");
 
       const ffmpeg = new FFmpeg();
-      await ffmpeg.load();
+      try {
+        await ffmpeg.load();
 
-      for (const filePath of inputFiles) {
-        const data = await fetchFile(filePath);
-        await ffmpeg.writeFile(filePath.split("/").pop()!, data);
-      }
-
-      const rewrittenArgs = args.map((arg) => {
+        const fileNameMap = new Map<string, string>();
         for (const filePath of inputFiles) {
-          if (arg === filePath) return filePath.split("/").pop()!;
+          const virtualName = filePath.split("/").pop()!;
+          fileNameMap.set(filePath, virtualName);
+          const data = await fetchFile(filePath);
+          await ffmpeg.writeFile(virtualName, data);
         }
-        if (arg === outputFile) return "output" + outputFile.slice(outputFile.lastIndexOf("."));
-        return arg;
-      });
 
-      const outputName = "output" + outputFile.slice(outputFile.lastIndexOf("."));
-      await ffmpeg.exec(rewrittenArgs);
+        const outputName = "output" + outputFile.slice(outputFile.lastIndexOf("."));
+        const rewrittenArgs = args.map(
+          (arg) => fileNameMap.get(arg) ?? (arg === outputFile ? outputName : arg),
+        );
 
-      const outputData = await ffmpeg.readFile(outputName);
-      fs.writeFileSync(outputFile, Buffer.from(outputData as Uint8Array));
-      ffmpeg.terminate();
+        await ffmpeg.exec(rewrittenArgs);
+
+        const outputData = await ffmpeg.readFile(outputName);
+        fs.writeFileSync(outputFile, Buffer.from(outputData as Uint8Array));
+      } finally {
+        ffmpeg.terminate();
+      }
     },
     catch: (error) => new VideoProcessError({ cause: error }),
   });
@@ -110,8 +112,18 @@ const runFfmpeg = Effect.fn("runFfmpeg")(function* (
     return;
   }
 
+  if (cachedFfmpegMode === "none") {
+    return yield* new VideoProcessError({ cause: "No ffmpeg available (system or wasm)" });
+  }
+
   yield* Effect.logDebug("System ffmpeg not found, using wasm fallback");
-  yield* runWasmFfmpeg(args, inputFiles, outputFile);
+  yield* runWasmFfmpeg(args, inputFiles, outputFile).pipe(
+    Effect.tapError(() =>
+      Effect.sync(() => {
+        cachedFfmpegMode = "none";
+      }),
+    ),
+  );
 });
 
 // HACK: not currently called in the close handler because mpdecimate is too

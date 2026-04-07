@@ -8,7 +8,12 @@ import { Browser } from "../browser";
 import { NavigationError } from "../errors";
 import { frameWithWallpaper, resolveWallpaperPath } from "../video-processor";
 import { evaluateRuntime } from "../utils/evaluate-runtime";
-import { AGENT_OVERLAY_CONTAINER_ID, OVERLAY_REINJECT_TIMEOUT_MS } from "../constants";
+import {
+  AGENT_OVERLAY_CONTAINER_ID,
+  BROWSER_CLOSE_TIMEOUT_MS,
+  OVERLAY_REINJECT_TIMEOUT_MS,
+  VIDEO_PATH_TIMEOUT_MS,
+} from "../constants";
 import type {
   AnnotatedScreenshotOptions,
   BrowserEngine,
@@ -393,13 +398,10 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       const pageVideo = activeSession.page.video();
       const artifactBaseName = `session-${Date.now()}`;
 
-      const CLOSE_TIMEOUT_MS = 10_000;
-      const withTimeout = <T>(promise: Promise<T>) =>
+      const withTimeout = <T>(promise: Promise<T>, timeoutMs: number) =>
         Promise.race([
           promise,
-          new Promise<undefined>((resolve) =>
-            setTimeout(() => resolve(undefined), CLOSE_TIMEOUT_MS),
-          ),
+          new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), timeoutMs)),
         ]);
 
       if (!activeSession.page.isClosed()) {
@@ -411,13 +413,13 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       }
 
       if (activeSession.isExternalBrowser) {
-        yield* Effect.tryPromise(() => withTimeout(activeSession.page.close())).pipe(
-          Effect.catchCause((cause) => Effect.logDebug("Failed to close page", { cause })),
-        );
+        yield* Effect.tryPromise(() =>
+          withTimeout(activeSession.page.close(), BROWSER_CLOSE_TIMEOUT_MS),
+        ).pipe(Effect.catchCause((cause) => Effect.logDebug("Failed to close page", { cause })));
       } else {
-        yield* Effect.tryPromise(() => withTimeout(activeSession.browser.close())).pipe(
-          Effect.catchCause((cause) => Effect.logDebug("Failed to close browser", { cause })),
-        );
+        yield* Effect.tryPromise(() =>
+          withTimeout(activeSession.browser.close(), BROWSER_CLOSE_TIMEOUT_MS),
+        ).pipe(Effect.catchCause((cause) => Effect.logDebug("Failed to close browser", { cause })));
       }
 
       yield* activeSession.cleanup.pipe(
@@ -430,14 +432,8 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       let tmpVideoPath: string | undefined;
 
       if (pageVideo) {
-        const VIDEO_PATH_TIMEOUT_MS = 15_000;
         videoPath = yield* Effect.tryPromise(() =>
-          Promise.race([
-            pageVideo.path(),
-            new Promise<undefined>((resolve) =>
-              setTimeout(() => resolve(undefined), VIDEO_PATH_TIMEOUT_MS),
-            ),
-          ]),
+          withTimeout(pageVideo.path(), VIDEO_PATH_TIMEOUT_MS),
         ).pipe(
           Effect.catchCause((cause) =>
             Effect.logDebug("Failed to resolve Playwright video path", { cause }).pipe(
