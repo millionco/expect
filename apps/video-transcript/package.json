@@ -1,0 +1,43 @@
+{
+  "name": "@expect/video-transcript",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Extract structured interaction transcripts from screen recordings",
+  "type": "module",
+  "bin": {
+    "video-transcript": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "vp pack",
+    "dev": "vp pack --watch",
+    "lint": "vp lint && tsc --noEmit",
+    "format": "vp fmt",
+    "format:check": "vp fmt --check",
+    "check": "vp check",
+    "test": "vp test",
+    "typecheck": "tsgo --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/gateway": "^3.0.88",
+    "ai": "^6.0.146",
+    "commander": "^13.1.0",
+    "effect": "4.0.0-beta.35",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "typescript": "^5.7.0",
+    "vitest": "*"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

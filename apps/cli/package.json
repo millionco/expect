@@ -52,6 +52,7 @@
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
+    "accessibility-checker-engine": "^4.0.16",
     "@agentclientprotocol/claude-agent-acp": "^0.24.2",
     "@effect/atom-react": "4.0.0-beta.35",
     "@effect/platform-node": "4.0.0-beta.35",
