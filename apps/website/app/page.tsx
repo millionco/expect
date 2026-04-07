@@ -910,7 +910,8 @@ function TerminalAnimationView({
         />
         <motion.div
           className="flex flex-col items-start w-68.5 h-46 relative z-10 rounded-2xl pt-4.5 pr-3.75 pb-6.5 pl-3.75 overflow-clip bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]"
-          animate={{ x: 80, scale: terminalFocused ? 1.04 : 1, zIndex: terminalFocused ? 20 : 10 }}
+          style={{ x: 80 }}
+          animate={{ scale: terminalFocused ? 1.04 : 1, zIndex: terminalFocused ? 20 : 10 }}
           transition={{
             type: "spring",
             stiffness: config.terminalSpringStiffness,
