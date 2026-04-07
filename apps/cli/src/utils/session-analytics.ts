@@ -1,5 +1,6 @@
 import { Effect } from "effect";
 import { Analytics, type EventMap } from "@expect/shared/observability";
+import { detectParentAgent } from "@expect/shared/launched-from";
 import { usePreferencesStore } from "../stores/use-preferences";
 
 const analyticsLayer = Analytics.layerPostHog;
@@ -23,10 +24,11 @@ export const trackEvent = <K extends keyof EventMap>(
     ),
   );
 
-export const trackSessionStarted = () =>
+export const trackSessionStarted = (agent: string) =>
   trackEvent("session:started", {
     mode: "interactive",
-    skip_planning: false,
+    agent,
+    parent_agent: detectParentAgent(),
     browser_headed: usePreferencesStore.getState().browserHeaded,
   });
 

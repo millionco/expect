@@ -16,7 +16,7 @@ const MOUSE_DISABLE = "\u001b[?1000l\u001b[?1006l";
 export const renderApp = async (agent: AgentBackend) => {
   usePreferencesStore.getState().setAgentBackend(agent);
   const sessionStartedAt = Date.now();
-  await trackSessionStarted();
+  await trackSessionStarted(agent);
 
   process.stdout.write(ALT_SCREEN_ON);
   process.on("exit", () => process.stdout.write(MOUSE_DISABLE + ALT_SCREEN_OFF));

@@ -2,6 +2,7 @@ import { Config, Effect, Option, Schema, Stream } from "effect";
 import { type ChangesFor, CiResultOutput, CiStepResult } from "@expect/shared/models";
 import { Executor, ExecutedTestPlan, Reporter, Github } from "@expect/supervisor";
 import { Analytics } from "@expect/shared/observability";
+import { detectParentAgent } from "@expect/shared/launched-from";
 import type { AgentBackend } from "@expect/agent";
 import { ExpectTimeoutError } from "expect-sdk/effect";
 import { VERSION, CI_HEARTBEAT_INTERVAL_MS } from "../constants";
@@ -41,7 +42,8 @@ export const runHeadless = (options: HeadlessRunOptions) =>
           const sessionStartedAt = Date.now();
           yield* analytics.capture("session:started", {
             mode: "headless",
-            skip_planning: false,
+            agent: options.agent,
+            parent_agent: detectParentAgent(),
             browser_headed: options.headed,
           });
 

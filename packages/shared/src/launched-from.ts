@@ -11,6 +11,22 @@ const AGENT_ENVIRONMENT_VARIABLES = [
   "AMI",
 ];
 
+const PARENT_AGENT_ENV_MAP: ReadonlyArray<readonly [string, string]> = [
+  ["CLAUDECODE", "claude_code"],
+  ["CURSOR_AGENT", "cursor"],
+  ["CODEX_CI", "codex"],
+  ["OPENCODE", "opencode"],
+  ["AMP_HOME", "amp"],
+  ["AMI", "ami"],
+];
+
+export const detectParentAgent = (): string | undefined => {
+  for (const [envVariable, agentName] of PARENT_AGENT_ENV_MAP) {
+    if (Boolean(process.env[envVariable])) return agentName;
+  }
+  return undefined;
+};
+
 export const detectLaunchedFrom = (): LaunchedFrom => {
   if (CI_ENVIRONMENT_VARIABLES.some((envVariable) => Boolean(process.env[envVariable])))
     return "ci";

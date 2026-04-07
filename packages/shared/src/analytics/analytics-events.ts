@@ -46,7 +46,8 @@ export interface EventMap {
   // Session
   "session:started": {
     readonly mode: "interactive" | "headless";
-    readonly skip_planning: boolean;
+    readonly agent: string;
+    readonly parent_agent: string | undefined;
     readonly browser_headed: boolean;
   };
   "session:ended": { readonly session_ms: number };
