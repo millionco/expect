@@ -1,10 +1,5 @@
 import { Schema } from "effect";
 
-export const McpEnvEntry = Schema.Struct({
-  name: Schema.String,
-  value: Schema.String,
-});
-
 const ModelPreference = Schema.Struct({
   configId: Schema.String,
   value: Schema.String,
