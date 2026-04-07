@@ -52,7 +52,7 @@ interface AnimationConfig {
 const DEFAULT_CONFIG: AnimationConfig = {
   codingDuration: 1150,
   slideDelay: 700,
-  diffDuration: 1250,
+  diffDuration: 2100,
   cursorAppearDelay: 0,
   cursorMoveDelay: 1250,
   cursorClickDelay: 550,
@@ -404,28 +404,18 @@ function TerminalContent({
   );
 }
 
-function BrowserPreview({
-  slid,
-  focused,
-  fixing,
-  fixDiff,
-  reloading,
-  reloadDone,
-  config,
-}: {
-  slid: boolean;
-  focused: boolean;
-  fixing: boolean;
-  fixDiff: boolean;
-  reloading: boolean;
-  reloadDone: boolean;
-  config: AnimationConfig;
-}) {
+function BrowserPreview({ slid, focused, fixing, fixDiff, reloading, reloadDone, config }: { slid: boolean; focused: boolean; fixing: boolean; fixDiff: boolean; reloading: boolean; reloadDone: boolean; config: AnimationConfig }) {
+  const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    if (!slid) return;
-    const timer = setTimeout(() => setLoaded(true), 500);
+    if (!slid) {
+      setLoading(false);
+      setLoaded(false);
+      return;
+    }
+    setLoading(true);
+    const timer = setTimeout(() => setLoaded(true), 600);
     return () => clearTimeout(timer);
   }, [slid]);
 
@@ -437,9 +427,7 @@ function BrowserPreview({
       animate={
         focused
           ? { x: -100, y: -8, scale: 1.04, zIndex: 20 }
-          : slid
-            ? { x: -100, y: -8, scale: 1, zIndex: 0 }
-            : { x: -12, y: -8, scale: 1, zIndex: 0 }
+          : { x: -100, y: -8, scale: 1, zIndex: 0 }
       }
       transition={{
         type: "spring",
@@ -457,10 +445,8 @@ function BrowserPreview({
           </div>
           <div className="w-3.5 shrink-0" />
           <div className="relative w-36.25 h-6.5 rounded-full shrink-0 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#A4A4A452_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] overflow-hidden flex items-center justify-center">
-            <div className="absolute inset-0 flex items-center justify-center text-[12px] text-[#888888] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium">
-              localhost
-            </div>
-            {slid && !loaded && (
+            <div className="absolute inset-0 flex items-center justify-center text-[12px] text-[#888888] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium">localhost</div>
+            {loading && !loaded && (
               <motion.div
                 className="absolute bottom-0 left-0 h-[2.5px] bg-[#007AFF]"
                 initial={{ width: "0%" }}
@@ -468,7 +454,7 @@ function BrowserPreview({
                 transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
               />
             )}
-            {slid && loaded && !reloading && (
+            {loaded && !reloading && (
               <motion.div
                 className="absolute bottom-0 left-0 h-[2.5px] bg-[#007AFF]"
                 initial={{ width: "85%" }}
@@ -513,7 +499,7 @@ function BrowserPreview({
         <motion.div
           className="absolute inset-0 bg-black pointer-events-none rounded-2xl"
           initial={{ opacity: 0 }}
-          animate={{ opacity: (focused || fixing) && !reloading ? 0.015 : 0 }}
+          animate={{ opacity: (focused || fixing) && !reloading ? 0.04 : 0 }}
           transition={{ duration: reloading ? 0.15 : 0.3 }}
         />
         <motion.div
@@ -537,7 +523,7 @@ function BrowserPreview({
 
 function NetworkPanel({ fixed }: { fixed: boolean }) {
   return (
-    <div className="[font-synthesis:none] flex flex-col bg-white [border-top-width:0.5px] border-t-solid border-t-[#E0E0E0] antialiased">
+    <div className="[font-synthesis:none] flex flex-col bg-white antialiased">
       <div className="flex items-center justify-between relative pt-2.75 pr-3 pb-3.5 pl-3.75 h-10.75">
         <div className="left-4.75 top-3.75 w-52.75 h-7 rounded-lg absolute bg-white filter-[grayscale(100%)]" />
         <div className="flex left-0 top-0 items-center gap-1 relative p-0">
@@ -931,17 +917,8 @@ function TerminalIllustration() {
         />
         <motion.div
           className="flex flex-col items-start w-68.5 h-46 relative z-10 rounded-2xl pt-4.5 pr-3.75 pb-6.5 pl-3.75 overflow-clip bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]"
-          animate={
-            slid
-              ? { x: 80, scale: terminalFocused ? 1.04 : 1, zIndex: terminalFocused ? 20 : 10 }
-              : { x: 0, scale: 1, zIndex: 10 }
-          }
-          transition={{
-            type: "spring",
-            stiffness: config.terminalSpringStiffness,
-            damping: config.terminalSpringDamping,
-            mass: config.terminalSpringMass / 1000,
-          }}
+          animate={{ x: 80, scale: terminalFocused ? 1.04 : 1, zIndex: terminalFocused ? 20 : 10 }}
+          transition={{ type: "spring", stiffness: config.terminalSpringStiffness, damping: config.terminalSpringDamping, mass: config.terminalSpringMass / 1000 }}
         >
           <div
             suppressHydrationWarning
