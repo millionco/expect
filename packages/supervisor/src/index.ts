@@ -3,12 +3,9 @@ export { Executor, ExecutionError, type ExecuteOptions } from "./executor";
 export { Reporter } from "./reporter";
 export {
   AgentProvider,
-  type ChangedFile,
   ChangesFor,
   DraftId,
-  type CommitSummary,
   ExecutedTestPlan,
-  type ExecutionEvent,
   FileStat,
   FindRepoRootError,
   formatFileStats,
@@ -16,13 +13,10 @@ export {
   GitError,
   GitRepoRoot,
   GitState,
-  type SavedFlow,
-  type SavedFlowStep,
   TestPlan,
   TestPlanDraft,
   TestPlanStep,
   TestReport,
-  type UpdateContent,
 } from "./git/index";
 export { FlowStorage } from "./flow-storage";
 export type { SavedFlowFileData, SavedFlowEnvironment } from "./types";
