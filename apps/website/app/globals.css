@@ -150,14 +150,6 @@
   }
 }
 
-::selection {
-  color: color(display-p3 0.192 0.431 0.888) !important;
-  text-decoration: underline dotted !important;
-  text-decoration-thickness: 2px !important;
-  text-decoration-color: color(display-p3 0.192 0.431 0.888) !important;
-  text-underline-offset: 4px !important;
-  background: transparent !important;
-}
 
 .replayer-mouse {
   background-image: url("/cursors/default.svg") !important;
