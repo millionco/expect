@@ -1,4 +1,4 @@
-import path from "node:path";
+import * as path from "node:path";
 import * as os from "node:os";
 import { Array as Arr, Effect, Layer, Option, Predicate, Schema, ServiceMap } from "effect";
 import * as FileSystem from "effect/FileSystem";

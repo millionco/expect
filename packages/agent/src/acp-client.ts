@@ -1,6 +1,6 @@
-import { existsSync, readFileSync } from "node:fs";
+import * as fs from "node:fs";
 import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
+import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as acp from "@agentclientprotocol/sdk";
 import {
@@ -175,13 +175,13 @@ const makeRequire = () =>
 
 const resolvePackageDir = (require: NodeRequire, packageName: string): string => {
   try {
-    return dirname(require.resolve(`${packageName}/package.json`));
+    return path.dirname(require.resolve(`${packageName}/package.json`));
   } catch {
     const paths = require.resolve.paths(packageName) ?? [];
     for (const searchPath of paths) {
-      const candidate = join(searchPath, packageName);
+      const candidate = path.join(searchPath, packageName);
       try {
-        const content = JSON.parse(readFileSync(join(candidate, "package.json"), "utf-8"));
+        const content = JSON.parse(fs.readFileSync(path.join(candidate, "package.json"), "utf-8"));
         if (content.name === packageName) return candidate;
       } catch {}
     }
@@ -192,17 +192,17 @@ const resolvePackageDir = (require: NodeRequire, packageName: string): string =>
 const resolvePackageBin = (packageName: string): string => {
   const require = makeRequire();
   const packageDir = resolvePackageDir(require, packageName);
-  const packageJson = JSON.parse(readFileSync(join(packageDir, "package.json"), "utf-8"));
+  const packageJson = JSON.parse(fs.readFileSync(path.join(packageDir, "package.json"), "utf-8"));
 
   if (typeof packageJson.bin === "string") {
-    return join(packageDir, packageJson.bin);
+    return path.join(packageDir, packageJson.bin);
   }
   if (typeof packageJson.bin === "object" && packageJson.bin !== null) {
     const firstBinPath = String(Object.values(packageJson.bin)[0]);
-    return join(packageDir, firstBinPath);
+    return path.join(packageDir, firstBinPath);
   }
   if (packageJson.main) {
-    return join(packageDir, packageJson.main);
+    return path.join(packageDir, packageJson.main);
   }
   throw new Error(`Cannot resolve bin entry for ${packageName}`);
 };
@@ -604,7 +604,7 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
 
     const browserMcpBinPath = (() => {
       const colocated = fileURLToPath(new URL("./browser-mcp.js", import.meta.url));
-      if (existsSync(colocated)) return colocated;
+      if (fs.existsSync(colocated)) return colocated;
       return fileURLToPath(new URL("../../../apps/cli/dist/browser-mcp.js", import.meta.url));
     })();
 

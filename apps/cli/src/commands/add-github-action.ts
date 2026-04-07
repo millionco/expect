@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Effect } from "effect";
 import { detectAvailableAgents, type SupportedAgent } from "@expect/agent";
@@ -200,10 +200,10 @@ export const runAddGithubAction = async (options: AddGithubActionOptions = {}) =
     devUrl = responses.devUrl || devUrl;
   }
 
-  const workflowDir = join(process.cwd(), ".github", "workflows");
-  const workflowPath = join(workflowDir, "expect.yml");
+  const workflowDir = path.join(process.cwd(), ".github", "workflows");
+  const workflowPath = path.join(workflowDir, "expect.yml");
 
-  if (existsSync(workflowPath)) {
+  if (fs.existsSync(workflowPath)) {
     if (!nonInteractive) {
       const response = await prompts({
         type: "confirm",
@@ -222,8 +222,8 @@ export const runAddGithubAction = async (options: AddGithubActionOptions = {}) =
   }
 
   const workflow = generateWorkflow(packageManager, devCommand, devUrl);
-  mkdirSync(workflowDir, { recursive: true });
-  writeFileSync(workflowPath, workflow);
+  fs.mkdirSync(workflowDir, { recursive: true });
+  fs.writeFileSync(workflowPath, workflow);
 
   logger.break();
   logger.success("Created .github/workflows/expect.yml");

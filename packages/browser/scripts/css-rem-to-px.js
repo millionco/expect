@@ -8,14 +8,14 @@
  *
  * Running this after Tailwind makes all values absolute.
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import * as fs from "node:fs";
 
 const BROWSER_DEFAULT_FONT_SIZE_PX = 16;
 const CSS_OUTPUT_PATH = "./dist/overlay.css";
 
-const cssContent = readFileSync(CSS_OUTPUT_PATH, "utf8");
+const cssContent = fs.readFileSync(CSS_OUTPUT_PATH, "utf8");
 const transformedCss = cssContent.replace(
   /(\d*\.?\d+)rem\b/g,
   (_, remValue) => `${parseFloat(remValue) * BROWSER_DEFAULT_FONT_SIZE_PX}px`,
 );
-writeFileSync(CSS_OUTPUT_PATH, transformedCss);
+fs.writeFileSync(CSS_OUTPUT_PATH, transformedCss);

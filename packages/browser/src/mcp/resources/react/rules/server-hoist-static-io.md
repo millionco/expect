@@ -71,16 +71,16 @@ export async function GET(request: Request) {
 ```typescript
 // app/api/og/route.tsx
 import { ImageResponse } from 'next/og'
-import { readFileSync } from 'fs'
-import { join } from 'path'
+import * as fs from 'node:fs'
+import * as path from 'node:path'
 
 // Synchronous read at module level - blocks only during module init
-const fontData = readFileSync(
-  join(process.cwd(), 'public/fonts/Inter.ttf')
+const fontData = fs.readFileSync(
+  path.join(process.cwd(), 'public/fonts/Inter.ttf')
 )
 
-const logoData = readFileSync(
-  join(process.cwd(), 'public/images/logo.png')
+const logoData = fs.readFileSync(
+  path.join(process.cwd(), 'public/images/logo.png')
 )
 
 export async function GET(request: Request) {
@@ -97,7 +97,7 @@ export async function GET(request: Request) {
 **Incorrect (reads config on every call):**
 
 ```typescript
-import fs from "node:fs/promises";
+import * as fs from "node:fs/promises";
 
 export async function processRequest(data: Data) {
   const config = JSON.parse(await fs.readFile("./config.json", "utf-8"));
@@ -110,7 +110,7 @@ export async function processRequest(data: Data) {
 **Correct (hoists config and template to module level):**
 
 ```typescript
-import fs from "node:fs/promises";
+import * as fs from "node:fs/promises";
 
 const configPromise = fs.readFile("./config.json", "utf-8").then(JSON.parse);
 const templatePromise = fs.readFile("./template.html", "utf-8");

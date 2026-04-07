@@ -1,5 +1,5 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const isRelevantMdFile = (relPath) => {
@@ -14,13 +14,13 @@ const isRelevantMdFile = (relPath) => {
 
 const collectMdFiles = (baseDir, dir, prefix = "") => {
   const result = {};
-  for (const entry of readdirSync(join(baseDir, dir))) {
-    const fullPath = join(baseDir, dir, entry);
+  for (const entry of fs.readdirSync(path.join(baseDir, dir))) {
+    const fullPath = path.join(baseDir, dir, entry);
     const relPath = prefix ? `${prefix}/${entry}` : entry;
-    if (statSync(fullPath).isDirectory()) {
-      Object.assign(result, collectMdFiles(baseDir, join(dir, entry), relPath));
+    if (fs.statSync(fullPath).isDirectory()) {
+      Object.assign(result, collectMdFiles(baseDir, path.join(dir, entry), relPath));
     } else if (entry.endsWith(".md") && !entry.startsWith("_") && isRelevantMdFile(relPath)) {
-      result[relPath] = readFileSync(fullPath, "utf-8");
+      result[relPath] = fs.readFileSync(fullPath, "utf-8");
     }
   }
   return result;
@@ -28,6 +28,6 @@ const collectMdFiles = (baseDir, dir, prefix = "") => {
 
 export const buildRulesContent = () => {
   const scriptDir = fileURLToPath(new URL(".", import.meta.url));
-  const resourcesDir = join(scriptDir, "..", "src", "mcp", "resources");
+  const resourcesDir = path.join(scriptDir, "..", "src", "mcp", "resources");
   return JSON.stringify(collectMdFiles(resourcesDir, "."));
 };

@@ -40,6 +40,7 @@ pnpm check
 - kebab-case filenames.
 - Magic numbers go in `constants.ts` as `SCREAMING_SNAKE_CASE` with unit suffixes (`_MS`, `_PX`).
 - One focused utility per file in `utils/`.
+- Namespace imports for Node built-ins `fs`, `os`, and `path` (e.g. `import * as fs from "node:fs"`, `import * as path from "node:path"`), not default or named imports.
 
 ## No Barrel Files
 

@@ -1,15 +1,6 @@
-import {
-  lstatSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  readdirSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 import { describe, expect, it, beforeEach, afterEach } from "vite-plus/test";
 import {
   ensureAgentSkillCopy,
@@ -73,11 +64,11 @@ describe("extractTarEntries", () => {
   let destDir: string;
 
   beforeEach(() => {
-    destDir = mkdtempSync(join(tmpdir(), "tar-test-"));
+    destDir = fs.mkdtempSync(path.join(os.tmpdir(), "tar-test-"));
   });
 
   afterEach(() => {
-    rmSync(destDir, { recursive: true, force: true });
+    fs.rmSync(destDir, { recursive: true, force: true });
   });
 
   it("extracts files matching the prefix", () => {
@@ -88,8 +79,8 @@ describe("extractTarEntries", () => {
 
     extractTarEntries(tar, "repo-main/packages/skill/", destDir);
 
-    expect(readFileSync(join(destDir, "README.md"), "utf8")).toBe("# Skill");
-    expect(readFileSync(join(destDir, "SKILL.md"), "utf8")).toBe("skill content");
+    expect(fs.readFileSync(path.join(destDir, "README.md"), "utf8")).toBe("# Skill");
+    expect(fs.readFileSync(path.join(destDir, "SKILL.md"), "utf8")).toBe("skill content");
   });
 
   it("skips files outside the prefix", () => {
@@ -100,7 +91,7 @@ describe("extractTarEntries", () => {
 
     extractTarEntries(tar, "repo-main/packages/skill/", destDir);
 
-    const files = readdirSync(destDir, { recursive: true });
+    const files = fs.readdirSync(destDir, { recursive: true });
     expect(files).toEqual(["keep.txt"]);
   });
 
@@ -109,14 +100,14 @@ describe("extractTarEntries", () => {
 
     extractTarEntries(tar, "prefix/", destDir);
 
-    expect(readFileSync(join(destDir, "sub", "dir", "file.txt"), "utf8")).toBe("nested");
+    expect(fs.readFileSync(path.join(destDir, "sub", "dir", "file.txt"), "utf8")).toBe("nested");
   });
 
   it("handles empty tar archive", () => {
     const tar = Buffer.alloc(TAR_HEADER_SIZE * 2);
     extractTarEntries(tar, "prefix/", destDir);
 
-    expect(readdirSync(destDir)).toEqual([]);
+    expect(fs.readdirSync(destDir)).toEqual([]);
   });
 });
 
@@ -124,86 +115,92 @@ describe("skill copy installation", () => {
   let projectRoot: string;
 
   beforeEach(() => {
-    projectRoot = mkdtempSync(join(tmpdir(), "expect-skill-link-"));
+    projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), "expect-skill-link-"));
   });
 
   afterEach(() => {
-    rmSync(projectRoot, { recursive: true, force: true });
+    fs.rmSync(projectRoot, { recursive: true, force: true });
   });
 
   it("refreshes an existing expect skill directory with a copied version", () => {
-    const sharedSkillDir = join(projectRoot, ".agents", "skills", "expect");
-    const codexSkillsDir = join(projectRoot, ".codex", "skills");
-    const legacySkillDir = join(codexSkillsDir, "expect");
+    const sharedSkillDir = path.join(projectRoot, ".agents", "skills", "expect");
+    const codexSkillsDir = path.join(projectRoot, ".codex", "skills");
+    const legacySkillDir = path.join(codexSkillsDir, "expect");
 
-    mkdirSync(sharedSkillDir, { recursive: true });
-    mkdirSync(legacySkillDir, { recursive: true });
-    writeFileSync(join(sharedSkillDir, "SKILL.md"), "---\nname: expect\n---\n");
-    writeFileSync(join(legacySkillDir, "SKILL.md"), "---\nname: expect\nold\n---\n");
+    fs.mkdirSync(sharedSkillDir, { recursive: true });
+    fs.mkdirSync(legacySkillDir, { recursive: true });
+    fs.writeFileSync(path.join(sharedSkillDir, "SKILL.md"), "---\nname: expect\n---\n");
+    fs.writeFileSync(path.join(legacySkillDir, "SKILL.md"), "---\nname: expect\nold\n---\n");
 
     expect(ensureAgentSkillCopy(projectRoot, "codex")).toBe("copied");
 
-    const stats = lstatSync(legacySkillDir);
+    const stats = fs.lstatSync(legacySkillDir);
     expect(stats.isDirectory()).toBe(true);
-    expect(readFileSync(join(legacySkillDir, "SKILL.md"), "utf8")).toBe("---\nname: expect\n---\n");
+    expect(fs.readFileSync(path.join(legacySkillDir, "SKILL.md"), "utf8")).toBe(
+      "---\nname: expect\n---\n",
+    );
   });
 
   it("refuses to replace non-skill directories at the expect skill path", () => {
-    const sharedSkillDir = join(projectRoot, ".agents", "skills", "expect");
-    const cursorSkillsDir = join(projectRoot, ".cursor", "skills");
-    const unrelatedSkillDir = join(cursorSkillsDir, "expect");
+    const sharedSkillDir = path.join(projectRoot, ".agents", "skills", "expect");
+    const cursorSkillsDir = path.join(projectRoot, ".cursor", "skills");
+    const unrelatedSkillDir = path.join(cursorSkillsDir, "expect");
 
-    mkdirSync(sharedSkillDir, { recursive: true });
-    mkdirSync(unrelatedSkillDir, { recursive: true });
-    writeFileSync(join(sharedSkillDir, "SKILL.md"), "---\nname: expect\n---\n");
-    writeFileSync(join(unrelatedSkillDir, "README.md"), "custom");
+    fs.mkdirSync(sharedSkillDir, { recursive: true });
+    fs.mkdirSync(unrelatedSkillDir, { recursive: true });
+    fs.writeFileSync(path.join(sharedSkillDir, "SKILL.md"), "---\nname: expect\n---\n");
+    fs.writeFileSync(path.join(unrelatedSkillDir, "README.md"), "custom");
 
     const result = ensureAgentSkillCopy(projectRoot, "cursor");
     expect(result).toContain("is not an expect skill directory");
-    expect(lstatSync(unrelatedSkillDir).isDirectory()).toBe(true);
+    expect(fs.lstatSync(unrelatedSkillDir).isDirectory()).toBe(true);
   });
 
   it("replaces stale skill directories that contain SKILL.md", () => {
-    const sharedSkillDir = join(projectRoot, ".agents", "skills", "expect");
-    const cursorSkillsDir = join(projectRoot, ".cursor", "skills");
-    const staleSkillDir = join(cursorSkillsDir, "expect");
+    const sharedSkillDir = path.join(projectRoot, ".agents", "skills", "expect");
+    const cursorSkillsDir = path.join(projectRoot, ".cursor", "skills");
+    const staleSkillDir = path.join(cursorSkillsDir, "expect");
 
-    mkdirSync(sharedSkillDir, { recursive: true });
-    mkdirSync(staleSkillDir, { recursive: true });
-    writeFileSync(join(sharedSkillDir, "SKILL.md"), "---\nname: expect\n---\n");
-    writeFileSync(join(staleSkillDir, "SKILL.md"), "old content");
+    fs.mkdirSync(sharedSkillDir, { recursive: true });
+    fs.mkdirSync(staleSkillDir, { recursive: true });
+    fs.writeFileSync(path.join(sharedSkillDir, "SKILL.md"), "---\nname: expect\n---\n");
+    fs.writeFileSync(path.join(staleSkillDir, "SKILL.md"), "old content");
 
     expect(ensureAgentSkillCopy(projectRoot, "cursor")).toBe("copied");
-    expect(lstatSync(staleSkillDir).isDirectory()).toBe(true);
-    expect(readFileSync(join(staleSkillDir, "SKILL.md"), "utf8")).toBe("---\nname: expect\n---\n");
+    expect(fs.lstatSync(staleSkillDir).isDirectory()).toBe(true);
+    expect(fs.readFileSync(path.join(staleSkillDir, "SKILL.md"), "utf8")).toBe(
+      "---\nname: expect\n---\n",
+    );
   });
 
   it("keeps existing matching copied skill directories untouched", () => {
-    const sharedSkillDir = join(projectRoot, ".agents", "skills", "expect");
-    const opencodeSkillsDir = join(projectRoot, ".opencode", "skills");
-    const installedSkillDir = join(opencodeSkillsDir, "expect");
+    const sharedSkillDir = path.join(projectRoot, ".agents", "skills", "expect");
+    const opencodeSkillsDir = path.join(projectRoot, ".opencode", "skills");
+    const installedSkillDir = path.join(opencodeSkillsDir, "expect");
 
-    mkdirSync(sharedSkillDir, { recursive: true });
-    mkdirSync(opencodeSkillsDir, { recursive: true });
-    writeFileSync(join(sharedSkillDir, "SKILL.md"), "---\nname: expect\n---\n");
-    mkdirSync(installedSkillDir, { recursive: true });
-    writeFileSync(join(installedSkillDir, "SKILL.md"), "---\nname: expect\n---\n");
+    fs.mkdirSync(sharedSkillDir, { recursive: true });
+    fs.mkdirSync(opencodeSkillsDir, { recursive: true });
+    fs.writeFileSync(path.join(sharedSkillDir, "SKILL.md"), "---\nname: expect\n---\n");
+    fs.mkdirSync(installedSkillDir, { recursive: true });
+    fs.writeFileSync(path.join(installedSkillDir, "SKILL.md"), "---\nname: expect\n---\n");
 
     expect(ensureAgentSkillCopy(projectRoot, "opencode")).toBe("already-copied");
   });
 
   it("replaces symlinks with fresh copied skill directories", () => {
-    const sharedSkillDir = join(projectRoot, ".agents", "skills", "expect");
-    const cursorSkillsDir = join(projectRoot, ".cursor", "skills");
-    const symlinkPath = join(cursorSkillsDir, "expect");
+    const sharedSkillDir = path.join(projectRoot, ".agents", "skills", "expect");
+    const cursorSkillsDir = path.join(projectRoot, ".cursor", "skills");
+    const symlinkPath = path.join(cursorSkillsDir, "expect");
 
-    mkdirSync(sharedSkillDir, { recursive: true });
-    mkdirSync(cursorSkillsDir, { recursive: true });
-    writeFileSync(join(sharedSkillDir, "SKILL.md"), "---\nname: expect\n---\n");
-    symlinkSync("../../missing/expect", symlinkPath);
+    fs.mkdirSync(sharedSkillDir, { recursive: true });
+    fs.mkdirSync(cursorSkillsDir, { recursive: true });
+    fs.writeFileSync(path.join(sharedSkillDir, "SKILL.md"), "---\nname: expect\n---\n");
+    fs.symlinkSync("../../missing/expect", symlinkPath);
 
     expect(ensureAgentSkillCopy(projectRoot, "cursor")).toBe("copied");
-    expect(lstatSync(symlinkPath).isDirectory()).toBe(true);
-    expect(readFileSync(join(symlinkPath, "SKILL.md"), "utf8")).toBe("---\nname: expect\n---\n");
+    expect(fs.lstatSync(symlinkPath).isDirectory()).toBe(true);
+    expect(fs.readFileSync(path.join(symlinkPath, "SKILL.md"), "utf8")).toBe(
+      "---\nname: expect\n---\n",
+    );
   });
 });

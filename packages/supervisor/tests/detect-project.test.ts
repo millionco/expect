@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { Effect } from "effect";
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 import { detectProject } from "../src/detect-project";
 
 const run = (projectRoot: string) =>
@@ -12,19 +12,19 @@ const run = (projectRoot: string) =>
 let tempDir: string;
 
 beforeEach(() => {
-  tempDir = mkdtempSync(join(tmpdir(), "detect-project-"));
+  tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "detect-project-"));
 });
 
 afterEach(() => {
-  rmSync(tempDir, { recursive: true, force: true });
+  fs.rmSync(tempDir, { recursive: true, force: true });
 });
 
 const writePackageJson = (content: Record<string, unknown>) => {
-  writeFileSync(join(tempDir, "package.json"), JSON.stringify(content));
+  fs.writeFileSync(path.join(tempDir, "package.json"), JSON.stringify(content));
 };
 
 const writeFile = (relativePath: string, content: string) => {
-  writeFileSync(join(tempDir, relativePath), content);
+  fs.writeFileSync(path.join(tempDir, relativePath), content);
 };
 
 describe("detectProject", () => {

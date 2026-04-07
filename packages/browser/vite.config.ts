@@ -1,5 +1,5 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite-plus";
 
@@ -11,18 +11,18 @@ const collectMdFiles = (
   prefix: string = "",
 ): Record<string, string> => {
   const result: Record<string, string> = {};
-  for (const entry of readdirSync(join(baseDir, dir))) {
-    const fullPath = join(baseDir, dir, entry);
+  for (const entry of fs.readdirSync(path.join(baseDir, dir))) {
+    const fullPath = path.join(baseDir, dir, entry);
     const relPath = prefix ? `${prefix}/${entry}` : entry;
-    if (statSync(fullPath).isDirectory()) {
-      Object.assign(result, collectMdFiles(baseDir, join(dir, entry), relPath));
+    if (fs.statSync(fullPath).isDirectory()) {
+      Object.assign(result, collectMdFiles(baseDir, path.join(dir, entry), relPath));
     } else if (entry.endsWith(".md") && !entry.startsWith("_")) {
       const parts = relPath.split("/");
       const isRule = relPath.endsWith("/rule.md") || relPath === "rule.md";
       const parentDir = parts.length >= 2 ? parts[parts.length - 2] : "";
       const isSubRule = parentDir === "rules" || parentDir === "references";
       if (isRule || isSubRule) {
-        result[relPath] = readFileSync(fullPath, "utf-8");
+        result[relPath] = fs.readFileSync(fullPath, "utf-8");
       }
     }
   }
@@ -31,7 +31,7 @@ const collectMdFiles = (
 
 const buildRulesContent = (): string => {
   const configDir = fileURLToPath(new URL(".", import.meta.url));
-  const resourcesDir = join(configDir, "src", "mcp", "resources");
+  const resourcesDir = path.join(configDir, "src", "mcp", "resources");
   return JSON.stringify(collectMdFiles(resourcesDir, "."));
 };
 

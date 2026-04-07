@@ -1,5 +1,5 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { basename, join, resolve } from "node:path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { Predicate } from "effect";
 import { LOCK_FILE_TO_AGENT, PROJECT_SCAN_MAX_DEPTH, type PackageManager } from "../constants";
 
@@ -68,10 +68,10 @@ const IGNORED_DIRECTORIES = new Set([
 ]);
 
 const readPackageJson = (projectPath: string): Record<string, unknown> | undefined => {
-  const packageJsonPath = join(projectPath, "package.json");
-  if (!existsSync(packageJsonPath)) return undefined;
+  const packageJsonPath = path.join(projectPath, "package.json");
+  if (!fs.existsSync(packageJsonPath)) return undefined;
   try {
-    const parsed: unknown = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
+    const parsed: unknown = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
     return Predicate.isObject(parsed) ? (parsed as Record<string, unknown>) : undefined;
   } catch {
     return undefined;
@@ -125,14 +125,14 @@ const extractPortFromCommand = (command: string): number | undefined => {
 };
 
 const detectPackageManager = (projectPath: string): PackageManager => {
-  let current = resolve(projectPath);
-  const root = resolve("/");
+  let current = path.resolve(projectPath);
+  const root = path.resolve("/");
 
   while (current !== root) {
     for (const [lockFile, manager] of Object.entries(LOCK_FILE_TO_AGENT)) {
-      if (existsSync(join(current, lockFile))) return manager;
+      if (fs.existsSync(path.join(current, lockFile))) return manager;
     }
-    const parent = resolve(current, "..");
+    const parent = path.resolve(current, "..");
     if (parent === current) break;
     current = parent;
   }
@@ -150,7 +150,7 @@ const buildProject = (projectPath: string): DetectedProject | undefined => {
   const devCommand = getDevCommand(packageJson);
   const commandPort = devCommand ? extractPortFromCommand(devCommand) : undefined;
   const name =
-    typeof packageJson["name"] === "string" ? packageJson["name"] : basename(projectPath);
+    typeof packageJson["name"] === "string" ? packageJson["name"] : path.basename(projectPath);
 
   return {
     name,
@@ -165,10 +165,10 @@ const buildProject = (projectPath: string): DetectedProject | undefined => {
 const getWorkspacePatterns = (projectRoot: string): string[] => {
   const patterns: string[] = [];
 
-  const pnpmWorkspacePath = join(projectRoot, "pnpm-workspace.yaml");
-  if (existsSync(pnpmWorkspacePath)) {
+  const pnpmWorkspacePath = path.join(projectRoot, "pnpm-workspace.yaml");
+  if (fs.existsSync(pnpmWorkspacePath)) {
     try {
-      const content = readFileSync(pnpmWorkspacePath, "utf-8");
+      const content = fs.readFileSync(pnpmWorkspacePath, "utf-8");
       let inPackages = false;
 
       for (const line of content.split("\n")) {
@@ -215,28 +215,30 @@ const getWorkspacePatterns = (projectRoot: string): string[] => {
 const expandPattern = (projectRoot: string, pattern: string): string[] => {
   const isGlob = pattern.endsWith("/*");
   const cleanPattern = pattern.replace(/\/\*$/, "");
-  const basePath = join(projectRoot, cleanPattern);
+  const basePath = path.join(projectRoot, cleanPattern);
 
-  if (!existsSync(basePath)) return [];
+  if (!fs.existsSync(basePath)) return [];
 
   if (!isGlob) {
-    return existsSync(join(basePath, "package.json")) ? [basePath] : [];
+    return fs.existsSync(path.join(basePath, "package.json")) ? [basePath] : [];
   }
 
   try {
-    return readdirSync(basePath, { withFileTypes: true })
+    return fs
+      .readdirSync(basePath, { withFileTypes: true })
       .filter(
-        (entry) => entry.isDirectory() && existsSync(join(basePath, entry.name, "package.json")),
+        (entry) =>
+          entry.isDirectory() && fs.existsSync(path.join(basePath, entry.name, "package.json")),
       )
-      .map((entry) => join(basePath, entry.name));
+      .map((entry) => path.join(basePath, entry.name));
   } catch {
     return [];
   }
 };
 
 const hasMonorepoMarkers = (projectRoot: string): boolean => {
-  if (existsSync(join(projectRoot, "pnpm-workspace.yaml"))) return true;
-  if (existsSync(join(projectRoot, "lerna.json"))) return true;
+  if (fs.existsSync(path.join(projectRoot, "pnpm-workspace.yaml"))) return true;
+  if (fs.existsSync(path.join(projectRoot, "lerna.json"))) return true;
 
   const packageJson = readPackageJson(projectRoot);
   return Boolean(packageJson?.["workspaces"]);
@@ -261,17 +263,17 @@ const scanDirectory = (
   maxDepth: number,
   currentDepth: number = 0,
 ): DetectedProject[] => {
-  if (currentDepth >= maxDepth || !existsSync(directory)) return [];
+  if (currentDepth >= maxDepth || !fs.existsSync(directory)) return [];
 
   const projects: DetectedProject[] = [];
 
   try {
-    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
       if (!entry.isDirectory()) continue;
       if (IGNORED_DIRECTORIES.has(entry.name)) continue;
       if (entry.name.startsWith(".")) continue;
 
-      const entryPath = join(directory, entry.name);
+      const entryPath = path.join(directory, entry.name);
       const project = buildProject(entryPath);
       if (project) {
         projects.push(project);
@@ -288,20 +290,20 @@ const scanDirectory = (
 };
 
 const scanSiblingProjects = (rootPath: string): DetectedProject[] => {
-  const parentDir = join(rootPath, "..");
-  const resolvedParent = resolve(parentDir);
+  const parentDir = path.join(rootPath, "..");
+  const resolvedParent = path.resolve(parentDir);
   if (resolvedParent === rootPath) return [];
 
   const projects: DetectedProject[] = [];
 
   try {
-    for (const entry of readdirSync(resolvedParent, { withFileTypes: true })) {
+    for (const entry of fs.readdirSync(resolvedParent, { withFileTypes: true })) {
       if (!entry.isDirectory()) continue;
       if (IGNORED_DIRECTORIES.has(entry.name)) continue;
       if (entry.name.startsWith(".")) continue;
 
-      const entryPath = join(resolvedParent, entry.name);
-      if (resolve(entryPath) === rootPath) continue;
+      const entryPath = path.join(resolvedParent, entry.name);
+      if (path.resolve(entryPath) === rootPath) continue;
 
       const project = buildProject(entryPath);
       if (project) {
@@ -321,13 +323,13 @@ const scanSiblingProjects = (rootPath: string): DetectedProject[] => {
 };
 
 export const detectNearbyProjects = (rootPath: string = process.cwd()): DetectedProject[] => {
-  const resolvedRoot = resolve(rootPath);
+  const resolvedRoot = path.resolve(rootPath);
   const projects: DetectedProject[] = [];
   const seenPaths = new Set<string>();
 
   const addProjects = (found: DetectedProject[]) => {
     for (const project of found) {
-      const normalized = resolve(project.path);
+      const normalized = path.resolve(project.path);
       if (seenPaths.has(normalized)) continue;
       seenPaths.add(normalized);
       projects.push(project);

@@ -1,7 +1,7 @@
 // HACK: Fallback for Chromium cookie extraction when CDP (headless browser) fails.
 // Reads the SQLite cookie database directly and decrypts values using
 // platform-specific key retrieval (macOS Keychain, Linux secret-tool, Windows DPAPI).
-import path from "node:path";
+import * as path from "node:path";
 import * as os from "node:os";
 import { Effect, Layer, Schema, ServiceMap } from "effect";
 import * as FileSystem from "effect/FileSystem";

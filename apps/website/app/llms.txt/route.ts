@@ -1,9 +1,9 @@
-import { readFileSync } from "fs";
+import * as fs from "node:fs";
 import { NextResponse } from "next/server";
-import { join } from "path";
+import * as path from "node:path";
 
-const skill = readFileSync(
-  join(process.cwd(), "..", "..", "packages", "expect-skill", "SKILL.md"),
+const skill = fs.readFileSync(
+  path.join(process.cwd(), "..", "..", "packages", "expect-skill", "SKILL.md"),
   "utf-8",
 ).replace(/^---[\s\S]*?---\n+/, "");
 

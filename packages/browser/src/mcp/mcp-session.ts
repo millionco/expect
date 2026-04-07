@@ -1,4 +1,4 @@
-import path from "node:path";
+import * as path from "node:path";
 import type { Browser as PlaywrightBrowser, BrowserContext, Page } from "playwright";
 import { Config, Deferred, Effect, Layer, Option, Ref, ServiceMap } from "effect";
 import type { Cookie } from "@expect/cookies";

@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
-import path from "node:path";
+import * as path from "node:path";
 // @ts-expect-error node:sqlite lacks type declarations
 import * as sqlite from "node:sqlite";
 import { assert, describe, it } from "vite-plus/test";

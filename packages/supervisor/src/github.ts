@@ -2,7 +2,7 @@ import { Array as Arr, Effect, Layer, Match, Option, Schema, ServiceMap } from "
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { ChildProcess } from "effect/unstable/process";
 import { ChildProcessSpawner } from "effect/unstable/process/ChildProcessSpawner";
-import { join } from "node:path";
+import * as path from "node:path";
 import { COMMENT_DIRECTORY_PREFIX, GITHUB_TIMEOUT_MS, PR_LIMIT } from "./constants";
 import { FileSystem } from "effect/FileSystem";
 import {
@@ -112,7 +112,7 @@ export class Github extends ServiceMap.Service<Github>()("@supervisor/GitHub", {
           const dir = yield* fileSystem.makeTempDirectoryScoped({
             prefix: COMMENT_DIRECTORY_PREFIX,
           });
-          const bodyPath = join(dir, "pull-request-comment.md");
+          const bodyPath = path.join(dir, "pull-request-comment.md");
           yield* fileSystem.writeFileString(bodyPath, body);
           yield* runGhCommand(cwd, [
             "pr",
@@ -155,7 +155,7 @@ export class Github extends ServiceMap.Service<Github>()("@supervisor/GitHub", {
           const dir = yield* fileSystem.makeTempDirectoryScoped({
             prefix: COMMENT_DIRECTORY_PREFIX,
           });
-          const bodyPath = join(dir, "pull-request-comment.json");
+          const bodyPath = path.join(dir, "pull-request-comment.json");
           yield* fileSystem.writeFileString(bodyPath, JSON.stringify({ body }));
           yield* runGhCommand(cwd, [
             "api",

@@ -1,11 +1,11 @@
-import { describe, it, expect } from "vite-plus/test";
-import { readFileSync, readdirSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { describe, it } from "vite-plus/test";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const cliRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
-const distDir = join(cliRoot, "dist");
-const packageJson = JSON.parse(readFileSync(join(cliRoot, "package.json"), "utf-8"));
+const cliRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+const distDir = path.join(cliRoot, "dist");
+const packageJson = JSON.parse(fs.readFileSync(path.join(cliRoot, "package.json"), "utf-8"));
 
 const declaredDeps = new Set([
   ...Object.keys(packageJson.dependencies ?? {}),
@@ -27,9 +27,9 @@ const declaredDeps = new Set([
  *     detected via try/catch context: try:()=>{let t=Fn(`pkg`)
  */
 const extractRuntimeResolvedPackages = (): string[] => {
-  const distFiles = readdirSync(distDir).filter(
-    (file) => file.endsWith(".js") && !file.endsWith(".map"),
-  );
+  const distFiles = fs
+    .readdirSync(distDir)
+    .filter((file) => file.endsWith(".js") && !file.endsWith(".map"));
   const patterns = [
     /\.resolve\(["']([^"']+)["']\)/g,
     /\.resolve\(`([^`$]+)`\)/g,
@@ -39,7 +39,7 @@ const extractRuntimeResolvedPackages = (): string[] => {
   const packages = new Set<string>();
 
   for (const file of distFiles) {
-    const content = readFileSync(join(distDir, file), "utf-8");
+    const content = fs.readFileSync(path.join(distDir, file), "utf-8");
     for (const pattern of patterns) {
       let match: RegExpExecArray | null;
       while ((match = pattern.exec(content)) !== null) {

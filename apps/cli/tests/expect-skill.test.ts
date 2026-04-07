@@ -1,6 +1,6 @@
-import { mkdirSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 import { Effect } from "effect";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import {
@@ -24,19 +24,19 @@ describe("expect-skill", () => {
   let projectRoot: string;
 
   beforeEach(() => {
-    projectRoot = mkdtempSync(join(tmpdir(), "expect-skill-"));
+    projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), "expect-skill-"));
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
-    rmSync(projectRoot, { recursive: true, force: true });
+    fs.rmSync(projectRoot, { recursive: true, force: true });
   });
 
   it("reports the installed skill as current when the bundled file matches upstream", async () => {
     const installedSkill = makeSkillFile("2.2.0", "same skill");
-    const skillDir = join(projectRoot, AGENTS_SKILLS_DIR, SKILL_NAME);
-    mkdirSync(skillDir, { recursive: true });
-    writeFileSync(join(skillDir, "SKILL.md"), installedSkill);
+    const skillDir = path.join(projectRoot, AGENTS_SKILLS_DIR, SKILL_NAME);
+    fs.mkdirSync(skillDir, { recursive: true });
+    fs.writeFileSync(path.join(skillDir, "SKILL.md"), installedSkill);
 
     vi.stubGlobal(
       "fetch",
@@ -59,9 +59,9 @@ describe("expect-skill", () => {
   it("reports the installed skill as outdated when the upstream file differs", async () => {
     const installedSkill = makeSkillFile("2.1.0", "old skill");
     const latestSkill = makeSkillFile("2.2.0", "new skill");
-    const skillDir = join(projectRoot, AGENTS_SKILLS_DIR, SKILL_NAME);
-    mkdirSync(skillDir, { recursive: true });
-    writeFileSync(join(skillDir, "SKILL.md"), installedSkill);
+    const skillDir = path.join(projectRoot, AGENTS_SKILLS_DIR, SKILL_NAME);
+    fs.mkdirSync(skillDir, { recursive: true });
+    fs.writeFileSync(path.join(skillDir, "SKILL.md"), installedSkill);
 
     vi.stubGlobal(
       "fetch",
@@ -82,12 +82,12 @@ describe("expect-skill", () => {
   });
 
   it("detects which installed agents already have the expect skill directory", () => {
-    const claudeSkillsDir = join(projectRoot, ".claude", "skills");
-    mkdirSync(claudeSkillsDir, { recursive: true });
-    mkdirSync(join(claudeSkillsDir, SKILL_NAME), { recursive: true });
+    const claudeSkillsDir = path.join(projectRoot, ".claude", "skills");
+    fs.mkdirSync(claudeSkillsDir, { recursive: true });
+    fs.mkdirSync(path.join(claudeSkillsDir, SKILL_NAME), { recursive: true });
 
-    const cursorSkillsDir = join(projectRoot, ".cursor", "skills");
-    mkdirSync(cursorSkillsDir, { recursive: true });
+    const cursorSkillsDir = path.join(projectRoot, ".cursor", "skills");
+    fs.mkdirSync(cursorSkillsDir, { recursive: true });
 
     const installedAgents = detectInstalledSkillAgents(projectRoot, ["claude", "cursor", "codex"]);
 
@@ -95,9 +95,9 @@ describe("expect-skill", () => {
   });
 
   it("treats an agent-local skill install as already installed", () => {
-    const claudeSkillDir = join(projectRoot, ".claude", "skills", SKILL_NAME);
-    mkdirSync(claudeSkillDir, { recursive: true });
-    writeFileSync(join(claudeSkillDir, "SKILL.md"), makeSkillFile("2.2.0", "same skill"));
+    const claudeSkillDir = path.join(projectRoot, ".claude", "skills", SKILL_NAME);
+    fs.mkdirSync(claudeSkillDir, { recursive: true });
+    fs.writeFileSync(path.join(claudeSkillDir, "SKILL.md"), makeSkillFile("2.2.0", "same skill"));
 
     expect(hasInstalledExpectSkill(projectRoot, ["claude", "cursor"])).toBe(true);
   });

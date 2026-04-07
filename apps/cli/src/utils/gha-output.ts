@@ -1,5 +1,5 @@
 import { Config, Effect, Option } from "effect";
-import { appendFileSync } from "node:fs";
+import * as fs from "node:fs";
 
 export const writeGhaOutputs = Effect.fn("GhaOutput.writeGhaOutputs")(function* (
   status: string,
@@ -17,7 +17,9 @@ export const writeGhaOutputs = Effect.fn("GhaOutput.writeGhaOutputs")(function* 
     outputLines.push(`replay_path=${replayPath}`);
   }
 
-  yield* Effect.sync(() => appendFileSync(githubOutputPath.value, outputLines.join("\n") + "\n"));
+  yield* Effect.sync(() =>
+    fs.appendFileSync(githubOutputPath.value, outputLines.join("\n") + "\n"),
+  );
 });
 
 export const writeGhaStepSummary = Effect.fn("GhaOutput.writeGhaStepSummary")(function* (
@@ -45,5 +47,5 @@ export const writeGhaStepSummary = Effect.fn("GhaOutput.writeGhaStepSummary")(fu
   const fence = "`".repeat(maxBacktickRun + 1);
   const summary = `## expect test results\n\n${badge}\n\n${fence}\n${reportText}\n${fence}\n${artifactSection}`;
 
-  yield* Effect.sync(() => appendFileSync(summaryPath.value, summary));
+  yield* Effect.sync(() => fs.appendFileSync(summaryPath.value, summary));
 });

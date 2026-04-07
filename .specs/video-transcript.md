@@ -74,14 +74,14 @@ Screen recordings have dead time — starting the recorder, reading content, thi
 ```ts
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
-import { readFileSync } from "node:fs";
+import * as fs from "node:fs";
 
 const { text } = await generateText({
   model: google("gemini-2.5-flash"),
   messages: [{
     role: "user",
     content: [
-      { type: "file", data: readFileSync(videoPath), mimeType: "video/mp4" },
+      { type: "file", data: fs.readFileSync(videoPath), mimeType: "video/mp4" },
       { type: "text", text: transcriptPrompt },
     ],
   }],

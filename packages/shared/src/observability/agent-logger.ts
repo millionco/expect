@@ -1,6 +1,6 @@
 import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem";
 import { Effect, FileSystem, Layer, Logger } from "effect";
-import path from "node:path";
+import * as path from "node:path";
 
 const LOG_FILE = path.join(process.cwd(), ".expect", "logs.md");
 

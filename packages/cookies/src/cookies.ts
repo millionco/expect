@@ -1,4 +1,4 @@
-import path from "node:path";
+import * as path from "node:path";
 import { Effect, Layer, Match, Option, Schema, SchemaGetter, ServiceMap } from "effect";
 import * as FileSystem from "effect/FileSystem";
 import * as NodeServices from "@effect/platform-node/NodeServices";

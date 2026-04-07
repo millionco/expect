@@ -1,4 +1,4 @@
-import path from "node:path";
+import * as path from "node:path";
 import * as os from "node:os";
 import { parse } from "ini";
 import { Effect, Layer, Predicate, Schema, ServiceMap } from "effect";
