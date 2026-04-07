@@ -134,11 +134,19 @@ const probeCdpPorts = async (): Promise<number | undefined> => {
   return undefined;
 };
 
+const USAGE_PROMPTS = [
+  "Run /expect to test my changes in the browser",
+  "Run /expect to smoke test the app end to end",
+  "Run /expect to check for regressions after my changes",
+];
+
 const logUsageGuide = () => {
   logger.break();
-  logger.log("  Copy this into your coding agent to get started:");
+  logger.log("  Copy one of these into your coding agent to get started:");
   logger.break();
-  logger.log(`     ${highlighter.info("Run /expect to test my changes in the browser")}`);
+  for (const prompt of USAGE_PROMPTS) {
+    logger.log(`     ${highlighter.info(prompt)}`);
+  }
   logger.break();
 };
 
