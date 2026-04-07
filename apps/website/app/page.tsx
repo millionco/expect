@@ -456,8 +456,16 @@ function AnimatedCursor({ visible, onBrowser, onTerminal, clicking, clickingTerm
     >
       <motion.svg
         width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '40px', height: 'auto' }}
-        animate={{ scale: (clicking || clickingTerminal) ? 0.85 : 1 }}
-        transition={{ duration: config.clickDuration / 1000, ease: "easeOut" }}
+        animate={
+          isAlert
+            ? { scale: 1, x: [0, -3, 3, -2, 2, -1, 1, 0] }
+            : { scale: (clicking || clickingTerminal) ? 0.85 : 1, x: 0 }
+        }
+        transition={
+          isAlert
+            ? { x: { duration: 0.4, ease: "easeOut" }, scale: { duration: config.clickDuration / 1000, ease: "easeOut" } }
+            : { duration: config.clickDuration / 1000, ease: "easeOut" }
+        }
       >
         <g filter="url(#filter0_d_4_7)">
           <path d="M2.58591 2.58594C3.14041 2.03143 3.96783 1.85171 4.70212 2.12695L15.7021 6.25195C16.5219 6.55937 17.0468 7.36516 16.997 8.23926C16.9471 9.11309 16.3344 9.85306 15.4853 10.0654L11.1484 11.1484L10.0654 15.4854C9.85303 16.3345 9.11306 16.9471 8.23923 16.9971C7.36513 17.0469 6.55934 16.5219 6.25192 15.7021L2.12692 4.70215C1.85168 3.96786 2.0314 3.14045 2.58591 2.58594Z" fill="white" stroke="white" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"/>
@@ -620,7 +628,7 @@ export default function () {
   };
   return (
     <div className="[font-synthesis:none] overflow-x-clip antialiased min-h-screen bg-white flex flex-col items-center">
-      <DialRoot position="top-right" />
+      <DialRoot position="top-right" theme="dark" />
       <div className="w-full pb-6">
         <div className="w-112.75 mx-auto pt-2">
           <TerminalIllustration />
@@ -629,7 +637,7 @@ export default function () {
       <div className="relative w-112.75 pb-20">
         <div className="h-[0.5px] w-107.25 bg-[#EEEEEE] mt-1" />
         <div className="flex flex-col gap-2.5 mt-8">
-          <div className="w-112.75 tracking-[-0.03em] [white-space-collapse:preserve] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[22px]/9.5 text-[color(display-p3_0.248_0.248_0.248)]">
+          <div className="w-112.75 tracking-[-0.03em] [white-space-collapse:preserve] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[21px]/9.5 text-[color(display-p3_0.248_0.248_0.248)]">
             Expect more from your agents
           </div>
           <div className="[letter-spacing:0em] w-102 [white-space-collapse:preserve] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[15px]/5.75 text-[#707070]">
@@ -637,9 +645,6 @@ export default function () {
           </div>
         </div>
         <div className="flex flex-col gap-2.75 mt-6">
-          <div className="[letter-spacing:0em] [white-space-collapse:preserve] w-max font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[15px]/5.75 text-[#454545]">
-            Install the skill to get started
-          </div>
           <div onClick={handleSelectCommand} className="items-center flex [font-synthesis-small-caps:none] [font-synthesis-style:none] [font-synthesis-weight:none] justify-between w-107.25 rounded-[11px] pt-2.75 pr-3 pb-2.75 pl-3.5 overflow-clip cursor-text [box-shadow:#C9C9C933_0px_2px_3px,#E9E9E9_0px_0px_0px_0.75px] transition-colors hover:bg-[color(display-p3_0.991_0.991_0.991)]" style={{ backgroundImage: 'linear-gradient(in oklab 180deg, oklab(100% 0 0) 0%, oklab(100% 0 0 / 0%) 100%)' }}>
             <div className="items-start flex min-w-0 gap-1">
               <div className="shrink-0 [letter-spacing:0px] w-3.75 font-['JetBrains_Mono',system-ui,sans-serif] font-medium text-sm/4.5 text-[#5C5C5C]">
@@ -723,7 +728,8 @@ export default function () {
             checks metadata
           </div>
         </div>
-        <div className="flex flex-col w-107.25 mt-8">
+        <div className="flex flex-col w-107.25 mt-14">
+          <div className="[letter-spacing:0em] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[15px]/5.75 text-[color(display-p3_0.248_0.248_0.248)] mb-2.75">FAQ</div>
           <div className="h-[0.5px] self-stretch shrink-0 bg-[#DDDDDD] mb-2.75" />
           {[
             { question: "How is this different from Puppeteer / Playwright / Cypress?", answer: "Instead of writing scripts, maintaining selectors, and wiring up assertions, Expect reads your code changes and tests them in a real browser automatically. It's like giving your agent QA superpowers." },
