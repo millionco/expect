@@ -37,12 +37,22 @@ let ffmpegProbed = false;
 const resolveFfmpegPath = (): string | undefined => {
   if (ffmpegProbed) return cachedFfmpegPath;
   ffmpegProbed = true;
-  const resolved = which.sync("ffmpeg", { nothrow: true });
-  if (!resolved) return undefined;
+
+  const systemFfmpeg = which.sync("ffmpeg", { nothrow: true });
+  if (systemFfmpeg) {
+    cachedFfmpegPath = systemFfmpeg;
+    return systemFfmpeg;
+  }
+
+  // HACK: require() instead of import because @ffmpeg-installer/ffmpeg uses
+  // CJS-only exports with a dynamic platform-specific binary path that can't
+  // be statically resolved by ESM import at build time. optionalDependency so
+  // it doesn't block installs when unavailable.
   try {
-    execFileSync(resolved, ["-version"], { timeout: 5_000, stdio: "ignore" });
-    cachedFfmpegPath = resolved;
-    return resolved;
+    const binaryPath = (require("@ffmpeg-installer/ffmpeg") as { path: string }).path;
+    execFileSync(binaryPath, ["-version"], { timeout: 5_000, stdio: "ignore" });
+    cachedFfmpegPath = binaryPath;
+    return binaryPath;
   } catch {
     return undefined;
   }

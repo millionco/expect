@@ -15,7 +15,15 @@ const FIXTURE_PATH = path.join(__dirname, "fixtures", "mixed-content.webm");
 
 import which from "which";
 
-const ffmpegPath: string = which.sync("ffmpeg", { nothrow: true }) ?? "ffmpeg";
+const ffmpegPath: string = (() => {
+  const systemPath = which.sync("ffmpeg", { nothrow: true });
+  if (systemPath) return systemPath;
+  try {
+    return (require("@ffmpeg-installer/ffmpeg") as { path: string }).path;
+  } catch {
+    return "ffmpeg";
+  }
+})();
 
 const ffmpegAvailable = (() => {
   try {
