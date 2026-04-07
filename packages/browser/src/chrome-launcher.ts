@@ -40,7 +40,7 @@ const SYSTEM_CHROME_NAMES_LINUX = [
   "microsoft-edge",
 ] as const;
 
-export const findSystemChrome = Effect.fn("findSystemChrome")(function* () {
+export const findSystemChrome = Effect.fn("Chrome.findSystemChrome")(function* () {
   const platform = os.platform();
 
   if (platform === "darwin") {
@@ -170,7 +170,7 @@ const cleanupFailedLaunch = (child: ChildProcess, tempDir: string | undefined) =
     }
   });
 
-export const launchSystemChrome = Effect.fn("launchSystemChrome")(function* (options: {
+export const launchSystemChrome = Effect.fn("Chrome.launchSystemChrome")(function* (options: {
   headless: boolean;
   profilePath?: string;
 }) {

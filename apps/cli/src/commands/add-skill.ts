@@ -79,7 +79,7 @@ export const extractTarEntries = (tar: Buffer, prefix: string, destDir: string) 
   }
 };
 
-const downloadSkill = Effect.fn("downloadSkill")(function* (skillDir: string) {
+const downloadSkill = Effect.fn("Skill.downloadSkill")(function* (skillDir: string) {
   yield* Effect.annotateCurrentSpan({ skillDir });
 
   const response: Response = yield* Effect.tryPromise({
