@@ -9,7 +9,7 @@ import { evaluateRuntime } from "./evaluate-runtime";
 
 const INTERACTIVE_HTML_TAGS = ["a", "button", "input", "select", "textarea", "details", "summary"];
 
-export const findCursorInteractive = Effect.fn("findCursorInteractive")(function* (
+export const findCursorInteractive = Effect.fn("Browser.findCursorInteractive")(function* (
   page: Page,
   rootSelector?: string,
 ) {

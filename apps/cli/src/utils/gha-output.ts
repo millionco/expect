@@ -1,7 +1,7 @@
 import { Config, Effect, Option } from "effect";
 import { appendFileSync } from "node:fs";
 
-export const writeGhaOutputs = Effect.fn("writeGhaOutputs")(function* (
+export const writeGhaOutputs = Effect.fn("GhaOutput.writeGhaOutputs")(function* (
   status: string,
   videoPath: string | undefined,
   replayPath: string | undefined,
@@ -20,7 +20,7 @@ export const writeGhaOutputs = Effect.fn("writeGhaOutputs")(function* (
   yield* Effect.sync(() => appendFileSync(githubOutputPath.value, outputLines.join("\n") + "\n"));
 });
 
-export const writeGhaStepSummary = Effect.fn("writeGhaStepSummary")(function* (
+export const writeGhaStepSummary = Effect.fn("GhaOutput.writeGhaStepSummary")(function* (
   reportText: string,
   status: string,
   videoPath: string | undefined,

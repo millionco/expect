@@ -71,7 +71,7 @@ const loadAceScript = () => {
   return cachedAceScript;
 };
 
-export const runAccessibilityAudit = Effect.fn("runAccessibilityAudit")(function* (
+export const runAccessibilityAudit = Effect.fn("Accessibility.runAccessibilityAudit")(function* (
   page: Page,
   options: AccessibilityAuditOptions = {},
 ) {

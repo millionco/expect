@@ -88,7 +88,7 @@ const detectPortFromDevScript = (packageJson: PackageJson | undefined): number |
   return undefined;
 };
 
-const detectPortFromViteConfig = Effect.fn("detectProject.detectPortFromViteConfig")(function* (
+const detectPortFromViteConfig = Effect.fn("DetectProject.detectPortFromViteConfig")(function* (
   projectRoot: string,
 ) {
   const fileSystem = yield* FileSystem.FileSystem;
@@ -111,7 +111,9 @@ const detectPortFromViteConfig = Effect.fn("detectProject.detectPortFromViteConf
   return undefined;
 });
 
-export const detectProject = Effect.fn("detectProject")(function* (projectRoot?: string) {
+export const detectProject = Effect.fn("DetectProject.detectProject")(function* (
+  projectRoot?: string,
+) {
   const root = projectRoot ?? process.cwd();
   const packageJson = yield* readPackageJson(root);
   const framework = detectFramework(packageJson);
