@@ -1011,7 +1011,8 @@ export default function HomePage() {
             Expect more from your agents
           </div>
           <div className="[letter-spacing:0em] w-102 [white-space-collapse:preserve] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[15px]/5.75 text-[#707070]">
-            Expect is an agent skill that tests your app in a browser so you don&apos;t have to.
+            Expect is a skill for testing your agent&apos;s code in a real browser. Works with
+            Claude Code, Codex, Cursor, and more.
           </div>
         </div>
         <div className="flex flex-col gap-2.75 mt-6">
