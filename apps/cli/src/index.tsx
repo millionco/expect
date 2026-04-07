@@ -142,12 +142,13 @@ const runHeadlessForTarget = async (target: Target, opts: CommanderOpts) => {
       : Option.none();
 
   const { changesFor } = await resolveChangesFor(target);
+  const browserMode = resolveBrowserMode(opts);
   return runHeadless({
     changesFor,
     instruction: opts.message ?? DEFAULT_INSTRUCTION,
     agent: opts.agent ?? "claude",
     verbose: opts.verbose ?? false,
-    headed: ciMode ? false : resolveBrowserMode(opts) !== "headless",
+    headed: opts.browserMode ? browserMode === "headed" : !ciMode,
     ci: ciMode,
     noCookies: opts.noCookies ?? ciMode,
     timeoutMs,

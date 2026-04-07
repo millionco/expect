@@ -270,14 +270,10 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
           });
         }
 
-        const existingPages = context.pages();
-        const page =
-          isCdpConnected && existingPages.length > 0
-            ? existingPages[0]!
-            : yield* Effect.tryPromise({
-                try: () => context.newPage(),
-                catch: toBrowserLaunchError,
-              });
+        const page = yield* Effect.tryPromise({
+          try: () => context.newPage(),
+          catch: toBrowserLaunchError,
+        });
 
         if (url) {
           yield* Effect.tryPromise({
