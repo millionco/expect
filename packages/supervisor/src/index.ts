@@ -3,6 +3,7 @@ export { Executor, ExecutionError, type ExecuteOptions } from "./executor";
 export { Reporter } from "./reporter";
 export {
   AgentProvider,
+  type CommitSummary,
   ChangesFor,
   DraftId,
   ExecutedTestPlan,
