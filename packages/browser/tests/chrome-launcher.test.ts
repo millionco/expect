@@ -10,12 +10,12 @@ const { platformMock, existsSyncMock, rmSyncMock, whichSyncMock } = vi.hoisted((
 
 vi.mock("node:os", async (importOriginal) => {
   const original = await importOriginal<typeof import("node:os")>();
-  return { default: { ...original, platform: platformMock } };
+  return { ...original, platform: platformMock };
 });
 
 vi.mock("node:fs", async (importOriginal) => {
   const original = await importOriginal<typeof import("node:fs")>();
-  return { default: { ...original, existsSync: existsSyncMock, rmSync: rmSyncMock } };
+  return { ...original, existsSync: existsSyncMock, rmSync: rmSyncMock };
 });
 
 vi.mock("which", () => ({
