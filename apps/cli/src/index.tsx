@@ -20,10 +20,13 @@ import { prompts } from "./utils/prompts";
 import { highlighter } from "./utils/highlighter";
 import { logger } from "./utils/logger";
 import { hasInstalledExpectSkill } from "./utils/expect-skill";
+import { readExpectConfig } from "./utils/expect-config";
 
 try {
   fetch(`${VERSION_API_URL}?source=cli&t=${Date.now()}`).catch(() => {});
 } catch {}
+
+const expectConfig = readExpectConfig(process.cwd());
 
 const DEFAULT_INSTRUCTION =
   "Test all changes from main in the browser and verify they work correctly.";
@@ -54,6 +57,8 @@ interface CommanderOpts {
 const program = new Command()
   .name("expect")
   .description("AI-powered browser testing for your changes")
+  .enablePositionalOptions()
+  .passThroughOptions()
   .version(VERSION, "-v, --version")
   .option("-m, --message <instruction>", "natural language instruction for what to test")
   .option("-f, --flow <slug>", "reuse a saved flow by its slug")
@@ -87,10 +92,15 @@ Examples:
   $ expect watch -m "test the login flow"           watch mode`,
   );
 
+const resolveBrowserMode = (opts: CommanderOpts) =>
+  opts.headless ? ("headless" as const) : (expectConfig?.browserMode ?? "cdp");
+
 const seedStores = (opts: CommanderOpts, changesFor: ChangesFor) => {
+  const browserMode = resolveBrowserMode(opts);
   usePreferencesStore.setState({
     verbose: opts.verbose ?? false,
-    browserHeaded: !opts.headless,
+    browserMode,
+    browserHeaded: browserMode !== "headless",
     browserProfile: opts.profile,
   });
 
@@ -171,9 +181,31 @@ program
   .alias("setup")
   .description("set up expect for your coding agent")
   .option("-y, --yes", "skip confirmation prompts")
-  .action(async (opts: { yes?: boolean }) => {
-    await runInit(opts);
-  });
+  .option("--dry", "skip install steps, only run prompts")
+  .option("--cdp", "use CDP browser mode (connect to existing browser)")
+  .option("--headed", "use headed browser mode (launch a browser window)")
+  .option("--headless", "use headless browser mode (no visible browser)")
+  .addHelpText(
+    "after",
+    `
+Examples:
+  $ expect init                     interactive setup
+  $ expect init -y                  non-interactive, use defaults
+  $ expect init --cdp               set browser mode to CDP
+  $ expect init --headed            set browser mode to headed
+  $ expect init --headless          set browser mode to headless`,
+  )
+  .action(
+    async (opts: {
+      yes?: boolean;
+      dry?: boolean;
+      cdp?: boolean;
+      headed?: boolean;
+      headless?: boolean;
+    }) => {
+      await runInit(opts);
+    },
+  );
 
 const addCommand = program.command("add").description("add integrations to your project");
 
@@ -244,9 +276,11 @@ program.action(async () => {
   if (hasDirectOptions) {
     await runInteractiveForTarget(target, opts);
   } else {
+    const browserMode = resolveBrowserMode(opts);
     usePreferencesStore.setState({
       verbose: opts.verbose ?? false,
-      browserHeaded: !opts.headless,
+      browserMode,
+      browserHeaded: browserMode !== "headless",
       browserProfile: opts.profile,
     });
     if (opts.url) {

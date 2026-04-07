@@ -9,15 +9,12 @@
 
 ### **[Demo →](https://expect.dev)**
 
-## Install
+## Getting Started
 
-Open a terminal in your project directory and run:
-
-```bash
-npx expect-cli@latest init
-```
-
-This will guide you through a setup process. Once installed, you can run `/expect` inside Claude Code or Codex to start testing.
+1. Ask your agent to `Fetch https://www.expect.dev/ and run init script`
+2. Run `/expect` inside Claude Code, Codex, [and more](https://github.com/millionco/expect#supported-agents)
+3. Expect spawns subagents simulating real logged-in users to find issues and regressions
+4. Your agent will fix any issues Expect finds, then re-run to verify
 
 ## FAQ
 
@@ -49,23 +46,23 @@ Coming soon. Email [aiden@million.dev](mailto:aiden@million.dev) if you have que
 
 ## Options
 
-| Flag                          | Description                                                                            | Default              |
-| ----------------------------- | -------------------------------------------------------------------------------------- | -------------------- |
-| `-m, --message <instruction>` | Natural language instruction for what to test                                          | -                    |
-| `-f, --flow <slug>`           | Reuse a saved flow by its slug                                                         | -                    |
-| `-y, --yes`                   | Run immediately without confirmation                                                   | -                    |
-| `-a, --agent <provider>`      | Agent provider (`claude`, `codex`, `copilot`, `gemini`, `cursor`, `opencode`, `droid`) | auto-detect          |
-| `-t, --target <target>`       | What to test: `unstaged`, `branch`, or `changes`                                       | `changes`            |
-| `-u, --url <urls...>`         | Base URL(s) for the dev server (skips port picker)                                     | -                    |
-| `--headed`                    | Show a visible browser window during tests                                             | -                    |
-| `--no-cookies`                | Skip system browser cookie extraction                                                  | -                    |
-| `--ci`                        | Force CI mode: headless, no cookies, auto-yes, 30-min timeout                          | -                    |
-| `--timeout <ms>`              | Execution timeout in milliseconds                                                      | -                    |
-| `--output <format>`           | Output format: `text` or `json`                                                        | `text`               |
-| `--verbose`                   | Enable verbose logging                                                                 | -                    |
-| `--replay-host <url>`         | Website host for live replay viewer                                                    | `https://expect.dev` |
-| `-v, --version`               | Print version                                                                          | -                    |
-| `-h, --help`                  | Display help                                                                           | -                    |
+| Flag                          | Description                                                                            | Default     |
+| ----------------------------- | -------------------------------------------------------------------------------------- | ----------- |
+| `-m, --message <instruction>` | Natural language instruction for what to test                                          | -           |
+| `-f, --flow <slug>`           | Reuse a saved flow by its slug                                                         | -           |
+| `-y, --yes`                   | Run immediately without confirmation                                                   | -           |
+| `-a, --agent <provider>`      | Agent provider (`claude`, `codex`, `copilot`, `gemini`, `cursor`, `opencode`, `droid`) | auto-detect |
+| `-t, --target <target>`       | What to test: `unstaged`, `branch`, or `changes`                                       | `changes`   |
+| `-u, --url <urls...>`         | Base URL(s) for the dev server (skips port picker)                                     | -           |
+| `--headless`                  | Run browser in headless mode                                                           | -           |
+| `--profile <name>`            | Reuse a Chrome profile by name (e.g. Default)                                          | -           |
+| `--no-cookies`                | Skip system browser cookie extraction                                                  | -           |
+| `--ci`                        | Force CI mode: headless, no cookies, auto-yes, 30-min timeout                          | -           |
+| `--timeout <ms>`              | Execution timeout in milliseconds                                                      | -           |
+| `--output <format>`           | Output format: `text` or `json`                                                        | `text`      |
+| `--verbose`                   | Enable verbose logging                                                                 | -           |
+| `-v, --version`               | Print version                                                                          | -           |
+| `-h, --help`                  | Display help                                                                           | -           |
 
 ## Supported Agents
 

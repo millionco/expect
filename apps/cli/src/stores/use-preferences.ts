@@ -3,10 +3,12 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { promptHistoryStorage } from "@expect/supervisor";
 import type { AgentBackend } from "@expect/agent";
 import { FLOW_INPUT_HISTORY_LIMIT } from "../constants";
+import type { BrowserMode } from "../utils/expect-config";
 
 interface PreferencesStore {
   agentBackend: AgentBackend;
   verbose: boolean;
+  browserMode: BrowserMode;
   browserHeaded: boolean;
   browserProfile: string | undefined;
   autoSaveFlows: boolean;
@@ -26,6 +28,7 @@ export const usePreferencesStore = create<PreferencesStore>()(
     (set) => ({
       agentBackend: "claude",
       verbose: false,
+      browserMode: "cdp",
       browserHeaded: true,
       browserProfile: undefined,
       autoSaveFlows: true,
