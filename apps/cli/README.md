@@ -3,10 +3,10 @@
 [![version](https://img.shields.io/npm/v/expect-cli?style=flat&colorA=000000&colorB=000000)](https://npmjs.com/package/expect-cli)
 [![downloads](https://img.shields.io/npm/dt/expect-cli.svg?style=flat&colorA=000000&colorB=000000)](https://npmjs.com/package/expect-cli)
 
-Expect is a skill for testing your agent's code in a real browser.
+**Expect** tests your app in a browser so you don't have to.
 
 - Run `/expect` inside Claude Code, Codex, [and more](https://github.com/millionco/expect#supported-agents)
-- Spawns agents simulating real logged-in users to find issues and regressions.
+- Spawns agents to simulating real logged-in users to find issues and regressions.
 - No more writing Playwright by hand or token-hungry computer use tools.
 - Get video recordings and GitHub Actions out of the box.
 
@@ -21,34 +21,29 @@ Expect is a skill for testing your agent's code in a real browser.
 
 ## FAQ
 
-#### What is Expect?
+#### 1. How is this different from Puppeteer / Playwright / Cypress?
 
-A skill that reads your git changes, generates a test plan, and runs it in a real browser with Playwright. It hooks into your existing agent (Claude Code, Codex, Cursor) and runs entirely on your machine.
+Instead of writing scripts, maintaining selectors, and wiring up assertions, Expect reads your code changes and tests them in a real browser automatically. It's like having giving your agent QA superpowers.
 
-It checks for:
+#### 2. How is this different from coding agents or computer-use tools?
 
-- **Performance** - long animation frames, INP, LCP
-- **Security** - npm deps, CSRF attacks, vulns
-- **Design tweaks** - broken hover states, links, buttons
-- **App completeness** - missing metadata, dead links
+Your agent needs to verify its work, and general-purpose browser tools rely on screenshots and mouse coordinates.
 
-#### Why not just use Puppeteer, Playwright, or Cypress directly?
+Expect is purpose-built for testing: it uses Playwright for fast DOM automation, reads your code changes, generates a test plan, and runs it with your real cookies, then reports back what's broken so the agent can fix it.
 
-Instead of writing scripts, maintaining selectors, and wiring up assertions, Expect reads your code changes and tests them in a real browser automatically. It's like giving your agent QA superpowers.
+#### 3. How does it fit into my workflow?
 
-#### How is this different from computer-use agents?
+Your coding agent calls `/expect` as a skill whenever it needs to validate its work in a real browser. You can also trigger it from CI by adding the GitHub Action to test every PR automatically before merge.
 
-General-purpose browser tools rely on screenshots and mouse coordinates. Expect is purpose-built for testing: it uses Playwright for fast DOM automation, reads your code changes, generates a test plan, and runs it with your real cookies, then reports back what's broken so the agent can fix it.
-
-#### Does it work in CI?
+#### 5. Does it work in CI?
 
 Yes. Use `--ci` or the `add github-action` command to set up a workflow that tests every PR. In CI mode it runs headless, skips cookie extraction, auto-approves the plan, and enforces a 30-minute timeout.
 
-#### Does it support mobile testing?
+#### 6. Can this do mobile / desktop testing?
 
 Coming soon.
 
-#### Is there a hosted or enterprise version?
+#### 7. Is there a cloud or enterprise version?
 
 Coming soon. Email [aiden@million.dev](mailto:aiden@million.dev) if you have questions or ideas.
 
@@ -71,7 +66,6 @@ Coming soon. Email [aiden@million.dev](mailto:aiden@million.dev) if you have que
 | `--verbose`                   | Enable verbose logging                                                                 | -           |
 | `-v, --version`               | Print version                                                                          | -           |
 | `-h, --help`                  | Display help                                                                           | -           |
-
 
 ## Supported Agents
 
