@@ -88,6 +88,27 @@ describe("TestReport.toPlainText", () => {
     expect(summaryLineMatches?.length).toBe(1);
   });
 
+  it("includes the run summary when it adds new context", () => {
+    const steps = [makeStep("s1", "Login step")];
+    const plan = makePlan(steps);
+    const events = [
+      new RunStarted({ plan }),
+      new StepStarted({ stepId: StepId.makeUnsafe("s1"), title: "Login step" }),
+      new StepCompleted({ stepId: StepId.makeUnsafe("s1"), summary: "Logged in" }),
+      new RunFinished({
+        status: "passed",
+        summary: "Login worked with seeded data and the session stayed authenticated after refresh",
+      }),
+    ];
+    const report = makeReport(
+      plan,
+      events,
+      "Login worked with seeded data and the session stayed authenticated after refresh",
+    );
+    const text = report.toPlainText;
+    expect(text).toContain("Summary\nLogin worked with seeded data");
+  });
+
   it("pluralizes 'step' correctly for singular", () => {
     const steps = [makeStep("s1", "Only step")];
     const plan = makePlan(steps);
