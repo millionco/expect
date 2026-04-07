@@ -1,4 +1,4 @@
-import { execFile, execFileSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import * as fs from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -37,25 +37,8 @@ let ffmpegProbed = false;
 const resolveFfmpegPath = (): string | undefined => {
   if (ffmpegProbed) return cachedFfmpegPath;
   ffmpegProbed = true;
-
-  const systemFfmpeg = which.sync("ffmpeg", { nothrow: true });
-  if (systemFfmpeg) {
-    cachedFfmpegPath = systemFfmpeg;
-    return systemFfmpeg;
-  }
-
-  // HACK: require() instead of import because @ffmpeg-installer/ffmpeg uses
-  // CJS-only exports with a dynamic platform-specific binary path that can't
-  // be statically resolved by ESM import at build time. optionalDependency so
-  // it doesn't block installs when unavailable.
-  try {
-    const binaryPath = (require("@ffmpeg-installer/ffmpeg") as { path: string }).path;
-    execFileSync(binaryPath, ["-version"], { timeout: 5_000, stdio: "ignore" });
-    cachedFfmpegPath = binaryPath;
-    return binaryPath;
-  } catch {
-    return undefined;
-  }
+  cachedFfmpegPath = which.sync("ffmpeg", { nothrow: true }) ?? undefined;
+  return cachedFfmpegPath;
 };
 
 export const runFfmpeg = Effect.fn("runFfmpeg")(function* (ffmpegBinary: string, args: string[]) {
