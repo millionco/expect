@@ -203,6 +203,7 @@ export const ensureAgentSkillCopy = (
     }
 
     fs.mkdirSync(path.dirname(installedSkillDir), { recursive: true });
+    // Copying is more reliable than symlinking across agent CLIs and avoids path, permission, and broken-link edge cases.
     fs.cpSync(skillSourceDir, installedSkillDir, { recursive: true });
     return "copied";
   } catch (error) {
