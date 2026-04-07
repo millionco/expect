@@ -136,9 +136,9 @@ const selectAgents = async (agents: readonly SupportedAgent[], nonInteractive: b
   return (response.agents ?? []) as SupportedAgent[];
 };
 
-type AgentSymlinkResult = "linked" | "already-linked" | string;
+type AgentSkillCopyResult = "copied" | "already-copied" | string;
 
-const getExistingPathStats = (targetPath: string): fs.Stats | fs.Dirent | undefined => {
+const getExistingPathStats = (targetPath: string): fs.Stats | undefined => {
   try {
     return fs.lstatSync(targetPath);
   } catch (error) {
@@ -147,35 +147,67 @@ const getExistingPathStats = (targetPath: string): fs.Stats | fs.Dirent | undefi
   }
 };
 
-export const ensureAgentSymlink = (
-  projectRoot: string,
-  agent: SupportedAgent,
-): AgentSymlinkResult => {
-  const skillSourceDir = path.join(projectRoot, AGENTS_SKILLS_DIR, SKILL_NAME);
-  const agentSkillDir = path.join(projectRoot, toSkillDir(agent));
-  const symlinkPath = path.join(agentSkillDir, SKILL_NAME);
-  const targetPath = path.relative(path.dirname(symlinkPath), skillSourceDir);
+const haveMatchingContents = (sourcePath: string, targetPath: string): boolean => {
+  const sourcePathStats = getExistingPathStats(sourcePath);
+  const targetPathStats = getExistingPathStats(targetPath);
 
-  try {
-    const existingPathStats = getExistingPathStats(symlinkPath);
-    if (existingPathStats?.isSymbolicLink()) {
-      if (fs.readlinkSync(symlinkPath) === targetPath) return "already-linked";
-      fs.unlinkSync(symlinkPath);
-    } else if (existingPathStats?.isDirectory()) {
-      if (!fs.existsSync(path.join(symlinkPath, "SKILL.md"))) {
-        return `${symlinkPath} exists and is not an expect skill directory`;
+  if (sourcePathStats === undefined || targetPathStats === undefined) return false;
+  if (sourcePathStats.isSymbolicLink() || targetPathStats.isSymbolicLink()) return false;
+
+  if (sourcePathStats.isDirectory() && targetPathStats.isDirectory()) {
+    const sourceEntries = fs.readdirSync(sourcePath).sort();
+    const targetEntries = fs.readdirSync(targetPath).sort();
+
+    if (sourceEntries.length !== targetEntries.length) return false;
+
+    for (let index = 0; index < sourceEntries.length; index++) {
+      if (sourceEntries[index] !== targetEntries[index]) return false;
+      if (
+        !haveMatchingContents(
+          path.join(sourcePath, sourceEntries[index]),
+          path.join(targetPath, targetEntries[index]),
+        )
+      ) {
+        return false;
       }
-      fs.rmSync(symlinkPath, { recursive: true, force: true });
-    } else if (existingPathStats !== undefined) {
-      fs.unlinkSync(symlinkPath);
     }
 
-    fs.mkdirSync(path.dirname(symlinkPath), { recursive: true });
-    fs.symlinkSync(targetPath, symlinkPath);
-    return "linked";
+    return true;
+  }
+
+  if (sourcePathStats.isFile() && targetPathStats.isFile()) {
+    return fs.readFileSync(sourcePath).equals(fs.readFileSync(targetPath));
+  }
+
+  return false;
+};
+
+export const ensureAgentSkillCopy = (
+  projectRoot: string,
+  agent: SupportedAgent,
+): AgentSkillCopyResult => {
+  const skillSourceDir = path.join(projectRoot, AGENTS_SKILLS_DIR, SKILL_NAME);
+  const agentSkillDir = path.join(projectRoot, toSkillDir(agent));
+  const installedSkillDir = path.join(agentSkillDir, SKILL_NAME);
+
+  try {
+    const existingPathStats = getExistingPathStats(installedSkillDir);
+    if (existingPathStats?.isDirectory()) {
+      if (!fs.existsSync(path.join(installedSkillDir, "SKILL.md"))) {
+        return `${installedSkillDir} exists and is not an expect skill directory`;
+      }
+      if (haveMatchingContents(skillSourceDir, installedSkillDir)) return "already-copied";
+      fs.rmSync(installedSkillDir, { recursive: true, force: true });
+    } else if (existingPathStats !== undefined) {
+      fs.unlinkSync(installedSkillDir);
+    }
+
+    fs.mkdirSync(path.dirname(installedSkillDir), { recursive: true });
+    fs.cpSync(skillSourceDir, installedSkillDir, { recursive: true });
+    return "copied";
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
-    return `Failed to create symlink: ${reason}`;
+    return `Failed to copy skill: ${reason}`;
   }
 };
 
@@ -218,46 +250,46 @@ export const runAddSkill = async (options: AddSkillOptions) => {
 
   const results = selectedAgents.map((agent) => ({
     agent,
-    result: ensureAgentSymlink(projectRoot, agent),
+    result: ensureAgentSkillCopy(projectRoot, agent),
   }));
 
-  const linked = results
-    .filter((entry) => entry.result === "linked")
+  const copied = results
+    .filter((entry) => entry.result === "copied")
     .map((entry) => toDisplayName(entry.agent));
-  const alreadyLinked = results
-    .filter((entry) => entry.result === "already-linked")
+  const alreadyCopied = results
+    .filter((entry) => entry.result === "already-copied")
     .map((entry) => toDisplayName(entry.agent));
   const failed = results.filter(
-    (entry) => entry.result !== "linked" && entry.result !== "already-linked",
+    (entry) => entry.result !== "copied" && entry.result !== "already-copied",
   );
 
   for (const { agent, result } of failed) {
     logger.warn(`  ${toDisplayName(agent)}: ${result}`);
   }
 
-  if (linked.length === 0 && alreadyLinked.length === 0 && failed.length > 0) {
+  if (copied.length === 0 && alreadyCopied.length === 0 && failed.length > 0) {
     if (skillOperation === "updated") {
-      skillSpinner.warn("Skill files were updated, but agent links could not be created.");
+      skillSpinner.warn("Skill files were updated, but agent copies could not be created.");
       return;
     }
 
     if (skillOperation === "installed") {
-      skillSpinner.warn("Skill files were installed, but agent links could not be created.");
+      skillSpinner.warn("Skill files were installed, but agent copies could not be created.");
       return;
     }
 
-    logger.warn("Skill files are present, but agent links could not be created.");
+    logger.warn("Skill files are present, but agent copies could not be created.");
     return;
   }
 
   if (skillOperation === "current") {
     const version = formatSkillVersion(skillStatus.latestVersion ?? skillStatus.installedVersion);
-    if (alreadyLinked.length > 0 && linked.length === 0) {
-      logger.success(`Skill already installed (${version}) for ${alreadyLinked.join(", ")}.`);
+    if (alreadyCopied.length > 0 && copied.length === 0) {
+      logger.success(`Skill already installed (${version}) for ${alreadyCopied.join(", ")}.`);
       return;
     }
-    if (linked.length > 0) {
-      logger.success(`Skill already up to date (${version}). Linked it for ${linked.join(", ")}.`);
+    if (copied.length > 0) {
+      logger.success(`Skill already up to date (${version}). Copied it for ${copied.join(", ")}.`);
       return;
     }
     logger.success(`Skill already installed (${version}).`);
@@ -266,12 +298,12 @@ export const runAddSkill = async (options: AddSkillOptions) => {
 
   if (skillOperation === "unverified") {
     logger.warn("Could not verify whether the installed skill is the latest version.");
-    if (alreadyLinked.length > 0 && linked.length === 0) {
-      logger.success(`Skill already installed for ${alreadyLinked.join(", ")}.`);
+    if (alreadyCopied.length > 0 && copied.length === 0) {
+      logger.success(`Skill already installed for ${alreadyCopied.join(", ")}.`);
       return;
     }
-    if (linked.length > 0) {
-      logger.success(`Skill already present. Linked it for ${linked.join(", ")}.`);
+    if (copied.length > 0) {
+      logger.success(`Skill already present. Copied it for ${copied.join(", ")}.`);
       return;
     }
     logger.success("Skill already installed.");
@@ -279,18 +311,18 @@ export const runAddSkill = async (options: AddSkillOptions) => {
   }
 
   if (skillOperation === "updated") {
-    if (linked.length > 0 || alreadyLinked.length > 0) {
-      skillSpinner.succeed(`Skill updated for ${[...linked, ...alreadyLinked].join(", ")}.`);
+    if (copied.length > 0 || alreadyCopied.length > 0) {
+      skillSpinner.succeed(`Skill updated for ${[...copied, ...alreadyCopied].join(", ")}.`);
       return;
     }
     skillSpinner.succeed("Skill updated.");
     return;
   }
 
-  if (linked.length > 0) {
-    skillSpinner.succeed(`Skill installed for ${linked.join(", ")}.`);
-  } else if (alreadyLinked.length > 0) {
-    skillSpinner.succeed(`Skill installed for ${alreadyLinked.join(", ")}.`);
+  if (copied.length > 0) {
+    skillSpinner.succeed(`Skill installed for ${copied.join(", ")}.`);
+  } else if (alreadyCopied.length > 0) {
+    skillSpinner.succeed(`Skill installed for ${alreadyCopied.join(", ")}.`);
   } else {
     skillSpinner.succeed("Skill installed.");
   }

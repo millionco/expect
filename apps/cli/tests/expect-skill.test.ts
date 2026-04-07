@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { Effect } from "effect";
@@ -81,13 +81,10 @@ describe("expect-skill", () => {
     });
   });
 
-  it("detects which installed agents already link to the expect skill", () => {
-    const sharedSkillDir = join(projectRoot, AGENTS_SKILLS_DIR, SKILL_NAME);
-    mkdirSync(sharedSkillDir, { recursive: true });
-
+  it("detects which installed agents already have the expect skill directory", () => {
     const claudeSkillsDir = join(projectRoot, ".claude", "skills");
     mkdirSync(claudeSkillsDir, { recursive: true });
-    symlinkSync("../../.agents/skills/expect", join(claudeSkillsDir, SKILL_NAME));
+    mkdirSync(join(claudeSkillsDir, SKILL_NAME), { recursive: true });
 
     const cursorSkillsDir = join(projectRoot, ".cursor", "skills");
     mkdirSync(cursorSkillsDir, { recursive: true });
