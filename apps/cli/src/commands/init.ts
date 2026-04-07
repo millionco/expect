@@ -373,7 +373,7 @@ export const runInit = async (options: InitOptions = {}) => {
   }
 
   if (!options.dry) {
-    writeExpectConfig(resolveProjectRoot(), { browserMode });
+    writeExpectConfig(await resolveProjectRoot(), { browserMode });
   }
 
   logger.break();

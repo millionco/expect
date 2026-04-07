@@ -214,7 +214,7 @@ export const ensureAgentSkillCopy = (
 };
 
 export const runAddSkill = async (options: AddSkillOptions) => {
-  const projectRoot = resolveProjectRoot();
+  const projectRoot = await resolveProjectRoot();
   const nonInteractive = detectNonInteractive(options.yes ?? false);
   const selectedAgents = await selectAgents(options.agents, nonInteractive);
   if (selectedAgents.length === 0) return;

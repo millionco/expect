@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 import { readExpectConfig } from "../src/utils/expect-config";
 
 vi.mock("../src/utils/project-root", () => ({
-  resolveProjectRoot: vi.fn().mockReturnValue("/tmp"),
+  resolveProjectRoot: vi.fn().mockResolvedValue("/tmp"),
 }));
 
 vi.mock("@expect/agent", () => ({
@@ -123,7 +123,7 @@ describe("init flow", () => {
     process.cwd = () => projectRoot;
 
     const { resolveProjectRoot } = await import("../src/utils/project-root");
-    vi.mocked(resolveProjectRoot).mockReturnValue(projectRoot);
+    vi.mocked(resolveProjectRoot).mockResolvedValue(projectRoot);
     const { detectAvailableAgents } = await import("@expect/agent");
     vi.mocked(detectAvailableAgents).mockReturnValue(["claude"]);
     const { runInstallCommand } = await import("../src/commands/update");
@@ -476,7 +476,7 @@ describe("init flow", () => {
       fs.symlinkSync(projectRoot, symlinkRoot);
       process.cwd = () => symlinkRoot;
       const { resolveProjectRoot } = await import("../src/utils/project-root");
-      vi.mocked(resolveProjectRoot).mockReturnValue(symlinkRoot);
+      vi.mocked(resolveProjectRoot).mockResolvedValue(symlinkRoot);
 
       try {
         const { runInit } = await import("../src/commands/init");
@@ -491,7 +491,7 @@ describe("init flow", () => {
       const emptyRoot = fs.mkdtempSync(path.join(os.tmpdir(), "init-empty-"));
       process.cwd = () => emptyRoot;
       const { resolveProjectRoot } = await import("../src/utils/project-root");
-      vi.mocked(resolveProjectRoot).mockReturnValue(emptyRoot);
+      vi.mocked(resolveProjectRoot).mockResolvedValue(emptyRoot);
 
       try {
         const { runInit } = await import("../src/commands/init");

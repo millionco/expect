@@ -29,9 +29,9 @@ try {
 const lazyExpectConfig = (() => {
   let cached: ReturnType<typeof readExpectConfig> | undefined;
   let resolved = false;
-  return () => {
+  return async () => {
     if (!resolved) {
-      cached = readExpectConfig(resolveProjectRoot());
+      cached = readExpectConfig(await resolveProjectRoot());
       resolved = true;
     }
     return cached;
@@ -101,18 +101,18 @@ Examples:
   $ expect watch -m "test the login flow"           watch mode`,
   );
 
-const resolveBrowserMode = (opts: CommanderOpts) => {
+const resolveBrowserMode = async (opts: CommanderOpts) => {
   if (opts.browserMode) {
     if (isValidBrowserMode(opts.browserMode)) return opts.browserMode;
     logger.warn(
       `  Unknown browser mode "${opts.browserMode}". Expected: cdp, headed, or headless.`,
     );
   }
-  return lazyExpectConfig()?.browserMode ?? "cdp";
+  return (await lazyExpectConfig())?.browserMode ?? "cdp";
 };
 
-const seedStores = (opts: CommanderOpts, changesFor: ChangesFor) => {
-  const browserMode = resolveBrowserMode(opts);
+const seedStores = async (opts: CommanderOpts, changesFor: ChangesFor) => {
+  const browserMode = await resolveBrowserMode(opts);
   usePreferencesStore.setState({
     verbose: opts.verbose ?? false,
     browserMode,
@@ -142,7 +142,7 @@ const runHeadlessForTarget = async (target: Target, opts: CommanderOpts) => {
       : Option.none();
 
   const { changesFor } = await resolveChangesFor(target);
-  const browserMode = resolveBrowserMode(opts);
+  const browserMode = await resolveBrowserMode(opts);
   return runHeadless({
     changesFor,
     instruction: opts.message ?? DEFAULT_INSTRUCTION,
@@ -159,7 +159,7 @@ const runHeadlessForTarget = async (target: Target, opts: CommanderOpts) => {
 
 const promptSkillInstall = async () => {
   const agents = detectAvailableAgents();
-  if (hasInstalledExpectSkill(resolveProjectRoot(), agents)) return;
+  if (hasInstalledExpectSkill(await resolveProjectRoot(), agents)) return;
 
   logger.break();
   const response = await prompts({
@@ -187,7 +187,7 @@ const waitForHydration = async () => {
 
 const runInteractiveForTarget = async (target: Target, opts: CommanderOpts) => {
   const { changesFor } = await resolveChangesFor(target);
-  seedStores(opts, changesFor);
+  await seedStores(opts, changesFor);
   await waitForHydration();
   const persistedAgent = usePreferencesStore.getState().agentBackend;
   renderApp(opts.agent ?? persistedAgent ?? "claude");
@@ -296,7 +296,7 @@ program.action(async () => {
   if (hasDirectOptions) {
     await runInteractiveForTarget(target, opts);
   } else {
-    const browserMode = resolveBrowserMode(opts);
+    const browserMode = await resolveBrowserMode(opts);
     usePreferencesStore.setState({
       verbose: opts.verbose ?? false,
       browserMode,

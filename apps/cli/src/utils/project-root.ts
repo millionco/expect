@@ -1,9 +1,9 @@
 import { Effect } from "effect";
 import { Git } from "@expect/supervisor";
 
-export const resolveProjectRoot = (): string => findGitRoot();
+export const resolveProjectRoot = async () => findGitRoot();
 
-const findGitRoot = (): string => {
+const findGitRoot = async () => {
   const cwd = process.cwd();
-  return Effect.runSync(Git.resolveProjectRoot(cwd));
+  return Effect.runPromise(Git.resolveProjectRoot(cwd));
 };
