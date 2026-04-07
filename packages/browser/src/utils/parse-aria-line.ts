@@ -1,14 +1,14 @@
 import { Option } from "effect";
 import { EXCLUDED_ARIA_ROLE } from "../constants";
 
-export interface ParsedAriaLine {
+interface ParsedAriaLine {
   role: string;
   name: string;
 }
 
 const ARIA_LINE_REGEX = /- (\w+)\s*(?:"((?:[^"\\]|\\.)*)")?/;
 
-export const parseAriaLine = (line: string): Option.Option<ParsedAriaLine> => {
+export const parseAriaLine = (line: string): Option.Option<{ role: string; name: string }> => {
   const match = ARIA_LINE_REGEX.exec(line);
   if (!match) return Option.none();
 

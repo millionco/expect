@@ -20,7 +20,7 @@ export interface LiveViewHandle {
   readonly close: Effect.Effect<void>;
 }
 
-export interface StartLiveViewServerOptions {
+interface StartLiveViewServerOptions {
   readonly liveViewUrl: string;
   readonly getPage: () => Page | undefined;
   readonly onEventsCollected: (events: eventWithTime[]) => void;
