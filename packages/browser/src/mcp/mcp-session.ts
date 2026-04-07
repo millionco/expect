@@ -6,7 +6,6 @@ import { FileSystem } from "effect/FileSystem";
 import { isRunningInAgent } from "@expect/shared/launched-from";
 import { Browser } from "../browser";
 import { NavigationError } from "../errors";
-import { frameWithWallpaper, resolveWallpaperPath } from "../video-processor";
 import { evaluateRuntime } from "../utils/evaluate-runtime";
 import {
   AGENT_OVERLAY_CONTAINER_ID,
@@ -460,12 +459,14 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
             `${artifactBaseName}.webm`,
           );
 
-          const wallpaperPath = resolveWallpaperPath();
-
-          tmpVideoPath = yield* frameWithWallpaper(videoPath, tmpVideoFilePath, wallpaperPath).pipe(
-            Effect.as(tmpVideoFilePath),
-            Effect.catchTag("VideoProcessError", () => Effect.succeed(videoPath)),
-          );
+          yield* fileSystem
+            .copyFile(videoPath, tmpVideoFilePath)
+            .pipe(
+              Effect.catchCause((cause) =>
+                Effect.logDebug("Failed to copy video to /tmp", { cause }),
+              ),
+            );
+          tmpVideoPath = tmpVideoFilePath;
         }
       }
 
