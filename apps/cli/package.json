@@ -40,7 +40,7 @@
     }
   },
   "scripts": {
-    "build": "vp pack && mkdir -p dist/assets && (cp ../../packages/browser/assets/wallpaper.webp dist/assets/wallpaper.webp 2>/dev/null || true)",
+    "build": "vp pack",
     "dev": "vp pack --watch",
     "link-global": "pnpm build && pnpm link --global",
     "unlink-global": "pnpm unlink --global",

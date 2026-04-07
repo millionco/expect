@@ -64,8 +64,5 @@ export const HEADLESS_CHROME_WINDOW_HEIGHT_PX = 720;
 
 export const OVERLAY_REINJECT_TIMEOUT_MS = 5_000;
 
-export const FFMPEG_TIMEOUT_MS = 120_000;
-export const FRAME_PADDING_PX = 48;
-
 export const BROWSER_CLOSE_TIMEOUT_MS = 10_000;
 export const VIDEO_PATH_TIMEOUT_MS = 15_000;
