@@ -1,20 +1,9 @@
-import { spawnSync } from "node:child_process";
-import * as path from "node:path";
+import { Effect } from "effect";
+import { Git } from "@expect/supervisor";
 
-const GIT_ROOT_TIMEOUT_MS = 5_000;
+export const resolveProjectRoot = (): string => findGitRoot();
 
-const findGitRoot = (): string | undefined => {
-  try {
-    const result = spawnSync("git", ["rev-parse", "--show-toplevel"], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-      timeout: GIT_ROOT_TIMEOUT_MS,
-    });
-    const root = result.stdout?.trim();
-    return root && path.isAbsolute(root) ? root : undefined;
-  } catch {
-    return undefined;
-  }
+const findGitRoot = (): string => {
+  const cwd = process.cwd();
+  return Effect.runSync(Git.resolveProjectRoot(cwd));
 };
-
-export const resolveProjectRoot = (): string => findGitRoot() ?? process.cwd();

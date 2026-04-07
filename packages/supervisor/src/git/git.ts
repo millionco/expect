@@ -470,4 +470,13 @@ export class Git extends ServiceMap.Service<Git>()("@supervisor/Git", {
     );
     return Layer.mergeAll(Git.layer.pipe(Layer.provide(repoRootLayer)), repoRootLayer);
   };
+
+  static resolveProjectRoot = (cwd: string) =>
+    Effect.tryPromise({
+      try: () => simpleGit(cwd).revparse(["--show-toplevel"]),
+      catch: (cause) => new FindRepoRootError({ cause }),
+    }).pipe(
+      Effect.map(Str.trim),
+      Effect.catchTag("FindRepoRootError", () => Effect.succeed(path.resolve(cwd))),
+    );
 }
