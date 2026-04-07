@@ -843,8 +843,7 @@ function TerminalAnimationView({
 }
 
 function TerminalIllustration() {
-  const [cycle, setCycle] = useState(0);
-  const nextCycle = () => setCycle((previous) => previous + 1);
+  const restartRef = useRef(() => {});
 
   const dial = useDialKit(
     "Animation",
@@ -890,7 +889,7 @@ function TerminalIllustration() {
     },
     {
       onAction: (action) => {
-        if (action === "restart") nextCycle();
+        if (action === "restart") restartRef.current();
       },
     },
   );
