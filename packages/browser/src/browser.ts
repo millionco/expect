@@ -1,12 +1,13 @@
 import { Browsers, Cookies, layerLive, browserKeyOf, Cookie } from "@expect/cookies";
 import type { Browser as BrowserProfile } from "@expect/cookies";
 import { chromium, webkit, firefox } from "playwright";
-import type { Locator, Page } from "playwright";
+import type { Browser as PlaywrightBrowser, Locator, Page } from "playwright";
 import type { BrowserEngine } from "./types";
 import { Array as Arr, Effect, Layer, Option, ServiceMap } from "effect";
 
 const cookiesLayer = Layer.mergeAll(layerLive, Cookies.layer);
 import {
+  CDP_DISCOVERY_TIMEOUT_MS,
   CONTENT_ROLES,
   HEADLESS_CHROMIUM_ARGS,
   INTERACTIVE_ROLES,
@@ -24,6 +25,7 @@ import {
   NavigationError,
   SnapshotTimeoutError,
 } from "./errors";
+import { autoDiscoverCdp } from "./cdp-discovery";
 import { toActionError } from "./utils/action-error";
 import { compactTree } from "./utils/compact-tree";
 import { createLocator } from "./utils/create-locator";
@@ -194,32 +196,72 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
       options: CreatePageOptions = {},
     ) {
       const engine = options.browserType ?? "chromium";
+      const useLiveChrome = options.liveChrome && engine === "chromium" && !options.cdpUrl;
       yield* Effect.annotateCurrentSpan({
         url: url ?? "about:blank",
         cdp: Boolean(options.cdpUrl),
+        liveChrome: Boolean(useLiveChrome),
         browserType: engine,
       });
 
+      const liveBrowser = yield* Effect.gen(function* () {
+        if (!useLiveChrome) return Option.none<PlaywrightBrowser>();
+
+        const discovered = yield* autoDiscoverCdp().pipe(
+          Effect.map(Option.some),
+          Effect.catchTag("CdpDiscoveryError", () => Effect.succeed(Option.none<string>())),
+        );
+
+        if (Option.isNone(discovered)) {
+          yield* Effect.logDebug("No running Chrome found, falling back to bundled Chromium");
+          return Option.none<PlaywrightBrowser>();
+        }
+
+        const connectedBrowser = yield* Effect.tryPromise(() =>
+          chromium.connectOverCDP(discovered.value, { timeout: CDP_DISCOVERY_TIMEOUT_MS }),
+        ).pipe(
+          Effect.map(Option.some<PlaywrightBrowser>),
+          Effect.catchTag("UnknownError", () => Effect.succeed(Option.none<PlaywrightBrowser>())),
+        );
+
+        if (Option.isNone(connectedBrowser)) {
+          yield* Effect.logDebug(
+            "Failed to connect to discovered Chrome, falling back to bundled Chromium",
+            {
+              wsUrl: discovered.value,
+            },
+          );
+          return Option.none<PlaywrightBrowser>();
+        }
+
+        yield* Effect.logInfo("Connected to live Chrome", { wsUrl: discovered.value });
+        return connectedBrowser;
+      });
+
+      const isExternalBrowser = Option.isSome(liveBrowser);
       const cdpEndpoint = engine === "chromium" ? options.cdpUrl : undefined;
+
       const browserType = resolveBrowserType(engine);
-      const browser = cdpEndpoint
-        ? yield* Effect.tryPromise({
-            try: () => chromium.connectOverCDP(cdpEndpoint),
-            catch: (cause) =>
-              new CdpConnectionError({
-                endpointUrl: cdpEndpoint,
-                cause: cause instanceof Error ? cause.message : String(cause),
-              }),
-          })
-        : yield* Effect.tryPromise({
-            try: () =>
-              browserType.launch({
-                headless: !options.headed,
-                executablePath: options.executablePath,
-                args: engine === "chromium" && !options.headed ? HEADLESS_CHROMIUM_ARGS : [],
-              }),
-            catch: toBrowserLaunchError,
-          });
+      const browser = Option.isSome(liveBrowser)
+        ? liveBrowser.value
+        : cdpEndpoint
+          ? yield* Effect.tryPromise({
+              try: () => chromium.connectOverCDP(cdpEndpoint),
+              catch: (cause) =>
+                new CdpConnectionError({
+                  endpointUrl: cdpEndpoint,
+                  cause: cause instanceof Error ? cause.message : String(cause),
+                }),
+            })
+          : yield* Effect.tryPromise({
+              try: () =>
+                browserType.launch({
+                  headless: !options.headed,
+                  executablePath: options.executablePath,
+                  args: engine === "chromium" && !options.headed ? HEADLESS_CHROMIUM_ARGS : [],
+                }),
+              catch: toBrowserLaunchError,
+            });
 
       const setupPage = Effect.gen(function* () {
         const defaultBrowserContext =
@@ -243,7 +285,7 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
           };
         }
 
-        const isCdpConnected = Boolean(cdpEndpoint);
+        const isCdpConnected = isExternalBrowser || Boolean(cdpEndpoint);
         const existingContexts = isCdpConnected ? browser.contexts() : [];
         const context =
           existingContexts.length > 0
@@ -282,13 +324,13 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
         }
 
         const existingPages = context.pages();
-        const page =
-          isCdpConnected && existingPages.length > 0
-            ? existingPages[0]!
-            : yield* Effect.tryPromise({
-                try: () => context.newPage(),
-                catch: toBrowserLaunchError,
-              });
+        const reuseExistingPage = isCdpConnected && existingPages.length > 0 && !isExternalBrowser;
+        const page = reuseExistingPage
+          ? existingPages[0]!
+          : yield* Effect.tryPromise({
+              try: () => context.newPage(),
+              catch: toBrowserLaunchError,
+            });
 
         if (url) {
           yield* Effect.tryPromise({
@@ -301,12 +343,12 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
           });
         }
 
-        return { browser, context, page };
+        return { browser, context, page, cleanup: Effect.void, isExternalBrowser };
       });
 
       return yield* setupPage.pipe(
         Effect.tapError(() => {
-          if (cdpEndpoint) return Effect.void;
+          if (isExternalBrowser) return Effect.void;
           return Effect.tryPromise(() => browser.close()).pipe(
             Effect.catchTag("UnknownError", () => Effect.void),
           );

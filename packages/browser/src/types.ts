@@ -54,6 +54,7 @@ export interface CreatePageOptions {
   videoOutputDir?: string;
   cdpUrl?: string;
   browserType?: BrowserEngine;
+  liveChrome?: boolean;
 }
 
 export interface AnnotatedScreenshotOptions extends SnapshotOptions {

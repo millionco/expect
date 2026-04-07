@@ -19,11 +19,16 @@ import { renderApp } from "./program";
 import { CI_EXECUTION_TIMEOUT_MS, VERSION, VERSION_API_URL } from "./constants";
 import { prompts } from "./utils/prompts";
 import { highlighter } from "./utils/highlighter";
+import { machineId } from "@expect/shared/machine-id";
 import { logger } from "./utils/logger";
 
-try {
-  fetch(`${VERSION_API_URL}?source=cli&t=${Date.now()}`).catch(() => {});
-} catch {}
+if (!isRunningInAgent() && !isHeadless()) {
+  machineId()
+    .catch(() => "unknown")
+    .then((mid) => {
+      fetch(`${VERSION_API_URL}?source=cli&mid=${mid}&t=${Date.now()}`).catch(() => {});
+    });
+}
 
 const DEFAULT_INSTRUCTION =
   "Test all changes from main in the browser and verify they work correctly.";

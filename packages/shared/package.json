@@ -10,7 +10,8 @@
     "./observability": "./src/observability/exports.ts",
     "./utils": "./src/utils.ts",
     "./launched-from": "./src/launched-from.ts",
-    "./is-command-available": "./src/is-command-available.ts"
+    "./is-command-available": "./src/is-command-available.ts",
+    "./machine-id": "./src/machine-id.ts"
   },
   "scripts": {
     "lint": "vp lint && tsc --noEmit",

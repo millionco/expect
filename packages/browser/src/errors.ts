@@ -116,6 +116,25 @@ export class CdpConnectionError extends Schema.ErrorClass<CdpConnectionError>("C
   message = `Failed to connect to CDP endpoint ${this.endpointUrl}: ${this.cause}`;
 }
 
+export class ChromeNotFoundError extends Schema.ErrorClass<ChromeNotFoundError>(
+  "ChromeNotFoundError",
+)({
+  _tag: Schema.tag("ChromeNotFoundError"),
+}) {
+  message =
+    "No system Chrome installation found. Install Google Chrome or pass an explicit executable path.";
+}
+
+export class ChromeLaunchTimeoutError extends Schema.ErrorClass<ChromeLaunchTimeoutError>(
+  "ChromeLaunchTimeoutError",
+)({
+  _tag: Schema.tag("ChromeLaunchTimeoutError"),
+  timeoutMs: Schema.Number,
+  cause: Schema.String,
+}) {
+  message = `Chrome launch failed (timeout ${this.timeoutMs}ms): ${this.cause}`;
+}
+
 export type ActionError =
   | RefAmbiguousError
   | RefBlockedError

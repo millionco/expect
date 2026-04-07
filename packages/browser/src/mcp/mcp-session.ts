@@ -45,6 +45,8 @@ export interface BrowserSessionData {
   readonly browser: PlaywrightBrowser;
   readonly context: BrowserContext;
   readonly page: Page;
+  readonly cleanup: Effect.Effect<void>;
+  readonly isExternalBrowser: boolean;
   readonly consoleMessages: ConsoleEntry[];
   readonly networkRequests: NetworkEntry[];
   readonly replayOutputPath: string | undefined;
@@ -59,10 +61,12 @@ export interface OpenOptions {
   waitUntil?: "load" | "domcontentloaded" | "networkidle" | "commit";
   cdpUrl?: string;
   browserType?: BrowserEngine;
+  liveChrome?: boolean;
 }
 
 export interface OpenResult {
   readonly injectedCookieCount: number;
+  readonly isExternalBrowser: boolean;
 }
 
 export interface CloseResult {
@@ -244,12 +248,15 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         videoOutputDir,
         cdpUrl: options.cdpUrl ?? defaultCdpUrl,
         browserType: options.browserType,
+        liveChrome: options.liveChrome,
       });
 
       const sessionData: BrowserSessionData = {
         browser: pageResult.browser,
         context: pageResult.context,
         page: pageResult.page,
+        cleanup: pageResult.cleanup,
+        isExternalBrowser: pageResult.isExternalBrowser,
         consoleMessages: [],
         networkRequests: [],
         replayOutputPath: Option.getOrUndefined(replayOutputPath),
@@ -320,7 +327,10 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         ),
       );
 
-      return { injectedCookieCount } satisfies OpenResult;
+      return {
+        injectedCookieCount,
+        isExternalBrowser: pageResult.isExternalBrowser,
+      } satisfies OpenResult;
     });
 
     const snapshot = Effect.fn("McpSession.snapshot")(function* (
@@ -527,8 +537,20 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         Effect.catchCause((cause) => Effect.logDebug("Failed during close cleanup", { cause })),
       );
 
-      yield* Effect.tryPromise(() => activeSession.browser.close()).pipe(
-        Effect.catchCause((cause) => Effect.logDebug("Failed to close browser", { cause })),
+      if (activeSession.isExternalBrowser) {
+        yield* Effect.tryPromise(() => activeSession.page.close()).pipe(
+          Effect.catchCause((cause) => Effect.logDebug("Failed to close page", { cause })),
+        );
+      } else {
+        yield* Effect.tryPromise(() => activeSession.browser.close()).pipe(
+          Effect.catchCause((cause) => Effect.logDebug("Failed to close browser", { cause })),
+        );
+      }
+
+      yield* activeSession.cleanup.pipe(
+        Effect.catchCause((cause) =>
+          Effect.logDebug("Failed to clean up Chrome process", { cause }),
+        ),
       );
 
       if (pageVideo) {

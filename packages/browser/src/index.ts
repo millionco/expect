@@ -16,6 +16,8 @@ export {
   BrowserLaunchError,
   CdpConnectionError,
   CdpDiscoveryError,
+  ChromeNotFoundError,
+  ChromeLaunchTimeoutError,
   NavigationError,
   RecorderInjectionError,
   RefAmbiguousError,

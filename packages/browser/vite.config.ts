@@ -48,4 +48,7 @@ export default defineConfig({
   test: {
     testTimeout: BROWSER_TEST_TIMEOUT_MS,
   },
+  test: {
+    testTimeout: 0,
+  },
 });

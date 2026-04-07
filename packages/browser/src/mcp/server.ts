@@ -8,7 +8,6 @@ import { evaluateRuntime } from "../utils/evaluate-runtime";
 import { runAccessibilityAudit } from "../accessibility";
 import { formatPerformanceTrace } from "../performance-trace";
 import { McpSession } from "./mcp-session";
-import { autoDiscoverCdp } from "../cdp-discovery";
 import { DUPLICATE_REQUEST_WINDOW_MS } from "./constants";
 import { registerRulesResources } from "./rules-resources";
 
@@ -72,7 +71,7 @@ export const createBrowserMcpServer = <E>(
           .string()
           .optional()
           .describe(
-            "CDP WebSocket endpoint URL to connect to an existing Chrome instance (e.g. 'ws://localhost:9222/devtools/browser/...'). Use 'auto' to auto-discover a running Chrome.",
+            "CDP WebSocket endpoint URL to connect to an existing Chrome instance (e.g. 'ws://localhost:9222/devtools/browser/...').",
           ),
         browser: z
           .enum(["chromium", "webkit", "firefox"])
@@ -80,9 +79,15 @@ export const createBrowserMcpServer = <E>(
           .describe(
             "Browser engine to launch (default: chromium). Use 'webkit' for Safari-like testing or 'firefox' for Firefox testing. CDP connections are only supported with chromium.",
           ),
+        liveChrome: z
+          .boolean()
+          .optional()
+          .describe(
+            "Connect to the user's already-running Chrome browser instead of launching Playwright's bundled Chromium. The user must have Chrome open with remote debugging enabled. Falls back to bundled Chromium if no running Chrome is found. Ignored when 'cdp' is provided.",
+          ),
       },
     },
-    ({ url, headed, cookies, waitUntil, cdp, browser: browserType }) =>
+    ({ url, headed, cookies, waitUntil, cdp, browser: browserType, liveChrome }) =>
       runMcp(
         Effect.gen(function* () {
           const session = yield* McpSession;
@@ -92,25 +97,19 @@ export const createBrowserMcpServer = <E>(
             return textResult(`Navigated to ${url}`);
           }
 
-          let cdpUrl: string | undefined;
-          if (cdp === "auto") {
-            cdpUrl = yield* autoDiscoverCdp();
-            yield* Effect.logInfo("Auto-discovered CDP endpoint", { cdpUrl });
-          } else if (cdp) {
-            cdpUrl = cdp;
-          }
-
           const result = yield* session.open(url, {
             headed,
             cookies,
             waitUntil,
-            cdpUrl,
+            cdpUrl: cdp,
             browserType,
+            liveChrome,
           });
           const engineSuffix = browserType && browserType !== "chromium" ? ` [${browserType}]` : "";
-          const cdpSuffix = cdpUrl ? ` (connected via CDP: ${cdpUrl})` : "";
+          const cdpSuffix = cdp ? ` (connected via CDP: ${cdp})` : "";
+          const chromeSuffix = liveChrome && result.isExternalBrowser ? " (live Chrome)" : "";
           return textResult(
-            `Opened ${url}${engineSuffix}${cdpSuffix}` +
+            `Opened ${url}${engineSuffix}${cdpSuffix}${chromeSuffix}` +
               (result.injectedCookieCount > 0
                 ? ` (${result.injectedCookieCount} cookies synced from local browser)`
                 : ""),
