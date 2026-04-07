@@ -972,12 +972,20 @@ export default function HomePage() {
   return (
     <div className="[font-synthesis:none] overflow-x-clip antialiased min-h-screen bg-[color(display-p3_0.981_0.981_0.981)] flex flex-col items-center">
       <DialRoot position="top-right" theme="dark" />
-      <div className="w-full pt-6 pb-4 bg-white/50 flex flex-col items-center">
-        <div className="w-112.75">
+      <div className="w-full pt-6 pb-4 flex flex-col items-center relative">
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: 'linear-gradient(to right, transparent 0%, rgba(255,255,255,0.5) 15%, rgba(255,255,255,0.5) 85%, transparent 100%)' }}
+        />
+        <div className="w-112.75 relative">
           <div className="scale-[1.15] origin-top-left">
             <TerminalIllustration />
           </div>
         </div>
+        <div
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 h-px w-112.75"
+          style={{ background: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.06) 25%, rgba(0,0,0,0.06) 75%, transparent 100%)' }}
+        />
       </div>
       <div className="relative w-112.75 pb-20">
         <div className="flex flex-col gap-2.5 mt-13">
@@ -1033,28 +1041,36 @@ export default function HomePage() {
             How to use Expect
           </div>
           <div className="flex flex-col gap-2.75">
-            <div className="flex items-center gap-2">
+            <div className="flex items-start gap-2">
               <div className="[white-space-collapse:preserve] h-5.75 relative w-3.75 text-[#8E8E8E] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[15px]/5.75">
                 1.
               </div>
               <div className="[white-space-collapse:preserve] w-82.75 left-0 top-0 relative text-[#474747] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[15px]/5.75">
-                Lorem ipsum dolor init, latin ipsum
+                Run /expect inside Claude Code, Codex, and more
               </div>
             </div>
-            <div className="flex items-center gap-2 w-107.25">
+            <div className="flex items-start gap-2 w-107.25">
               <div className="[white-space-collapse:preserve] h-5.75 relative w-3.75 text-[#8E8E8E] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[15px]/5.75">
                 2.
               </div>
               <div className="[white-space-collapse:preserve] w-82.75 relative text-[#474747] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[15px]/5.75">
-                Lorem ipsum dolor init, latin ipsum
+                Spawns agents simulating real logged-in users to find issues and regressions
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-start gap-2">
               <div className="[white-space-collapse:preserve] h-5.75 relative w-3.75 text-[#8E8E8E] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[15px]/5.75">
                 3.
               </div>
               <div className="[white-space-collapse:preserve] w-82.75 relative text-[#474747] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[15px]/5.75">
-                Lorem ipsum dolor init, latin ipsum
+                No more writing Playwright by hand or token-hungry computer use tools
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="[white-space-collapse:preserve] h-5.75 relative w-3.75 text-[#8E8E8E] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[15px]/5.75">
+                4.
+              </div>
+              <div className="[white-space-collapse:preserve] w-82.75 relative text-[#474747] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[15px]/5.75">
+                Get video recordings and GitHub Actions out of the box
               </div>
             </div>
           </div>
@@ -1084,6 +1100,11 @@ export default function HomePage() {
             </div>
           </div>
         </a>
+        <div className="[font-synthesis:none] flex w-107.25 h-fit flex-col gap-4.25 antialiased mt-14">
+          <div className="mb-0 left-0 top-0 w-107.25 [white-space-collapse:preserve] relative text-[#3F3F3F] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[17px]/5.75">
+            Test Security
+          </div>
+        </div>
         <div className="flex flex-col w-107.25 mt-14">
           <div className="[letter-spacing:0em] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[17px]/5.75 text-[color(display-p3_0.248_0.248_0.248)] mb-2.75">
             FAQ
