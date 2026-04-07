@@ -390,17 +390,28 @@ function TerminalContent({
   );
 }
 
-function BrowserPreview({ slid, focused, fixing, fixDiff, reloading, reloadDone, config }: { slid: boolean; focused: boolean; fixing: boolean; fixDiff: boolean; reloading: boolean; reloadDone: boolean; config: AnimationConfig }) {
-  const [loading, setLoading] = useState(false);
+function BrowserPreview({
+  slid,
+  focused,
+  fixing,
+  fixDiff,
+  reloading,
+  reloadDone,
+  config,
+}: {
+  slid: boolean;
+  focused: boolean;
+  fixing: boolean;
+  fixDiff: boolean;
+  reloading: boolean;
+  reloadDone: boolean;
+  config: AnimationConfig;
+}) {
+  const loading = slid;
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    if (!slid) {
-      setLoading(false);
-      setLoaded(false);
-      return;
-    }
-    setLoading(true);
+    if (!slid) return;
     const timer = setTimeout(() => setLoaded(true), 600);
     return () => clearTimeout(timer);
   }, [slid]);
@@ -431,7 +442,9 @@ function BrowserPreview({ slid, focused, fixing, fixDiff, reloading, reloadDone,
           </div>
           <div className="w-3.5 shrink-0" />
           <div className="relative w-36.25 h-6.5 rounded-full shrink-0 bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#A4A4A452_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px] overflow-hidden flex items-center justify-center">
-            <div className="absolute inset-0 flex items-center justify-center text-[12px] text-[#888888] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium">localhost</div>
+            <div className="absolute inset-0 flex items-center justify-center text-[12px] text-[#888888] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium">
+              localhost
+            </div>
             {loading && !loaded && (
               <motion.div
                 className="absolute bottom-0 left-0 h-[2.5px] bg-[#007AFF]"
@@ -914,7 +927,12 @@ function TerminalAnimationView({
         <motion.div
           className="flex flex-col items-start w-68.5 h-46 relative z-10 rounded-2xl pt-4.5 pr-3.75 pb-6.5 pl-3.75 overflow-clip bg-white [box-shadow:#FFFFFF_0px_0px_9px_inset,#69696938_0px_0px_0px_0.5px,#C4C4C438_0px_1px_3px]"
           animate={{ x: 80, scale: terminalFocused ? 1.04 : 1, zIndex: terminalFocused ? 20 : 10 }}
-          transition={{ type: "spring", stiffness: config.terminalSpringStiffness, damping: config.terminalSpringDamping, mass: config.terminalSpringMass / 1000 }}
+          transition={{
+            type: "spring",
+            stiffness: config.terminalSpringStiffness,
+            damping: config.terminalSpringDamping,
+            mass: config.terminalSpringMass / 1000,
+          }}
         >
           <div
             suppressHydrationWarning
