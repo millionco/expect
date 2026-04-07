@@ -1,0 +1,49 @@
+apps/cli/src/commands/add-skill.ts
+  67f9ee4d9a91eab7 206
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "baa213db1bf84da785e9f1b68901961235fa25f4",
+  "prompts": {
+    "67f9ee4d9a91eab7": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d3bf3069-65c2-4165-be14-6394f82ac47a",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 0,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "9ad66728b888acba": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b6cd1621-0755-484b-8b00-8d231fce6007",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    },
+    "f4029477402ac35f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "65bd9674-eb9a-4f74-ab41-b3e3670d8a3c",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 63,
+      "overriden_lines": 0
+    }
+  }
+}
