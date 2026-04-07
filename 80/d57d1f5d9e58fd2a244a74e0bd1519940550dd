@@ -1,0 +1,35 @@
+apps/cli/package.json
+  1de8a25462ae3a9c 27
+apps/mcp/tsconfig.json
+  1de8a25462ae3a9c 1-9
+apps/mcp/src/index.ts
+  1de8a25462ae3a9c 1
+.github/workflows/publish-any-commit.yml
+  1de8a25462ae3a9c 28-29,35-41,44-45
+apps/mcp/vite.config.ts
+  1de8a25462ae3a9c 1-105
+packages/browser/src/mcp/server.ts
+  1de8a25462ae3a9c 43-99,606-621
+apps/mcp/package.json
+  1de8a25462ae3a9c 1-56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "80d57d1f5d9e58fd2a244a74e0bd1519940550dd",
+  "prompts": {
+    "1de8a25462ae3a9c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4b0e14d2-fd3d-4c22-bbe0-16f1f274e7d7",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 266,
+      "total_deletions": 15,
+      "accepted_lines": 256,
+      "overriden_lines": 0
+    }
+  }
+}
