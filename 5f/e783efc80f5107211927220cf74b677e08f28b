@@ -1,0 +1,31 @@
+packages/browser/src/cdp-discovery.ts
+  b81cd76dc583c4b5 100,182
+apps/cli/src/utils/expect-skill.ts
+  b81cd76dc583c4b5 55,69,105
+apps/cli/src/commands/add-skill.ts
+  b81cd76dc583c4b5 82
+packages/browser/src/chrome-launcher.ts
+  b81cd76dc583c4b5 43,173
+apps/cli/src/utils/audit.ts
+  b81cd76dc583c4b5 35,65,75,112
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "5fe783efc80f5107211927220cf74b677e08f28b",
+  "prompts": {
+    "b81cd76dc583c4b5": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1ec5a9b0-ce59-4e6c-91e9-d1c355c5c1c4",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 12,
+      "total_deletions": 12,
+      "accepted_lines": 12,
+      "overriden_lines": 0
+    }
+  }
+}
