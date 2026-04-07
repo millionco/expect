@@ -981,7 +981,7 @@ export default function HomePage() {
     selection.addRange(range);
   };
   return (
-    <div className="[font-synthesis:none] overflow-x-clip antialiased min-h-screen bg-white flex flex-col items-center">
+    <div className="[font-synthesis:none] overflow-x-clip antialiased min-h-screen bg-[color(display-p3_0.986_0.986_0.986)] flex flex-col items-center">
       <DialRoot position="top-right" theme="dark" />
       <div className="w-full pb-6 bg-[#FAFAFA]">
         <div className="w-112.75 mx-auto pt-2 flex items-center justify-center">
