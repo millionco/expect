@@ -502,7 +502,7 @@ function BrowserPreview({
           transition={{ duration: reloading ? 0.15 : 0.3 }}
         />
         <motion.div
-          className="absolute bottom-0 left-0 right-0"
+          className="absolute bottom-0 left-0 right-0 z-20"
           initial={{ y: "100%", opacity: 1 }}
           animate={{
             y: (focused || fixing) && !reloading ? "0%" : "100%",
@@ -522,7 +522,7 @@ function BrowserPreview({
 
 function NetworkPanel({ fixed }: { fixed: boolean }) {
   return (
-    <div className="[font-synthesis:none] flex flex-col bg-white antialiased">
+    <div className="[font-synthesis:none] flex flex-col bg-white antialiased [box-shadow:0_-1px_3px_rgba(0,0,0,0.04)]">
       <div className="flex items-center justify-between relative pt-2.75 pr-3 pb-3.5 pl-3.75 h-10.75">
         <div className="left-4.75 top-3.75 w-52.75 h-7 rounded-lg absolute bg-white filter-[grayscale(100%)]" />
         <div className="flex left-0 top-0 items-center gap-1 relative p-0">
@@ -960,7 +960,7 @@ function TerminalAnimationView({
           />
         </motion.div>
       </div>
-      <div className="[letter-spacing:0em] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-sm/5.75 text-[#858585]">
+      <div className="[letter-spacing:0em] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[13px]/5.75 text-[#858585] mt-2 mb-8">
         {fixDiff
           ? "Vulnerability fixed"
           : fixing
@@ -999,8 +999,10 @@ export default function HomePage() {
     <div className="[font-synthesis:none] overflow-x-clip antialiased min-h-screen bg-white flex flex-col items-center">
       <DialRoot position="top-right" theme="dark" />
       <div className="w-full pb-6 bg-[#FAFAFA]">
-        <div className="w-112.75 mx-auto pt-2">
-          <TerminalIllustration />
+        <div className="w-112.75 mx-auto pt-2 flex items-center justify-center">
+          <div className="scale-[1.15] origin-top">
+            <TerminalIllustration />
+          </div>
         </div>
       </div>
       <div className="relative w-112.75 pb-20">
