@@ -1,4 +1,4 @@
-export interface Colors {
+interface Colors {
   TEXT: string;
   DIM: string;
   GREEN: string;
