@@ -391,11 +391,6 @@ export class RemoteBranch extends Schema.Class<RemoteBranch>("@supervisor/Remote
   }
 }
 
-export class FileDiff extends Schema.Class<FileDiff>("@supervisor/FileDiff")({
-  relativePath: Schema.String,
-  diff: Schema.String,
-}) {}
-
 export const StepStatus = Schema.Literals(["pending", "active", "passed", "failed", "skipped"]);
 export type StepStatus = typeof StepStatus.Type;
 
