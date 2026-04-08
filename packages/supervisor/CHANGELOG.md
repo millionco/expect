@@ -1,5 +1,18 @@
 # @expect/supervisor
 
+## 0.1.0
+
+### Minor Changes
+
+- 389fa02: mcp
+
+### Patch Changes
+
+- Updated dependencies [389fa02]
+  - @expect/agent@0.1.0
+  - @expect/browser@0.1.0
+  - @expect/shared@0.1.0
+
 ## 0.0.24
 
 ### Patch Changes

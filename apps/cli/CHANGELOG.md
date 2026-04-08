@@ -1,5 +1,11 @@
 # expect-cli
 
+## 0.1.0
+
+### Minor Changes
+
+- 389fa02: mcp
+
 ## 0.0.26
 
 ### Patch Changes
