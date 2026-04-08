@@ -126,6 +126,7 @@ See [OpenAI Codex](https://github.com/openai/codex) for more information.
 [mcp_servers.expect]
 command = "npx"
 args = ["-y", "expect-cli@latest", "mcp"]
+startup_timeout_sec = 20
 ```
 
 ---

@@ -3,7 +3,11 @@ import * as path from "node:path";
 import { type SupportedAgent, toDisplayName } from "@expect/agent";
 import { prompts } from "../utils/prompts";
 import { highlighter } from "../utils/highlighter";
-import { NPM_PACKAGE_NAME, EXPECT_MCP_SERVER_NAME } from "../constants";
+import {
+  CODEX_MCP_STARTUP_TIMEOUT_SEC,
+  EXPECT_MCP_SERVER_NAME,
+  NPM_PACKAGE_NAME,
+} from "../constants";
 import { detectNonInteractive } from "../commands/init-utils";
 import { getNestedValue, isConfigRecord, setNestedValue } from "./config-utils";
 import { type ConfigFormat, ConfigRecord, type McpServerConfig } from "./config-types";
@@ -62,6 +66,20 @@ const transformOpenCodeConfig = (config: McpServerConfig): ConfigRecord => {
   return transformedConfig;
 };
 
+const transformCodexConfig = (config: McpServerConfig): ConfigRecord => {
+  const transformedConfig: ConfigRecord = {
+    command: config.command,
+    args: config.args,
+    startup_timeout_sec: CODEX_MCP_STARTUP_TIMEOUT_SEC,
+  };
+
+  if (config.env !== undefined && Object.keys(config.env).length > 0) {
+    transformedConfig.env = config.env;
+  }
+
+  return transformedConfig;
+};
+
 const MCP_AGENT_CONFIGS: Record<McpSupportedAgent, AgentMcpConfig> = {
   claude: {
     globalConfigPath: path.join(HOME_DIRECTORY, ".claude.json"),
@@ -76,6 +94,7 @@ const MCP_AGENT_CONFIGS: Record<McpSupportedAgent, AgentMcpConfig> = {
     globalConfigKey: "mcp_servers",
     projectConfigKey: "mcp_servers",
     format: "toml",
+    transformConfig: transformCodexConfig,
   },
   copilot: {
     globalConfigPath: path.join(COPILOT_CONFIG_DIRECTORY, "mcp-config.json"),

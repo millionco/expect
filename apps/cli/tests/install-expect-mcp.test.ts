@@ -4,6 +4,7 @@ import * as path from "node:path";
 import * as TOML from "@iarna/toml";
 import * as jsoncParser from "jsonc-parser";
 import { afterEach, describe, expect, it } from "vite-plus/test";
+import { CODEX_MCP_STARTUP_TIMEOUT_SEC } from "../src/constants";
 import {
   detectInstalledExpectMcpAgents,
   installExpectMcpForAgents,
@@ -59,6 +60,7 @@ describe("installExpectMcpForAgents", () => {
         expect: {
           command: "npx",
           args: ["-y", "expect-cli@0.0.30", "mcp"],
+          startup_timeout_sec: CODEX_MCP_STARTUP_TIMEOUT_SEC,
         },
       },
     });

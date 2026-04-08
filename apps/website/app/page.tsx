@@ -1085,7 +1085,8 @@ const MCP_CLIENTS = [
     name: "OpenAI Codex",
     command: `[mcp_servers.expect]
 command = "npx"
-args = ["-y", "expect-cli@latest", "mcp"]`,
+args = ["-y", "expect-cli@latest", "mcp"]
+startup_timeout_sec = 20`,
     lang: "toml" as const,
   },
   {
