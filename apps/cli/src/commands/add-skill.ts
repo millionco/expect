@@ -39,13 +39,13 @@ interface AddSkillOptions {
   agents: readonly SupportedAgent[];
 }
 
-export const readNullTerminated = (buffer: Buffer, start: number, length: number): string => {
+const readNullTerminated = (buffer: Buffer, start: number, length: number): string => {
   const raw = buffer.subarray(start, start + length).toString("utf8");
   const nullIndex = raw.indexOf("\x00");
   return nullIndex === -1 ? raw : raw.slice(0, nullIndex);
 };
 
-export const extractTarEntries = (tar: Buffer, prefix: string, destDir: string) => {
+const extractTarEntries = (tar: Buffer, prefix: string, destDir: string) => {
   let offset = 0;
 
   while (offset + TAR_HEADER_SIZE <= tar.length) {

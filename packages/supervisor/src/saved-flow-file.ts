@@ -1,7 +1,7 @@
 import { Predicate } from "effect";
 import type { SavedFlowFileData } from "./types";
 
-export const formatSavedFlowFrontmatter = (data: SavedFlowFileData): string => {
+const formatSavedFlowFrontmatter = (data: SavedFlowFileData): string => {
   const lines: string[] = [
     `format_version: ${data.formatVersion}`,
     `title: ${JSON.stringify(data.title)}`,
@@ -68,7 +68,7 @@ const normalizeSavedFlowEnvironment = (value: unknown): SavedFlowFileData["envir
   };
 };
 
-export const parseSavedFlowFile = (content: string): SavedFlowFileData => {
+const parseSavedFlowFile = (content: string): SavedFlowFileData => {
   const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
   if (!frontmatterMatch) throw new Error("Invalid saved flow file: no frontmatter found");
 
