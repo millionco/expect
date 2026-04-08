@@ -610,7 +610,7 @@ export const createBrowserMcpServer = <E>(
           if (trace.longAnimationFrames.length > 0) {
             summary.push(`\nLong Animation Frames: ${trace.longAnimationFrames.length} detected`);
             const worstBlocking = Math.max(
-              ...trace.longAnimationFrames.map((frame) => frame.blockingDuration),
+              ...trace.longAnimationFrames.map((frame: { blockingDuration: number }) => frame.blockingDuration),
             );
             summary.push(`  Worst blocking duration: ${Math.round(worstBlocking)}ms`);
           }

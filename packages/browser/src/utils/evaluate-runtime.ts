@@ -10,7 +10,7 @@ export const evaluateRuntime = <K extends keyof ExpectRuntime>(
 ) =>
   Effect.promise(
     () =>
-      page.evaluate(
+      page.evaluate<ReturnType<ExpectRuntime[K]>, { method: string; args: unknown[] }>(
         ({ method, args }: { method: string; args: unknown[] }) => {
           const runtime = Reflect.get(globalThis, "__EXPECT_RUNTIME__");
           if (!runtime || typeof runtime !== "object") {
@@ -25,5 +25,5 @@ export const evaluateRuntime = <K extends keyof ExpectRuntime>(
           return fn(...args);
         },
         { method, args: args as unknown[] },
-      ) as Promise<ReturnType<ExpectRuntime[K]>>,
+      ),
   );

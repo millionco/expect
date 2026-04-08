@@ -36,9 +36,13 @@
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
+    "@agentclientprotocol/claude-agent-acp": "^0.24.2",
     "@effect/platform-node": "4.0.0-beta.35",
+    "@github/copilot": "^1.0.12",
+    "@google/gemini-cli": "^0.35.3",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "@standard-schema/spec": "^1.1.0",
+    "@zed-industries/codex-acp": "^0.10.0",
     "effect": "4.0.0-beta.35"
   },
   "devDependencies": {
