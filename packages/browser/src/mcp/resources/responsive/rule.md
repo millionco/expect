@@ -3,9 +3,9 @@
 ## name: responsive
 
 description: >
-  Responsive design patterns for websites and web apps. Use when building responsive layouts,
-  fixing mobile issues, adding breakpoints, working with sticky/scroll patterns, or when
-  dealing with viewport, adaptive design, or mobile-first CSS.
+Responsive design patterns for websites and web apps. Use when building responsive layouts,
+fixing mobile issues, adding breakpoints, working with sticky/scroll patterns, or when
+dealing with viewport, adaptive design, or mobile-first CSS.
 version: 1.0.0
 
 # Responsive Design
@@ -51,4 +51,3 @@ version: 1.0.0
 - `expect://rules/responsive/responsive-design-forks`
 - `expect://rules/responsive/sticky-scroll-patterns`
 - `expect://rules/responsive/testing-checklist`
-
