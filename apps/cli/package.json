@@ -24,8 +24,7 @@
   "bin": {
     "expect": "./dist/index.js",
     "expect-agent": "./dist/index.js",
-    "expect-cli": "./dist/index.js",
-    "expect-mcp": "./dist/browser-mcp.js"
+    "expect-cli": "./dist/index.js"
   },
   "files": [
     "dist",

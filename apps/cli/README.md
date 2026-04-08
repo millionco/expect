@@ -44,23 +44,23 @@ Coming soon. Email [aiden@million.dev](mailto:aiden@million.dev) if you have que
 
 ## Options
 
-| Flag                          | Description                                                                            | Default   |
-| ----------------------------- | -------------------------------------------------------------------------------------- | --------- |
-| `-m, --message <instruction>` | Natural language instruction for what to test                                          | -         |
-| `-f, --flow <slug>`           | Reuse a saved flow by its slug                                                         | -         |
-| `-y, --yes`                   | Run immediately without confirmation                                                   | -         |
+| Flag                          | Description                                                                            | Default     |
+| ----------------------------- | -------------------------------------------------------------------------------------- | ----------- |
+| `-m, --message <instruction>` | Natural language instruction for what to test                                          | -           |
+| `-f, --flow <slug>`           | Reuse a saved flow by its slug                                                         | -           |
+| `-y, --yes`                   | Run immediately without confirmation                                                   | -           |
 | `-a, --agent <provider>`      | Agent provider (`claude`, `codex`, `copilot`, `gemini`, `cursor`, `opencode`, `droid`) | auto-detect |
-| `-t, --target <target>`       | What to test: `unstaged`, `branch`, or `changes`                                       | `changes` |
+| `-t, --target <target>`       | What to test: `unstaged`, `branch`, or `changes`                                       | `changes`   |
 | `-u, --url <urls...>`         | Base URL(s) for the dev server (skips port picker)                                     | -           |
 | `--browser-mode <mode>`       | Browser mode: `cdp`, `headed`, or `headless`                                           | from config |
 | `--profile <name>`            | Reuse a Chrome profile by name (e.g. Default)                                          | -           |
-| `--no-cookies`                | Skip system browser cookie extraction                                                  | -         |
-| `--ci`                        | Force CI mode: headless, no cookies, auto-yes, 30-min timeout                          | -         |
-| `--timeout <ms>`              | Execution timeout in milliseconds                                                      | -         |
-| `--output <format>`           | Output format: `text` or `json`                                                        | `text`    |
-| `--verbose`                   | Enable verbose logging                                                                 | -         |
-| `-v, --version`               | Print version                                                                          | -         |
-| `-h, --help`                  | Display help                                                                           | -         |
+| `--no-cookies`                | Skip system browser cookie extraction                                                  | -           |
+| `--ci`                        | Force CI mode: headless, no cookies, auto-yes, 30-min timeout                          | -           |
+| `--timeout <ms>`              | Execution timeout in milliseconds                                                      | -           |
+| `--output <format>`           | Output format: `text` or `json`                                                        | `text`      |
+| `--verbose`                   | Enable verbose logging                                                                 | -           |
+| `-v, --version`               | Print version                                                                          | -           |
+| `-h, --help`                  | Display help                                                                           | -           |
 
 ## Supported Agents
 
