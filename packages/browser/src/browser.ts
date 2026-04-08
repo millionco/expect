@@ -253,7 +253,11 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
             yield* Effect.tryPromise({
               try: () => existingPage.evaluate(RUNTIME_SCRIPT),
               catch: toBrowserLaunchError,
-            }).pipe(Effect.catchTag("BrowserLaunchError", () => Effect.void));
+            }).pipe(
+              Effect.catchTag("BrowserLaunchError", (cause) =>
+                Effect.logDebug("Failed to inject runtime into existing CDP page", { cause }),
+              ),
+            );
           }
         }
 

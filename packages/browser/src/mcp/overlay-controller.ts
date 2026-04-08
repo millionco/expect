@@ -75,7 +75,7 @@ const resolvePlaywrightLocator = (page: Page, match: LocatorMatch): Locator => {
   }
 };
 
-const resolveCssSelector = (_page: Page, locator: Locator) =>
+const resolveCssSelector = (locator: Locator) =>
   Effect.tryPromise(() =>
     locator.evaluate((element: Element) => {
       const runtime = (globalThis as Record<string, unknown>).__EXPECT_RUNTIME__ as
@@ -84,7 +84,13 @@ const resolveCssSelector = (_page: Page, locator: Locator) =>
       if (!runtime?.cssSelector) return undefined;
       return runtime.cssSelector(element);
     }),
-  ).pipe(Effect.catchCause(() => Effect.succeed<string | undefined>(undefined)));
+  ).pipe(
+    Effect.catchCause((cause) =>
+      Effect.logDebug("CSS selector resolution failed", { cause }).pipe(
+        Effect.as<string | undefined>(undefined),
+      ),
+    ),
+  );
 
 export class OverlayController extends ServiceMap.Service<OverlayController>()(
   "@browser/OverlayController",
@@ -121,7 +127,7 @@ export class OverlayController extends ServiceMap.Service<OverlayController>()(
         );
         if (!box) return;
 
-        const selector = yield* resolveCssSelector(page, locator);
+        const selector = yield* resolveCssSelector(locator);
         yield* safeOverlayEval(
           page,
           "updateCursor",
@@ -140,11 +146,13 @@ export class OverlayController extends ServiceMap.Service<OverlayController>()(
       ) {
         const locator = resolvePlaywrightLocator(page, match).first();
         const box = yield* Effect.tryPromise(() => locator.boundingBox()).pipe(
-          Effect.catchCause(() => Effect.succeed(undefined)),
+          Effect.catchCause((cause) =>
+            Effect.logDebug("Bounding box resolution failed", { cause }).pipe(Effect.as(undefined)),
+          ),
         );
         if (!box) return;
 
-        const selector = yield* resolveCssSelector(page, locator);
+        const selector = yield* resolveCssSelector(locator);
         yield* safeOverlayEval(
           page,
           "updateCursor",
@@ -174,7 +182,7 @@ export class OverlayController extends ServiceMap.Service<OverlayController>()(
         for (const refId of uniqueRefIds) {
           if (!snapshot.refs[refId]) continue;
           const locator = yield* snapshot.locator(refId);
-          const selector = yield* resolveCssSelector(page, locator);
+          const selector = yield* resolveCssSelector(locator);
           if (selector) {
             selectors.push(selector);
           }
@@ -195,7 +203,7 @@ export class OverlayController extends ServiceMap.Service<OverlayController>()(
                 name: nameGroup ? match[nameGroup] : undefined,
               };
               const locator = resolvePlaywrightLocator(page, locatorMatch).first();
-              const selector = yield* resolveCssSelector(page, locator);
+              const selector = yield* resolveCssSelector(locator);
               if (selector) {
                 selectors.push(selector);
               }

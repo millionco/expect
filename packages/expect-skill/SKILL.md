@@ -107,8 +107,10 @@ You MUST complete every step. A skipped step is a failed task.
 ## Rationalizations
 
 You will reach for these — recognize them and do the opposite:
+
 - "I'll just wait for this one test" — No. Spawn a subagent. Always.
 - "It'll be quick" — No. Even 30 seconds blocks your main thread. Subagent.
 - "I need the result before I can continue" — No. Continue with other tasks. Read the result when the subagent returns.
 - "I'll run it in the foreground so I can watch" — No. Background it. Read the output when done.
 - "Let me re-run manually to be sure" — No. Spawn a new subagent for the re-run.
+

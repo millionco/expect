@@ -162,21 +162,23 @@ const isContainerEnvironment = (): boolean => {
   }
 };
 
-const cleanupFailedLaunch = (child: ChildProcess, tempDir: string | undefined) =>
-  Effect.gen(function* () {
-    yield* Effect.sync(() => child.kill()).pipe(
+const cleanupFailedLaunch = Effect.fn("Chrome.cleanupFailedLaunch")(function* (
+  child: ChildProcess,
+  tempDir: string | undefined,
+) {
+  yield* Effect.sync(() => child.kill()).pipe(
+    Effect.catchCause((cause) =>
+      Effect.logDebug("Failed to kill Chrome process during cleanup", { cause }),
+    ),
+  );
+  if (tempDir) {
+    yield* Effect.sync(() => fs.rmSync(tempDir, { recursive: true, force: true })).pipe(
       Effect.catchCause((cause) =>
-        Effect.logDebug("Failed to kill Chrome process during cleanup", { cause }),
+        Effect.logDebug("Failed to remove temp dir during cleanup", { cause }),
       ),
     );
-    if (tempDir) {
-      yield* Effect.sync(() => fs.rmSync(tempDir, { recursive: true, force: true })).pipe(
-        Effect.catchCause((cause) =>
-          Effect.logDebug("Failed to remove temp dir during cleanup", { cause }),
-        ),
-      );
-    }
-  });
+  }
+});
 
 export const launchSystemChrome = Effect.fn("Chrome.launchSystemChrome")(function* (options: {
   headless: boolean;

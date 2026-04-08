@@ -65,5 +65,5 @@ export const writeJsonConfig = (
     }
   }
 
-  fs.writeFileSync(configPath, JSON.stringify(mergedConfig, null, 2));
+  fs.writeFileSync(configPath, JSON.stringify(mergedConfig, undefined, 2));
 };

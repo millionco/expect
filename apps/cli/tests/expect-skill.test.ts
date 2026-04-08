@@ -1,6 +1,7 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Effect } from "effect";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import {
@@ -46,7 +47,9 @@ describe("expect-skill", () => {
       }),
     );
 
-    const status = await Effect.runPromise(getExpectSkillStatus(projectRoot));
+    const status = await Effect.runPromise(
+      getExpectSkillStatus(projectRoot).pipe(Effect.provide(NodeServices.layer)),
+    );
 
     expect(status).toEqual({
       installed: true,
@@ -71,7 +74,9 @@ describe("expect-skill", () => {
       }),
     );
 
-    const status = await Effect.runPromise(getExpectSkillStatus(projectRoot));
+    const status = await Effect.runPromise(
+      getExpectSkillStatus(projectRoot).pipe(Effect.provide(NodeServices.layer)),
+    );
 
     expect(status).toEqual({
       installed: true,
@@ -81,7 +86,7 @@ describe("expect-skill", () => {
     });
   });
 
-  it("detects which installed agents already have the expect skill directory", () => {
+  it("detects which installed agents already have the expect skill directory", async () => {
     const claudeSkillsDir = path.join(projectRoot, ".claude", "skills");
     fs.mkdirSync(claudeSkillsDir, { recursive: true });
     fs.mkdirSync(path.join(claudeSkillsDir, SKILL_NAME), { recursive: true });
@@ -89,20 +94,34 @@ describe("expect-skill", () => {
     const cursorSkillsDir = path.join(projectRoot, ".cursor", "skills");
     fs.mkdirSync(cursorSkillsDir, { recursive: true });
 
-    const installedAgents = detectInstalledSkillAgents(projectRoot, ["claude", "cursor", "codex"]);
+    const installedAgents = await Effect.runPromise(
+      detectInstalledSkillAgents(projectRoot, ["claude", "cursor", "codex"]).pipe(
+        Effect.provide(NodeServices.layer),
+      ),
+    );
 
     expect(installedAgents).toEqual(["claude"]);
   });
 
-  it("treats an agent-local skill install as already installed", () => {
+  it("treats an agent-local skill install as already installed", async () => {
     const claudeSkillDir = path.join(projectRoot, ".claude", "skills", SKILL_NAME);
     fs.mkdirSync(claudeSkillDir, { recursive: true });
     fs.writeFileSync(path.join(claudeSkillDir, "SKILL.md"), makeSkillFile("2.2.0", "same skill"));
 
-    expect(hasInstalledExpectSkill(projectRoot, ["claude", "cursor"])).toBe(true);
+    const result = await Effect.runPromise(
+      hasInstalledExpectSkill(projectRoot, ["claude", "cursor"]).pipe(
+        Effect.provide(NodeServices.layer),
+      ),
+    );
+    expect(result).toBe(true);
   });
 
-  it("reports not installed when neither shared nor agent-local skills exist", () => {
-    expect(hasInstalledExpectSkill(projectRoot, ["claude", "cursor"])).toBe(false);
+  it("reports not installed when neither shared nor agent-local skills exist", async () => {
+    const result = await Effect.runPromise(
+      hasInstalledExpectSkill(projectRoot, ["claude", "cursor"]).pipe(
+        Effect.provide(NodeServices.layer),
+      ),
+    );
+    expect(result).toBe(false);
   });
 });

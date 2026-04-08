@@ -1,7 +1,7 @@
-import * as fs from "node:fs";
 import * as path from "node:path";
 import { type SupportedAgent, toSkillDir } from "@expect/agent";
 import { Effect, Schema } from "effect";
+import { FileSystem } from "effect/FileSystem";
 import { SKILL_FETCH_TIMEOUT_MS } from "../constants";
 
 export const AGENTS_SKILLS_DIR = ".agents/skills";
@@ -55,17 +55,19 @@ export const getInstalledSkillFilePath = (projectRoot: string): string =>
 export const readInstalledSkill = Effect.fn("Skill.readInstalledSkill")(function* (
   projectRoot: string,
 ) {
+  const fileSystem = yield* FileSystem;
   const installedSkillPath = getInstalledSkillFilePath(projectRoot);
-  if (!fs.existsSync(installedSkillPath)) return undefined;
 
-  return yield* Effect.try({
-    try: () => fs.readFileSync(installedSkillPath, "utf8"),
-    catch: (cause) =>
+  return yield* fileSystem.readFileString(installedSkillPath).pipe(
+    Effect.map((content): string | undefined => content),
+    Effect.catchReason("PlatformError", "NotFound", () => Effect.succeed(undefined)),
+    Effect.catchTag("PlatformError", (cause) =>
       new ExpectSkillReadError({
         installedSkillPath,
-        reason: String(cause),
-      }),
-  });
+        reason: cause.message,
+      }).asEffect(),
+    ),
+  );
 });
 
 export const fetchLatestSkill = Effect.fn("Skill.fetchLatestSkill")(function* () {
@@ -128,15 +130,36 @@ export const getExpectSkillStatus = Effect.fn("Skill.getExpectSkillStatus")(func
   };
 });
 
-export const detectInstalledSkillAgents = (
+export const detectInstalledSkillAgents = Effect.fn("Skill.detectInstalledSkillAgents")(function* (
   projectRoot: string,
   agents: readonly SupportedAgent[],
-): SupportedAgent[] =>
-  agents.filter((agent) => fs.existsSync(path.join(projectRoot, toSkillDir(agent), SKILL_NAME)));
+) {
+  const fileSystem = yield* FileSystem;
+  const results: SupportedAgent[] = [];
+  for (const agent of agents) {
+    const skillPath = path.join(projectRoot, toSkillDir(agent), SKILL_NAME);
+    const exists = yield* fileSystem.access(skillPath).pipe(
+      Effect.as(true),
+      Effect.catchReason("PlatformError", "NotFound", () => Effect.succeed(false)),
+      Effect.catchTag("PlatformError", () => Effect.succeed(false)),
+    );
+    if (exists) results.push(agent);
+  }
+  return results;
+});
 
-export const hasInstalledExpectSkill = (
+export const hasInstalledExpectSkill = Effect.fn("Skill.hasInstalledExpectSkill")(function* (
   projectRoot: string,
   agents: readonly SupportedAgent[],
-): boolean =>
-  fs.existsSync(getInstalledSkillFilePath(projectRoot)) ||
-  detectInstalledSkillAgents(projectRoot, agents).length > 0;
+) {
+  const fileSystem = yield* FileSystem;
+  const skillFilePath = getInstalledSkillFilePath(projectRoot);
+  const mainSkillExists = yield* fileSystem.access(skillFilePath).pipe(
+    Effect.as(true),
+    Effect.catchReason("PlatformError", "NotFound", () => Effect.succeed(false)),
+    Effect.catchTag("PlatformError", () => Effect.succeed(false)),
+  );
+  if (mainSkillExists) return true;
+  const installedAgents = yield* detectInstalledSkillAgents(projectRoot, agents);
+  return installedAgents.length > 0;
+});

@@ -2,6 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { gunzipSync } from "node:zlib";
 import { type SupportedAgent, toDisplayName, toSkillDir } from "@expect/agent";
+import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Effect, Schema } from "effect";
 import { highlighter } from "../utils/highlighter";
 import { logger } from "../utils/logger";
@@ -221,7 +222,9 @@ export const runAddSkill = async (options: AddSkillOptions) => {
 
   const skillSpinner = spinner("Downloading skill from GitHub...").start();
   const skillDir = path.join(projectRoot, AGENTS_SKILLS_DIR, SKILL_NAME);
-  const skillStatus = await Effect.runPromise(getExpectSkillStatus(projectRoot));
+  const skillStatus = await Effect.runPromise(
+    getExpectSkillStatus(projectRoot).pipe(Effect.provide(NodeServices.layer)),
+  );
   let skillOperation: "installed" | "updated" | "current" | "unverified" = "installed";
 
   if (skillStatus.installed && skillStatus.isLatest === true) {

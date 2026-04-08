@@ -18,6 +18,8 @@ import { CI_EXECUTION_TIMEOUT_MS, VERSION, VERSION_API_URL } from "./constants";
 import { prompts } from "./utils/prompts";
 import { highlighter } from "./utils/highlighter";
 import { logger } from "./utils/logger";
+import * as NodeServices from "@effect/platform-node/NodeServices";
+import { Effect } from "effect";
 import { hasInstalledExpectSkill } from "./utils/expect-skill";
 import {
   type BrowserMode,
@@ -167,7 +169,11 @@ const runHeadlessForTarget = async (target: Target, opts: CommanderOpts) => {
 
 const promptSkillInstall = async () => {
   const agents = detectAvailableAgents();
-  if (hasInstalledExpectSkill(await resolveProjectRoot(), agents)) return;
+  const projectRoot = await resolveProjectRoot();
+  const skillInstalled = await Effect.runPromise(
+    hasInstalledExpectSkill(projectRoot, agents).pipe(Effect.provide(NodeServices.layer)),
+  );
+  if (skillInstalled) return;
 
   logger.break();
   const response = await prompts({
