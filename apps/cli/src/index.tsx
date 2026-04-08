@@ -1,4 +1,4 @@
-import { Option } from "effect";
+import { Effect, Option } from "effect";
 import { Command } from "commander";
 import { ChangesFor } from "@expect/supervisor";
 import { runHeadless } from "./utils/run-test";
@@ -8,6 +8,7 @@ import { runAddSkill } from "./commands/add-skill";
 import { runWatchCommand } from "./commands/watch";
 import { runUpdateCommand } from "./commands/update";
 import { isRunningInAgent } from "@expect/shared/launched-from";
+import { resolveAgentProvider } from "@expect/shared/infer-agent";
 import { isHeadless } from "./utils/is-headless";
 import { type AgentBackend, detectAvailableAgents } from "@expect/agent";
 import { useNavigationStore, Screen } from "./stores/use-navigation";
@@ -19,7 +20,6 @@ import { prompts } from "./utils/prompts";
 import { highlighter } from "./utils/highlighter";
 import { logger } from "./utils/logger";
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import { Effect } from "effect";
 import { hasInstalledExpectSkill } from "./utils/expect-skill";
 import {
   type BrowserMode,
@@ -157,7 +157,7 @@ const runHeadlessForTarget = async (target: Target, opts: CommanderOpts) => {
   return runHeadless({
     changesFor,
     instruction: opts.message ?? DEFAULT_INSTRUCTION,
-    agent: opts.agent ?? "claude",
+    agent: resolveAgentProvider(opts.agent),
     verbose: opts.verbose ?? false,
     headed: opts.browserMode ? browserMode !== "headless" : !ciMode,
     ci: ciMode,
@@ -205,7 +205,7 @@ const runInteractiveForTarget = async (target: Target, opts: CommanderOpts) => {
   await seedStores(opts, changesFor);
   await waitForHydration();
   const persistedAgent = usePreferencesStore.getState().agentBackend;
-  renderApp(opts.agent ?? persistedAgent ?? "claude");
+  renderApp(resolveAgentProvider(opts.agent ?? persistedAgent));
 };
 
 program
@@ -439,7 +439,7 @@ program.action(async () => {
     }
     await waitForHydration();
     const persistedAgent = usePreferencesStore.getState().agentBackend;
-    renderApp(opts.agent ?? persistedAgent ?? "claude");
+    renderApp(resolveAgentProvider(opts.agent ?? persistedAgent));
   }
 });
 

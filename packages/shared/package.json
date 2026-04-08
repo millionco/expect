@@ -10,7 +10,8 @@
     "./observability": "./src/observability/exports.ts",
     "./utils": "./src/utils.ts",
     "./launched-from": "./src/launched-from.ts",
-    "./is-command-available": "./src/is-command-available.ts"
+    "./is-command-available": "./src/is-command-available.ts",
+    "./infer-agent": "./src/infer-agent.ts"
   },
   "scripts": {
     "lint": "vp lint && tsc --noEmit",

@@ -1,4 +1,5 @@
 import type { AgentBackend } from "@expect/agent";
+import { resolveAgentProvider } from "@expect/shared/infer-agent";
 import { resolveChangesFor } from "../utils/resolve-changes-for";
 import { useNavigationStore, Screen } from "../stores/use-navigation";
 import { usePreferencesStore } from "../stores/use-preferences";
@@ -45,5 +46,5 @@ export const runWatchCommand = async (opts: WatchCommandOpts) => {
     }),
   });
 
-  await renderApp(opts.agent ?? "claude");
+  await renderApp(resolveAgentProvider(opts.agent));
 };
