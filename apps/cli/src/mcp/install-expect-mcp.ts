@@ -1,3 +1,4 @@
+import * as os from "node:os";
 import * as path from "node:path";
 import { type SupportedAgent, toDisplayName } from "@expect/agent";
 import { prompts } from "../utils/prompts";
@@ -17,11 +18,15 @@ export type McpSupportedAgent =
   | "gemini"
   | "opencode";
 
+export type McpInstallScope = "global" | "project";
+
 interface AgentMcpConfig {
-  readonly configPath: string;
-  readonly configKey: string;
+  readonly globalConfigPath: string;
+  readonly projectConfigPath: string;
+  readonly globalConfigKey?: string;
+  readonly projectConfigKey?: string;
   readonly format: ConfigFormat;
-  readonly transformConfig?: (config: McpServerConfig) => unknown;
+  readonly transformConfig?: (config: McpServerConfig, scope: McpInstallScope) => unknown;
 }
 
 interface AgentInstallFailure {
@@ -30,12 +35,23 @@ interface AgentInstallFailure {
 }
 
 export interface ExpectMcpInstallSummary {
+  readonly scope: McpInstallScope;
   readonly selectedAgents: readonly McpSupportedAgent[];
   readonly installed: readonly McpSupportedAgent[];
   readonly updated: readonly McpSupportedAgent[];
   readonly alreadyInstalled: readonly McpSupportedAgent[];
   readonly failed: readonly AgentInstallFailure[];
 }
+
+interface InstallExpectMcpOptions {
+  readonly scope?: McpInstallScope;
+  readonly version?: string;
+}
+
+const HOME_DIRECTORY = os.homedir();
+const XDG_CONFIG_DIRECTORY = process.env.XDG_CONFIG_HOME ?? path.join(HOME_DIRECTORY, ".config");
+const CODEX_CONFIG_DIRECTORY = process.env.CODEX_HOME ?? path.join(HOME_DIRECTORY, ".codex");
+const COPILOT_CONFIG_DIRECTORY = process.env.XDG_CONFIG_HOME ?? path.join(HOME_DIRECTORY, ".copilot");
 
 const transformOpenCodeConfig = (config: McpServerConfig): ConfigRecord => {
   const transformedConfig: ConfigRecord = {
@@ -53,33 +69,45 @@ const transformOpenCodeConfig = (config: McpServerConfig): ConfigRecord => {
 
 const MCP_AGENT_CONFIGS: Record<McpSupportedAgent, AgentMcpConfig> = {
   claude: {
-    configPath: ".mcp.json",
-    configKey: "mcpServers",
+    globalConfigPath: path.join(HOME_DIRECTORY, ".claude.json"),
+    projectConfigPath: ".mcp.json",
+    globalConfigKey: "mcpServers",
+    projectConfigKey: "mcpServers",
     format: "json",
   },
   codex: {
-    configPath: ".codex/config.toml",
-    configKey: "mcp_servers",
+    globalConfigPath: path.join(CODEX_CONFIG_DIRECTORY, "config.toml"),
+    projectConfigPath: ".codex/config.toml",
+    globalConfigKey: "mcp_servers",
+    projectConfigKey: "mcp_servers",
     format: "toml",
   },
   copilot: {
-    configPath: ".vscode/mcp.json",
-    configKey: "servers",
+    globalConfigPath: path.join(COPILOT_CONFIG_DIRECTORY, "mcp-config.json"),
+    projectConfigPath: ".vscode/mcp.json",
+    globalConfigKey: "mcpServers",
+    projectConfigKey: "servers",
     format: "json",
   },
   cursor: {
-    configPath: ".cursor/mcp.json",
-    configKey: "mcpServers",
+    globalConfigPath: path.join(HOME_DIRECTORY, ".cursor", "mcp.json"),
+    projectConfigPath: ".cursor/mcp.json",
+    globalConfigKey: "mcpServers",
+    projectConfigKey: "mcpServers",
     format: "json",
   },
   gemini: {
-    configPath: ".gemini/settings.json",
-    configKey: "mcpServers",
+    globalConfigPath: path.join(HOME_DIRECTORY, ".gemini", "settings.json"),
+    projectConfigPath: ".gemini/settings.json",
+    globalConfigKey: "mcpServers",
+    projectConfigKey: "mcpServers",
     format: "json",
   },
   opencode: {
-    configPath: "opencode.json",
-    configKey: "mcp",
+    globalConfigPath: path.join(XDG_CONFIG_DIRECTORY, "opencode", "opencode.json"),
+    projectConfigPath: "opencode.json",
+    globalConfigKey: "mcp",
+    projectConfigKey: "mcp",
     format: "json",
     transformConfig: transformOpenCodeConfig,
   },
@@ -133,9 +161,37 @@ export const getUnsupportedExpectMcpAgents = (
   agents: readonly SupportedAgent[],
 ): SupportedAgent[] => agents.filter((agent) => !isMcpSupportedAgent(agent));
 
+export const selectExpectMcpInstallScope = async (
+  yes: boolean | undefined,
+): Promise<McpInstallScope> => {
+  if (detectNonInteractive(yes ?? false)) return "global";
+
+  const response = await prompts({
+    type: "select",
+    name: "scope",
+    message: "Where should Expect MCP be installed?",
+    choices: [
+      {
+        title: "Install globally (user level)",
+        description: "Writes to your user-level agent config and works across projects",
+        value: "global",
+      },
+      {
+        title: "Install in this project",
+        description: "Writes project MCP files like .cursor/mcp.json",
+        value: "project",
+      },
+    ],
+    initial: 0,
+  });
+
+  return response.scope === "project" ? "project" : "global";
+};
+
 export const selectExpectMcpAgents = async (
   agents: readonly SupportedAgent[],
   yes: boolean | undefined,
+  scope: McpInstallScope,
 ): Promise<McpSupportedAgent[]> => {
   const supportedAgents = getSupportedExpectMcpAgents(agents);
   if (detectNonInteractive(yes ?? false)) return supportedAgents;
@@ -144,7 +200,10 @@ export const selectExpectMcpAgents = async (
   const response = await prompts({
     type: "multiselect",
     name: "agents",
-    message: `Install the ${highlighter.info("expect")} MCP for:`,
+    message:
+      scope === "global"
+        ? `Install the ${highlighter.info("expect")} MCP globally for:`
+        : `Install the ${highlighter.info("expect")} MCP in this project for:`,
     choices: supportedAgents.map((agent) => ({
       title: toDisplayName(agent),
       value: agent,
@@ -158,17 +217,40 @@ export const selectExpectMcpAgents = async (
     : [];
 };
 
-const getAgentConfigPath = (projectRoot: string, agent: McpSupportedAgent): string =>
-  path.join(projectRoot, MCP_AGENT_CONFIGS[agent].configPath);
-
-const getExpectedAgentConfig = (agent: McpSupportedAgent, version?: string): unknown => {
-  const config = buildExpectMcpServerConfig(version);
-  return MCP_AGENT_CONFIGS[agent].transformConfig?.(config) ?? config;
+const getAgentConfigPath = (
+  projectRoot: string,
+  agent: McpSupportedAgent,
+  scope: McpInstallScope,
+): string => {
+  const agentConfig = MCP_AGENT_CONFIGS[agent];
+  return scope === "global"
+    ? agentConfig.globalConfigPath
+    : path.join(projectRoot, agentConfig.projectConfigPath);
 };
 
-const buildConfigPatch = (agent: McpSupportedAgent, config: unknown): ConfigRecord => {
+const getAgentConfigKey = (agent: McpSupportedAgent, scope: McpInstallScope): string => {
+  const agentConfig = MCP_AGENT_CONFIGS[agent];
+  return scope === "global"
+    ? (agentConfig.globalConfigKey ?? agentConfig.projectConfigKey ?? "mcpServers")
+    : (agentConfig.projectConfigKey ?? agentConfig.globalConfigKey ?? "mcpServers");
+};
+
+const getExpectedAgentConfig = (
+  agent: McpSupportedAgent,
+  scope: McpInstallScope,
+  version?: string,
+): unknown => {
+  const config = buildExpectMcpServerConfig(version);
+  return MCP_AGENT_CONFIGS[agent].transformConfig?.(config, scope) ?? config;
+};
+
+const buildConfigPatch = (
+  agent: McpSupportedAgent,
+  scope: McpInstallScope,
+  config: unknown,
+): ConfigRecord => {
   const patch: ConfigRecord = {};
-  setNestedValue(patch, MCP_AGENT_CONFIGS[agent].configKey, {
+  setNestedValue(patch, getAgentConfigKey(agent, scope), {
     [EXPECT_MCP_SERVER_NAME]: config,
   });
   return patch;
@@ -177,15 +259,19 @@ const buildConfigPatch = (agent: McpSupportedAgent, config: unknown): ConfigReco
 const readInstalledAgentConfig = (
   projectRoot: string,
   agent: McpSupportedAgent,
-): { configPath: string; currentConfig: unknown } => {
+  scope: McpInstallScope,
+) => {
   const agentConfig = MCP_AGENT_CONFIGS[agent];
-  const configPath = getAgentConfigPath(projectRoot, agent);
-  const currentConfig = getNestedValue(readConfig(configPath, agentConfig.format), agentConfig.configKey);
-  return { configPath, currentConfig };
+  const configPath = getAgentConfigPath(projectRoot, agent, scope);
+  return getNestedValue(readConfig(configPath, agentConfig.format), getAgentConfigKey(agent, scope));
 };
 
-const getInstalledExpectMcpEntry = (projectRoot: string, agent: McpSupportedAgent): unknown => {
-  const { currentConfig } = readInstalledAgentConfig(projectRoot, agent);
+const getInstalledExpectMcpEntry = (
+  projectRoot: string,
+  agent: McpSupportedAgent,
+  scope: McpInstallScope,
+): unknown => {
+  const currentConfig = readInstalledAgentConfig(projectRoot, agent, scope);
   if (currentConfig === undefined || typeof currentConfig !== "object" || Array.isArray(currentConfig)) {
     return undefined;
   }
@@ -198,16 +284,18 @@ const stringifyConfig = (value: unknown): string => JSON.stringify(value);
 export const detectInstalledExpectMcpAgents = (
   projectRoot: string,
   agents: readonly SupportedAgent[],
+  scope: McpInstallScope,
 ): McpSupportedAgent[] =>
   getSupportedExpectMcpAgents(agents).filter(
-    (agent) => getInstalledExpectMcpEntry(projectRoot, agent) !== undefined,
+    (agent) => getInstalledExpectMcpEntry(projectRoot, agent, scope) !== undefined,
   );
 
 export const installExpectMcpForAgents = (
   projectRoot: string,
   agents: readonly McpSupportedAgent[],
-  version?: string,
+  options: InstallExpectMcpOptions = {},
 ): ExpectMcpInstallSummary => {
+  const scope = options.scope ?? "project";
   const installed: McpSupportedAgent[] = [];
   const updated: McpSupportedAgent[] = [];
   const alreadyInstalled: McpSupportedAgent[] = [];
@@ -215,9 +303,10 @@ export const installExpectMcpForAgents = (
 
   for (const agent of agents) {
     const agentConfig = MCP_AGENT_CONFIGS[agent];
-    const configPath = getAgentConfigPath(projectRoot, agent);
-    const expectedConfig = getExpectedAgentConfig(agent, version);
-    const currentConfig = getInstalledExpectMcpEntry(projectRoot, agent);
+    const configPath = getAgentConfigPath(projectRoot, agent, scope);
+    const expectedConfig = getExpectedAgentConfig(agent, scope, options.version);
+    const currentConfig = getInstalledExpectMcpEntry(projectRoot, agent, scope);
+    const configKey = getAgentConfigKey(agent, scope);
 
     if (stringifyConfig(currentConfig) === stringifyConfig(expectedConfig)) {
       alreadyInstalled.push(agent);
@@ -227,9 +316,9 @@ export const installExpectMcpForAgents = (
     try {
       writeConfig(
         configPath,
-        buildConfigPatch(agent, expectedConfig),
+        buildConfigPatch(agent, scope, expectedConfig),
         agentConfig.format,
-        agentConfig.configKey,
+        configKey,
       );
 
       if (currentConfig === undefined) {
@@ -246,6 +335,7 @@ export const installExpectMcpForAgents = (
   }
 
   return {
+    scope,
     selectedAgents: [...agents],
     installed,
     updated,
@@ -256,17 +346,20 @@ export const installExpectMcpForAgents = (
 
 export const formatExpectMcpInstallSummary = (summary: ExpectMcpInstallSummary): string => {
   const parts: string[] = [];
+  const scopeLabel = summary.scope === "global" ? "globally" : "in this project";
 
   if (summary.installed.length > 0) {
-    parts.push(`installed for ${summary.installed.map(toDisplayName).join(", ")}`);
+    parts.push(`installed ${scopeLabel} for ${summary.installed.map(toDisplayName).join(", ")}`);
   }
 
   if (summary.updated.length > 0) {
-    parts.push(`updated for ${summary.updated.map(toDisplayName).join(", ")}`);
+    parts.push(`updated ${scopeLabel} for ${summary.updated.map(toDisplayName).join(", ")}`);
   }
 
   if (summary.alreadyInstalled.length > 0) {
-    parts.push(`already current for ${summary.alreadyInstalled.map(toDisplayName).join(", ")}`);
+    parts.push(
+      `already current ${scopeLabel} for ${summary.alreadyInstalled.map(toDisplayName).join(", ")}`,
+    );
   }
 
   if (parts.length === 0) return "No MCP config changes were applied.";

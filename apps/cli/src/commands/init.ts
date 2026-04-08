@@ -24,6 +24,7 @@ import {
   getUnsupportedExpectMcpAgents,
   installExpectMcpForAgents,
   selectExpectMcpAgents,
+  selectExpectMcpInstallScope,
 } from "../mcp/install-expect-mcp";
 
 export { detectAvailableAgents };
@@ -336,12 +337,13 @@ export const runInit = async (options: InitOptions = {}) => {
     logger.break();
   }
 
-  const mcpSpinner = spinner("Installing Expect MCP...").start();
   if (options.dry) {
-    mcpSpinner.succeed("Expect MCP installed (dry run).");
+    spinner("Installing Expect MCP...").start().succeed("Expect MCP installed (dry run).");
   } else {
-    const selectedAgents = await selectExpectMcpAgents(supportedMcpAgents, options.yes);
-    const installSummary = installExpectMcpForAgents(projectRoot, selectedAgents);
+    const scope = await selectExpectMcpInstallScope(options.yes);
+    const selectedAgents = await selectExpectMcpAgents(supportedMcpAgents, options.yes, scope);
+    const mcpSpinner = spinner("Installing Expect MCP...").start();
+    const installSummary = installExpectMcpForAgents(projectRoot, selectedAgents, { scope });
 
     if (
       installSummary.selectedAgents.length > 0 &&

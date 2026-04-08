@@ -31,12 +31,14 @@ vi.mock("../src/mcp/install-expect-mcp", () => ({
   getSupportedExpectMcpAgents: vi.fn((agents: string[]) => agents),
   getUnsupportedExpectMcpAgents: vi.fn().mockReturnValue([]),
   installExpectMcpForAgents: vi.fn().mockReturnValue({
+    scope: "global",
     selectedAgents: ["claude"],
     installed: ["claude"],
     updated: [],
     alreadyInstalled: [],
     failed: [],
   }),
+  selectExpectMcpInstallScope: vi.fn(async () => "global"),
   selectExpectMcpAgents: vi.fn(async (agents: string[]) => agents),
 }));
 
@@ -143,18 +145,21 @@ describe("init flow", () => {
       getSupportedExpectMcpAgents,
       getUnsupportedExpectMcpAgents,
       installExpectMcpForAgents,
+      selectExpectMcpInstallScope,
       selectExpectMcpAgents,
     } = await import("../src/mcp/install-expect-mcp");
     vi.mocked(formatExpectMcpInstallSummary).mockReturnValue("Expect MCP installed for Claude Code.");
     vi.mocked(getSupportedExpectMcpAgents).mockImplementation((agents) => agents as never);
     vi.mocked(getUnsupportedExpectMcpAgents).mockReturnValue([]);
     vi.mocked(installExpectMcpForAgents).mockReturnValue({
+      scope: "global",
       selectedAgents: ["claude"],
       installed: ["claude"],
       updated: [],
       alreadyInstalled: [],
       failed: [],
     });
+    vi.mocked(selectExpectMcpInstallScope).mockResolvedValue("global");
     vi.mocked(selectExpectMcpAgents).mockImplementation(async (agents) => agents as never);
   });
 
@@ -287,6 +292,13 @@ describe("init flow", () => {
       expect(selectExpectMcpAgents).not.toHaveBeenCalled();
     });
 
+    it("does not call selectExpectMcpInstallScope", async () => {
+      const { selectExpectMcpInstallScope } = await import("../src/mcp/install-expect-mcp");
+      const { runInit } = await import("../src/commands/init");
+      await runInit({ dry: true, headless: true });
+      expect(selectExpectMcpInstallScope).not.toHaveBeenCalled();
+    });
+
     it("does not call installExpectMcpForAgents", async () => {
       const { installExpectMcpForAgents } = await import("../src/mcp/install-expect-mcp");
       const { runInit } = await import("../src/commands/init");
@@ -311,9 +323,11 @@ describe("init flow", () => {
 
   describe("failure modes", () => {
     it("selectExpectMcpAgents throws — no config written", async () => {
-      const { selectExpectMcpAgents, installExpectMcpForAgents } = await import(
+      const { selectExpectMcpInstallScope, selectExpectMcpAgents, installExpectMcpForAgents } =
+        await import(
         "../src/mcp/install-expect-mcp"
       );
+      vi.mocked(selectExpectMcpInstallScope).mockResolvedValue("global");
       vi.mocked(selectExpectMcpAgents).mockRejectedValue(new Error("network error"));
 
       const { runInit } = await import("../src/commands/init");
@@ -324,7 +338,10 @@ describe("init flow", () => {
     });
 
     it("installExpectMcpForAgents throws — no config written", async () => {
-      const { installExpectMcpForAgents } = await import("../src/mcp/install-expect-mcp");
+      const { selectExpectMcpInstallScope, installExpectMcpForAgents } = await import(
+        "../src/mcp/install-expect-mcp"
+      );
+      vi.mocked(selectExpectMcpInstallScope).mockResolvedValue("global");
       vi.mocked(installExpectMcpForAgents).mockImplementation(() => {
         throw new Error("EACCES");
       });
@@ -377,6 +394,7 @@ describe("init flow", () => {
     it("partial MCP install failure — still completes init", async () => {
       const { installExpectMcpForAgents } = await import("../src/mcp/install-expect-mcp");
       vi.mocked(installExpectMcpForAgents).mockReturnValue({
+        scope: "global",
         selectedAgents: ["claude", "codex"],
         installed: ["claude"],
         updated: [],
@@ -529,6 +547,15 @@ describe("init flow", () => {
   });
 
   describe("argument forwarding", () => {
+    it("defaults scope selection to global", async () => {
+      const { selectExpectMcpInstallScope } = await import("../src/mcp/install-expect-mcp");
+
+      const { runInit } = await import("../src/commands/init");
+      await runInit({ headless: true });
+
+      expect(selectExpectMcpInstallScope).toHaveBeenCalledWith(undefined);
+    });
+
     it("passes detected agents to selectExpectMcpAgents", async () => {
       const { detectAvailableAgents } = await import("@expect/agent");
       vi.mocked(detectAvailableAgents).mockReturnValue(["claude", "codex", "cursor"]);
@@ -537,16 +564,23 @@ describe("init flow", () => {
       const { runInit } = await import("../src/commands/init");
       await runInit({ headless: true });
 
-      expect(selectExpectMcpAgents).toHaveBeenCalledWith(["claude", "codex", "cursor"], undefined);
+      expect(selectExpectMcpAgents).toHaveBeenCalledWith(
+        ["claude", "codex", "cursor"],
+        undefined,
+        "global",
+      );
     });
 
     it("forwards --yes to selectExpectMcpAgents", async () => {
-      const { selectExpectMcpAgents } = await import("../src/mcp/install-expect-mcp");
+      const { selectExpectMcpInstallScope, selectExpectMcpAgents } = await import(
+        "../src/mcp/install-expect-mcp"
+      );
+      vi.mocked(selectExpectMcpInstallScope).mockResolvedValue("global");
 
       const { runInit } = await import("../src/commands/init");
       await runInit({ yes: true, headless: true });
 
-      expect(selectExpectMcpAgents).toHaveBeenCalledWith(["claude"], true);
+      expect(selectExpectMcpAgents).toHaveBeenCalledWith(["claude"], true, "global");
     });
   });
 

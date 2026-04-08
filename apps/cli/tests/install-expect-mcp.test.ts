@@ -27,8 +27,9 @@ describe("installExpectMcpForAgents", () => {
   it("writes a Cursor MCP config", () => {
     const projectRoot = createTempDirectory();
 
-    const summary = installExpectMcpForAgents(projectRoot, ["cursor"]);
+    const summary = installExpectMcpForAgents(projectRoot, ["cursor"], { scope: "project" });
 
+    expect(summary.scope).toBe("project");
     expect(summary.installed).toEqual(["cursor"]);
     expect(
       JSON.parse(fs.readFileSync(path.join(projectRoot, ".cursor/mcp.json"), "utf8")),
@@ -45,7 +46,10 @@ describe("installExpectMcpForAgents", () => {
   it("writes a Codex MCP config", () => {
     const projectRoot = createTempDirectory();
 
-    const summary = installExpectMcpForAgents(projectRoot, ["codex"], "0.0.30");
+    const summary = installExpectMcpForAgents(projectRoot, ["codex"], {
+      scope: "project",
+      version: "0.0.30",
+    });
 
     expect(summary.installed).toEqual(["codex"]);
     expect(
@@ -77,7 +81,7 @@ describe("installExpectMcpForAgents", () => {
 `,
     );
 
-    installExpectMcpForAgents(projectRoot, ["cursor"]);
+    installExpectMcpForAgents(projectRoot, ["cursor"], { scope: "project" });
 
     const content = fs.readFileSync(path.join(projectRoot, ".cursor/mcp.json"), "utf8");
     expect(content).toContain("// keep me");
@@ -98,10 +102,10 @@ describe("installExpectMcpForAgents", () => {
   it("writes the OpenCode-specific config shape and detects installs", () => {
     const projectRoot = createTempDirectory();
 
-    const summary = installExpectMcpForAgents(projectRoot, ["opencode"]);
+    const summary = installExpectMcpForAgents(projectRoot, ["opencode"], { scope: "project" });
 
     expect(summary.installed).toEqual(["opencode"]);
-    expect(detectInstalledExpectMcpAgents(projectRoot, ["opencode", "cursor"])).toEqual([
+    expect(detectInstalledExpectMcpAgents(projectRoot, ["opencode", "cursor"], "project")).toEqual([
       "opencode",
     ]);
     expect(JSON.parse(fs.readFileSync(path.join(projectRoot, "opencode.json"), "utf8"))).toEqual({
@@ -114,4 +118,5 @@ describe("installExpectMcpForAgents", () => {
       },
     });
   });
+
 });

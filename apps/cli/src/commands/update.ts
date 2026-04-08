@@ -10,6 +10,7 @@ import {
   getSupportedExpectMcpAgents,
   getUnsupportedExpectMcpAgents,
   installExpectMcpForAgents,
+  type McpInstallScope,
 } from "../mcp/install-expect-mcp";
 
 export const runUpdateCommand = async (version?: string) => {
@@ -35,35 +36,58 @@ export const runUpdateCommand = async (version?: string) => {
   }
 
   const projectRoot = await resolveProjectRoot();
-  const installedAgents = detectInstalledExpectMcpAgents(projectRoot, supportedMcpAgents);
-  const targetAgents = installedAgents.length > 0 ? installedAgents : supportedMcpAgents;
+  const summaries = [];
+  const scopes: readonly McpInstallScope[] = ["global", "project"];
+  let foundInstalledConfig = false;
 
   logger.break();
   const updateSpinner = spinner(`Updating Expect MCP to ${versionLabel}...`).start();
-  const installSummary = installExpectMcpForAgents(projectRoot, targetAgents, version);
 
-  if (
-    installSummary.selectedAgents.length > 0 &&
-    installSummary.failed.length === installSummary.selectedAgents.length
-  ) {
+  for (const scope of scopes) {
+    const installedAgents = detectInstalledExpectMcpAgents(projectRoot, supportedMcpAgents, scope);
+    if (installedAgents.length === 0) continue;
+    foundInstalledConfig = true;
+    summaries.push(
+      installExpectMcpForAgents(projectRoot, installedAgents, {
+        scope,
+        version,
+      }),
+    );
+  }
+
+  if (!foundInstalledConfig) {
+    summaries.push(
+      installExpectMcpForAgents(projectRoot, supportedMcpAgents, {
+        scope: "global",
+        version,
+      }),
+    );
+  }
+
+  const allSelected = summaries.flatMap((summary) => summary.selectedAgents);
+  const allFailed = summaries.flatMap((summary) => summary.failed);
+
+  if (allSelected.length > 0 && allFailed.length === allSelected.length) {
     updateSpinner.fail(`Failed to update Expect MCP to ${versionLabel}.`);
-    for (const failure of installSummary.failed) {
+    for (const failure of allFailed) {
       logger.warn(`  ${toDisplayName(failure.agent)}: ${failure.reason}`);
     }
     logger.dim(
-      `  Re-run ${highlighter.info("expect init")} to recreate the project MCP config if needed.`,
+      `  Re-run ${highlighter.info("expect init")} to recreate the global or project MCP config if needed.`,
     );
     process.exitCode = 1;
     return;
   }
 
-  updateSpinner.succeed(formatExpectMcpInstallSummary(installSummary));
+  updateSpinner.succeed(summaries.map(formatExpectMcpInstallSummary).join(" "));
 
-  if (installedAgents.length === 0) {
-    logger.dim("  No existing Expect MCP config was found, so it was installed for detected agents.");
+  if (!foundInstalledConfig) {
+    logger.dim(
+      "  No existing Expect MCP config was found, so it was installed globally for detected agents.",
+    );
   }
 
-  for (const failure of installSummary.failed) {
+  for (const failure of allFailed) {
     logger.warn(`  ${toDisplayName(failure.agent)}: ${failure.reason}`);
   }
 };
