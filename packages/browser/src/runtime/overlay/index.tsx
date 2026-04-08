@@ -7,8 +7,7 @@ import cssText from "../../../dist/overlay.css";
 import {
   CURSOR_SIZE_PX,
   CURSOR_HEIGHT_PX,
-  SRGB_BLUE,
-  CLICK_ANIMATION_RESET_MS,
+  OVERLAY_BLUE,
   MAX_ACTION_LOG_ENTRIES,
   RAF_THROTTLE_INTERVAL_MS,
   getViewport,
@@ -24,26 +23,21 @@ import {
 import { usePolledPositions } from "./lib/use-polled-positions";
 import { finder } from "@medv/finder";
 import { CursorIcon, detectCursorShape } from "./components/cursors";
-import { SpiralSpinner } from "./components/spiral-spinner";
 import { Glow } from "./components/glow";
-import { ToolbarControls } from "./components/toolbar-controls";
-import { ActionMarker } from "./components/action-marker";
-import { XMarkIcon } from "@heroicons/react/16/solid";
-
-interface MarkerPosition {
-  x: number;
-  y: number;
-  visible: boolean;
-}
-
-const INVISIBLE_MARKER: MarkerPosition = { x: 0, y: 0, visible: false };
 
 const AgentOverlay = () => {
   const [state, setState] = useState<OverlayState>(loadInitialState);
   const [cursorShape, setCursorShape] = useState<CursorShape>("pointer");
-  const [hoveredElementRect, setHoveredElementRect] = useState<HighlightRect | undefined>(
-    undefined,
+  const [isDark, setIsDark] = useState(
+    () => window.matchMedia("(prefers-color-scheme: dark)").matches,
   );
+
+  useEffect(() => {
+    const mql = window.matchMedia("(prefers-color-scheme: dark)");
+    const onChange = (event: MediaQueryListEvent) => setIsDark(event.matches);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
 
   useEffect(() => {
     setOverlayState = setState;
@@ -71,93 +65,52 @@ const AgentOverlay = () => {
   }, [state.cursorX, state.cursorY, state.label, state.cursorPositioned]);
 
   useEffect(() => {
-    const onResize = () => {
+    if (!state.cursorPositioned) return;
+    let scrollResetTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const reposition = () => {
+      if (state.cursorSelector) {
+        try {
+          const element = document.querySelector(state.cursorSelector);
+          if (element) {
+            const box = element.getBoundingClientRect();
+            setState((previous) => ({
+              ...previous,
+              cursorX: box.x + box.width / 2,
+              cursorY: box.y + box.height / 2,
+              isScrolling: true,
+            }));
+            clearTimeout(scrollResetTimer);
+            scrollResetTimer = setTimeout(() => {
+              setState((previous) => ({ ...previous, isScrolling: false }));
+            }, 150);
+            return;
+          }
+        } catch {}
+      }
       const saved = loadCursorState();
       if (!saved?.positioned) return;
-      const viewport = getViewport();
+      const vp = getViewport();
       setState((previous) => ({
         ...previous,
-        cursorX: saved.relativeX * viewport.width,
-        cursorY: saved.relativeY * viewport.height,
+        cursorX: saved.relativeX * vp.width,
+        cursorY: saved.relativeY * vp.height,
+        isScrolling: true,
       }));
+      clearTimeout(scrollResetTimer);
+      scrollResetTimer = setTimeout(() => {
+        setState((previous) => ({ ...previous, isScrolling: false }));
+      }, 150);
     };
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
 
-  useEffect(() => {
-    if (!state.cursorSelector) return;
-    let timerId: ReturnType<typeof setTimeout> | undefined;
-    let running = true;
-    const trackCursor = () => {
-      if (!running) return;
-      try {
-        const element = document.querySelector(state.cursorSelector);
-        if (element) {
-          const box = element.getBoundingClientRect();
-          const centerX = box.x + box.width / 2;
-          const centerY = box.y + box.height / 2;
-          setState((previous) => {
-            if (
-              Math.abs(previous.cursorX - centerX) < 1 &&
-              Math.abs(previous.cursorY - centerY) < 1
-            )
-              return previous;
-            return { ...previous, cursorX: centerX, cursorY: centerY };
-          });
-        }
-      } catch (error) {
-        console.debug("[expect-overlay] cursor tracking error:", error);
-      }
-      timerId = setTimeout(trackCursor, RAF_THROTTLE_INTERVAL_MS);
-    };
-    timerId = setTimeout(trackCursor, 0);
+    window.addEventListener("scroll", reposition, true);
+    window.addEventListener("resize", reposition);
     return () => {
-      running = false;
-      clearTimeout(timerId);
+      window.removeEventListener("scroll", reposition, true);
+      window.removeEventListener("resize", reposition);
+      clearTimeout(scrollResetTimer);
     };
-  }, [state.cursorSelector]);
-
-  useEffect(() => {
-    let clickTimeout: ReturnType<typeof setTimeout> | undefined;
-
-    const onMouseDown = () => {
-      setState((previous) => ({
-        ...previous,
-        cursorAction: "click",
-        clickCount: previous.clickCount + 1,
-      }));
-      clearTimeout(clickTimeout);
-      clickTimeout = setTimeout(() => {
-        setState((previous) =>
-          previous.cursorAction === "click" ? { ...previous, cursorAction: "idle" } : previous,
-        );
-      }, CLICK_ANIMATION_RESET_MS);
-    };
-
-    const onKeyDown = () => {
-      setState((previous) =>
-        previous.cursorAction !== "type" ? { ...previous, cursorAction: "type" } : previous,
-      );
-    };
-
-    const onKeyUp = () => {
-      setState((previous) =>
-        previous.cursorAction === "type" ? { ...previous, cursorAction: "idle" } : previous,
-      );
-    };
-
-    document.addEventListener("mousedown", onMouseDown, true);
-    document.addEventListener("keydown", onKeyDown, true);
-    document.addEventListener("keyup", onKeyUp, true);
-
-    return () => {
-      document.removeEventListener("mousedown", onMouseDown, true);
-      document.removeEventListener("keydown", onKeyDown, true);
-      document.removeEventListener("keyup", onKeyUp, true);
-      clearTimeout(clickTimeout);
-    };
-  }, []);
+  }, [state.cursorSelector, state.cursorPositioned]);
 
   const highlightRects = usePolledPositions<HighlightRect>(
     [state.highlightSelectors],
@@ -178,24 +131,6 @@ const AgentOverlay = () => {
     state.highlightSelectors.length > 0,
   );
 
-  const markerPositions = usePolledPositions<MarkerPosition>(
-    [state.actionLog],
-    () =>
-      state.actionLog.map((entry) => {
-        if (!entry.selector) return INVISIBLE_MARKER;
-        try {
-          const element = document.querySelector(entry.selector);
-          if (!element) return INVISIBLE_MARKER;
-          const box = element.getBoundingClientRect();
-          return { x: box.x + box.width / 2, y: box.y + box.height / 2, visible: true };
-        } catch (error) {
-          console.debug("[expect-overlay] marker position error:", error);
-          return INVISIBLE_MARKER;
-        }
-      }),
-    state.actionLog.length > 0,
-  );
-
   const viewport = getViewport();
   const cursorX = state.cursorPositioned
     ? clampToViewport(state.cursorX, CURSOR_SIZE_PX, viewport.width, 0)
@@ -211,15 +146,9 @@ const AgentOverlay = () => {
 
   const hasLabel = Boolean(state.label);
   const showCursor = hasLabel || state.cursorPositioned;
-  const isExpanded = state.toolbarExpanded || hasLabel;
 
-  const toggleOverlay = () => {
-    setState((previous) => ({ ...previous, overlayVisible: !previous.overlayVisible }));
-  };
-
-  const toggleToolbar = () => {
-    setState((previous) => ({ ...previous, toolbarExpanded: !previous.toolbarExpanded }));
-  };
+  const tooltipFlipX = cursorX > viewport.width * 0.65;
+  const tooltipFlipY = cursorY > viewport.height - 80;
 
   return (
     <>
@@ -227,119 +156,58 @@ const AgentOverlay = () => {
 
       {state.overlayVisible && (
         <div
-          key={state.clickCount}
-          className="fixed pointer-events-none z-[2147483647] will-change-[left,top]"
+          className="fixed pointer-events-none z-[2147483647]"
           style={{
-            width: `${CURSOR_SIZE_PX}px`,
-            height: `${CURSOR_HEIGHT_PX}px`,
             left: `${cursorX}px`,
             top: `${cursorY}px`,
             opacity: showCursor ? 1 : 0,
-            transition: `left ${RAF_THROTTLE_INTERVAL_MS}ms linear, top ${RAF_THROTTLE_INTERVAL_MS}ms linear, opacity 150ms ease`,
-            animation:
-              state.cursorAction === "click"
-                ? "expect-cursor-glow 2s ease-in-out infinite, expect-cursor-click 0.2s ease-out 1"
-                : "expect-cursor-glow 2s ease-in-out infinite",
+            transition: state.isScrolling
+              ? "opacity 150ms ease"
+              : `left 600ms cubic-bezier(0.25, 0.1, 0.25, 1), top 600ms cubic-bezier(0.65, 0, 0.35, 1), opacity 150ms ease`,
           }}
         >
-          <CursorIcon shape={state.cursorAction === "type" ? "text" : cursorShape} />
-        </div>
-      )}
-
-      <div className="fixed bottom-5 right-5 z-[2147483647] pointer-events-auto font-[system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,sans-serif]">
-        <div
-          className={`relative flex items-center justify-center h-[44px] rounded-[22px] bg-[#1a1a1a] text-white shadow-[0_2px_8px_rgba(0,0,0,0.2),0_4px_16px_rgba(0,0,0,0.1)] transition-[width] duration-400 ease-[cubic-bezier(0.19,1,0.22,1)] ${isExpanded ? "w-auto px-1.5" : `w-[44px] ${hasLabel || state.actionLog.length > 0 ? "cursor-pointer hover:bg-[#2a2a2a] active:scale-95" : ""}`}`}
-          onClick={
-            !isExpanded && (hasLabel || state.actionLog.length > 0) ? toggleToolbar : undefined
-          }
-        >
-          {state.actionLog.length > 0 && (
+          <div style={{ animation: "expect-cursor-in 0.3s cubic-bezier(0.22,1,0.36,1) both" }}>
+            <CursorIcon shape={cursorShape} />
+          </div>
+          {hasLabel && (
             <div
-              className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-white text-[10px] font-semibold select-none shadow-[0_1px_3px_rgba(0,0,0,0.15),inset_0_0_0_1px_rgba(255,255,255,0.04)]"
-              style={{ background: `rgb(${SRGB_BLUE})` }}
+              className="absolute pointer-events-none"
+              style={{
+                left: tooltipFlipX ? undefined : "32px",
+                right: tooltipFlipX ? "calc(100% - 2px)" : undefined,
+                top: tooltipFlipY ? undefined : "32px",
+                bottom: tooltipFlipY ? "calc(100% - 2px)" : undefined,
+              }}
             >
-              {state.actionLog.length}
-            </div>
-          )}
-
-          {!isExpanded && <SpiralSpinner visible />}
-
-          {isExpanded && (
-            <div className="flex items-center text-sm font-medium h-full">
-              <div className="flex items-center gap-2 pl-3 pr-1">
-                <SpiralSpinner visible={hasLabel} />
-                <span
-                  className="overflow-hidden text-ellipsis whitespace-nowrap max-w-60 bg-clip-text text-transparent animate-[expect-text-shimmer_3s_linear_infinite]"
-                  style={{
-                    background:
-                      "linear-gradient(90deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.5) 100%)",
-                    backgroundSize: "200% 100%",
-                    WebkitBackgroundClip: "text",
-                    backgroundClip: "text",
-                    opacity: hasLabel ? 1 : 0,
-                  }}
-                >
-                  {state.label || "Idle"}
-                </span>
-              </div>
-              <ToolbarControls
-                overlayVisible={state.overlayVisible}
-                onToggleOverlay={toggleOverlay}
-              />
-              <button
-                type="button"
-                className="flex items-center justify-center size-8 rounded-full border-none bg-transparent p-0 cursor-pointer outline-none text-white/60 hover:text-white hover:bg-white/10 transition-colors duration-150 active:scale-[0.92]"
-                onClick={toggleToolbar}
+              <div
+                className="flex items-center justify-center rounded-xl py-1.5 px-3 max-w-[480px] text-white font-medium text-[13px] leading-5 font-[system-ui,-apple-system,sans-serif] animate-[expect-comment-in_0.25s_cubic-bezier(0.22,1,0.36,1)_both]"
+                style={{
+                  background: isDark
+                    ? "color(display-p3 0.2 0.55 1)"
+                    : "color(display-p3 0.118 0.481 0.988)",
+                  boxShadow: isDark ? "0 1px 6px rgba(0,0,0,0.3)" : "0 1px 3px rgba(0,0,0,0.12)",
+                }}
               >
-                <XMarkIcon className="size-4" />
-              </button>
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
+                incididunt ut labore.
+              </div>
             </div>
           )}
         </div>
-      </div>
-
-      {state.overlayVisible &&
-        state.actionLog.map((action, index) => {
-          const position = markerPositions[index];
-          if (!position?.visible) return undefined;
-          return (
-            <ActionMarker
-              key={action.id}
-              action={action}
-              index={index}
-              position={position}
-              onHoverRect={setHoveredElementRect}
-            />
-          );
-        })}
-
-      {hoveredElementRect && (
-        <div
-          className="fixed pointer-events-none z-[2147483646] rounded-[3px]"
-          style={{
-            left: `${hoveredElementRect.x}px`,
-            top: `${hoveredElementRect.y}px`,
-            width: `${hoveredElementRect.width}px`,
-            height: `${hoveredElementRect.height}px`,
-            border: `2px solid rgb(${SRGB_BLUE})`,
-            background: `rgba(${SRGB_BLUE}, 0.08)`,
-          }}
-        />
       )}
 
       {state.overlayVisible &&
         highlightRects.map((rect, index) => (
           <div
             key={`hl-${index}`}
-            className="fixed pointer-events-none z-[2147483646] rounded-[3px] will-change-[left,top,width,height]"
+            className="fixed pointer-events-none z-[2147483646] rounded-md border-2 animate-[expect-comment-in_0.2s_cubic-bezier(0.22,1,0.36,1)_both]"
             style={{
               left: `${rect.x}px`,
               top: `${rect.y}px`,
               width: `${rect.width}px`,
               height: `${rect.height}px`,
-              border: `2px solid rgb(${SRGB_BLUE})`,
-              boxShadow: `0 0 0 1px rgba(${SRGB_BLUE}, 0.3)`,
-              transition: `left ${RAF_THROTTLE_INTERVAL_MS}ms linear, top ${RAF_THROTTLE_INTERVAL_MS}ms linear, width ${RAF_THROTTLE_INTERVAL_MS}ms linear, height ${RAF_THROTTLE_INTERVAL_MS}ms linear`,
+              borderColor: OVERLAY_BLUE,
+              background: `${OVERLAY_BLUE}11`,
             }}
           />
         ))}

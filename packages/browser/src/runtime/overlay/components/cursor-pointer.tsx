@@ -1,21 +1,60 @@
-import { CursorShadowFilter } from "./cursor-shadow-filter";
-
 export const PointerCursor = () => (
-  <svg width="37" height="41" viewBox="0 0 32 33" fill="none" className="absolute top-0 left-0">
-    <CursorShadowFilter />
-    <g filter="url(#expect-cs)">
+  <svg
+    width="64"
+    height="64"
+    viewBox="0 0 32 32"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className="absolute top-0 left-0"
+  >
+    <g filter="url(#filter0_d_4_7)">
       <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M16.501 13.86L24.884 22.261C25.937 23.317 25.19 25.119 23.699 25.119L22.475 25.119L23.691 28.007C23.904 28.513 23.907 29.073 23.7 29.582C23.492 30.092 23.098 30.49 22.59 30.703C22.334 30.81 22.066 30.864 21.792 30.864C20.961 30.864 20.216 30.369 19.894 29.603L18.616 26.565L17.784 27.303C16.703 28.259 15 27.492 15 26.048V14.481C15 13.697 15.947 13.305 16.501 13.86Z"
-        fill="#FFFFFF"
-      />
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M15.999 15.129C15.999 14.998 16.159 14.932 16.25 15.025L24.159 22.95C24.59 23.382 24.284 24.119 23.674 24.119L20.97 24.118L22.769 28.394C22.996 28.934 22.742 29.555 22.203 29.781C21.662 30.008 21.042 29.755 20.816 29.216L18.998 24.892L17.139 26.539C16.723 26.907 16.081 26.651 16.007 26.127L15.999 26.026V15.129Z"
-        fill="#000000"
+        d="M2.58591 2.58594C3.14041 2.03143 3.96783 1.85171 4.70212 2.12695L15.7021 6.25195C16.5219 6.55937 17.0468 7.36516 16.997 8.23926C16.9471 9.11309 16.3344 9.85306 15.4853 10.0654L11.1484 11.1484L10.0654 15.4854C9.85303 16.3345 9.11306 16.9471 8.23923 16.9971C7.36513 17.0469 6.55934 16.5219 6.25192 15.7021L2.12692 4.70215C1.85168 3.96786 2.0314 3.14045 2.58591 2.58594Z"
+        fill="white"
+        stroke="white"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+        strokeLinecap="round"
       />
     </g>
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M4.17558 3.53185C3.99199 3.463 3.7851 3.50782 3.64646 3.64646C3.50782 3.7851 3.463 3.99199 3.53185 4.17558L7.65685 15.1756C7.7337 15.3805 7.93492 15.5117 8.15345 15.4992C8.37197 15.4868 8.557 15.3336 8.61009 15.1213L9.91232 9.91232L15.1213 8.61009C15.3336 8.557 15.4868 8.37197 15.4992 8.15345C15.5117 7.93492 15.3805 7.7337 15.1756 7.65685L4.17558 3.53185Z"
+      fill="#1d9bf0"
+      stroke="#1d9bf0"
+      style={{
+        fill: "color(display-p3 0.118 0.481 0.988)",
+        stroke: "color(display-p3 0.118 0.481 0.988)",
+      }}
+      strokeWidth="2"
+      strokeLinejoin="round"
+      strokeLinecap="round"
+    />
+    <defs>
+      <filter
+        id="filter0_d_4_7"
+        x="-0.000274658"
+        y="-0.000244141"
+        width="19.0005"
+        height="19.0006"
+        filterUnits="userSpaceOnUse"
+        colorInterpolationFilters="sRGB"
+      >
+        <feFlood floodOpacity="0" result="BackgroundImageFix" />
+        <feColorMatrix
+          in="SourceAlpha"
+          type="matrix"
+          values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+          result="hardAlpha"
+        />
+        <feOffset />
+        <feGaussianBlur stdDeviation="1" />
+        <feComposite in2="hardAlpha" operator="out" />
+        <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.22 0" />
+        <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_4_7" />
+        <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_4_7" result="shape" />
+      </filter>
+    </defs>
   </svg>
 );

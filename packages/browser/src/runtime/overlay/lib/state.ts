@@ -39,6 +39,7 @@ export const loadInitialState = (): OverlayState => {
     actionLog: [],
     overlayVisible: true,
     toolbarExpanded: false,
+    isScrolling: false,
   };
 };
 
