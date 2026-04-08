@@ -62,8 +62,12 @@ const httpServer = http.createServer(async (req, res) => {
     const tool = tools[toolName as keyof typeof tools];
     const abortController = new AbortController();
     req.on("close", () => abortController.abort());
-    // HACK: handler expects full RequestHandlerExtra but only uses signal — safe since we bypass MCP protocol dispatch
-    const result = await tool.handler(args, { signal: abortController.signal } as never);
+    // HACK: cast handler to callable — AnyToolHandler includes ToolTaskHandler which tsgo rejects as non-callable, but registerTool always returns a ToolCallback
+    const handler = tool.handler as (
+      args: Record<string, unknown>,
+      extra: { signal: AbortSignal },
+    ) => Promise<unknown>;
+    const result = await handler(args, { signal: abortController.signal });
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(result));
   } catch (error) {
