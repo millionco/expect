@@ -7,7 +7,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Stepper } from "pasito";
 
 import { ClaudeSpinner } from "./claude-spinner";
 import {
@@ -140,8 +139,8 @@ function useAnimationPhase(config: AnimationConfig, onComplete: () => void) {
   const [clicking, setClicking] = useState(false);
   const [labelVisible, setLabelVisible] = useState(false);
   const [cursorLabel, setCursorLabel] = useState<CursorLabelState>("security");
-  const [cursorOnTerminal, setCursorOnTerminal] = useState(false);
-  const [clickingTerminal, setClickingTerminal] = useState(false);
+  const cursorOnTerminal = false;
+  const clickingTerminal = false;
   const [terminalFocused, setTerminalFocused] = useState(false);
   const [fixing, setFixing] = useState(false);
   const [fixDiff, setFixDiff] = useState(false);

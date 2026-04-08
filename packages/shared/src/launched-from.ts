@@ -23,7 +23,7 @@ const PARENT_AGENT_ENV_MAP: ReadonlyArray<readonly [string, string]> = [
 
 export const detectParentAgent = (): string | undefined => {
   for (const [envVariable, agentName] of PARENT_AGENT_ENV_MAP) {
-    if (Boolean(process.env[envVariable])) return agentName;
+    if (process.env[envVariable]) return agentName;
   }
   return undefined;
 };

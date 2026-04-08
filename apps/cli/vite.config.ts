@@ -4,7 +4,6 @@ import * as path from "node:path";
 import type { Plugin } from "rolldown";
 import { defineConfig } from "vite-plus";
 import { reactCompilerPlugin } from "./react-compiler-plugin";
-import { buildRulesContent } from "../../packages/browser/scripts/build-rules-content.js";
 
 const require = createRequire(import.meta.url);
 const pkg = require("./package.json");
@@ -70,6 +69,35 @@ const buildExpectSubpathMap = (): Record<string, string> => {
   }
 
   return map;
+};
+
+const collectMdFiles = (
+  baseDir: string,
+  dir: string,
+  prefix: string = "",
+): Record<string, string> => {
+  const result: Record<string, string> = {};
+  for (const entry of fs.readdirSync(path.join(baseDir, dir))) {
+    const fullPath = path.join(baseDir, dir, entry);
+    const relPath = prefix ? `${prefix}/${entry}` : entry;
+    if (fs.statSync(fullPath).isDirectory()) {
+      Object.assign(result, collectMdFiles(baseDir, path.join(dir, entry), relPath));
+    } else if (entry.endsWith(".md") && !entry.startsWith("_")) {
+      const parts = relPath.split("/");
+      const isRule = relPath.endsWith("/rule.md") || relPath === "rule.md";
+      const parentDir = parts.length >= 2 ? parts[parts.length - 2] : "";
+      const isSubRule = parentDir === "rules" || parentDir === "references";
+      if (isRule || isSubRule) {
+        result[relPath] = fs.readFileSync(fullPath, "utf-8");
+      }
+    }
+  }
+  return result;
+};
+
+const buildRulesContent = (): string => {
+  const resourcesDir = path.join(process.cwd(), "..", "..", "packages", "browser", "src", "mcp", "resources");
+  return JSON.stringify(collectMdFiles(resourcesDir, "."));
 };
 
 const expectSubpathPlugin = (): Plugin => {
