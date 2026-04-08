@@ -3,7 +3,7 @@ import * as path from "node:path";
 import { type SupportedAgent, toDisplayName } from "@expect/agent";
 import { prompts } from "../utils/prompts";
 import { highlighter } from "../utils/highlighter";
-import { EXPECT_MCP_PACKAGE_NAME, EXPECT_MCP_SERVER_NAME } from "../constants";
+import { NPM_PACKAGE_NAME, EXPECT_MCP_SERVER_NAME } from "../constants";
 import { detectNonInteractive } from "../commands/init-utils";
 import { getNestedValue, isConfigRecord, setNestedValue } from "./config-utils";
 import { type ConfigFormat, ConfigRecord, type McpServerConfig } from "./config-types";
@@ -141,11 +141,11 @@ export const formatExpectMcpVersion = (version?: string): string => {
 };
 
 export const getExpectMcpPackageSpecifier = (version?: string): string =>
-  `${EXPECT_MCP_PACKAGE_NAME}@${normalizeVersionSpecifier(version)}`;
+  `${NPM_PACKAGE_NAME}@${normalizeVersionSpecifier(version)}`;
 
 export const buildExpectMcpServerConfig = (version?: string): McpServerConfig => ({
   command: "npx",
-  args: ["-y", getExpectMcpPackageSpecifier(version)],
+  args: ["-y", getExpectMcpPackageSpecifier(version), "mcp"],
 });
 
 export const getSupportedExpectMcpAgents = (

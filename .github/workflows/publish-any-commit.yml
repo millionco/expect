@@ -28,12 +28,10 @@ jobs:
       - name: Publish
         id: publish
         run: |
-          OUTPUT=$(pnpm dlx pkg-pr-new publish ./apps/cli ./apps/mcp 2>&1) || true
+          OUTPUT=$(pnpm dlx pkg-pr-new publish ./apps/cli 2>&1) || true
           echo "$OUTPUT"
           CLI_URL=$(echo "$OUTPUT" | grep -oE 'https://pkg\.pr\.new/[^ ]*expect-cli[^ ]*')
-          MCP_URL=$(echo "$OUTPUT" | grep -oE 'https://pkg\.pr\.new/[^ ]*expect-mcp[^ ]*')
           echo "cli-url=$CLI_URL" >> "$GITHUB_OUTPUT"
-          echo "mcp-url=$MCP_URL" >> "$GITHUB_OUTPUT"
       - name: Smoke test — published CLI runs
         run: |
           npx ${{ steps.publish.outputs.cli-url }} --version

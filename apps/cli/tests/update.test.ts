@@ -8,15 +8,15 @@ import {
 describe("update", () => {
   describe("getExpectMcpPackageSpecifier", () => {
     it("uses the latest release by default", () => {
-      expect(getExpectMcpPackageSpecifier()).toBe("expect-mcp@latest");
+      expect(getExpectMcpPackageSpecifier()).toBe("expect-cli@latest");
     });
 
     it("uses a specific version when provided", () => {
-      expect(getExpectMcpPackageSpecifier("0.0.30")).toBe("expect-mcp@0.0.30");
+      expect(getExpectMcpPackageSpecifier("0.0.30")).toBe("expect-cli@0.0.30");
     });
 
     it("strips a leading v from semver versions", () => {
-      expect(getExpectMcpPackageSpecifier("v0.0.30")).toBe("expect-mcp@0.0.30");
+      expect(getExpectMcpPackageSpecifier("v0.0.30")).toBe("expect-cli@0.0.30");
     });
   });
 
@@ -34,14 +34,14 @@ describe("update", () => {
     it("builds the default npx command", () => {
       expect(buildExpectMcpServerConfig()).toEqual({
         command: "npx",
-        args: ["-y", "expect-mcp@latest"],
+        args: ["-y", "expect-cli@latest", "mcp"],
       });
     });
 
     it("pins the requested version", () => {
       expect(buildExpectMcpServerConfig("0.0.30")).toEqual({
         command: "npx",
-        args: ["-y", "expect-mcp@0.0.30"],
+        args: ["-y", "expect-cli@0.0.30", "mcp"],
       });
     });
   });

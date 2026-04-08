@@ -4,7 +4,8 @@
       "command": "npx",
       "args": [
         "-y",
-        "expect-mcp@latest"
+        "expect-cli@latest",
+        "mcp"
       ]
     }
   }

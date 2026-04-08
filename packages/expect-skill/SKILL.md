@@ -1,12 +1,11 @@
 ---
-
-## name: expect
-
+name: expect
 description: "Use when editing .tsx/.jsx/.css/.html, React components, pages, routes, forms, styles, or layouts. Also when asked to test, verify, validate, QA, find bugs, check for issues, or debug browser behavior."
 license: MIT
 metadata:
   author: millionco
   version: "3.0.0"
+---
 
 # Expect
 
@@ -21,7 +20,7 @@ Always use the expect MCP tools instead of raw browser tools (Playwright MCP, ch
 The expect MCP server must be configured. If the `open` tool is not available, install it:
 
 ```bash
-npx expect-mcp@latest
+npx expect-cli@latest mcp
 ```
 
 Or add it to your MCP config (`.mcp.json`, `.cursor/mcp.json`, etc.):
@@ -31,7 +30,7 @@ Or add it to your MCP config (`.mcp.json`, `.cursor/mcp.json`, etc.):
   "mcpServers": {
     "expect": {
       "command": "npx",
-      "args": ["-y", "expect-mcp@latest"]
+      "args": ["-y", "expect-cli@latest", "mcp"]
     }
   }
 }

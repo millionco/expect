@@ -226,37 +226,6 @@ importers:
         specifier: npm:@voidzero-dev/vite-plus-core@^0.1.12
         version: '@voidzero-dev/vite-plus-core@0.1.12(@types/node@25.5.2)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(typescript@6.0.2)(yaml@2.8.2)'
 
-  apps/mcp:
-    dependencies:
-      '@effect/platform-node':
-        specifier: 4.0.0-beta.35
-        version: 4.0.0-beta.35(effect@4.0.0-beta.35)(ioredis@5.10.0)
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.27.1
-        version: 1.27.1(zod@4.3.6)
-      accessibility-checker-engine:
-        specifier: ^4.0.16
-        version: 4.0.16
-      effect:
-        specifier: 4.0.0-beta.35
-        version: 4.0.0-beta.35
-      playwright:
-        specifier: ^1.52.0
-        version: 1.58.2
-      zod:
-        specifier: ^4.3.6
-        version: 4.3.6
-    devDependencies:
-      '@expect/browser':
-        specifier: workspace:*
-        version: link:../../packages/browser
-      '@expect/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
-      typescript:
-        specifier: ^5.7.0
-        version: 5.9.3
-
   apps/runtime-test:
     dependencies:
       react:

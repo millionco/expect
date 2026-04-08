@@ -36,7 +36,7 @@ describe("installExpectMcpForAgents", () => {
         mcpServers: {
           expect: {
             command: "npx",
-            args: ["-y", "expect-mcp@latest"],
+            args: ["-y", "expect-cli@latest", "mcp"],
           },
         },
       },
@@ -58,7 +58,7 @@ describe("installExpectMcpForAgents", () => {
       mcp_servers: {
         expect: {
           command: "npx",
-          args: ["-y", "expect-mcp@0.0.30"],
+          args: ["-y", "expect-cli@0.0.30", "mcp"],
         },
       },
     });
@@ -93,7 +93,7 @@ describe("installExpectMcpForAgents", () => {
         },
         expect: {
           command: "npx",
-          args: ["-y", "expect-mcp@latest"],
+          args: ["-y", "expect-cli@latest", "mcp"],
         },
       },
     });
@@ -112,7 +112,7 @@ describe("installExpectMcpForAgents", () => {
       mcp: {
         expect: {
           type: "local",
-          command: ["npx", "-y", "expect-mcp@latest"],
+          command: ["npx", "-y", "expect-cli@latest", "mcp"],
           enabled: true,
         },
       },

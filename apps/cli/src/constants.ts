@@ -46,13 +46,11 @@ export const CI_EXECUTION_TIMEOUT_MS = 30 * 60 * 1000;
 export const CI_HEARTBEAT_INTERVAL_MS = 60_000;
 
 export const NPM_PACKAGE_NAME = "expect-cli";
-export const EXPECT_MCP_PACKAGE_NAME = "expect-mcp";
 export const EXPECT_MCP_SERVER_NAME = "expect";
 export const VERSION_API_URL = "https://expect.dev/api/version";
 export const UPDATE_CHECK_STALE_MS = 3_600_000;
 export const UPDATE_CHECK_TIMEOUT_MS = 5_000;
 export const SKILL_FETCH_TIMEOUT_MS = 5_000;
-export const PLAYWRIGHT_INSTALL_TIMEOUT_MS = 300_000;
 export const GLOBAL_INSTALL_TIMEOUT_MS = 60_000;
 
 export type PackageManager = "npm" | "pnpm" | "yarn" | "bun" | "deno" | "vp";
