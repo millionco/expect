@@ -343,7 +343,7 @@ importers:
         version: 19.2.4(react@19.2.4)
       react-grab:
         specifier: ^0.1.28
-        version: 0.1.30(react@19.2.4)
+        version: 0.1.31(react@19.2.4)
       shadcn:
         specifier: ^4.0.8
         version: 4.1.0(@types/node@20.19.37)(typescript@5.9.3)
@@ -2739,8 +2739,8 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
-  '@react-grab/cli@0.1.30':
-    resolution: {integrity: sha512-jy8SKQ+QzpYx5TyqKVEfR3xqUFt4K/WfZtHkFk3SALW/ASpUNvWC3lohBtw5+Op6jwzBaGrjhljor6vC3+7pLA==}
+  '@react-grab/cli@0.1.31':
+    resolution: {integrity: sha512-lBUXfJ9gtaf5w8FwKH3YfI8mVaOVzREhp9Uc6qrsMgncJon02N9kQSwDLCFS4gdPwBYCnuHcT63YVXdvzGH5+Q==}
     hasBin: true
 
   '@rolldown/pluginutils@1.0.0-rc.7':
@@ -6499,8 +6499,8 @@ packages:
     peerDependencies:
       react: ^19.2.4
 
-  react-grab@0.1.30:
-    resolution: {integrity: sha512-rf3xK3NYoXA0RPuwT/j4xaseeFPSNM0P/A+vgLd+4uP+4C9ZgV2ozi+laqLIlPRPKETEx5yXwHsMImq7caqAxA==}
+  react-grab@0.1.31:
+    resolution: {integrity: sha512-JAdlg46rNFv58l0tGs6omroDlCo1+oj70v03tyaP5AOHbx1wNNP1aaoTcDLSlcN4K5gwve9zR8/t0CT2mwLqSA==}
     hasBin: true
     peerDependencies:
       react: '>=17.0.0'
@@ -6841,8 +6841,8 @@ packages:
     resolution: {integrity: sha512-94hK0Hh8rPqQl2xXc3HsaBoOXKV20MToPkcXvwbISWLEs+64sBq5kFgn2kJDHb1Pry9yrP0dxrCI9RRci7RXKg==}
     engines: {node: '>= 6.0.0', npm: '>= 3.0.0'}
 
-  smol-toml@1.6.0:
-    resolution: {integrity: sha512-4zemZi0HvTnYwLfrpk/CF9LOd9Lt87kAt50GnqhMpyF9U3poDAP2+iukq2bZsO/ufegbYehBkqINbsWxj4l4cw==}
+  smol-toml@1.6.1:
+    resolution: {integrity: sha512-dWUG8F5sIIARXih1DTaQAX4SsiTXhInKf1buxdY9DIg4ZYPZK5nGM1VRIYmEbDbsHt7USo99xSLFu5Q1IqTmsg==}
     engines: {node: '>= 18'}
 
   socks-proxy-agent@8.0.5:
@@ -9757,7 +9757,7 @@ snapshots:
       - react-native-b4a
       - supports-color
 
-  '@react-grab/cli@0.1.30':
+  '@react-grab/cli@0.1.31':
     dependencies:
       '@antfu/ni': 0.23.2
       commander: 14.0.3
@@ -9766,7 +9766,7 @@ snapshots:
       ora: 8.2.0
       picocolors: 1.1.1
       prompts: 2.4.2
-      smol-toml: 1.6.0
+      smol-toml: 1.6.1
 
   '@rolldown/pluginutils@1.0.0-rc.7': {}
 
@@ -13625,11 +13625,10 @@ snapshots:
       react: 19.2.4
       scheduler: 0.27.0
 
-  react-grab@0.1.30(react@19.2.4):
+  react-grab@0.1.31(react@19.2.4):
     dependencies:
-      '@react-grab/cli': 0.1.30
+      '@react-grab/cli': 0.1.31
       bippy: 0.5.39(react@19.2.4)
-      solid-js: 1.9.11
     optionalDependencies:
       react: 19.2.4
 
@@ -13922,8 +13921,10 @@ snapshots:
   seroval-plugins@1.5.1(seroval@1.5.1):
     dependencies:
       seroval: 1.5.1
+    optional: true
 
-  seroval@1.5.1: {}
+  seroval@1.5.1:
+    optional: true
 
   serve-static@2.2.1:
     dependencies:
@@ -14165,7 +14166,7 @@ snapshots:
 
   smart-buffer@4.2.0: {}
 
-  smol-toml@1.6.0: {}
+  smol-toml@1.6.1: {}
 
   socks-proxy-agent@8.0.5:
     dependencies:
@@ -14185,6 +14186,7 @@ snapshots:
       csstype: 3.2.3
       seroval: 1.5.1
       seroval-plugins: 1.5.1(seroval@1.5.1)
+    optional: true
 
   source-map-js@1.2.1: {}
 
