@@ -1,0 +1,25 @@
+apps/cli/tests/init-flow.test.ts
+  e17eedfd60be2d35 131-151,225-233,236,264-268,289-291,302-303,317-326,475-483,498-510,524-534
+apps/cli/src/commands/init.ts
+  e17eedfd60be2d35 1,15-22,102-103,136-137,146-154,156-167,169-173,175-178,189
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "78bb24fbc2a14587bae7f09d958fffd48a2ee417",
+  "prompts": {
+    "e17eedfd60be2d35": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "2d060063-f7f9-4e65-abe4-c9d67d205055",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 131,
+      "total_deletions": 59,
+      "accepted_lines": 131,
+      "overriden_lines": 0
+    }
+  }
+}
