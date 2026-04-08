@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "pasito/styles.css";
 
 @font-face {
   font-family: "ABC Diatype";
@@ -11,6 +12,13 @@
   font-family: "Ivar Text TRIAL";
   src: url("/fonts/IvarTextTRIAL-Regular.otf") format("opentype");
   font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/JetBrainsMono.ttf") format("truetype");
+  font-weight: 100 900;
   font-display: swap;
 }
 @import "tw-animate-css";
@@ -139,16 +147,10 @@
   }
   html {
     @apply font-sans;
-  }
-  ::selection {
-    background-color: rgb(179, 179, 179);
-    color: white;
-  }
-  .dark ::selection {
-    background-color: rgb(80, 80, 80);
-    color: white;
+    scrollbar-gutter: stable;
   }
 }
+
 
 .replayer-mouse {
   background-image: url("/cursors/default.svg") !important;
@@ -245,4 +247,20 @@
   background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: text-shimmer 2s ease-in-out infinite;
+}
+
+.dialkit-root,
+.dialkit-root * {
+  font-family: "Open Runde", system-ui, sans-serif !important;
+}
+
+.no-container-bg {
+  --pill-container-bg: transparent;
+  --pill-container-border: rgba(0, 0, 0, 0.04);
+  --pill-dot-size: 7px;
+  --pill-active-width: 22px;
+  --pill-gap: 5px;
+  --pill-bg: rgba(0, 0, 0, 0.12);
+  --pill-active-bg: rgba(0, 0, 0, 0.55);
+  padding: 10px 14px;
 }

@@ -311,6 +311,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      dialkit:
+        specifier: ^1.2.0
+        version: 1.2.0(motion@12.38.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(solid-js@1.9.11)
       lucide-react:
         specifier: ^0.577.0
         version: 0.577.0(react@19.2.4)
@@ -323,6 +326,9 @@ importers:
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      pasito:
+        specifier: ^0.1.3
+        version: 0.1.3(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react:
         specifier: 19.2.4
         version: 19.2.4
@@ -331,7 +337,7 @@ importers:
         version: 19.2.4(react@19.2.4)
       react-grab:
         specifier: ^0.1.28
-        version: 0.1.28(@types/react@19.2.14)(react@19.2.4)
+        version: 0.1.30(react@19.2.4)
       shadcn:
         specifier: ^4.0.8
         version: 4.1.0(@types/node@20.19.37)(typescript@5.9.3)
@@ -347,6 +353,9 @@ importers:
       web-haptics:
         specifier: ^0.0.6
         version: 0.0.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      zustand:
+        specifier: ^5.0.12
+        version: 5.0.12(@types/react@19.2.14)(react@19.2.4)(use-sync-external-store@1.6.0(react@19.2.4))
     devDependencies:
       '@tailwindcss/postcss':
         specifier: ^4
@@ -2724,8 +2733,8 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
-  '@react-grab/cli@0.1.28':
-    resolution: {integrity: sha512-IE4bTeH0mCq0FBRaYRUtdiIfvO7NCv14lHS4TiTY8YNG5tPYwHnLZZtniud0ElmLIWGP95Kk6E7A6J2uDmOY+Q==}
+  '@react-grab/cli@0.1.30':
+    resolution: {integrity: sha512-jy8SKQ+QzpYx5TyqKVEfR3xqUFt4K/WfZtHkFk3SALW/ASpUNvWC3lohBtw5+Op6jwzBaGrjhljor6vC3+7pLA==}
     hasBin: true
 
   '@rolldown/pluginutils@1.0.0-rc.7':
@@ -3187,11 +3196,6 @@ packages:
     resolution: {integrity: sha512-jp2L/eY6fn+KgVVQAOqYItbF0VY/YApe5Mz2F0aykSO8gx31bYCZyvSeYxCHKvzHG5eZjc+zyaS5BrBWya2+kQ==}
     peerDependencies:
       '@types/react': ^19.2.0
-
-  '@types/react-reconciler@0.28.9':
-    resolution: {integrity: sha512-HHM3nxyUZ3zAylX8ZEyrDNd2XZOnQ0D5XfunJF5FLQnZbHHYq4UWvW1QfelQNXv1ICNkwYhfxjwfnqivYB6bFg==}
-    peerDependencies:
-      '@types/react': '*'
 
   '@types/react@19.2.14':
     resolution: {integrity: sha512-ilcTH/UniCkMdtexkoCN0bI7pMcJDvmQFPvuPvmEaYA/NSfFTAgdUSLAoVjaRJm7+6PvcM+q1zYOwS4wTYMF9w==}
@@ -3880,8 +3884,8 @@ packages:
   bignumber.js@9.3.1:
     resolution: {integrity: sha512-Ko0uX15oIUS7wJ3Rb30Fs6SkVbLmPBAKdlm7q9+ak9bbIeFf0MwuBsQV6z7+X768/cHsfg+WlysDWJcmthjsjQ==}
 
-  bippy@0.5.32:
-    resolution: {integrity: sha512-yt1mC8eReTxjfg41YBZdN4PvsDwHFWxltoiQX0Q+Htlbf41aSniopb7ECZits01HwNAvXEh69RGk/ImlswDTEw==}
+  bippy@0.5.39:
+    resolution: {integrity: sha512-8hE8rKSl8JWyeaY+JjpnmceWAZPpLEyzOZQpWXM5Rc7861c5WotMJHy2aRZKZrGA8nMpvLNF01t4yQQ+HcZG3w==}
     peerDependencies:
       react: '>=17.0.1'
 
@@ -4287,6 +4291,30 @@ packages:
 
   devtools-protocol@0.0.1581282:
     resolution: {integrity: sha512-nv7iKtNZQshSW2hKzYNr46nM/Cfh5SEvE2oV0/SEGgc9XupIY5ggf84Cz8eJIkBce7S3bmTAauFD6aysMpnqsQ==}
+
+  dialkit@1.2.0:
+    resolution: {integrity: sha512-VRPpFegBQwrXclLFc+qgMchoby+IoJuRjoWjYKSRV2I1cxpvIpAv1WsgO1PiiNhKAGmymKx5ivRBJIZPv1tqGg==}
+    peerDependencies:
+      motion: '>=11.0.0'
+      motion-v: '>=2.0.0'
+      react: '>=18.0.0'
+      react-dom: '>=18.0.0'
+      solid-js: '>=1.6.0'
+      svelte: '>=5.8.0'
+      vue: '>=3.3.0'
+    peerDependenciesMeta:
+      motion-v:
+        optional: true
+      react:
+        optional: true
+      react-dom:
+        optional: true
+      solid-js:
+        optional: true
+      svelte:
+        optional: true
+      vue:
+        optional: true
 
   diff@8.0.3:
     resolution: {integrity: sha512-qejHi7bcSD4hQAZE0tNAawRK1ZtafHDmMTMkrrIGgSLl7hTnQHmKCeB45xAcbfTqK2zowkM3j3bHt/4b/ARbYQ==}
@@ -6219,6 +6247,20 @@ packages:
     resolution: {integrity: sha512-CiyeOxFT/JZyN5m0z9PfXw4SCBJ6Sygz1Dpl0wqjlhDEGGBP1GnsUVEL0p63hoG1fcj3fHynXi9NYO4nWOL+qQ==}
     engines: {node: '>= 0.8'}
 
+  pasito@0.1.3:
+    resolution: {integrity: sha512-fPR9Fs22RWJN7CR7bBrcNv6bfYTd57qLRTrQVLpyDXhCLVmFb8F6YLGzmrmW21+XOhupxrPvUVle77YzJg/ILQ==}
+    peerDependencies:
+      react: '>=18'
+      react-dom: '>=18'
+      vue: '>=3'
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
+        optional: true
+      vue:
+        optional: true
+
   patch-console@2.0.0:
     resolution: {integrity: sha512-0YNdUceMdaQwoKce1gatDScmMo5pu/tfABfnzEqeG0gtTmd7mh/WcwgUjtAeOU7N8nFFlbQBnFK2gXW5fGvmMA==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
@@ -6451,8 +6493,8 @@ packages:
     peerDependencies:
       react: ^19.2.4
 
-  react-grab@0.1.28:
-    resolution: {integrity: sha512-u3fvu7a7ejHhuWKzf/N6sFavV04vcqwtbcqyxwNPtvd3ts9KSVerpHp1ZH0/XVKTsh3MZz1u1jyIt0KYC9L/Rg==}
+  react-grab@0.1.30:
+    resolution: {integrity: sha512-rf3xK3NYoXA0RPuwT/j4xaseeFPSNM0P/A+vgLd+4uP+4C9ZgV2ozi+laqLIlPRPKETEx5yXwHsMImq7caqAxA==}
     hasBin: true
     peerDependencies:
       react: '>=17.0.0'
@@ -7577,6 +7619,24 @@ packages:
 
   zustand@5.0.11:
     resolution: {integrity: sha512-fdZY+dk7zn/vbWNCYmzZULHRrss0jx5pPFiOuMZ/5HJN6Yv3u+1Wswy/4MpZEkEGhtNH+pwxZB8OKgUBPzYAGg==}
+    engines: {node: '>=12.20.0'}
+    peerDependencies:
+      '@types/react': '>=18.0.0'
+      immer: '>=9.0.6'
+      react: '>=18.0.0'
+      use-sync-external-store: '>=1.2.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      immer:
+        optional: true
+      react:
+        optional: true
+      use-sync-external-store:
+        optional: true
+
+  zustand@5.0.12:
+    resolution: {integrity: sha512-i77ae3aZq4dhMlRhJVCYgMLKuSiZAaUPAct2AksxQ+gOtimhGMdXljRT21P5BNpeT4kXlLIckvkPM029OljD7g==}
     engines: {node: '>=12.20.0'}
     peerDependencies:
       '@types/react': '>=18.0.0'
@@ -9691,7 +9751,7 @@ snapshots:
       - react-native-b4a
       - supports-color
 
-  '@react-grab/cli@0.1.28':
+  '@react-grab/cli@0.1.30':
     dependencies:
       '@antfu/ni': 0.23.2
       commander: 14.0.3
@@ -10045,10 +10105,6 @@ snapshots:
       kleur: 3.0.3
 
   '@types/react-dom@19.2.3(@types/react@19.2.14)':
-    dependencies:
-      '@types/react': 19.2.14
-
-  '@types/react-reconciler@0.28.9(@types/react@19.2.14)':
     dependencies:
       '@types/react': 19.2.14
 
@@ -10624,12 +10680,9 @@ snapshots:
 
   bignumber.js@9.3.1: {}
 
-  bippy@0.5.32(@types/react@19.2.14)(react@19.2.4):
+  bippy@0.5.39(react@19.2.4):
     dependencies:
-      '@types/react-reconciler': 0.28.9(@types/react@19.2.14)
       react: 19.2.4
-    transitivePeerDependencies:
-      - '@types/react'
 
   bl@4.1.0:
     dependencies:
@@ -11003,6 +11056,14 @@ snapshots:
       dequal: 2.0.3
 
   devtools-protocol@0.0.1581282: {}
+
+  dialkit@1.2.0(motion@12.38.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(solid-js@1.9.11):
+    dependencies:
+      motion: 12.38.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+    optionalDependencies:
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+      solid-js: 1.9.11
 
   diff@8.0.3: {}
 
@@ -13305,6 +13366,11 @@ snapshots:
 
   parseurl@1.3.3: {}
 
+  pasito@0.1.3(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+    optionalDependencies:
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+
   patch-console@2.0.0: {}
 
   path-browserify@1.0.1: {}
@@ -13553,16 +13619,13 @@ snapshots:
       react: 19.2.4
       scheduler: 0.27.0
 
-  react-grab@0.1.28(@types/react@19.2.14)(react@19.2.4):
+  react-grab@0.1.30(react@19.2.4):
     dependencies:
-      '@medv/finder': 4.0.2
-      '@react-grab/cli': 0.1.28
-      bippy: 0.5.32(@types/react@19.2.14)(react@19.2.4)
+      '@react-grab/cli': 0.1.30
+      bippy: 0.5.39(react@19.2.4)
       solid-js: 1.9.11
     optionalDependencies:
       react: 19.2.4
-    transitivePeerDependencies:
-      - '@types/react'
 
   react-is@16.13.1: {}
 
@@ -14914,6 +14977,12 @@ snapshots:
   zod@4.3.6: {}
 
   zustand@5.0.11(@types/react@19.2.14)(react@19.2.4)(use-sync-external-store@1.6.0(react@19.2.4)):
+    optionalDependencies:
+      '@types/react': 19.2.14
+      react: 19.2.4
+      use-sync-external-store: 1.6.0(react@19.2.4)
+
+  zustand@5.0.12(@types/react@19.2.14)(react@19.2.4)(use-sync-external-store@1.6.0(react@19.2.4)):
     optionalDependencies:
       '@types/react': 19.2.14
       react: 19.2.4
