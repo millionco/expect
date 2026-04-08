@@ -125,6 +125,7 @@ const seedStores = async (opts: CommanderOpts, changesFor: ChangesFor) => {
     browserMode,
     browserHeaded: browserMode !== "headless",
     browserProfile: opts.profile,
+    cdpUrl: opts.cdp,
   });
 
   if (opts.message) {

@@ -11,6 +11,7 @@ interface PreferencesStore {
   browserMode: BrowserMode;
   browserHeaded: boolean;
   browserProfile: string | undefined;
+  cdpUrl: string | undefined;
   autoSaveFlows: boolean;
   notifications: boolean | undefined;
   instructionHistory: string[];
@@ -31,6 +32,7 @@ export const usePreferencesStore = create<PreferencesStore>()(
       browserMode: "headed",
       browserHeaded: true,
       browserProfile: undefined,
+      cdpUrl: undefined,
       autoSaveFlows: true,
       notifications: undefined,
       instructionHistory: [],

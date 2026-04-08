@@ -28,6 +28,7 @@ import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Git } from "./git/git";
 import {
   EXPECT_COOKIE_BROWSERS_ENV_NAME,
+  EXPECT_CDP_URL_ENV_NAME,
   EXPECT_BASE_URL_ENV_NAME,
   EXPECT_HEADED_ENV_NAME,
   EXPECT_PROFILE_ENV_NAME,
@@ -59,6 +60,7 @@ export interface ExecuteOptions {
   readonly isHeadless: boolean;
   readonly cookieBrowserKeys: readonly string[];
   readonly baseUrl?: string;
+  readonly cdpUrl?: string;
   readonly profileName?: string;
   readonly savedFlow?: SavedFlow;
   readonly learnings?: string;
@@ -174,6 +176,9 @@ export class Executor extends ServiceMap.Service<Executor>()("@supervisor/Execut
       });
 
       const mcpEnv: Array<{ name: string; value: string }> = [];
+      if (options.cdpUrl) {
+        mcpEnv.push({ name: EXPECT_CDP_URL_ENV_NAME, value: options.cdpUrl });
+      }
       if (options.baseUrl) {
         mcpEnv.push({ name: EXPECT_BASE_URL_ENV_NAME, value: options.baseUrl });
       }

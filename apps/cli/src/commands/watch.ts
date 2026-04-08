@@ -34,6 +34,7 @@ export const runWatchCommand = async (opts: WatchCommandOpts) => {
     browserMode,
     browserHeaded: browserMode !== "headless",
     browserProfile: opts.profile,
+    cdpUrl: opts.cdp,
   });
 
   useNavigationStore.setState({
