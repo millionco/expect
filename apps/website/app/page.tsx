@@ -11,6 +11,55 @@ import { Stepper } from "pasito";
 
 import { ClaudeSpinner } from "./claude-spinner";
 
+const STAR_DOT_SIZE = 3;
+const STAR_SPREAD = 5.5;
+const STAR_CELL_SIZE = STAR_DOT_SIZE + STAR_SPREAD * 2;
+const STAR_CENTER = STAR_CELL_SIZE / 2 - STAR_DOT_SIZE / 2;
+
+const STAR_DOTS = [
+  { x: STAR_CENTER, y: 0, delay: 0, duration: 1400 },
+  { x: STAR_CENTER * 2, y: STAR_CENTER, delay: 300, duration: 1700 },
+  { x: STAR_CENTER, y: STAR_CENTER * 2, delay: 700, duration: 1500 },
+  { x: 0, y: STAR_CENTER, delay: 1000, duration: 1600 },
+  { x: STAR_CENTER, y: STAR_CENTER, delay: 500, duration: 2200 },
+];
+
+function StarDots() {
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        position: "relative",
+        width: `${STAR_CELL_SIZE}px`,
+        height: `${STAR_CELL_SIZE}px`,
+        flexShrink: 0,
+      }}
+    >
+      {STAR_DOTS.map((dot, index) => {
+        const isCenter = index === 4;
+        return (
+          <span
+            key={index}
+            style={{
+              position: "absolute",
+              left: `${dot.x}px`,
+              top: `${dot.y}px`,
+              width: `${STAR_DOT_SIZE}px`,
+              height: `${STAR_DOT_SIZE}px`,
+              borderRadius: "50%",
+              backgroundColor: "color(display-p3 0.930 0.513 0.112)",
+              animation: isCenter
+                ? `expect-dot-center ${dot.duration}ms ease-in-out infinite`
+                : `expect-dot-orbit ${dot.duration}ms ease-in-out infinite`,
+              animationDelay: `${dot.delay}ms`,
+            }}
+          />
+        );
+      })}
+    </span>
+  );
+}
+
 interface AnimationConfig {
   codingDuration: number;
   slideDelay: number;
@@ -50,7 +99,7 @@ const DEFAULT_CONFIG: AnimationConfig = {
   cursorMoveDelay: 1250,
   cursorClickDelay: 550,
   focusDelay: 50,
-  cursorAlertDelay: 800,
+  cursorAlertDelay: 1100,
   fixingDelay: 1400,
   fixDiffDelay: 1800,
   reloadDelay: 600,
@@ -726,17 +775,7 @@ function AnimatedCursor({
         animate={{ opacity: labelVisible ? 1 : 0, scale: labelVisible ? 1 : 0.5 }}
         transition={{ duration: config.labelDuration / 1000 }}
       >
-        {label === "security" && (
-          <svg className="size-3.75 animate-spin" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="6.5" stroke="#0074F9" strokeOpacity="0.3" strokeWidth="2.5" />
-            <path
-              d="M14.5 8C14.5 4.41015 11.5899 1.5 8 1.5"
-              stroke="#0074F9"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
-          </svg>
-        )}
+        {label === "security" && <StarDots />}
         {isAlert && (
           <svg className="size-3.75" viewBox="0 0 16 16" fill="none">
             <path

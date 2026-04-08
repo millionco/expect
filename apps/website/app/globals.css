@@ -258,6 +258,40 @@
   animation: text-shimmer 2s ease-in-out infinite;
 }
 
+@keyframes expect-dot-orbit {
+  0% {
+    opacity: 0.12;
+    transform: scale(0.85);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  65% {
+    opacity: 0.5;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 0.12;
+    transform: scale(0.85);
+  }
+}
+
+@keyframes expect-dot-center {
+  0% {
+    opacity: 0.3;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 0.3;
+    transform: scale(0.9);
+  }
+}
+
 .no-container-bg {
   --pill-container-bg: transparent;
   --pill-container-border: rgba(0, 0, 0, 0.04);
