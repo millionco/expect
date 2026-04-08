@@ -1,6 +1,6 @@
-import { Layer, Logger, ManagedRuntime } from "effect";
+import { Layer, ManagedRuntime } from "effect";
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import { Analytics, DebugFileLogger, Tracing } from "@expect/shared/observability";
+import { Analytics, Tracing } from "@expect/shared/observability";
 import { McpSession } from "./mcp-session";
 import { OverlayController } from "./overlay-controller";
 import { layerOnlyFileLogger } from "@expect/shared/observability";

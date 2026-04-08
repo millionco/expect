@@ -7,7 +7,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Stepper } from "pasito";
 
 import { ClaudeSpinner } from "./claude-spinner";
 import {
@@ -83,9 +82,6 @@ interface AnimationConfig {
   loopDelay: number;
   terminalScrollDuration: number;
   cursorMoveDuration: number;
-  cursorEntranceStiffness: number;
-  cursorEntranceDamping: number;
-  cursorEntranceMass: number;
   browserSpringStiffness: number;
   browserSpringDamping: number;
   browserSpringMass: number;
@@ -114,9 +110,6 @@ const DEFAULT_CONFIG: AnimationConfig = {
   loopDelay: 400,
   terminalScrollDuration: 600,
   cursorMoveDuration: 400,
-  cursorEntranceStiffness: 500,
-  cursorEntranceDamping: 20,
-  cursorEntranceMass: 400,
   browserSpringStiffness: 250,
   browserSpringDamping: 22,
   browserSpringMass: 600,
@@ -140,8 +133,8 @@ function useAnimationPhase(config: AnimationConfig, onComplete: () => void) {
   const [clicking, setClicking] = useState(false);
   const [labelVisible, setLabelVisible] = useState(false);
   const [cursorLabel, setCursorLabel] = useState<CursorLabelState>("security");
-  const [cursorOnTerminal, setCursorOnTerminal] = useState(false);
-  const [clickingTerminal, setClickingTerminal] = useState(false);
+  const cursorOnTerminal = false;
+  const clickingTerminal = false;
   const [terminalFocused, setTerminalFocused] = useState(false);
   const [fixing, setFixing] = useState(false);
   const [fixDiff, setFixDiff] = useState(false);
