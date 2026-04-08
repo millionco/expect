@@ -10,7 +10,6 @@ const SKILL_REPO = "millionco/expect";
 const SKILL_BRANCH = "main";
 export const SKILL_SOURCE_DIR = "packages/expect-skill";
 export const SKILL_TARBALL_URL = `https://codeload.github.com/${SKILL_REPO}/tar.gz/${SKILL_BRANCH}`;
-export const SKILL_RAW_URL = `https://raw.githubusercontent.com/${SKILL_REPO}/${SKILL_BRANCH}/${SKILL_SOURCE_DIR}/SKILL.md`;
 
 export interface ExpectSkillStatus {
   installed: boolean;
@@ -19,7 +18,7 @@ export interface ExpectSkillStatus {
   latestVersion: string | undefined;
 }
 
-export class ExpectSkillReadError extends Schema.ErrorClass<ExpectSkillReadError>(
+class ExpectSkillReadError extends Schema.ErrorClass<ExpectSkillReadError>(
   "ExpectSkillReadError",
 )({
   _tag: Schema.tag("ExpectSkillReadError"),
@@ -29,7 +28,7 @@ export class ExpectSkillReadError extends Schema.ErrorClass<ExpectSkillReadError
   message = `Failed to read installed expect skill at ${this.installedSkillPath}: ${this.reason}`;
 }
 
-export class ExpectSkillFetchError extends Schema.ErrorClass<ExpectSkillFetchError>(
+class ExpectSkillFetchError extends Schema.ErrorClass<ExpectSkillFetchError>(
   "ExpectSkillFetchError",
 )({
   _tag: Schema.tag("ExpectSkillFetchError"),
@@ -49,10 +48,10 @@ const readSkillVersion = (content: string | undefined): string | undefined => {
 export const formatSkillVersion = (version: string | undefined): string =>
   version === undefined ? "unknown version" : `v${version}`;
 
-export const getInstalledSkillFilePath = (projectRoot: string): string =>
+const getInstalledSkillFilePath = (projectRoot: string): string =>
   path.join(projectRoot, AGENTS_SKILLS_DIR, SKILL_NAME, "SKILL.md");
 
-export const readInstalledSkill = Effect.fn("Skill.readInstalledSkill")(function* (
+const readInstalledSkill = Effect.fn("Skill.readInstalledSkill")(function* (
   projectRoot: string,
 ) {
   const fileSystem = yield* FileSystem;
@@ -70,12 +69,13 @@ export const readInstalledSkill = Effect.fn("Skill.readInstalledSkill")(function
   );
 });
 
-export const fetchLatestSkill = Effect.fn("Skill.fetchLatestSkill")(function* () {
+const fetchLatestSkill = Effect.fn("Skill.fetchLatestSkill")(function* () {
+  const skillRawUrl = `https://raw.githubusercontent.com/${SKILL_REPO}/${SKILL_BRANCH}/${SKILL_SOURCE_DIR}/SKILL.md`;
   const response: Response = yield* Effect.tryPromise({
-    try: () => fetch(SKILL_RAW_URL, { cache: "no-store" }),
+    try: () => fetch(skillRawUrl, { cache: "no-store" }),
     catch: (cause) =>
       new ExpectSkillFetchError({
-        url: SKILL_RAW_URL,
+        url: skillRawUrl,
         reason: String(cause),
       }),
   }).pipe(
@@ -83,7 +83,7 @@ export const fetchLatestSkill = Effect.fn("Skill.fetchLatestSkill")(function* ()
       duration: SKILL_FETCH_TIMEOUT_MS,
       onTimeout: () =>
         new ExpectSkillFetchError({
-          url: SKILL_RAW_URL,
+          url: skillRawUrl,
           reason: "request timed out",
         }).asEffect(),
     }),
@@ -91,7 +91,7 @@ export const fetchLatestSkill = Effect.fn("Skill.fetchLatestSkill")(function* ()
 
   if (!response.ok) {
     return yield* new ExpectSkillFetchError({
-      url: SKILL_RAW_URL,
+      url: skillRawUrl,
       reason: `GitHub returned ${response.status}`,
     });
   }
@@ -100,7 +100,7 @@ export const fetchLatestSkill = Effect.fn("Skill.fetchLatestSkill")(function* ()
     try: () => response.text(),
     catch: (cause) =>
       new ExpectSkillFetchError({
-        url: SKILL_RAW_URL,
+        url: skillRawUrl,
         reason: String(cause),
       }),
   });
@@ -130,7 +130,7 @@ export const getExpectSkillStatus = Effect.fn("Skill.getExpectSkillStatus")(func
   };
 });
 
-export const detectInstalledSkillAgents = Effect.fn("Skill.detectInstalledSkillAgents")(function* (
+const detectInstalledSkillAgents = Effect.fn("Skill.detectInstalledSkillAgents")(function* (
   projectRoot: string,
   agents: readonly SupportedAgent[],
 ) {
@@ -163,3 +163,8 @@ export const hasInstalledExpectSkill = Effect.fn("Skill.hasInstalledExpectSkill"
   const installedAgents = yield* detectInstalledSkillAgents(projectRoot, agents);
   return installedAgents.length > 0;
 });
+
+export const __internal = {
+  SKILL_RAW_URL: `https://raw.githubusercontent.com/${SKILL_REPO}/${SKILL_BRANCH}/${SKILL_SOURCE_DIR}/SKILL.md`,
+  detectInstalledSkillAgents,
+} as const;

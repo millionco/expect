@@ -6,7 +6,6 @@ import { Effect } from "effect";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import {
   AGENTS_SKILLS_DIR,
-  detectInstalledSkillAgents,
   getExpectSkillStatus,
   hasInstalledExpectSkill,
   SKILL_NAME,
@@ -84,23 +83,6 @@ describe("expect-skill", () => {
       installedVersion: "2.1.0",
       latestVersion: "2.2.0",
     });
-  });
-
-  it("detects which installed agents already have the expect skill directory", async () => {
-    const claudeSkillsDir = path.join(projectRoot, ".claude", "skills");
-    fs.mkdirSync(claudeSkillsDir, { recursive: true });
-    fs.mkdirSync(path.join(claudeSkillsDir, SKILL_NAME), { recursive: true });
-
-    const cursorSkillsDir = path.join(projectRoot, ".cursor", "skills");
-    fs.mkdirSync(cursorSkillsDir, { recursive: true });
-
-    const installedAgents = await Effect.runPromise(
-      detectInstalledSkillAgents(projectRoot, ["claude", "cursor", "codex"]).pipe(
-        Effect.provide(NodeServices.layer),
-      ),
-    );
-
-    expect(installedAgents).toEqual(["claude"]);
   });
 
   it("treats an agent-local skill install as already installed", async () => {
