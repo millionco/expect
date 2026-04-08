@@ -148,7 +148,9 @@ describe("init flow", () => {
       selectExpectMcpInstallScope,
       selectExpectMcpAgents,
     } = await import("../src/mcp/install-expect-mcp");
-    vi.mocked(formatExpectMcpInstallSummary).mockReturnValue("Expect MCP installed for Claude Code.");
+    vi.mocked(formatExpectMcpInstallSummary).mockReturnValue(
+      "Expect MCP installed for Claude Code.",
+    );
     vi.mocked(getSupportedExpectMcpAgents).mockImplementation((agents) => agents as never);
     vi.mocked(getUnsupportedExpectMcpAgents).mockReturnValue([]);
     vi.mocked(installExpectMcpForAgents).mockReturnValue({
@@ -324,9 +326,7 @@ describe("init flow", () => {
   describe("failure modes", () => {
     it("selectExpectMcpAgents throws — no config written", async () => {
       const { selectExpectMcpInstallScope, selectExpectMcpAgents, installExpectMcpForAgents } =
-        await import(
-        "../src/mcp/install-expect-mcp"
-      );
+        await import("../src/mcp/install-expect-mcp");
       vi.mocked(selectExpectMcpInstallScope).mockResolvedValue("global");
       vi.mocked(selectExpectMcpAgents).mockRejectedValue(new Error("network error"));
 
@@ -338,9 +338,8 @@ describe("init flow", () => {
     });
 
     it("installExpectMcpForAgents throws — no config written", async () => {
-      const { selectExpectMcpInstallScope, installExpectMcpForAgents } = await import(
-        "../src/mcp/install-expect-mcp"
-      );
+      const { selectExpectMcpInstallScope, installExpectMcpForAgents } =
+        await import("../src/mcp/install-expect-mcp");
       vi.mocked(selectExpectMcpInstallScope).mockResolvedValue("global");
       vi.mocked(installExpectMcpForAgents).mockImplementation(() => {
         throw new Error("EACCES");
@@ -364,9 +363,8 @@ describe("init flow", () => {
     it("no agents — exits before any install or config", async () => {
       const { detectAvailableAgents } = await import("@expect/agent");
       vi.mocked(detectAvailableAgents).mockReturnValue([]);
-      const { selectExpectMcpAgents, installExpectMcpForAgents } = await import(
-        "../src/mcp/install-expect-mcp"
-      );
+      const { selectExpectMcpAgents, installExpectMcpForAgents } =
+        await import("../src/mcp/install-expect-mcp");
 
       const mockExit = vi.spyOn(process, "exit").mockImplementation(() => {
         throw new Error("process.exit");
@@ -572,9 +570,8 @@ describe("init flow", () => {
     });
 
     it("forwards --yes to selectExpectMcpAgents", async () => {
-      const { selectExpectMcpInstallScope, selectExpectMcpAgents } = await import(
-        "../src/mcp/install-expect-mcp"
-      );
+      const { selectExpectMcpInstallScope, selectExpectMcpAgents } =
+        await import("../src/mcp/install-expect-mcp");
       vi.mocked(selectExpectMcpInstallScope).mockResolvedValue("global");
 
       const { runInit } = await import("../src/commands/init");

@@ -31,16 +31,16 @@ describe("installExpectMcpForAgents", () => {
 
     expect(summary.scope).toBe("project");
     expect(summary.installed).toEqual(["cursor"]);
-    expect(
-      JSON.parse(fs.readFileSync(path.join(projectRoot, ".cursor/mcp.json"), "utf8")),
-    ).toEqual({
-      mcpServers: {
-        expect: {
-          command: "npx",
-          args: ["-y", "expect-mcp@latest"],
+    expect(JSON.parse(fs.readFileSync(path.join(projectRoot, ".cursor/mcp.json"), "utf8"))).toEqual(
+      {
+        mcpServers: {
+          expect: {
+            command: "npx",
+            args: ["-y", "expect-mcp@latest"],
+          },
         },
       },
-    });
+    );
   });
 
   it("writes a Codex MCP config", () => {
@@ -118,5 +118,4 @@ describe("installExpectMcpForAgents", () => {
       },
     });
   });
-
 });

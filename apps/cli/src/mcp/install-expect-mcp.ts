@@ -10,13 +10,7 @@ import { type ConfigFormat, ConfigRecord, type McpServerConfig } from "./config-
 import { readJsonConfig, writeJsonConfig } from "./json-config";
 import { readTomlConfig, writeTomlConfig } from "./toml-config";
 
-export type McpSupportedAgent =
-  | "claude"
-  | "codex"
-  | "copilot"
-  | "cursor"
-  | "gemini"
-  | "opencode";
+export type McpSupportedAgent = "claude" | "codex" | "copilot" | "cursor" | "gemini" | "opencode";
 
 export type McpInstallScope = "global" | "project";
 
@@ -51,7 +45,8 @@ interface InstallExpectMcpOptions {
 const HOME_DIRECTORY = os.homedir();
 const XDG_CONFIG_DIRECTORY = process.env.XDG_CONFIG_HOME ?? path.join(HOME_DIRECTORY, ".config");
 const CODEX_CONFIG_DIRECTORY = process.env.CODEX_HOME ?? path.join(HOME_DIRECTORY, ".codex");
-const COPILOT_CONFIG_DIRECTORY = process.env.XDG_CONFIG_HOME ?? path.join(HOME_DIRECTORY, ".copilot");
+const COPILOT_CONFIG_DIRECTORY =
+  process.env.XDG_CONFIG_HOME ?? path.join(HOME_DIRECTORY, ".copilot");
 
 const transformOpenCodeConfig = (config: McpServerConfig): ConfigRecord => {
   const transformedConfig: ConfigRecord = {
@@ -263,7 +258,10 @@ const readInstalledAgentConfig = (
 ) => {
   const agentConfig = MCP_AGENT_CONFIGS[agent];
   const configPath = getAgentConfigPath(projectRoot, agent, scope);
-  return getNestedValue(readConfig(configPath, agentConfig.format), getAgentConfigKey(agent, scope));
+  return getNestedValue(
+    readConfig(configPath, agentConfig.format),
+    getAgentConfigKey(agent, scope),
+  );
 };
 
 const getInstalledExpectMcpEntry = (
@@ -272,7 +270,11 @@ const getInstalledExpectMcpEntry = (
   scope: McpInstallScope,
 ): unknown => {
   const currentConfig = readInstalledAgentConfig(projectRoot, agent, scope);
-  if (currentConfig === undefined || typeof currentConfig !== "object" || Array.isArray(currentConfig)) {
+  if (
+    currentConfig === undefined ||
+    typeof currentConfig !== "object" ||
+    Array.isArray(currentConfig)
+  ) {
     return undefined;
   }
 

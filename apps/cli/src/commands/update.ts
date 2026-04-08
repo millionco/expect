@@ -30,9 +30,7 @@ export const runUpdateCommand = async (version?: string) => {
 
   if (unsupportedMcpAgents.length > 0) {
     logger.break();
-    logger.warn(
-      `  Skipping MCP update for ${unsupportedMcpAgents.map(toDisplayName).join(", ")}.`,
-    );
+    logger.warn(`  Skipping MCP update for ${unsupportedMcpAgents.map(toDisplayName).join(", ")}.`);
   }
 
   const projectRoot = await resolveProjectRoot();
