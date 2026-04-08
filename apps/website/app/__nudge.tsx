@@ -78,8 +78,7 @@ function stepColor(css: string, direction: number): string | null {
   // --- hex (#rgb, #rrggbb, #rrggbbaa) ---
   if (/^#[0-9a-f]{3,8}$/i.test(css)) {
     let hex = css;
-    if (hex.length === 4)
-      hex = "#" + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
+    if (hex.length === 4) hex = "#" + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
@@ -95,9 +94,7 @@ function stepColor(css: string, direction: number): string | null {
   }
 
   // --- color(display-p3 r g b) — values 0-1 ---
-  const p3 = css.match(
-    /color\(\s*display-p3\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*\)/
-  );
+  const p3 = css.match(/color\(\s*display-p3\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*\)/);
   if (p3) {
     const hsl = rgbToHSL(+p3[1] * 255, +p3[2] * 255, +p3[3] * 255);
     hsl.l = clamp(hsl.l + STEP, 0, 100);
@@ -106,9 +103,7 @@ function stepColor(css: string, direction: number): string | null {
   }
 
   // --- oklch(L C H) — L is 0-1 or 0%-100% ---
-  const ok = css.match(
-    /oklch\(\s*([\d.]+%?)\s+([\d.]+)\s+([\d.]+)\s*\)/
-  );
+  const ok = css.match(/oklch\(\s*([\d.]+%?)\s+([\d.]+)\s+([\d.]+)\s*\)/);
   if (ok) {
     const pct = ok[1].endsWith("%");
     let l = parseFloat(ok[1]);
@@ -121,9 +116,7 @@ function stepColor(css: string, direction: number): string | null {
   }
 
   // --- rgb(r, g, b) / rgba(r, g, b, a) ---
-  const rgb = css.match(
-    /rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/
-  );
+  const rgb = css.match(/rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/);
   if (rgb) {
     const hsl = rgbToHSL(+rgb[1], +rgb[2], +rgb[3]);
     hsl.l = clamp(hsl.l + STEP, 0, 100);
@@ -137,9 +130,7 @@ function stepColor(css: string, direction: number): string | null {
   }
 
   // --- hsl(h, s%, l%) ---
-  const hsl = css.match(
-    /hsla?\(\s*([\d.]+)[,\s]+([\d.]+)%?[,\s]+([\d.]+)%?/
-  );
+  const hsl = css.match(/hsla?\(\s*([\d.]+)[,\s]+([\d.]+)%?[,\s]+([\d.]+)%?/);
   if (hsl) {
     const l = clamp(+hsl[3] + STEP, 0, 100);
     return `hsl(${hsl[1]}, ${hsl[2]}%, ${l}%)`;
@@ -151,9 +142,7 @@ function stepColor(css: string, direction: number): string | null {
   document.body.appendChild(el);
   const computed = getComputedStyle(el).color;
   el.remove();
-  const m = computed.match(
-    /rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/
-  );
+  const m = computed.match(/rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/);
   if (!m) return null;
   const fhsl = rgbToHSL(+m[1], +m[2], +m[3]);
   fhsl.l = clamp(fhsl.l + STEP, 0, 100);
@@ -246,59 +235,58 @@ export function Nudge({ config }: { config?: NudgeConfig | null }) {
   const currentValueRef = useRef("");
 
   useEffect(() => {
-    setMounted(true);
+    requestAnimationFrame(() => setMounted(true));
   }, []);
 
-  // Reset state when config changes
   useEffect(() => {
     if (!config) {
-      setTargetEl(null);
-      setDismissed(false);
+      requestAnimationFrame(() => {
+        setTargetEl(null);
+        setDismissed(false);
+      });
       return;
     }
 
     const hash = configHash(config);
     if (sessionStorage.getItem("__ndg_dismissed") === hash) {
-      setDismissed(true);
+      requestAnimationFrame(() => setDismissed(true));
       return;
     }
 
-    setDismissed(false);
-    setCurrentValue(config.value);
     currentValueRef.current = config.value;
 
     const isColor = config.type === "color";
-    const isOptions =
-      config.type === "options" && config.options && config.options.length > 0;
+    const isOptions = config.type === "options" && config.options && config.options.length > 0;
 
     if (isOptions) {
-      const idx = config.options!.findIndex(
-        (o) => String(o) === String(config.value)
-      );
+      const idx = config.options!.findIndex((o) => String(o) === String(config.value));
       optionIndexRef.current = idx >= 0 ? idx : 0;
     } else if (!isColor) {
       const match = String(config.value).match(/([\d.]+)\s*(.*)/);
       unitRef.current = match ? match[2] : "";
       numericRef.current = parseFloat(config.value) || 0;
     }
+
+    requestAnimationFrame(() => {
+      setDismissed(false);
+      setCurrentValue(config.value);
+    });
   }, [config]);
 
-  // Find target element
   useEffect(() => {
     if (!config || dismissed) {
-      setTargetEl(null);
+      requestAnimationFrame(() => setTargetEl(null));
       return;
     }
 
-    const find = () =>
-      document.querySelector("[data-nudge-target]") as Element | null;
+    const find = () => document.querySelector("[data-nudge-target]") as Element | null;
     const found = find();
     if (found) {
       const useSvg = isSvgAttr(found, config.property);
       savedValueRef.current = useSvg
         ? found.getAttribute(config.property) || ""
         : (found as HTMLElement).style.getPropertyValue(config.property);
-      setTargetEl(found);
+      requestAnimationFrame(() => setTargetEl(found));
       return;
     }
 
@@ -326,7 +314,7 @@ export function Nudge({ config }: { config?: NudgeConfig | null }) {
         (el as HTMLElement).style.setProperty(config.property, val);
       }
     },
-    [config]
+    [config],
   );
 
   const dismiss = useCallback(() => {
@@ -345,8 +333,7 @@ export function Nudge({ config }: { config?: NudgeConfig | null }) {
     if (!config || !targetEl || dismissed) return;
 
     const isColor = config.type === "color";
-    const isOptions =
-      config.type === "options" && config.options && config.options.length > 0;
+    const isOptions = config.type === "options" && config.options && config.options.length > 0;
     const step = config.step ?? 1;
     const min = config.min ?? -9999;
     const max = config.max ?? 9999;
@@ -358,7 +345,7 @@ export function Nudge({ config }: { config?: NudgeConfig | null }) {
         optionIndexRef.current = clamp(
           optionIndexRef.current + direction,
           0,
-          config!.options!.length - 1
+          config!.options!.length - 1,
         );
         next = String(config!.options![optionIndexRef.current]);
       } else if (isColor) {
@@ -368,12 +355,9 @@ export function Nudge({ config }: { config?: NudgeConfig | null }) {
       } else {
         const s = step >= 1 ? 1 : step;
         const mult = shift ? 10 : 1;
-        numericRef.current =
-          Math.round((numericRef.current + direction * s * mult) * 1000) / 1000;
+        numericRef.current = Math.round((numericRef.current + direction * s * mult) * 1000) / 1000;
         numericRef.current = clamp(numericRef.current, min, max);
-        next = unitRef.current
-          ? numericRef.current + unitRef.current
-          : String(numericRef.current);
+        next = unitRef.current ? numericRef.current + unitRef.current : String(numericRef.current);
       }
 
       applyPreview(targetEl!, next);
@@ -382,15 +366,13 @@ export function Nudge({ config }: { config?: NudgeConfig | null }) {
     }
 
     function buildPrompt() {
-      const parts = [
-        "Set `" + config!.property + "` to `" + currentValueRef.current + "`",
-      ];
+      const parts = ["Set `" + config!.property + "` to `" + currentValueRef.current + "`"];
       if (config!.file) {
         parts.push("in `" + config!.file + "`");
         if (config!.line) parts.push("at line " + config!.line);
       }
       parts.push(
-        "— also apply this change to any related or sibling elements/components nearby that share the same style, where it makes logical sense to keep them consistent"
+        "— also apply this change to any related or sibling elements/components nearby that share the same style, where it makes logical sense to keep them consistent",
       );
       return parts.join(" ");
     }
@@ -412,10 +394,7 @@ export function Nudge({ config }: { config?: NudgeConfig | null }) {
         }
       } else {
         if (savedValueRef.current) {
-          (targetEl! as HTMLElement).style.setProperty(
-            config!.property,
-            savedValueRef.current
-          );
+          (targetEl! as HTMLElement).style.setProperty(config!.property, savedValueRef.current);
         } else {
           (targetEl! as HTMLElement).style.removeProperty(config!.property);
         }
@@ -464,14 +443,10 @@ export function Nudge({ config }: { config?: NudgeConfig | null }) {
 
   return createPortal(
     <>
-      <Bar
-        property={config.property}
-        value={currentValue}
-        activeKey={activeKey}
-      />
+      <Bar property={config.property} value={currentValue} activeKey={activeKey} />
       {toastMsg && <Toast message={toastMsg} />}
     </>,
-    document.body
+    document.body,
   );
 }
 
