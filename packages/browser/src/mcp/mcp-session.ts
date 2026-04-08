@@ -46,7 +46,7 @@ interface NetworkEntry {
   readonly timestamp: number;
 }
 
-export interface BrowserSessionData {
+interface BrowserSessionData {
   readonly browser: PlaywrightBrowser;
   readonly context: BrowserContext;
   readonly page: Page;
@@ -58,7 +58,7 @@ export interface BrowserSessionData {
   lastSnapshot: SnapshotResult | undefined;
 }
 
-export interface OpenOptions {
+interface OpenOptions {
   headed?: boolean;
   cookies?: boolean;
   waitUntil?: "load" | "domcontentloaded" | "networkidle" | "commit";
@@ -66,12 +66,12 @@ export interface OpenOptions {
   browserType?: BrowserEngine;
 }
 
-export interface OpenResult {
+interface OpenResult {
   readonly injectedCookieCount: number;
   readonly isExternalBrowser: boolean;
 }
 
-export interface CloseResult {
+interface CloseResult {
   readonly videoPath: string | undefined;
   readonly tmpVideoPath: string | undefined;
   readonly screenshotPaths: readonly string[];

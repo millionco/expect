@@ -15,7 +15,7 @@ export type { PackageManager } from "../constants";
 import { isRunningInAgent } from "@expect/shared/launched-from";
 import { isHeadless } from "../utils/is-headless";
 
-export class ClaudeTokenGenerateError extends Schema.ErrorClass<ClaudeTokenGenerateError>(
+class ClaudeTokenGenerateError extends Schema.ErrorClass<ClaudeTokenGenerateError>(
   "ClaudeTokenGenerateError",
 )({
   _tag: Schema.tag("ClaudeTokenGenerateError"),
@@ -24,7 +24,7 @@ export class ClaudeTokenGenerateError extends Schema.ErrorClass<ClaudeTokenGener
   message = `Failed to generate Claude API token: ${this.reason}`;
 }
 
-export class GhSecretSetError extends Schema.ErrorClass<GhSecretSetError>("GhSecretSetError")({
+class GhSecretSetError extends Schema.ErrorClass<GhSecretSetError>("GhSecretSetError")({
   _tag: Schema.tag("GhSecretSetError"),
   reason: Schema.String,
 }) {
@@ -47,7 +47,7 @@ export const detectPackageManager = (): PackageManager => {
 export const detectNonInteractive = (yesFlag: boolean): boolean =>
   yesFlag || isRunningInAgent() || isHeadless();
 
-export const hasGitHubRemote = Effect.tryPromise({
+const hasGitHubRemote = Effect.tryPromise({
   try: () =>
     new Promise<string>((resolve, reject) => {
       const child = spawn("git", ["remote", "-v"], { stdio: ["ignore", "pipe", "ignore"] });
@@ -88,7 +88,7 @@ export const isGithubCliAuthenticated = Effect.try({
   ),
 );
 
-export const tryRun = (binary: string, args: readonly string[]): Promise<boolean> =>
+const tryRun = (binary: string, args: readonly string[]): Promise<boolean> =>
   new Promise((resolve) => {
     const child = spawn(binary, [...args], {
       stdio: "ignore",
