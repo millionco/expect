@@ -1,5 +1,4 @@
 import * as fs from "node:fs";
-import * as net from "node:net";
 import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
@@ -106,36 +105,6 @@ vi.mock("../src/utils/highlighter", () => ({
     dim: (text: string) => text,
   },
 }));
-
-const withNoNetwork = (fn: () => Promise<void>) => {
-  const originalConnect = net.Socket.prototype.connect;
-  net.Socket.prototype.connect = function (..._args: unknown[]) {
-    process.nextTick(() => this.emit("error", new Error("ECONNREFUSED")));
-    return this;
-  } as typeof net.Socket.prototype.connect;
-  return fn().finally(() => {
-    net.Socket.prototype.connect = originalConnect;
-  });
-};
-
-const withFakeCdp = async (targetPort: number, fn: () => Promise<void>) => {
-  const server = net.createServer();
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const realPort = (server.address() as net.AddressInfo).port;
-
-  const originalConnect = net.Socket.prototype.connect;
-  net.Socket.prototype.connect = function (...args: unknown[]) {
-    if (typeof args[0] === "number" && args[0] === targetPort) {
-      args[0] = realPort;
-    }
-    return originalConnect.apply(this, args as Parameters<typeof originalConnect>);
-  } as typeof net.Socket.prototype.connect;
-
-  return fn().finally(async () => {
-    net.Socket.prototype.connect = originalConnect;
-    await new Promise<void>((resolve) => server.close(() => resolve()));
-  });
-};
 
 const setupFixture = (projectRoot: string, files: Record<string, string>) => {
   for (const [filePath, content] of Object.entries(files)) {
@@ -499,128 +468,6 @@ describe("init flow", () => {
         yes: true,
         agents: ["claude"],
       });
-    });
-  });
-
-  describe("chrome version detection", () => {
-    const fakeChrome = "/fake/chrome";
-    const mockRun = (stdout: string | undefined) => () => stdout;
-    const throwingRun = () => {
-      throw new Error("spawn failed");
-    };
-
-    it("parses Chrome 146", async () => {
-      const { getChromeMajorVersion } = await import("../src/commands/init");
-      expect(getChromeMajorVersion(fakeChrome, mockRun("Google Chrome 146.0.7680.178\n"))).toBe(
-        146,
-      );
-    });
-
-    it("parses Chrome 130", async () => {
-      const { getChromeMajorVersion } = await import("../src/commands/init");
-      expect(getChromeMajorVersion(fakeChrome, mockRun("Google Chrome 130.0.6723.91\n"))).toBe(130);
-    });
-
-    it("parses Chromium version string", async () => {
-      const { getChromeMajorVersion } = await import("../src/commands/init");
-      expect(getChromeMajorVersion(fakeChrome, mockRun("Chromium 146.0.7680.0\n"))).toBe(146);
-    });
-
-    it("parses Brave version string", async () => {
-      const { getChromeMajorVersion } = await import("../src/commands/init");
-      expect(getChromeMajorVersion(fakeChrome, mockRun("Brave Browser 146.1.77.100\n"))).toBe(146);
-    });
-
-    it("boundary: version 144 meets threshold", async () => {
-      const { getChromeMajorVersion } = await import("../src/commands/init");
-      expect(getChromeMajorVersion(fakeChrome, mockRun("Google Chrome 144.0.0.0\n"))).toBe(144);
-    });
-
-    it("boundary: version 143 below threshold", async () => {
-      const { getChromeMajorVersion } = await import("../src/commands/init");
-      expect(getChromeMajorVersion(fakeChrome, mockRun("Google Chrome 143.99.99.99\n"))).toBe(143);
-    });
-
-    it("returns undefined for garbage output", async () => {
-      const { getChromeMajorVersion } = await import("../src/commands/init");
-      expect(getChromeMajorVersion(fakeChrome, mockRun("not a version"))).toBeUndefined();
-    });
-
-    it("returns undefined for empty stdout", async () => {
-      const { getChromeMajorVersion } = await import("../src/commands/init");
-      expect(getChromeMajorVersion(fakeChrome, mockRun(""))).toBeUndefined();
-    });
-
-    it("returns undefined for undefined stdout (timeout/crash)", async () => {
-      const { getChromeMajorVersion } = await import("../src/commands/init");
-      expect(getChromeMajorVersion(fakeChrome, mockRun(undefined))).toBeUndefined();
-    });
-
-    it("returns undefined when command throws", async () => {
-      const { getChromeMajorVersion } = await import("../src/commands/init");
-      expect(getChromeMajorVersion(fakeChrome, throwingRun)).toBeUndefined();
-    });
-
-    it("returns undefined for nonexistent binary path", async () => {
-      const { getChromeMajorVersion } = await import("../src/commands/init");
-      expect(
-        getChromeMajorVersion("/nonexistent/path/to/chrome", mockRun(undefined)),
-      ).toBeUndefined();
-    });
-
-    it("handles version with extra whitespace", async () => {
-      const { getChromeMajorVersion } = await import("../src/commands/init");
-      expect(getChromeMajorVersion(fakeChrome, mockRun("  Google Chrome 145.0.1.2  \n"))).toBe(145);
-    });
-
-    it("handles version embedded in longer output", async () => {
-      const { getChromeMajorVersion } = await import("../src/commands/init");
-      expect(
-        getChromeMajorVersion(
-          fakeChrome,
-          mockRun("Some prefix Google Chrome 146.0.7680.178 suffix"),
-        ),
-      ).toBe(146);
-    });
-
-    it("rejects partial version strings (only 3 segments)", async () => {
-      const { getChromeMajorVersion } = await import("../src/commands/init");
-      expect(getChromeMajorVersion(fakeChrome, mockRun("Chrome 146.0.0"))).toBeUndefined();
-    });
-
-    it("findSystemChromePath returns path when file exists", async () => {
-      const { findSystemChromePath } = await import("../src/commands/init");
-      const result = findSystemChromePath(() => true);
-      expect(typeof result).toBe("string");
-      expect(result!.length).toBeGreaterThan(0);
-    });
-
-    it("findSystemChromePath returns undefined when nothing exists", async () => {
-      const { findSystemChromePath } = await import("../src/commands/init");
-      expect(findSystemChromePath(() => false)).toBeUndefined();
-    });
-
-    it("findSystemChromePath returns first match", async () => {
-      let callCount = 0;
-      const { findSystemChromePath } = await import("../src/commands/init");
-      const result = findSystemChromePath(() => {
-        callCount++;
-        return true;
-      });
-      expect(result).toBeDefined();
-      expect(callCount).toBe(1);
-    });
-
-    it("findSystemChromePath fileExists callback receives absolute paths", async () => {
-      const checked: string[] = [];
-      const { findSystemChromePath } = await import("../src/commands/init");
-      findSystemChromePath((filePath) => {
-        checked.push(filePath);
-        return false;
-      });
-      for (const filePath of checked) {
-        expect(path.isAbsolute(filePath)).toBe(true);
-      }
     });
   });
 });

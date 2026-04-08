@@ -213,7 +213,6 @@ program
   .description("set up the Expect MCP server for your coding agent")
   .option("-y, --yes", "skip confirmation prompts")
   .option("--dry", "skip install steps, only run prompts")
-  .option("--cdp", "use CDP browser mode (connect to existing browser)")
   .option("--headed", "use headed browser mode (launch a browser window)")
   .option("--headless", "use headless browser mode (no visible browser)")
   .addHelpText(
@@ -222,7 +221,6 @@ program
 Examples:
   $ expect init                     interactive setup
   $ expect init -y                  non-interactive, use defaults
-  $ expect init --cdp               set browser mode to CDP
   $ expect init --headed            set browser mode to headed
   $ expect init --headless          set browser mode to headless`,
   )
@@ -230,7 +228,6 @@ Examples:
     async (opts: {
       yes?: boolean;
       dry?: boolean;
-      cdp?: boolean;
       headed?: boolean;
       headless?: boolean;
     }) => {

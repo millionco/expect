@@ -1,10 +1,6 @@
 import * as childProcess from "node:child_process";
-import * as fs from "node:fs";
-import * as os from "node:os";
-import * as path from "node:path";
 import { detectAvailableAgents } from "@expect/agent";
 import { isCommandAvailable } from "@expect/shared/is-command-available";
-import { BROWSER_CONFIGS } from "@expect/cookies";
 import figures from "figures";
 import pc from "picocolors";
 import { VERSION } from "../constants";
@@ -30,77 +26,6 @@ interface InitOptions {
   headed?: boolean;
   headless?: boolean;
 }
-
-const CHROME_VERSION_TIMEOUT_MS = 5_000;
-const CHROME_VERSION_PATTERN = /(\d+)\.\d+\.\d+\.\d+/;
-
-const existsSync = (filePath: string): boolean => {
-  try {
-    fs.accessSync(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-};
-
-export const findSystemChromePath = (
-  fileExists: (filePath: string) => boolean = existsSync,
-): string | undefined => {
-  const platform = os.platform();
-  const chromeConfig = BROWSER_CONFIGS.find((config) => config.key === "chrome");
-  if (!chromeConfig || chromeConfig.kind !== "chromium") return undefined;
-
-  if (platform === "darwin") {
-    return fileExists(chromeConfig.executable.darwin) ? chromeConfig.executable.darwin : undefined;
-  }
-
-  if (platform === "linux") {
-    for (const candidate of chromeConfig.executable.linux) {
-      if (fileExists(candidate)) return candidate;
-    }
-  }
-
-  if (platform === "win32") {
-    const localAppData = process.env["LOCALAPPDATA"];
-    const programFiles = process.env["PROGRAMFILES"];
-    const programFilesX86 = process.env["PROGRAMFILES(X86)"];
-    const prefixes = [localAppData, programFiles, programFilesX86].filter(
-      (prefix): prefix is string => typeof prefix === "string",
-    );
-
-    for (const prefix of prefixes) {
-      for (const relative of chromeConfig.executable.win32) {
-        const absolute = path.join(prefix, relative);
-        if (fileExists(absolute)) return absolute;
-      }
-    }
-  }
-
-  return undefined;
-};
-
-export const getChromeMajorVersion = (
-  chromePath?: string,
-  runCommand: (binary: string) => string | undefined = (binary) => {
-    const result = childProcess.spawnSync(binary, ["--version"], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-      timeout: CHROME_VERSION_TIMEOUT_MS,
-    });
-    return result.stdout ?? undefined;
-  },
-): number | undefined => {
-  const resolvedPath = chromePath ?? findSystemChromePath();
-  if (!resolvedPath) return undefined;
-
-  try {
-    const stdout = runCommand(resolvedPath);
-    const match = stdout?.match(CHROME_VERSION_PATTERN);
-    return match ? parseInt(match[1], 10) : undefined;
-  } catch {
-    return undefined;
-  }
-};
 
 const USAGE_PROMPTS = [
   "Run /expect to test my changes in the browser",
