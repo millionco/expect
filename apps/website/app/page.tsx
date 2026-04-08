@@ -954,7 +954,7 @@ export default function HomePage() {
               "linear-gradient(to right, transparent 0%, rgba(255,255,255,0.5) 15%, rgba(255,255,255,0.5) 85%, transparent 100%)",
           }}
         />
-        <div className="w-112.75 relative">
+        <div className="w-full max-w-112.75 relative overflow-hidden">
           <div className="scale-[1.15] origin-top-left">
             <TerminalIllustration />
           </div>
@@ -971,12 +971,13 @@ export default function HomePage() {
         <div className="relative w-full max-w-112.75 min-w-0 px-4 sm:px-0">
           <div className="flex flex-col gap-[5px] mt-13">
             <div
-              className="w-112.75 [white-space-collapse:preserve] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[23px]/9.5 text-[#3c3c3c]"
-              style={{ marginBottom: "3px" }}
+              data-nudge-target
+              className="[white-space-collapse:preserve] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[23px]/9.5 text-[#2c2c2c]"
+              style={{ marginBottom: "3px", color: "#2c2c2c" }}
             >
               Expect
             </div>
-            <div className="[letter-spacing:0em] w-102 [white-space-collapse:preserve] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[17px]/[25px] text-[#707070]">
+            <div className="[letter-spacing:0em] max-w-102 [white-space-collapse:preserve] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[17px]/[25px] text-[#707070]">
               A skill for testing your agent&apos;s code in a real browser.
             </div>
           </div>
@@ -988,7 +989,7 @@ export default function HomePage() {
           <div className="flex flex-col gap-2.75 mt-6">
             <div
               onClick={handleSelectCommand}
-              className="[font-synthesis:none] flex w-112.75 h-22.25 flex-col rounded-[14px] pt-2.5 pr-3.5 pb-3.5 pl-3.75 gap-5 [box-shadow:#0000000F_0px_0px_0px_1px,#0000000F_0px_1px_2px_-1px,#0000000A_0px_2px_4px] antialiased cursor-text"
+              className="[font-synthesis:none] flex w-full h-22.25 flex-col rounded-[14px] pt-2.5 pr-3.5 pb-3.5 pl-3.75 gap-5 [box-shadow:#0000000F_0px_0px_0px_1px,#0000000F_0px_1px_2px_-1px,#0000000A_0px_2px_4px] antialiased cursor-text"
               style={{
                 backgroundImage:
                   "linear-gradient(in oklab 180deg, oklab(100% 0 0) 45.83%, oklab(97.8% 0 0) 46.26%)",

@@ -78,7 +78,8 @@ function stepColor(css: string, direction: number): string | null {
   // --- hex (#rgb, #rrggbb, #rrggbbaa) ---
   if (/^#[0-9a-f]{3,8}$/i.test(css)) {
     let hex = css;
-    if (hex.length === 4) hex = "#" + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
+    if (hex.length === 4)
+      hex = "#" + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
@@ -94,7 +95,9 @@ function stepColor(css: string, direction: number): string | null {
   }
 
   // --- color(display-p3 r g b) — values 0-1 ---
-  const p3 = css.match(/color\(\s*display-p3\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*\)/);
+  const p3 = css.match(
+    /color\(\s*display-p3\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*\)/
+  );
   if (p3) {
     const hsl = rgbToHSL(+p3[1] * 255, +p3[2] * 255, +p3[3] * 255);
     hsl.l = clamp(hsl.l + STEP, 0, 100);
@@ -103,7 +106,9 @@ function stepColor(css: string, direction: number): string | null {
   }
 
   // --- oklch(L C H) — L is 0-1 or 0%-100% ---
-  const ok = css.match(/oklch\(\s*([\d.]+%?)\s+([\d.]+)\s+([\d.]+)\s*\)/);
+  const ok = css.match(
+    /oklch\(\s*([\d.]+%?)\s+([\d.]+)\s+([\d.]+)\s*\)/
+  );
   if (ok) {
     const pct = ok[1].endsWith("%");
     let l = parseFloat(ok[1]);
@@ -116,7 +121,9 @@ function stepColor(css: string, direction: number): string | null {
   }
 
   // --- rgb(r, g, b) / rgba(r, g, b, a) ---
-  const rgb = css.match(/rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/);
+  const rgb = css.match(
+    /rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/
+  );
   if (rgb) {
     const hsl = rgbToHSL(+rgb[1], +rgb[2], +rgb[3]);
     hsl.l = clamp(hsl.l + STEP, 0, 100);
@@ -130,7 +137,9 @@ function stepColor(css: string, direction: number): string | null {
   }
 
   // --- hsl(h, s%, l%) ---
-  const hsl = css.match(/hsla?\(\s*([\d.]+)[,\s]+([\d.]+)%?[,\s]+([\d.]+)%?/);
+  const hsl = css.match(
+    /hsla?\(\s*([\d.]+)[,\s]+([\d.]+)%?[,\s]+([\d.]+)%?/
+  );
   if (hsl) {
     const l = clamp(+hsl[3] + STEP, 0, 100);
     return `hsl(${hsl[1]}, ${hsl[2]}%, ${l}%)`;
@@ -142,7 +151,9 @@ function stepColor(css: string, direction: number): string | null {
   document.body.appendChild(el);
   const computed = getComputedStyle(el).color;
   el.remove();
-  const m = computed.match(/rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/);
+  const m = computed.match(
+    /rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/
+  );
   if (!m) return null;
   const fhsl = rgbToHSL(+m[1], +m[2], +m[3]);
   fhsl.l = clamp(fhsl.l + STEP, 0, 100);
@@ -221,6 +232,8 @@ function configHash(c: NudgeConfig) {
 // ---------------------------------------------------------------------------
 
 export function Nudge({ config }: { config?: NudgeConfig | null }) {
+  if (process.env.NODE_ENV === "production") return null;
+
   const [mounted, setMounted] = useState(false);
   const [targetEl, setTargetEl] = useState<Element | null>(null);
   const [currentValue, setCurrentValue] = useState("");
@@ -235,58 +248,65 @@ export function Nudge({ config }: { config?: NudgeConfig | null }) {
   const currentValueRef = useRef("");
 
   useEffect(() => {
-    requestAnimationFrame(() => setMounted(true));
+    setMounted(true);
+    if (!document.querySelector('link[href*="open-runde"]')) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "https://fonts.cdnfonts.com/css/open-runde";
+      document.head.appendChild(link);
+    }
   }, []);
 
+  // Reset state when config changes
   useEffect(() => {
     if (!config) {
-      requestAnimationFrame(() => {
-        setTargetEl(null);
-        setDismissed(false);
-      });
+      setTargetEl(null);
+      setDismissed(false);
       return;
     }
 
     const hash = configHash(config);
     if (sessionStorage.getItem("__ndg_dismissed") === hash) {
-      requestAnimationFrame(() => setDismissed(true));
+      setDismissed(true);
       return;
     }
 
+    setDismissed(false);
+    setCurrentValue(config.value);
     currentValueRef.current = config.value;
 
     const isColor = config.type === "color";
-    const isOptions = config.type === "options" && config.options && config.options.length > 0;
+    const isOptions =
+      config.type === "options" && config.options && config.options.length > 0;
 
     if (isOptions) {
-      const idx = config.options!.findIndex((o) => String(o) === String(config.value));
+      const idx = config.options!.findIndex(
+        (o) => String(o) === String(config.value)
+      );
       optionIndexRef.current = idx >= 0 ? idx : 0;
     } else if (!isColor) {
       const match = String(config.value).match(/([\d.]+)\s*(.*)/);
       unitRef.current = match ? match[2] : "";
       numericRef.current = parseFloat(config.value) || 0;
     }
-
-    requestAnimationFrame(() => {
-      setDismissed(false);
-      setCurrentValue(config.value);
-    });
   }, [config]);
 
+  // Find target element
   useEffect(() => {
     if (!config || dismissed) {
-      requestAnimationFrame(() => setTargetEl(null));
+      setTargetEl(null);
       return;
     }
 
-    const find = () => document.querySelector("[data-nudge-target]") as Element | null;
+    const find = () =>
+      document.querySelector("[data-nudge-target]") as Element | null;
     const found = find();
     if (found) {
       const useSvg = isSvgAttr(found, config.property);
       savedValueRef.current = useSvg
         ? found.getAttribute(config.property) || ""
         : (found as HTMLElement).style.getPropertyValue(config.property);
-      requestAnimationFrame(() => setTargetEl(found));
+      setTargetEl(found);
       return;
     }
 
@@ -314,7 +334,7 @@ export function Nudge({ config }: { config?: NudgeConfig | null }) {
         (el as HTMLElement).style.setProperty(config.property, val);
       }
     },
-    [config],
+    [config]
   );
 
   const dismiss = useCallback(() => {
@@ -333,7 +353,8 @@ export function Nudge({ config }: { config?: NudgeConfig | null }) {
     if (!config || !targetEl || dismissed) return;
 
     const isColor = config.type === "color";
-    const isOptions = config.type === "options" && config.options && config.options.length > 0;
+    const isOptions =
+      config.type === "options" && config.options && config.options.length > 0;
     const step = config.step ?? 1;
     const min = config.min ?? -9999;
     const max = config.max ?? 9999;
@@ -345,7 +366,7 @@ export function Nudge({ config }: { config?: NudgeConfig | null }) {
         optionIndexRef.current = clamp(
           optionIndexRef.current + direction,
           0,
-          config!.options!.length - 1,
+          config!.options!.length - 1
         );
         next = String(config!.options![optionIndexRef.current]);
       } else if (isColor) {
@@ -355,9 +376,12 @@ export function Nudge({ config }: { config?: NudgeConfig | null }) {
       } else {
         const s = step >= 1 ? 1 : step;
         const mult = shift ? 10 : 1;
-        numericRef.current = Math.round((numericRef.current + direction * s * mult) * 1000) / 1000;
+        numericRef.current =
+          Math.round((numericRef.current + direction * s * mult) * 1000) / 1000;
         numericRef.current = clamp(numericRef.current, min, max);
-        next = unitRef.current ? numericRef.current + unitRef.current : String(numericRef.current);
+        next = unitRef.current
+          ? numericRef.current + unitRef.current
+          : String(numericRef.current);
       }
 
       applyPreview(targetEl!, next);
@@ -366,13 +390,15 @@ export function Nudge({ config }: { config?: NudgeConfig | null }) {
     }
 
     function buildPrompt() {
-      const parts = ["Set `" + config!.property + "` to `" + currentValueRef.current + "`"];
+      const parts = [
+        "Set `" + config!.property + "` to `" + currentValueRef.current + "`",
+      ];
       if (config!.file) {
         parts.push("in `" + config!.file + "`");
         if (config!.line) parts.push("at line " + config!.line);
       }
       parts.push(
-        "— also apply this change to any related or sibling elements/components nearby that share the same style, where it makes logical sense to keep them consistent",
+        "— also apply this change to any related or sibling elements/components nearby that share the same style, where it makes logical sense to keep them consistent"
       );
       return parts.join(" ");
     }
@@ -394,7 +420,10 @@ export function Nudge({ config }: { config?: NudgeConfig | null }) {
         }
       } else {
         if (savedValueRef.current) {
-          (targetEl! as HTMLElement).style.setProperty(config!.property, savedValueRef.current);
+          (targetEl! as HTMLElement).style.setProperty(
+            config!.property,
+            savedValueRef.current
+          );
         } else {
           (targetEl! as HTMLElement).style.removeProperty(config!.property);
         }
@@ -443,10 +472,15 @@ export function Nudge({ config }: { config?: NudgeConfig | null }) {
 
   return createPortal(
     <>
-      <Bar property={config.property} value={currentValue} activeKey={activeKey} />
+      <Bar
+        property={config.property}
+        value={currentValue}
+        activeKey={activeKey}
+        isColor={config.type === "color"}
+      />
       {toastMsg && <Toast message={toastMsg} />}
     </>,
-    document.body,
+    document.body
   );
 }
 
@@ -454,134 +488,156 @@ export function Nudge({ config }: { config?: NudgeConfig | null }) {
 // Bar UI
 // ---------------------------------------------------------------------------
 
+const FONT = "'Open Runde', system-ui, sans-serif";
+
+const ARROW_D =
+  "M13.415 2.5C12.634 1.719 11.367 1.719 10.586 2.5L3.427 9.659C2.01 11.076 3.014 13.5 5.018 13.5H7V20C7 21.104 7.895 22 9 22H15C16.105 22 17 21.104 17 20V13.5H18.983C20.987 13.5 21.991 11.076 20.574 9.659L13.415 2.5Z";
+
+function Arrow({ active, down }: { active: boolean; down?: boolean }) {
+  return (
+    <svg
+      width="1em"
+      height="1em"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{
+        width: 19,
+        height: "auto",
+        flexShrink: 0,
+        ...(down ? { transform: "rotate(180deg)" } : {}),
+      }}
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d={ARROW_D}
+        fill={active ? "#FFFFFF" : "#A7A7A7"}
+      />
+    </svg>
+  );
+}
+
 function Bar({
   property,
   value,
   activeKey,
+  isColor,
 }: {
   property: string;
   value: string;
   activeKey: "up" | "down" | null;
+  isColor: boolean;
 }) {
+  const label = property.charAt(0).toUpperCase() + property.slice(1);
+
   return (
-    <div style={styles.bar}>
-      <span style={styles.label}>{property}</span>
-      <span style={styles.val}>{value}</span>
-      <span style={styles.keys}>
-        <span
-          style={{
-            ...styles.kbd,
-            ...(activeKey === "down" ? styles.kbdActive : {}),
-          }}
-        >
-          ↓
-        </span>
-        <span
-          style={{
-            ...styles.kbd,
-            ...(activeKey === "up" ? styles.kbdActive : {}),
-          }}
-        >
-          ↑
-        </span>
-      </span>
-      <span style={styles.hints}>esc · enter</span>
+    <div
+      style={{
+        position: "fixed",
+        bottom: 20,
+        left: "50%",
+        transform: "translateX(-50%)",
+        zIndex: 2147483647,
+        display: "flex",
+        height: 37,
+        alignItems: "center",
+        justifyContent: "space-between",
+        borderRadius: 9999,
+        padding: "0 16px",
+        background: "#161616",
+        fontSynthesis: "none",
+        WebkitFontSmoothing: "antialiased",
+        gap: 16,
+        pointerEvents: "auto",
+        userSelect: "none",
+      }}
+    >
+      {isColor ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span
+            style={{
+              color: "#fff",
+              fontFamily: FONT,
+              fontWeight: 500,
+              fontSize: 15.5,
+              lineHeight: "23px",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {label}
+          </span>
+          <div
+            style={{
+              width: 15,
+              height: 15,
+              borderRadius: "50%",
+              background: value,
+              border: "2px solid #161616",
+              outline: `2px solid ${value}`,
+              flexShrink: 0,
+            }}
+          />
+        </div>
+      ) : (
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 7 }}>
+          <span
+            style={{
+              color: "#fff",
+              fontFamily: FONT,
+              fontWeight: 500,
+              fontSize: 15.5,
+              lineHeight: "23px",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {label}
+          </span>
+          <span
+            style={{
+              color: "color(display-p3 0.566 0.566 0.566)",
+              fontFamily: FONT,
+              fontWeight: 500,
+              fontSize: 15.5,
+              lineHeight: "23px",
+              whiteSpace: "nowrap",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {value}
+          </span>
+        </div>
+      )}
+
+      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+        <Arrow down active={activeKey === "down"} />
+        <Arrow active={activeKey === "up"} />
+      </div>
     </div>
   );
 }
 
 function Toast({ message }: { message: string }) {
-  return <div style={styles.toast}>{message}</div>;
+  return (
+    <div
+      style={{
+        position: "fixed",
+        bottom: 68,
+        left: "50%",
+        transform: "translateX(-50%)",
+        background: "#161616",
+        color: "#fff",
+        padding: "6px 14px",
+        borderRadius: 9999,
+        fontSize: 13,
+        fontFamily: FONT,
+        fontWeight: 500,
+        zIndex: 2147483647,
+        pointerEvents: "none",
+        WebkitFontSmoothing: "antialiased",
+      }}
+    >
+      {message}
+    </div>
+  );
 }
-
-// ---------------------------------------------------------------------------
-// Inline styles (no external CSS needed)
-// ---------------------------------------------------------------------------
-
-const styles: Record<string, React.CSSProperties> = {
-  bar: {
-    position: "fixed",
-    bottom: 20,
-    left: "50%",
-    transform: "translateX(-50%)",
-    zIndex: 2147483647,
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    fontFamily:
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    fontSize: 13,
-    lineHeight: 1,
-    color: "#1a1a1a",
-    background: "#fff",
-    border: "1px solid #e0e0e0",
-    borderRadius: 10,
-    boxShadow: "0 4px 20px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)",
-    padding: "7px 12px",
-    pointerEvents: "auto",
-    userSelect: "none",
-  },
-  label: {
-    fontWeight: 600,
-    fontSize: 11,
-    textTransform: "uppercase",
-    letterSpacing: "0.05em",
-    color: "#999",
-  },
-  val: {
-    fontWeight: 600,
-    fontVariantNumeric: "tabular-nums",
-    minWidth: 32,
-  },
-  keys: {
-    display: "flex",
-    alignItems: "center",
-    gap: 3,
-  },
-  kbd: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: 24,
-    height: 24,
-    border: "1px solid #d0d0d0",
-    borderBottomWidth: 2,
-    borderRadius: 5,
-    background: "#f8f8f8",
-    fontSize: 12,
-    color: "#666",
-    pointerEvents: "none",
-    transition: "all 0.06s ease",
-  },
-  kbdActive: {
-    background: "#e0e0e0",
-    borderBottomWidth: 1,
-    borderColor: "#bbb",
-    color: "#333",
-    transform: "translateY(1px)",
-  },
-  hints: {
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    marginLeft: 2,
-    fontSize: 10,
-    color: "#c0c0c0",
-    letterSpacing: "0.02em",
-  },
-  toast: {
-    position: "fixed",
-    bottom: 64,
-    left: "50%",
-    transform: "translateX(-50%)",
-    background: "#333",
-    color: "#fff",
-    padding: "6px 12px",
-    borderRadius: 6,
-    fontSize: 12,
-    fontFamily:
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    zIndex: 2147483647,
-    pointerEvents: "none",
-  },
-};

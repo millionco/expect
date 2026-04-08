@@ -67,7 +67,14 @@ export default function RootLayout({
           <TooltipProvider>{children}</TooltipProvider>
         </ThemeProvider>
         <ReactGrab />
-        <Nudge />
+        <Nudge config={{
+          property: "color",
+          value: "#2c2c2c",
+          original: "#3c3c3c",
+          type: "color",
+          file: "app/page.tsx",
+          line: "974",
+        }} />
         {process.env.VERCEL && <Analytics />}
       </body>
     </html>
