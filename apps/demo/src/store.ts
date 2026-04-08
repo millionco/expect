@@ -1,37 +1,48 @@
-import type { User, Post, Reply } from "./types";
-import { SEED_USERS, SEED_POSTS, SEED_REPLIES } from "./seed";
+import type { CellData } from "./types";
+import { SEED_CELLS } from "./seed";
 
-const STORAGE_KEY = "chirp-store";
+const COL_COUNT = 10;
+const ROW_COUNT = 25;
+
+const colLetter = (index: number) => String.fromCharCode(65 + index);
+
+const evaluateFormula = (formula: string, cells: Record<string, CellData>): string => {
+  const sumMatch = formula.match(/^=SUM\(([A-Z])(\d+):([A-Z])(\d+)\)$/i);
+  if (!sumMatch) {
+    return "ERR";
+  }
+
+  const startCol = sumMatch[1].toUpperCase().charCodeAt(0) - 65;
+  const startRow = parseInt(sumMatch[2], 10);
+  const endCol = sumMatch[3].toUpperCase().charCodeAt(0) - 65;
+  const endRow = parseInt(sumMatch[4], 10);
+
+  let total = 0;
+  for (let col = startCol; col <= endCol; col++) {
+    for (let row = startRow; row <= endRow; row++) {
+      const id = `${colLetter(col)}${row}`;
+      const cell = cells[id];
+      if (cell) {
+        const value = Number(cell.value);
+        if (!isNaN(value)) total += value;
+      }
+    }
+  }
+  return String(total);
+};
 
 interface StoreData {
-  users: User[];
-  posts: Post[];
-  replies: Reply[];
-  currentUserId: string | undefined;
+  cells: Record<string, CellData>;
+  selectedCell: string;
 }
 
-const loadStore = (): StoreData => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return {
-    users: SEED_USERS,
-    posts: SEED_POSTS,
-    replies: SEED_REPLIES,
-    currentUserId: undefined,
-  };
+let data: StoreData = {
+  cells: { ...SEED_CELLS },
+  selectedCell: "A1",
 };
-
-const saveStore = (data: StoreData) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-};
-
-let data = loadStore();
 let listeners: Array<() => void> = [];
 
 const notify = () => {
-  saveStore(data);
   listeners.forEach((listener) => listener());
 };
 
@@ -45,90 +56,60 @@ export const store = {
 
   getSnapshot: () => data,
 
-  getUsers: () => data.users,
-  getUser: (id: string) => data.users.find((u) => u.id === id),
-  getUserByHandle: (handle: string) => data.users.find((u) => u.handle === handle),
-  getPosts: () => [...data.posts].sort((a, b) => b.createdAt - a.createdAt),
-  getPost: (id: string) => data.posts.find((p) => p.id === id),
-  getPostsByUser: (userId: string) =>
-    data.posts.filter((p) => p.authorId === userId).sort((a, b) => b.createdAt - a.createdAt),
-  getReplies: (postId: string) =>
-    data.replies.filter((r) => r.postId === postId).sort((a, b) => a.createdAt - b.createdAt),
-  getCurrentUser: () =>
-    data.currentUserId ? data.users.find((u) => u.id === data.currentUserId) : undefined,
-
-  login(userId: string) {
-    data = { ...data, currentUserId: userId };
-    notify();
+  getCellValue: (cellId: string) => {
+    const cell = data.cells[cellId];
+    if (!cell) return "";
+    if (cell.value.startsWith("=")) {
+      return evaluateFormula(cell.value, data.cells);
+    }
+    return cell.value;
   },
 
-  logout() {
-    data = { ...data, currentUserId: undefined };
-    notify();
+  getCellRaw: (cellId: string) => {
+    return data.cells[cellId]?.value ?? "";
   },
 
-  createPost(content: string) {
-    if (!data.currentUserId) return;
-    const post: Post = {
-      id: `p${Date.now()}`,
-      authorId: data.currentUserId,
-      content,
-      createdAt: Date.now(),
-      likes: [],
-      repostCount: 0,
-    };
-    data = { ...data, posts: [post, ...data.posts] };
-    notify();
-  },
-
-  deletePost(postId: string) {
+  setCell(cellId: string, value: string) {
     data = {
       ...data,
-      posts: data.posts.filter((p) => p.id !== postId),
-      replies: data.replies.filter((r) => r.postId !== postId),
+      cells: {
+        ...data.cells,
+        [cellId]: { value },
+      },
     };
     notify();
   },
 
-  toggleLike(postId: string) {
-    if (!data.currentUserId) return;
-    const userId = data.currentUserId;
-    data = {
-      ...data,
-      posts: data.posts.map((p) =>
-        p.id === postId
-          ? {
-              ...p,
-              likes: p.likes.includes(userId)
-                ? p.likes.filter((id) => id !== userId)
-                : [...p.likes, userId],
-            }
-          : p,
-      ),
-    };
+  selectCell(cellId: string) {
+    data = { ...data, selectedCell: cellId };
     notify();
   },
 
-  addReply(postId: string, content: string) {
-    if (!data.currentUserId) return;
-    const reply: Reply = {
-      id: `r${Date.now()}`,
-      postId,
-      authorId: data.currentUserId,
-      content,
-      createdAt: Date.now(),
-    };
-    data = { ...data, replies: [...data.replies, reply] };
+  getSelectionRange(anchor: string, end: string) {
+    return `${anchor}:${end}`;
+  },
+
+  deleteRow(rowNumber: number) {
+    const newCells: Record<string, CellData> = {};
+    for (const [id, cell] of Object.entries(data.cells)) {
+      const row = parseInt(id.slice(1), 10);
+      if (row !== rowNumber) {
+        newCells[id] = cell;
+      }
+    }
+    data = { ...data, cells: newCells };
     notify();
   },
 
   reset() {
     data = {
-      users: SEED_USERS,
-      posts: SEED_POSTS,
-      replies: SEED_REPLIES,
-      currentUserId: undefined,
+      cells: { ...SEED_CELLS },
+      selectedCell: "A1",
     };
     notify();
   },
+
+  COL_COUNT,
+  ROW_COUNT,
+  colLetter,
 };

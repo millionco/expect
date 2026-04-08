@@ -42,39 +42,38 @@ Coming soon. Email [aiden@million.dev](mailto:aiden@million.dev) if you have que
 
 ## Options
 
-| Flag                          | Description                                                                                  | Default     |
-| ----------------------------- | -------------------------------------------------------------------------------------------- | ----------- |
-| `-m, --message <instruction>` | Natural language instruction for what to test                                                | -           |
-| `-f, --flow <slug>`           | Reuse a saved flow by its slug                                                               | -           |
-| `-y, --yes`                   | Run immediately without confirmation                                                         | -           |
-| `-a, --agent <provider>`      | Agent provider (`claude`, `codex`, `copilot`, `gemini`, `cursor`, `opencode`, `droid`, `pi`) | auto-detect |
-| `-t, --target <target>`       | What to test: `unstaged`, `branch`, or `changes`                                             | `changes`   |
-| `-u, --url <urls...>`         | Base URL(s) for the dev server (skips port picker)                                           | -           |
-| `--browser-mode <mode>`       | Browser mode: `headed` or `headless`                                                         | `headed`    |
-| `--cdp <url>`                 | Connect to an existing Chrome via CDP WebSocket URL                                          | -           |
-| `--profile <name>`            | Reuse a Chrome profile by name (e.g. Default)                                                | -           |
-| `--no-cookies`                | Skip system browser cookie extraction                                                        | -           |
-| `--ci`                        | Force CI mode: headless, no cookies, auto-yes, 30-min timeout                                | -           |
-| `--timeout <ms>`              | Execution timeout in milliseconds                                                            | -           |
-| `--output <format>`           | Output format: `text` or `json`                                                              | `text`      |
-| `--verbose`                   | Enable verbose logging                                                                       | -           |
-| `-v, --version`               | Print version                                                                                | -           |
-| `-h, --help`                  | Display help                                                                                 | -           |
+| Flag                          | Description                                                                            | Default     |
+| ----------------------------- | -------------------------------------------------------------------------------------- | ----------- |
+| `-m, --message <instruction>` | Natural language instruction for what to test                                          | -           |
+| `-f, --flow <slug>`           | Reuse a saved flow by its slug                                                         | -           |
+| `-y, --yes`                   | Run immediately without confirmation                                                   | -           |
+| `-a, --agent <provider>`      | Agent provider (`claude`, `codex`, `copilot`, `gemini`, `cursor`, `opencode`, `droid`) | auto-detect |
+| `-t, --target <target>`       | What to test: `unstaged`, `branch`, or `changes`                                       | `changes`   |
+| `-u, --url <urls...>`         | Base URL(s) for the dev server (skips port picker)                                     | -           |
+| `--browser-mode <mode>`       | Browser mode: `headed` or `headless`                                                   | `headed`    |
+| `--cdp <url>`                 | Connect to an existing Chrome via CDP WebSocket URL                                    | -           |
+| `--profile <name>`            | Reuse a Chrome profile by name (e.g. Default)                                          | -           |
+| `--no-cookies`                | Skip system browser cookie extraction                                                  | -           |
+| `--ci`                        | Force CI mode: headless, no cookies, auto-yes, 30-min timeout                          | -           |
+| `--timeout <ms>`              | Execution timeout in milliseconds                                                      | -           |
+| `--output <format>`           | Output format: `text` or `json`                                                        | `text`      |
+| `--verbose`                   | Enable verbose logging                                                                 | -           |
+| `-v, --version`               | Print version                                                                          | -           |
+| `-h, --help`                  | Display help                                                                           | -           |
 
 ## Supported Agents
 
 Expect works with the following coding agents. It auto-detects which agents are installed on your `PATH`. If multiple are available, it defaults to the first one found. Use `-a <provider>` to pick a specific agent.
 
-| Agent                                                         | Flag          | Install                                        |
-| ------------------------------------------------------------- | ------------- | ---------------------------------------------- |
-| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `-a claude`   | `npm install -g @anthropic-ai/claude-code`     |
-| [Codex](https://github.com/openai/codex#readme)               | `-a codex`    | `npm install -g @openai/codex`                 |
-| [GitHub Copilot](https://github.com/features/copilot/cli)     | `-a copilot`  | `npm install -g @github/copilot`               |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli)     | `-a gemini`   | `npm install -g @google/gemini-cli`            |
-| [Cursor](https://cursor.com)                                  | `-a cursor`   | [cursor.com](https://cursor.com)               |
-| [OpenCode](https://opencode.ai)                               | `-a opencode` | `npm install -g opencode-ai`                   |
-| [Factory Droid](https://factory.ai)                           | `-a droid`    | `npm install -g droid`                         |
-| [Pi](https://github.com/mariozechner/pi-coding-agent)         | `-a pi`       | `npm install -g @mariozechner/pi-coding-agent` |
+| Agent                                                         | Flag          | Install                                    |
+| ------------------------------------------------------------- | ------------- | ------------------------------------------ |
+| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `-a claude`   | `npm install -g @anthropic-ai/claude-code` |
+| [Codex](https://github.com/openai/codex#readme)               | `-a codex`    | `npm install -g @openai/codex`             |
+| [GitHub Copilot](https://github.com/features/copilot/cli)     | `-a copilot`  | `npm install -g @github/copilot`           |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli)     | `-a gemini`   | `npm install -g @google/gemini-cli`        |
+| [Cursor](https://cursor.com)                                  | `-a cursor`   | [cursor.com](https://cursor.com)           |
+| [OpenCode](https://opencode.ai)                               | `-a opencode` | `npm install -g opencode-ai`               |
+| [Factory Droid](https://factory.ai)                           | `-a droid`    | `npm install -g droid`                     |
 
 ## Resources & Contributing Back
 
@@ -85,6 +84,12 @@ Find a bug? Head over to our [issue tracker](https://github.com/millionco/expect
 We expect all contributors to abide by the terms of our [Code of Conduct](https://github.com/millionco/expect/blob/main/.github/CODE_OF_CONDUCT.md).
 
 **[→ Start contributing on GitHub](https://github.com/millionco/expect/blob/main/CONTRIBUTING.md)**
+
+### Acknowledgements
+
+Expect wouldn't exist without the ideas and work of others:
+
+- [**dev-browser**](https://github.com/SawyerHood/dev-browser) by Sawyer Hood — the Playwright-first ("bitter lesson") approach that inspired Expect's core design: give the agent real browser APIs instead of screenshots and coordinates.
 
 ### License
 

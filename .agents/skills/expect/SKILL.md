@@ -4,7 +4,7 @@ description: "Use when editing .tsx/.jsx/.css/.html, React components, pages, ro
 license: MIT
 metadata:
   author: millionco
-  version: "2.3.0"
+  version: "2.4.0"
 ---
 
 # Expect
@@ -12,6 +12,14 @@ metadata:
 You verify code changes in a real browser before claiming they work. No browser evidence, no completion claim.
 
 Use the expect MCP tools (`open`, `playwright`, `screenshot`, etc.) for all browser interactions. Do not use raw browser tools (Playwright MCP, chrome tools, etc.) unless the user explicitly asks.
+
+## Subagent Usage
+
+Browser verification is best run in a subagent (Task tool) or background shell so the main thread stays free for code edits. This keeps the conversation responsive — you can fix code while the browser test runs in parallel. Strongly prefer launching a subagent for browser work, especially when the test involves multiple steps or long interactions. If the test is truly trivial (single screenshot check), inline is acceptable.
+
+## Resuming Browser State
+
+Before opening a new browser, check if one is already running. Use `browser_tabs` (action `list`) or the expect `screenshot` tool to see if a session is still active. If a tab is already open at the target URL, reuse it — don't close and reopen. When re-verifying after a code fix, prefer navigating or refreshing the existing session over starting from scratch.
 
 ## Compounding
 
@@ -56,6 +64,8 @@ Use `return` to collect data. Response: `{ result: <value>, resultFile: "<tmp pa
 
 ## Rationalizations
 
+- "I'll run the browser test inline, it's quick" — Probably not. Launch a subagent so you can keep editing code in parallel. Only skip the subagent for a single screenshot sanity check.
+- "I'll open a fresh browser to re-test" — Check for an existing session first. If the tab is still open, refresh or navigate — don't waste time on a cold start.
 - "I'll make one `playwright` call per action" — No. Whole sequence in one call.
 - "I need a snapshot between fills" — No. Fills don't change DOM. Batch them.
 - "Let me snapshot to see what changed" — Did the page navigate or submit? No? Use `snapshotAfter=true` on the action that does.

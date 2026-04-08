@@ -5,10 +5,10 @@ export const SRGB_BLUE = "64, 156, 250";
 export const STATE_KEY = "__expect_cursor_state__";
 export const CLICK_ANIMATION_RESET_MS = 300;
 export const MAX_ACTION_LOG_ENTRIES = 50;
-export const TOOLTIP_FLIP_THRESHOLD_PX = 80;
-export const TOOLTIP_OFFSET_PX = 32;
-export const TOOLTIP_MAX_WIDTH_PX = 400;
-export const TOOLTIP_VIEWPORT_PADDING_PX = 8;
+export const TOOLTIP_FLIP_THRESHOLD_PX = 160;
+export const TOOLTIP_OFFSET_PX = 60;
+export const TOOLTIP_MAX_WIDTH_PX = 600;
+export const TOOLTIP_VIEWPORT_PADDING_PX = 16;
 export const RAF_THROTTLE_INTERVAL_MS = 100;
 export const CURSOR_REST_MARGIN_PX = 16;
 

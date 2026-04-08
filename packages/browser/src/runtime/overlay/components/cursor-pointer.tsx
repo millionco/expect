@@ -1,7 +1,7 @@
 export const PointerCursor = () => (
   <svg
-    width="64"
-    height="64"
+    width="128"
+    height="128"
     viewBox="0 0 32 32"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
@@ -10,8 +10,8 @@ export const PointerCursor = () => (
     <g filter="url(#filter0_d_4_7)">
       <path
         d="M2.58591 2.58594C3.14041 2.03143 3.96783 1.85171 4.70212 2.12695L15.7021 6.25195C16.5219 6.55937 17.0468 7.36516 16.997 8.23926C16.9471 9.11309 16.3344 9.85306 15.4853 10.0654L11.1484 11.1484L10.0654 15.4854C9.85303 16.3345 9.11306 16.9471 8.23923 16.9971C7.36513 17.0469 6.55934 16.5219 6.25192 15.7021L2.12692 4.70215C1.85168 3.96786 2.0314 3.14045 2.58591 2.58594Z"
-        fill="white"
-        stroke="white"
+        fill="color(display-p3 0.25 0.61 0.98)"
+        stroke="color(display-p3 0.25 0.61 0.98)"
         strokeWidth="1.5"
         strokeLinejoin="round"
         strokeLinecap="round"
@@ -21,8 +21,8 @@ export const PointerCursor = () => (
       fillRule="evenodd"
       clipRule="evenodd"
       d="M4.17558 3.53185C3.99199 3.463 3.7851 3.50782 3.64646 3.64646C3.50782 3.7851 3.463 3.99199 3.53185 4.17558L7.65685 15.1756C7.7337 15.3805 7.93492 15.5117 8.15345 15.4992C8.37197 15.4868 8.557 15.3336 8.61009 15.1213L9.91232 9.91232L15.1213 8.61009C15.3336 8.557 15.4868 8.37197 15.4992 8.15345C15.5117 7.93492 15.3805 7.7337 15.1756 7.65685L4.17558 3.53185Z"
-      fill="color(display-p3 0.25 0.61 0.98)"
-      stroke="color(display-p3 0.25 0.61 0.98)"
+      fill="black"
+      stroke="black"
       strokeWidth="2"
       strokeLinejoin="round"
       strokeLinecap="round"

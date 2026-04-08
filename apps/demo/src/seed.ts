@@ -1,89 +1,91 @@
-import type { User, Post, Reply } from "./types";
+import type { CellData } from "./types";
 
-export const SEED_USERS: User[] = [
-  { id: "u1", name: "Alex Rivera", handle: "arivera", color: "#1d9bf0" },
-  { id: "u2", name: "Sam Chen", handle: "samchen", color: "#7856ff" },
-  { id: "u3", name: "Jordan Lee", handle: "jlee", color: "#f91880" },
-  { id: "u4", name: "Taylor Kim", handle: "tkim", color: "#ff7a00" },
-];
+export const SEED_CELLS: Record<string, CellData> = {
+  A1: { value: "Item" },
+  B1: { value: "Category" },
+  C1: { value: "Amount" },
+  D1: { value: "Date" },
+  E1: { value: "Status" },
+  F1: { value: "Notes" },
 
-const now = Date.now();
-const hours = (n: number) => n * 60 * 60 * 1000;
+  A2: { value: "Salary" },
+  B2: { value: "Income" },
+  C2: { value: "4500" },
+  D2: { value: "2026-04-01" },
+  E2: { value: "Received" },
+  F2: { value: "" },
 
-export const SEED_POSTS: Post[] = [
-  {
-    id: "p1",
-    authorId: "u1",
-    content: "Just shipped a new feature using AI-assisted testing. The future is here.",
-    createdAt: now - hours(1),
-    likes: ["u2", "u3"],
-    repostCount: 3,
-  },
-  {
-    id: "p2",
-    authorId: "u2",
-    content: "Hot take: browser testing shouldn't require writing a single line of test code.",
-    createdAt: now - hours(3),
-    likes: ["u1", "u3", "u4"],
-    repostCount: 12,
-  },
-  {
-    id: "p3",
-    authorId: "u3",
-    content:
-      "Working on a side project this weekend. React + Vite + Tailwind is such a good combo.",
-    createdAt: now - hours(5),
-    likes: ["u1"],
-    repostCount: 1,
-  },
-  {
-    id: "p4",
-    authorId: "u4",
-    content: "The best code is the code you never have to write. Let your tools do the work.",
-    createdAt: now - hours(8),
-    likes: ["u2", "u3"],
-    repostCount: 5,
-  },
-  {
-    id: "p5",
-    authorId: "u1",
-    content:
-      "Debugging at 2am hits different when you have an agent that can reproduce the bug for you.",
-    createdAt: now - hours(12),
-    likes: [],
-    repostCount: 0,
-  },
-  {
-    id: "p6",
-    authorId: "u2",
-    content:
-      "Just realized I haven't manually opened DevTools in a week. Is this what progress feels like?",
-    createdAt: now - hours(24),
-    likes: ["u1", "u4"],
-    repostCount: 8,
-  },
-];
+  A3: { value: "Freelance" },
+  B3: { value: "Income" },
+  C3: { value: "800" },
+  D3: { value: "2026-04-05" },
+  E3: { value: "Pending" },
+  F3: { value: "Invoice #1042" },
 
-export const SEED_REPLIES: Reply[] = [
-  {
-    id: "r1",
-    postId: "p1",
-    authorId: "u2",
-    content: "Which tool are you using? I've been looking for something like this.",
-    createdAt: now - hours(0.5),
-  },
-  {
-    id: "r2",
-    postId: "p1",
-    authorId: "u3",
-    content: "Same here, it's a game changer for catching regressions before they ship.",
-    createdAt: now - hours(0.3),
-  },
-  {
-    id: "r3",
-    postId: "p2",
-    authorId: "u1",
-    content: "Agreed. The best tests are the ones that write themselves.",
-    createdAt: now - hours(2),
-  },
-];
+  A4: { value: "Side project" },
+  B4: { value: "Income" },
+  C4: { value: "" },
+  D4: { value: "" },
+  E4: { value: "" },
+  F4: { value: "Need to invoice" },
+
+  A5: { value: "Rent" },
+  B5: { value: "Housing" },
+  C5: { value: "-1200" },
+  D5: { value: "2026-04-01" },
+  E5: { value: "Paid" },
+  F5: { value: "" },
+
+  A6: { value: "Groceries" },
+  B6: { value: "Food" },
+  C6: { value: "-340" },
+  D6: { value: "2026-04-03" },
+  E6: { value: "Paid" },
+  F6: { value: "" },
+
+  A7: { value: "Electric bill" },
+  B7: { value: "Utilities" },
+  C7: { value: "-150" },
+  D7: { value: "2026-04-06" },
+  E7: { value: "Paid" },
+  F7: { value: "" },
+
+  A8: { value: "Coffee" },
+  B8: { value: "Food" },
+  C8: { value: "-45" },
+  D8: { value: "2026-04-07" },
+  E8: { value: "Paid" },
+  F8: { value: "" },
+
+  A9: { value: "Internet" },
+  B9: { value: "Utilities" },
+  C9: { value: "-80" },
+  D9: { value: "2026-04-08" },
+  E9: { value: "" },
+  F9: { value: "" },
+
+  A10: { value: "Gym" },
+  B10: { value: "" },
+  C10: { value: "-50" },
+  D10: { value: "" },
+  E10: { value: "" },
+  F10: { value: "" },
+
+  A11: { value: "" },
+  B11: { value: "" },
+  C11: { value: "" },
+  D11: { value: "" },
+  E11: { value: "" },
+  F11: { value: "" },
+
+  A13: { value: "Summary" },
+
+  A14: { value: "Total Income" },
+  C14: { value: "=SUM(C2:C4)" },
+
+  A15: { value: "Total Expenses" },
+  C15: { value: "=SUM(C5:C10)" },
+
+  A16: { value: "Net" },
+  C16: { value: "=SUM(C2:C10)" },
+};

@@ -39,11 +39,10 @@ const OUTPUT_PATH = path.join(__dirname, "..", "lib", "recorded-demo-events.json
 const POLL_INTERVAL_MS = 500;
 const DEFAULT_VIEWPORT_WIDTH_PX = 1280;
 const DEFAULT_VIEWPORT_HEIGHT_PX = 720;
-const INITIAL_LOAD_SETTLE_MS = 1_500;
-const HOVER_SETTLE_MS = 250;
-const SCROLL_SETTLE_MS = 700;
-const FOOTER_SCROLL_SETTLE_MS = 500;
-const RETURN_TO_TOP_SETTLE_MS = 800;
+const INITIAL_LOAD_SETTLE_MS = 800;
+const HOVER_SETTLE_MS = 200;
+const CLICK_SETTLE_MS = 300;
+const NAVIGATE_SETTLE_MS = 500;
 
 interface RecordDemoOptions {
   readonly manual: boolean;
@@ -77,10 +76,10 @@ const parseOptions = (): RecordDemoOptions => {
   return { manual, targetUrl };
 };
 
-const isExpectDemoTarget = (targetUrl: string): boolean => {
+const isInvoiceAppTarget = (targetUrl: string): boolean => {
   try {
     const url = new URL(targetUrl);
-    return url.hostname === "expect.dev" || url.hostname === "www.expect.dev";
+    return url.hostname === "localhost" || url.hostname === "127.0.0.1";
   } catch {
     return false;
   }
@@ -102,61 +101,48 @@ const hoverAndClick = async (page: Page, locator: Locator): Promise<void> => {
   await locator.hover();
   await page.waitForTimeout(HOVER_SETTLE_MS);
   await locator.click();
+  await page.waitForTimeout(CLICK_SETTLE_MS);
 };
 
-const getCopyButtons = (page: Page) => page.locator("button:not([aria-label]):visible");
-
-const getThemeButton = (page: Page, label: "Light mode" | "Dark mode") =>
-  page.locator(`button[aria-label="${label}"]:visible`).first();
-
-const recordExpectDotDevScenario = async (page: Page): Promise<void> => {
-  const [, scrollStep, copyInstallStep, copySkillStep, darkModeStep, resetStep] =
-    DEMO_STEP_DEFINITIONS;
+const recordInvoiceAppScenario = async (page: Page): Promise<void> => {
+  const [setupStep, formStep, , , deleteStep, resultsStep] = DEMO_STEP_DEFINITIONS;
   const scenarioStartMs = Date.now();
 
   await page.waitForTimeout(INITIAL_LOAD_SETTLE_MS);
-  await page.mouse.move(618, 324, { steps: 12 });
-  await page.waitForTimeout(900);
-  await page.mouse.move(706, 446, { steps: 10 });
-  await waitUntilOffset(page, scenarioStartMs, scrollStep.startOffsetMs);
+  await page.mouse.move(640, 300, { steps: 10 });
+  await page.waitForTimeout(400);
+  await page.mouse.move(500, 400, { steps: 8 });
+  await waitUntilOffset(page, scenarioStartMs, setupStep.endOffsetMs);
 
-  await page.mouse.move(640, 420, { steps: 12 });
-  await page.mouse.wheel(0, 160);
-  await page.waitForTimeout(SCROLL_SETTLE_MS);
-  await page.mouse.wheel(0, 140);
-  await page.waitForTimeout(SCROLL_SETTLE_MS);
-  await page.mouse.move(520, 600, { steps: 10 });
-  await waitUntilOffset(page, scenarioStartMs, copyInstallStep.startOffsetMs);
+  const newInvoiceButton = page.locator("a", { hasText: "New Invoice" });
+  await hoverAndClick(page, newInvoiceButton);
+  await page.waitForTimeout(NAVIGATE_SETTLE_MS);
 
-  const copyButtons = getCopyButtons(page);
-  await hoverAndClick(page, copyButtons.nth(0));
-  await waitUntilOffset(page, scenarioStartMs, copyInstallStep.endOffsetMs);
+  const createButton = page.locator("button[type='submit']", { hasText: "Create Invoice" });
+  await page.mouse.move(400, 500, { steps: 8 });
+  await hoverAndClick(page, createButton);
+  await page.waitForTimeout(NAVIGATE_SETTLE_MS);
+  await waitUntilOffset(page, scenarioStartMs, formStep.endOffsetMs);
 
-  await hoverAndClick(page, copyButtons.nth(1));
-  await waitUntilOffset(page, scenarioStartMs, copySkillStep.endOffsetMs);
+  await page.mouse.move(640, 350, { steps: 8 });
+  await page.waitForTimeout(300);
 
-  await page.mouse.move(640, 680, { steps: 12 });
-  await page.mouse.wheel(0, 220);
-  await page.waitForTimeout(FOOTER_SCROLL_SETTLE_MS);
-  await hoverAndClick(page, getThemeButton(page, "Dark mode"));
-  await waitUntilOffset(page, scenarioStartMs, darkModeStep.endOffsetMs);
+  const deleteButtons = page.locator("button:has(svg)").filter({ hasNot: page.locator("a") });
+  const firstDelete = deleteButtons.first();
+  await hoverAndClick(page, firstDelete);
+  await waitUntilOffset(page, scenarioStartMs, deleteStep.endOffsetMs);
 
-  await hoverAndClick(page, getThemeButton(page, "Light mode"));
-  await page.waitForTimeout(FOOTER_SCROLL_SETTLE_MS);
-  await page.mouse.move(640, 420, { steps: 12 });
-  await page.mouse.wheel(0, -520);
-  await page.waitForTimeout(RETURN_TO_TOP_SETTLE_MS);
-  await page.mouse.move(640, 320, { steps: 12 });
-  await waitUntilOffset(page, scenarioStartMs, resetStep.endOffsetMs);
+  await page.mouse.move(640, 400, { steps: 10 });
+  await waitUntilOffset(page, scenarioStartMs, resultsStep.endOffsetMs);
 };
 
 const run = async () => {
   const { manual, targetUrl } = parseOptions();
-  const useScriptedScenario = !manual && isExpectDemoTarget(targetUrl);
+  const useScriptedScenario = !manual && isInvoiceAppTarget(targetUrl);
 
   console.log(`Recording rrweb events from: ${targetUrl}`);
   console.log(`Output: ${OUTPUT_PATH}`);
-  console.log(`Mode: ${useScriptedScenario ? "scripted expect.dev" : "manual"}\n`);
+  console.log(`Mode: ${useScriptedScenario ? "scripted InvoiceApp" : "manual"}\n`);
 
   const browser = await chromium.launch({ headless: useScriptedScenario });
   const context = await browser.newContext({
@@ -192,8 +178,8 @@ const run = async () => {
 
   try {
     if (useScriptedScenario) {
-      console.log("Running scripted homepage interactions.\n");
-      await recordExpectDotDevScenario(page);
+      console.log("Running scripted InvoiceApp interactions.\n");
+      await recordInvoiceAppScenario(page);
     } else {
       console.log("Recording started. Interact with the browser.");
       console.log("Press Enter when done to save the events.\n");
