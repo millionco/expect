@@ -1357,7 +1357,7 @@ export default function HomePage() {
                     Run
                   </div>
                   <div
-                    className="inline-flex items-center rounded-[9px] bg-[#ffecb8] px-2.25 py-px"
+                    className="inline-flex items-center rounded-[9px] bg-[#ffecb8] px-2.25 py-0"
                     onClick={handleSelectExpectRunCommand}
                     onKeyDown={(event) => {
                       if (event.key !== "Enter" && event.key !== " ") return;
