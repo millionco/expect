@@ -1,0 +1,49 @@
+packages/expect-skill/SKILL.md
+  34b340a2d4e3ba4d 14,18-29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "b772822c33e4a8fd49cec1f2c43c466decf9285a",
+  "prompts": {
+    "34b340a2d4e3ba4d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "506fcc50-2f6f-46cf-bbb5-423f6fb8485c",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 25,
+      "total_deletions": 12,
+      "accepted_lines": 14,
+      "overriden_lines": 0
+    },
+    "4c8ca10041013643": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e44d3c25-f394-44e2-86ba-164e06591be5",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 79,
+      "overriden_lines": 0
+    },
+    "86b1cce3f39e9249": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e6c4855e-fcfe-4e20-a88d-b8a2b9524be3",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    }
+  }
+}
