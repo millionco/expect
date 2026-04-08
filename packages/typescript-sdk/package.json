@@ -47,7 +47,6 @@
   },
   "devDependencies": {
     "@expect/agent": "workspace:*",
-    "@expect/browser": "workspace:*",
     "@expect/cookies": "workspace:*",
     "@expect/shared": "workspace:*",
     "@expect/supervisor": "workspace:*",
