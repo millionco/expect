@@ -14,8 +14,6 @@ export type WebFramework =
   | "svelte"
   | "webpack";
 
-export type { PackageManager } from "../constants";
-
 export interface DetectedProject {
   readonly name: string;
   readonly path: string;

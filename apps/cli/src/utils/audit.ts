@@ -16,7 +16,7 @@ export interface PackageAuditResult {
   results: ScriptResult[];
 }
 
-export interface AuditPackageEntry {
+interface AuditPackageEntry {
   packageName: string;
   directory: string;
   scripts: string[];
