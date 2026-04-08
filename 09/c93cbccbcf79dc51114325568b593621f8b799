@@ -1,0 +1,36 @@
+packages/browser/src/browser.ts
+  ae5e73ff86630c63 224
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "09c93cbccbcf79dc51114325568b593621f8b799",
+  "prompts": {
+    "4c8ca10041013643": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e44d3c25-f394-44e2-86ba-164e06591be5",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 111,
+      "overriden_lines": 0
+    },
+    "ae5e73ff86630c63": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "cb04f030-918a-47d2-9bb9-2db9e46c8156",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 0,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
