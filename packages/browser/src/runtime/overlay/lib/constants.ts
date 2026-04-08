@@ -1,17 +1,13 @@
 export const CURSOR_SIZE_PX = 72;
 export const CURSOR_HEIGHT_PX = 80;
 export const OVERLAY_BLUE = "color(display-p3 0.25 0.61 0.98)";
-export const SRGB_BLUE = "64, 156, 250";
 export const STATE_KEY = "__expect_cursor_state__";
 export const MAX_ACTION_LOG_ENTRIES = 50;
-export const TOOLTIP_FLIP_THRESHOLD_PX = 80;
 export const TOOLTIP_OFFSET_PX = 32;
 export const TOOLTIP_MAX_WIDTH_PX = 400;
 export const TOOLTIP_VIEWPORT_PADDING_PX = 8;
 export const RAF_THROTTLE_INTERVAL_MS = 100;
 export const CURSOR_REST_MARGIN_PX = 16;
-
-export type CursorAction = "idle" | "click" | "type";
 export type CursorShape = "pointer" | "text" | "hand" | "grab";
 
 export interface HighlightRect {
@@ -34,12 +30,9 @@ export interface OverlayState {
   cursorSelector: string;
   label: string;
   cursorPositioned: boolean;
-  cursorAction: "idle" | "click" | "type";
-  clickCount: number;
   highlightSelectors: string[];
   actionLog: ActionLogEntry[];
   overlayVisible: boolean;
-  toolbarExpanded: boolean;
   isScrolling: boolean;
 }
 

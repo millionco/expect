@@ -33,12 +33,9 @@ export const loadInitialState = (): OverlayState => {
     cursorSelector: "",
     label: saved?.label ?? "",
     cursorPositioned: saved?.positioned ?? false,
-    cursorAction: "idle",
-    clickCount: 0,
     highlightSelectors: [],
     actionLog: [],
     overlayVisible: true,
-    toolbarExpanded: false,
     isScrolling: false,
   };
 };
