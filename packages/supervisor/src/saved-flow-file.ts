@@ -1,7 +1,7 @@
 import { Predicate } from "effect";
 import type { SavedFlowFileData } from "./types";
 
-export const formatSavedFlowFrontmatter = (data: SavedFlowFileData): string => {
+const formatSavedFlowFrontmatter = (data: SavedFlowFileData): string => {
   const lines: string[] = [
     `format_version: ${data.formatVersion}`,
     `title: ${JSON.stringify(data.title)}`,
