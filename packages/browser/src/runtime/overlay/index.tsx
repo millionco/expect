@@ -29,8 +29,8 @@ import { CursorIcon, detectCursorShape } from "./components/cursors";
 import { Glow } from "./components/glow";
 
 const StarDots = () => {
-  const dotSize = 4;
-  const spread = 4.5;
+  const dotSize = 3;
+  const spread = 5.5;
   const cellSize = dotSize + spread * 2;
   const center = cellSize / 2 - dotSize / 2;
 
@@ -63,7 +63,7 @@ const StarDots = () => {
               top: `${dot.y}px`,
               width: `${dotSize}px`,
               height: `${dotSize}px`,
-              borderRadius: "30%",
+              borderRadius: "50%",
               backgroundColor: "rgba(255,255,255,0.9)",
               animation: isCenter
                 ? `expect-dot-center ${dot.duration}ms ease-in-out infinite`
