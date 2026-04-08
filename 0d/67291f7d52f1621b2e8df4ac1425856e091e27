@@ -1,0 +1,36 @@
+docs/mcp.md
+  379e691462507235 1-429
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "0d67291f7d52f1621b2e8df4ac1425856e091e27",
+  "prompts": {
+    "379e691462507235": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "512a9683-ff1c-4930-be14-48599ca72b40",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 429,
+      "total_deletions": 0,
+      "accepted_lines": 429,
+      "overriden_lines": 0
+    },
+    "4c8ca10041013643": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e44d3c25-f394-44e2-86ba-164e06591be5",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 111,
+      "overriden_lines": 0
+    }
+  }
+}
