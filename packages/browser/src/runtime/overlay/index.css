@@ -103,6 +103,15 @@
   }
 }
 
+@keyframes expect-border-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @keyframes expect-text-shimmer {
   0% {
     background-position: -200% 0;
@@ -111,3 +120,4 @@
     background-position: 200% 0;
   }
 }
+

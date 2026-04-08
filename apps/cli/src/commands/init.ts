@@ -13,7 +13,11 @@ import { highlighter } from "../utils/highlighter";
 import { logger } from "../utils/logger";
 import { prompts, setOnCancel } from "../utils/prompts";
 import { spinner } from "../utils/spinner";
-import { type BrowserMode, isValidBrowserMode, writeExpectConfig } from "../utils/expect-config";
+import {
+  type BrowserMode,
+  isValidBrowserMode,
+  writeProjectPreference,
+} from "../utils/project-preferences-io";
 import { resolveProjectRoot } from "../utils/project-root";
 import { runAddSkill } from "./add-skill";
 import { detectPackageManager } from "./init-utils";
@@ -373,7 +377,7 @@ export const runInit = async (options: InitOptions = {}) => {
   }
 
   if (!options.dry) {
-    writeExpectConfig(await resolveProjectRoot(), { browserMode });
+    writeProjectPreference(await resolveProjectRoot(), "browserMode", browserMode);
   }
 
   logger.break();

@@ -3,7 +3,7 @@ import * as net from "node:net";
 import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import { readExpectConfig } from "../src/utils/expect-config";
+import { readProjectPreference } from "../src/utils/project-preferences-io";
 
 vi.mock("../src/utils/project-root", () => ({
   resolveProjectRoot: vi.fn().mockResolvedValue("/tmp"),
@@ -144,7 +144,7 @@ describe("init flow", () => {
       await runInit({ headless: true });
 
       expect(prompts).not.toHaveBeenCalled();
-      expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
+      expect(readProjectPreference(projectRoot, "browserMode")).toBe("headless");
     });
 
     it("--headed writes headed config and skips prompt", async () => {
@@ -153,21 +153,21 @@ describe("init flow", () => {
       await runInit({ headed: true });
 
       expect(prompts).not.toHaveBeenCalled();
-      expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headed" });
+      expect(readProjectPreference(projectRoot, "browserMode")).toBe("headed");
     });
 
     it("--cdp with no browser falls back to headless", () =>
       withNoNetwork(async () => {
         const { runInit } = await import("../src/commands/init");
         await runInit({ cdp: true });
-        expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
+        expect(readProjectPreference(projectRoot, "browserMode")).toBe("headless");
       }));
 
     it("--cdp with browser on 9222 writes cdp config", () =>
       withFakeCdp(9222, async () => {
         const { runInit } = await import("../src/commands/init");
         await runInit({ cdp: true });
-        expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "cdp" });
+        expect(readProjectPreference(projectRoot, "browserMode")).toBe("cdp");
       }));
 
     it("--cdp detects browser on fallback port 9229", async () => {
@@ -189,7 +189,7 @@ describe("init flow", () => {
       try {
         const { runInit } = await import("../src/commands/init");
         await runInit({ cdp: true });
-        expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "cdp" });
+        expect(readProjectPreference(projectRoot, "browserMode")).toBe("cdp");
       } finally {
         net.Socket.prototype.connect = originalConnect;
         await new Promise<void>((resolve) => server.close(() => resolve()));
@@ -206,7 +206,7 @@ describe("init flow", () => {
       return (async () => {
         const { runInit } = await import("../src/commands/init");
         await runInit({ cdp: true });
-        expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
+        expect(readProjectPreference(projectRoot, "browserMode")).toBe("headless");
       })().finally(() => {
         net.Socket.prototype.connect = originalConnect;
       });
@@ -221,7 +221,7 @@ describe("init flow", () => {
         expect(logger.warn).toHaveBeenCalledWith(
           expect.stringContaining("Multiple browser mode flags"),
         );
-        expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
+        expect(readProjectPreference(projectRoot, "browserMode")).toBe("headless");
       }));
 
     it("no flags triggers interactive prompt", async () => {
@@ -232,7 +232,7 @@ describe("init flow", () => {
       await runInit({});
 
       expect(prompts).toHaveBeenCalled();
-      expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
+      expect(readProjectPreference(projectRoot, "browserMode")).toBe("headless");
     });
 
     it("prompt returns invalid value — defaults to cdp then headless fallback", () =>
@@ -243,7 +243,7 @@ describe("init flow", () => {
         const { runInit } = await import("../src/commands/init");
         await runInit({ cdp: true });
 
-        expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
+        expect(readProjectPreference(projectRoot, "browserMode")).toBe("headless");
       }));
   });
 
@@ -251,7 +251,7 @@ describe("init flow", () => {
     it("does not write config", async () => {
       const { runInit } = await import("../src/commands/init");
       await runInit({ dry: true, headless: true });
-      expect(readExpectConfig(projectRoot)).toBeUndefined();
+      expect(readProjectPreference(projectRoot, "browserMode")).toBeUndefined();
     });
 
     it("does not call runAddSkill", async () => {
@@ -279,7 +279,7 @@ describe("init flow", () => {
       withNoNetwork(async () => {
         const { runInit } = await import("../src/commands/init");
         await runInit({ dry: true, cdp: true });
-        expect(readExpectConfig(projectRoot)).toBeUndefined();
+        expect(readProjectPreference(projectRoot, "browserMode")).toBeUndefined();
       }));
   });
 
@@ -293,7 +293,7 @@ describe("init flow", () => {
       await expect(runInit({ headless: true })).rejects.toThrow("network error");
 
       expect(runInstallCommand).not.toHaveBeenCalled();
-      expect(readExpectConfig(projectRoot)).toBeUndefined();
+      expect(readProjectPreference(projectRoot, "browserMode")).toBeUndefined();
     });
 
     it("runInstallCommand throws — no config written", async () => {
@@ -304,7 +304,7 @@ describe("init flow", () => {
 
       const { runInit } = await import("../src/commands/init");
       await expect(runInit({ headless: true })).rejects.toThrow("EACCES");
-      expect(readExpectConfig(projectRoot)).toBeUndefined();
+      expect(readProjectPreference(projectRoot, "browserMode")).toBeUndefined();
     });
 
     it("detectAvailableAgents throws — init crashes immediately", async () => {
@@ -333,7 +333,7 @@ describe("init flow", () => {
       expect(mockExit).toHaveBeenCalledWith(1);
       expect(runAddSkill).not.toHaveBeenCalled();
       expect(runInstallCommand).not.toHaveBeenCalled();
-      expect(readExpectConfig(projectRoot)).toBeUndefined();
+      expect(readProjectPreference(projectRoot, "browserMode")).toBeUndefined();
       mockExit.mockRestore();
     });
 
@@ -343,7 +343,7 @@ describe("init flow", () => {
 
       const { runInit } = await import("../src/commands/init");
       await expect(runInit({})).rejects.toThrow("stdin closed");
-      expect(readExpectConfig(projectRoot)).toBeUndefined();
+      expect(readProjectPreference(projectRoot, "browserMode")).toBeUndefined();
     });
 
     it("global install fails (returns false) — still completes init", async () => {
@@ -353,7 +353,7 @@ describe("init flow", () => {
       const { runInit } = await import("../src/commands/init");
       await runInit({ headless: true });
 
-      expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
+      expect(readProjectPreference(projectRoot, "browserMode")).toBe("headless");
     });
 
     it("read-only .expect dir — throws on config write", async () => {
@@ -369,17 +369,20 @@ describe("init flow", () => {
       }
     });
 
-    it("read-only config.json — throws on overwrite", async () => {
+    it("read-only project-preferences.json — throws on overwrite", async () => {
       const expectDir = path.join(projectRoot, ".expect");
       fs.mkdirSync(expectDir, { recursive: true });
-      fs.writeFileSync(path.join(expectDir, "config.json"), '{"browserMode":"cdp"}');
-      fs.chmodSync(path.join(expectDir, "config.json"), 0o444);
+      fs.writeFileSync(
+        path.join(expectDir, "project-preferences.json"),
+        '{"state":{"browserMode":"cdp"},"version":0}',
+      );
+      fs.chmodSync(path.join(expectDir, "project-preferences.json"), 0o444);
 
       const { runInit } = await import("../src/commands/init");
       try {
         await expect(runInit({ headless: true })).rejects.toThrow();
       } finally {
-        fs.chmodSync(path.join(expectDir, "config.json"), 0o644);
+        fs.chmodSync(path.join(expectDir, "project-preferences.json"), 0o644);
       }
     });
   });
@@ -389,34 +392,19 @@ describe("init flow", () => {
       const { runInit } = await import("../src/commands/init");
 
       await runInit({ headless: true });
-      expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
+      expect(readProjectPreference(projectRoot, "browserMode")).toBe("headless");
 
       await runInit({ headed: true });
-      expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headed" });
+      expect(readProjectPreference(projectRoot, "browserMode")).toBe("headed");
     });
 
-    it("corrupted config.json is overwritten cleanly", async () => {
-      setupFixture(projectRoot, { ".expect/config.json": "corrupted{{{" });
+    it("corrupted project-preferences.json is overwritten cleanly", async () => {
+      setupFixture(projectRoot, { ".expect/project-preferences.json": "corrupted{{{" });
 
       const { runInit } = await import("../src/commands/init");
       await runInit({ headless: true });
 
-      expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
-    });
-
-    it("config with extra fields is replaced with clean config", async () => {
-      setupFixture(projectRoot, {
-        ".expect/config.json": '{"browserMode":"cdp","secret":"leaked","nested":{"a":1}}',
-      });
-
-      const { runInit } = await import("../src/commands/init");
-      await runInit({ headed: true });
-
-      const raw = JSON.parse(
-        fs.readFileSync(path.join(projectRoot, ".expect", "config.json"), "utf-8"),
-      );
-      expect(raw).toEqual({ browserMode: "headed" });
-      expect(Object.keys(raw)).toEqual(["browserMode"]);
+      expect(readProjectPreference(projectRoot, "browserMode")).toBe("headless");
     });
 
     it("concurrent inits produce valid JSON", async () => {
@@ -424,17 +412,20 @@ describe("init flow", () => {
 
       await Promise.all([runInit({ headless: true }), runInit({ headed: true })]);
 
-      const raw = fs.readFileSync(path.join(projectRoot, ".expect", "config.json"), "utf-8");
+      const raw = fs.readFileSync(
+        path.join(projectRoot, ".expect", "project-preferences.json"),
+        "utf-8",
+      );
       expect(() => JSON.parse(raw)).not.toThrow();
-      const config = readExpectConfig(projectRoot);
-      expect(config).toBeDefined();
-      expect(["headed", "headless"]).toContain(config!.browserMode);
+      const browserMode = readProjectPreference<string>(projectRoot, "browserMode");
+      expect(browserMode).toBeDefined();
+      expect(["headed", "headless"]).toContain(browserMode);
     });
 
     it("preserves .expect/logs.md across re-init", async () => {
       setupFixture(projectRoot, {
         ".expect/logs.md": "important logs\n",
-        ".expect/config.json": '{"browserMode":"cdp"}',
+        ".expect/project-preferences.json": '{"state":{"browserMode":"cdp"},"version":0}',
       });
 
       const { runInit } = await import("../src/commands/init");
@@ -452,7 +443,7 @@ describe("init flow", () => {
         "package.json": '{"name":"my-app"}',
         ".agents/skills/expect/SKILL.md": '---\nname: expect\nmetadata:\n  version: "2.1.0"\n---\n',
         ".claude/skills/expect/SKILL.md": "---\nname: expect\n---\n",
-        ".expect/config.json": '{"browserMode":"cdp"}',
+        ".expect/project-preferences.json": '{"state":{"browserMode":"cdp"},"version":0}',
         ".expect/logs.md": "[2025-06-15] Previous test run\n",
         "src/index.ts": "console.log('hello')",
         ".gitignore": "node_modules\n.expect\n",
@@ -462,7 +453,7 @@ describe("init flow", () => {
       const { runInit } = await import("../src/commands/init");
       await runInit({ headless: true });
 
-      expect(readExpectConfig(projectRoot)).toEqual({ browserMode: "headless" });
+      expect(readProjectPreference(projectRoot, "browserMode")).toBe("headless");
       assertFilesUnchanged(projectRoot, {
         ".expect/logs.md": "[2025-06-15] Previous test run\n",
         ".agents/skills/expect/SKILL.md": '---\nname: expect\nmetadata:\n  version: "2.1.0"\n---\n',
@@ -481,7 +472,7 @@ describe("init flow", () => {
       try {
         const { runInit } = await import("../src/commands/init");
         await runInit({ headless: true });
-        expect(readExpectConfig(symlinkRoot)).toEqual({ browserMode: "headless" });
+        expect(readProjectPreference(symlinkRoot, "browserMode")).toBe("headless");
       } finally {
         fs.unlinkSync(symlinkRoot);
       }
@@ -496,7 +487,7 @@ describe("init flow", () => {
       try {
         const { runInit } = await import("../src/commands/init");
         await runInit({ headless: true });
-        expect(readExpectConfig(emptyRoot)).toEqual({ browserMode: "headless" });
+        expect(readProjectPreference(emptyRoot, "browserMode")).toBe("headless");
       } finally {
         fs.rmSync(emptyRoot, { recursive: true, force: true });
       }

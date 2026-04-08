@@ -12,6 +12,7 @@
   "scripts": {
     "build:css": "mkdir -p dist && pnpm exec tailwindcss -i ./src/runtime/overlay/index.css -o ./dist/overlay.css -m && node scripts/css-rem-to-px.js",
     "build": "pnpm build:css && node scripts/build-runtime.js",
+    "dev": "pnpm build:css && node scripts/build-runtime.js --watch",
     "lint": "vp lint && tsc --noEmit",
     "format": "vp fmt",
     "format:check": "vp fmt --check",
@@ -34,6 +35,7 @@
     "react": "^19.2.4",
     "react-dom": "19.2.4",
     "tailwindcss": "^4.2.2",
+    "torph": "^0.0.9",
     "which": "^6.0.1",
     "zod": "^4.3.6"
   },

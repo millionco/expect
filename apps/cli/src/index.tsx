@@ -19,19 +19,24 @@ import { prompts } from "./utils/prompts";
 import { highlighter } from "./utils/highlighter";
 import { logger } from "./utils/logger";
 import { hasInstalledExpectSkill } from "./utils/expect-skill";
-import { isValidBrowserMode, readExpectConfig } from "./utils/expect-config";
+import {
+  type BrowserMode,
+  isValidBrowserMode,
+  readProjectPreference,
+} from "./utils/project-preferences-io";
 import { resolveProjectRoot } from "./utils/project-root";
 
 try {
   fetch(`${VERSION_API_URL}?source=cli&t=${Date.now()}`).catch(() => {});
 } catch {}
 
-const lazyExpectConfig = (() => {
-  let cached: ReturnType<typeof readExpectConfig> | undefined;
+const lazyBrowserMode = (() => {
+  let cached: BrowserMode | undefined;
   let resolved = false;
   return async () => {
     if (!resolved) {
-      cached = readExpectConfig(await resolveProjectRoot());
+      const value = readProjectPreference<unknown>(await resolveProjectRoot(), "browserMode");
+      cached = isValidBrowserMode(value) ? value : undefined;
       resolved = true;
     }
     return cached;
@@ -108,7 +113,7 @@ const resolveBrowserMode = async (opts: CommanderOpts) => {
       `  Unknown browser mode "${opts.browserMode}". Expected: cdp, headed, or headless.`,
     );
   }
-  return (await lazyExpectConfig())?.browserMode ?? "cdp";
+  return (await lazyBrowserMode()) ?? "headed";
 };
 
 const seedStores = async (opts: CommanderOpts, changesFor: ChangesFor) => {

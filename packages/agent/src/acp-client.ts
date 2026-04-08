@@ -153,7 +153,7 @@ export class AcpSessionCreateError extends Schema.ErrorClass<AcpSessionCreateErr
   cause: Schema.Unknown,
 }) {
   displayName = `Creating a chat session failed`;
-  message = `Creating session failed: ${Cause.pretty(Cause.fail(this.cause))}`;
+  message = `Creating session failed: ${hasStringMessage(this.cause) ? this.cause.message : String(this.cause)}`;
 }
 
 export class AcpConnectionInitError extends Schema.ErrorClass<AcpConnectionInitError>(
@@ -746,7 +746,8 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
               provider: adapter.provider,
             });
           }
-          return new AcpSessionCreateError({ cause });
+          const causeWithDetails = details ? `${message} — ${details}` : cause;
+          return new AcpSessionCreateError({ cause: causeWithDetails });
         },
       }).pipe(
         Effect.tap((response) =>

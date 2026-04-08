@@ -1,12 +1,13 @@
 import { createRoot } from "react-dom/client";
 // eslint-disable-next-line no-restricted-imports -- overlay runs in injected runtime, not the CLI React app; React Compiler doesn't apply
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 // @ts-expect-error -- CSS imported as text via esbuild cssTextPlugin
 import cssText from "../../../dist/overlay.css";
 
 import {
   CURSOR_SIZE_PX,
   CURSOR_HEIGHT_PX,
+  CURSOR_REST_MARGIN_PX,
   OVERLAY_BLUE,
   MAX_ACTION_LOG_ENTRIES,
   RAF_THROTTLE_INTERVAL_MS,
@@ -24,6 +25,57 @@ import { usePolledPositions } from "./lib/use-polled-positions";
 import { finder } from "@medv/finder";
 import { CursorIcon, detectCursorShape } from "./components/cursors";
 import { Glow } from "./components/glow";
+import { TextMorph } from "torph/react";
+
+const BORDER_BEAM_DURATION_MS = 2500;
+
+const BorderBeam = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const spinnerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const spinner = spinnerRef.current;
+    if (!container || !spinner) return;
+
+    const resize = () => {
+      const size = Math.max(container.offsetWidth, container.offsetHeight) * 2;
+      spinner.style.width = `${size}px`;
+      spinner.style.height = `${size}px`;
+      spinner.style.left = `${(container.offsetWidth - size) / 2}px`;
+      spinner.style.top = `${(container.offsetHeight - size) / 2}px`;
+    };
+
+    resize();
+    const observer = new ResizeObserver(resize);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <>
+      <div ref={containerRef} className="absolute inset-0 rounded-[inherit] overflow-hidden">
+        <div
+          ref={spinnerRef}
+          className="absolute"
+          style={{
+            background:
+              "conic-gradient(from 0deg, color(display-p3 0.118 0.481 0.988) 0%, color(display-p3 0.118 0.481 0.988) 84%, white 88%, white 92%, color(display-p3 0.118 0.481 0.988) 96%, color(display-p3 0.118 0.481 0.988) 100%)",
+            animation: "expect-border-spin 2.5s linear infinite",
+            borderRadius: "50%",
+          }}
+        />
+      </div>
+      <div
+        className="absolute rounded-[inherit]"
+        style={{
+          inset: "2px",
+          background: "#000",
+        }}
+      />
+    </>
+  );
+};
 
 const AgentOverlay = () => {
   const [state, setState] = useState<OverlayState>(loadInitialState);
@@ -134,10 +186,10 @@ const AgentOverlay = () => {
   const viewport = getViewport();
   const cursorX = state.cursorPositioned
     ? clampToViewport(state.cursorX, CURSOR_SIZE_PX, viewport.width, 0)
-    : viewport.width + CURSOR_SIZE_PX;
+    : viewport.width - CURSOR_SIZE_PX - CURSOR_REST_MARGIN_PX;
   const cursorY = state.cursorPositioned
     ? clampToViewport(state.cursorY, CURSOR_HEIGHT_PX, viewport.height, 0)
-    : viewport.height + CURSOR_HEIGHT_PX;
+    : viewport.height - CURSOR_HEIGHT_PX - CURSOR_REST_MARGIN_PX;
 
   useEffect(() => {
     if (!state.cursorPositioned) return;
@@ -145,7 +197,7 @@ const AgentOverlay = () => {
   }, [state.cursorX, state.cursorY, state.cursorPositioned]);
 
   const hasLabel = Boolean(state.label);
-  const showCursor = hasLabel || state.cursorPositioned;
+  const showCursor = true;
 
   const tooltipFlipX = cursorX > viewport.width * 0.65;
   const tooltipFlipY = cursorY > viewport.height - 80;
@@ -171,7 +223,7 @@ const AgentOverlay = () => {
           </div>
           {hasLabel && (
             <div
-              className="absolute pointer-events-none"
+              className="absolute pointer-events-none w-max"
               style={{
                 left: tooltipFlipX ? undefined : "32px",
                 right: tooltipFlipX ? "calc(100% - 2px)" : undefined,
@@ -180,16 +232,20 @@ const AgentOverlay = () => {
               }}
             >
               <div
-                className="flex items-center justify-center rounded-xl py-1.5 px-3 max-w-[480px] text-white font-medium text-[13px] leading-5 font-[system-ui,-apple-system,sans-serif] animate-[expect-comment-in_0.25s_cubic-bezier(0.22,1,0.36,1)_both]"
+                className="flex items-center justify-center rounded-full py-1.5 px-3 max-w-[400px] text-white font-medium text-[13px] leading-5 font-[system-ui,-apple-system,sans-serif] animate-[expect-comment-in_0.25s_cubic-bezier(0.22,1,0.36,1)_both]"
                 style={{
-                  background: isDark
-                    ? "color(display-p3 0.2 0.55 1)"
-                    : "color(display-p3 0.118 0.481 0.988)",
-                  boxShadow: isDark ? "0 1px 6px rgba(0,0,0,0.3)" : "0 1px 3px rgba(0,0,0,0.12)",
+                  background: "#000",
+                  border: "2px solid color(display-p3 0.118 0.481 0.988)",
+                  boxShadow: isDark
+                    ? "0 0 4px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.3)"
+                    : "0 0 4px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.12)",
+                  overflow: "hidden",
+                  whiteSpace: "nowrap",
                 }}
               >
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
-                incididunt ut labore.
+                <TextMorph style={{ display: "inline-block", whiteSpace: "nowrap" }}>
+                  {state.label}
+                </TextMorph>
               </div>
             </div>
           )}
