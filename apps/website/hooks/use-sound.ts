@@ -1,9 +1,35 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getAudioContext, decodeAudioData } from "@/lib/sound-engine";
 import { useMountEffect } from "@/hooks/use-mount-effect";
 import type { SoundAsset, UseSoundOptions, UseSoundReturn } from "@/lib/sound-types";
+
+let audioContext: AudioContext | null = null;
+const bufferCache = new Map<string, AudioBuffer>();
+
+const getAudioContext = (): AudioContext => {
+  if (!audioContext) {
+    audioContext = new AudioContext();
+  }
+  return audioContext;
+};
+
+const decodeAudioData = async (dataUri: string): Promise<AudioBuffer> => {
+  const cached = bufferCache.get(dataUri);
+  if (cached) return cached;
+
+  const context = getAudioContext();
+  const base64 = dataUri.split(",")[1];
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let index = 0; index < binaryString.length; index++) {
+    bytes[index] = binaryString.charCodeAt(index);
+  }
+
+  const audioBuffer = await context.decodeAudioData(bytes.buffer.slice(0));
+  bufferCache.set(dataUri, audioBuffer);
+  return audioBuffer;
+};
 
 export function useSound(sound: SoundAsset, options: UseSoundOptions = {}): UseSoundReturn {
   const {
@@ -53,8 +79,8 @@ export function useSound(sound: SoundAsset, options: UseSoundOptions = {}): UseS
     (overrides?: { volume?: number; playbackRate?: number }) => {
       if (!soundEnabled) return;
 
-      const ctx = getAudioContext();
-      void ctx.resume();
+      const audioContext = getAudioContext();
+      void audioContext.resume();
 
       const startPlaybackWithBuffer = (buffer: AudioBuffer) => {
         if (!soundEnabled) return;
@@ -63,15 +89,15 @@ export function useSound(sound: SoundAsset, options: UseSoundOptions = {}): UseS
           stop();
         }
 
-        const source = ctx.createBufferSource();
-        const gain = ctx.createGain();
+        const source = audioContext.createBufferSource();
+        const gain = audioContext.createGain();
 
         source.buffer = buffer;
         source.playbackRate.value = overrides?.playbackRate ?? playbackRate;
         gain.gain.value = overrides?.volume ?? volume;
 
         source.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(audioContext.destination);
 
         source.onended = () => {
           setIsPlaying(false);
@@ -86,8 +112,8 @@ export function useSound(sound: SoundAsset, options: UseSoundOptions = {}): UseS
       };
 
       const run = (buffer: AudioBuffer) => {
-        if (ctx.state === "suspended") {
-          void ctx.resume().then(() => {
+        if (audioContext.state === "suspended") {
+          void audioContext.resume().then(() => {
             startPlaybackWithBuffer(buffer);
           });
         } else {
