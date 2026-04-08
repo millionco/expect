@@ -10,6 +10,12 @@ import { AnimatePresence, motion } from "motion/react";
 import { Stepper } from "pasito";
 
 import { ClaudeSpinner } from "./claude-spinner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const STAR_DOT_SIZE = 3;
 const STAR_SPREAD = 5.5;
@@ -897,6 +903,55 @@ const formatStarCount = (count: number) => {
   return String(count);
 };
 
+function highlightSyntax(code: string, lang: "json" | "toml" | "sh") {
+  if (lang === "sh") {
+    return code.split(/(\s+)/).map((token, index) => {
+      if (token.startsWith("--")) return <span key={index} className="text-[#0033B3]">{token}</span>;
+      if (token.startsWith("-")) return <span key={index} className="text-[#0033B3]">{token}</span>;
+      return <span key={index} className="text-[#000000]">{token}</span>;
+    });
+  }
+  if (lang === "toml") {
+    return code.split("\n").map((line, lineIndex, lines) => {
+      const highlighted = line.replace(
+        /(\[[\w.]+\])|("[^"]*")|(\b\w+\b)(?=\s*=)/g,
+        (match, section, str, key) => {
+          if (section) return `\x01s${section}\x01`;
+          if (str) return `\x01v${str}\x01`;
+          if (key) return `\x01k${key}\x01`;
+          return match;
+        },
+      );
+      const parts = highlighted.split("\x01").map((part, partIndex) => {
+        if (part.startsWith("s")) return <span key={partIndex} className="text-[#871094]">{part.slice(1)}</span>;
+        if (part.startsWith("v")) return <span key={partIndex} className="text-[#067D17]">{part.slice(1)}</span>;
+        if (part.startsWith("k")) return <span key={partIndex} className="text-[#871094]">{part.slice(1)}</span>;
+        return <span key={partIndex} className="text-[#000000]">{part}</span>;
+      });
+      return <span key={lineIndex}>{parts}{lineIndex < lines.length - 1 && "\n"}</span>;
+    });
+  }
+  return code.split("\n").map((line, lineIndex, lines) => {
+    const highlighted = line.replace(
+      /("(?:[^"\\]|\\.)*")\s*(:)|("(?:[^"\\]|\\.)*")|(true|false|null|\b\d+\b)/g,
+      (match, key, colon, str, literal) => {
+        if (key) return `\x01k${key}\x01\x01p${colon}\x01`;
+        if (str) return `\x01v${str}\x01`;
+        if (literal) return `\x01l${literal}\x01`;
+        return match;
+      },
+    );
+    const parts = highlighted.split("\x01").map((part, partIndex) => {
+      if (part.startsWith("k")) return <span key={partIndex} className="text-[#871094]">{part.slice(1)}</span>;
+      if (part.startsWith("p")) return <span key={partIndex} className="text-[#000000]">{part.slice(1)}</span>;
+      if (part.startsWith("v")) return <span key={partIndex} className="text-[#067D17]">{part.slice(1)}</span>;
+      if (part.startsWith("l")) return <span key={partIndex} className="text-[#0033B3]">{part.slice(1)}</span>;
+      return <span key={partIndex} className="text-[#000000]">{part}</span>;
+    });
+    return <span key={lineIndex}>{parts}{lineIndex < lines.length - 1 && "\n"}</span>;
+  });
+}
+
 const MCP_CLIENTS = [
   { name: "Claude Code", command: "claude mcp add --scope user expect -- npx -y expect-cli@latest mcp", lang: "sh" as const },
   { name: "Cursor", command: `{
@@ -1068,6 +1123,8 @@ export default function HomePage() {
   const [mcpCopied, setMcpCopied] = useState(false);
   const commandRef = useRef<HTMLDivElement>(null);
   const expectRunCommandRef = useRef<HTMLDivElement>(null);
+  const mcpPreRef = useRef<HTMLPreElement>(null);
+  const [mcpScrollFade, setMcpScrollFade] = useState<"right" | "both" | "left" | "none">("right");
 
   useEffect(() => {
     fetch("https://api.github.com/repos/millionco/expect")
@@ -1108,8 +1165,26 @@ export default function HomePage() {
     selection.removeAllRanges();
     selection.addRange(range);
   };
+
+  const updateMcpScrollFade = () => {
+    const el = mcpPreRef.current;
+    if (!el) return;
+    const atLeft = el.scrollLeft <= 1;
+    const atRight = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
+    if (atLeft && atRight) setMcpScrollFade("none");
+    else if (atLeft) setMcpScrollFade("right");
+    else if (atRight) setMcpScrollFade("left");
+    else setMcpScrollFade("both");
+  };
+
+  useEffect(() => {
+    setMcpScrollFade("right");
+    if (mcpPreRef.current) mcpPreRef.current.scrollLeft = 0;
+    requestAnimationFrame(updateMcpScrollFade);
+  }, [activeMcpClient]);
+
   return (
-    <div className="[font-synthesis:none] overflow-x-clip antialiased min-h-screen bg-[color(display-p3_0.981_0.981_0.981)] flex flex-col items-center">
+    <div className="[font-synthesis:none] overflow-x-clip antialiased min-h-screen bg-[color(display-p3_0.986_0.986_0.986)] flex flex-col items-center">
       <div className="w-full pt-6 pb-4 flex flex-col items-center relative">
         <div
           className="absolute inset-0 pointer-events-none"
@@ -1118,9 +1193,11 @@ export default function HomePage() {
               "linear-gradient(to right, transparent 0%, rgba(255,255,255,0.5) 15%, rgba(255,255,255,0.5) 85%, transparent 100%)",
           }}
         />
-        <div className="w-full max-w-112.75 relative overflow-hidden">
-          <div className="scale-[1.15] origin-top-left">
-            <TerminalIllustration />
+        <div className="w-full max-w-112.75 relative px-4 sm:px-0">
+          <div className="flex justify-center sm:block">
+            <div className="scale-[1.05] sm:scale-[1.15] origin-top sm:origin-top-left translate-x-[30px] sm:translate-x-0">
+              <TerminalIllustration />
+            </div>
           </div>
         </div>
         <div
@@ -1133,11 +1210,10 @@ export default function HomePage() {
       </div>
       <div className="home-page-below-hero w-full flex flex-col items-center">
         <div className="relative w-full max-w-112.75 min-w-0 px-4 sm:px-0">
-          <div className="flex flex-col gap-[5px] mt-13">
+          <div className="flex flex-col gap-[5px] mt-10">
             <div
-              data-nudge-target
-              className="[white-space-collapse:preserve] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[23px]/9.5 text-[#1a1a1a]"
-              style={{ marginBottom: "10px", color: "#1a1a1a" }}
+              className="[white-space-collapse:preserve] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[24px]/9.5 text-[#1a1a1a]"
+              style={{ marginBottom: "6px" }}
             >
               Expect
             </div>
@@ -1267,7 +1343,7 @@ export default function HomePage() {
         </div>
         <div className="relative w-full max-w-112.75 min-w-0 px-4 sm:px-0">
           <div className="[font-synthesis:none] flex w-full min-w-0 h-fit flex-col gap-4.25 antialiased mt-14">
-            <div className="mb-0 left-0 top-0 w-full min-w-0 [white-space-collapse:preserve] relative text-[#3F3F3F] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[17px]/5.75">
+            <div className="mb-0 left-0 top-0 w-full min-w-0 [white-space-collapse:preserve] relative text-[#3F3F3F] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[18px]/5.75">
               Getting started
             </div>
             {/**
@@ -1276,7 +1352,7 @@ export default function HomePage() {
              * on Apr 7, 2026
              */}
             <div className="[font-synthesis:none] flex w-full min-w-0 flex-col items-stretch gap-2.5 antialiased p-0">
-              <div className="flex w-full min-w-0 items-start gap-2.25">
+              <div className="flex w-full min-w-0 items-start gap-1.5">
                 <div className="h-5.75 text-[color(display-p3_0.722_0.722_0.722)] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[16px]/5.75">
                   •
                 </div>
@@ -1316,7 +1392,7 @@ export default function HomePage() {
                   </a>
                 </div>
               </div>
-              <div className="flex w-full min-w-0 items-start gap-2.25">
+              <div className="flex w-full min-w-0 items-start gap-1.5">
                 <div className="h-5.75 text-[color(display-p3_0.722_0.722_0.722)] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[16px]/5.75">
                   •
                 </div>
@@ -1325,7 +1401,7 @@ export default function HomePage() {
                   regressions
                 </div>
               </div>
-              <div className="flex w-full min-w-0 items-start gap-2.25">
+              <div className="flex w-full min-w-0 items-start gap-1.5">
                 <div className="h-5.75 text-[color(display-p3_0.722_0.722_0.722)] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[16px]/5.75">
                   •
                 </div>
@@ -1336,12 +1412,12 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-        <div className="relative w-full max-w-112.75 min-w-0 px-4 sm:px-0 pb-20">
+        <div className="relative w-full max-w-112.75 min-w-0 px-4 sm:px-0 pb-80">
           <a
             href="https://github.com/millionco/expect"
             target="_blank"
             rel="noopener noreferrer"
-            className="group [font-synthesis:none] items-center flex justify-between mt-[20px] w-fit rounded-full overflow-clip gap-2.5 pl-3.25 pr-1.75 py-1.5 bg-white [box-shadow:#0000000F_0px_0px_0px_1px,#0000000F_0px_1px_2px_-1px,#0000000A_0px_2px_4px] antialiased transition-shadow hover:[box-shadow:#00000014_0px_0px_0px_1px,#00000014_0px_1px_2px_-1px,#0000000F_0px_2px_4px]"
+            className="group [font-synthesis:none] items-center flex justify-between mt-[20px] w-fit rounded-full overflow-clip gap-0.5 pl-[14px] pr-1.75 py-2 bg-white [box-shadow:#0000000F_0px_0px_0px_1px,#0000000F_0px_1px_2px_-1px,#0000000A_0px_2px_4px] antialiased transition-shadow hover:[box-shadow:#00000014_0px_0px_0px_1px,#00000014_0px_1px_2px_-1px,#0000000F_0px_2px_4px]"
           >
             <div className="items-center flex gap-1.25">
               <svg
@@ -1376,16 +1452,125 @@ export default function HomePage() {
                 GitHub
               </div>
             </div>
-            <div className="flex flex-col items-start gap-0 px-2 py-0.75 rounded-full bg-[color(display-p3_0.956_0.956_0.956)]">
+            <div className="flex flex-col items-start gap-0 px-2 py-0.75 rounded-full">
               <div className="items-center flex gap-1.25">
-                <div className="shrink-0 [letter-spacing:-0.14px] w-max text-[#323232] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-sm/4.5">
+                <div className="shrink-0 [letter-spacing:-0.14px] w-max text-[#323232] font-medium text-sm/4.5 font-mono-override">
                   {starCount}
                 </div>
               </div>
             </div>
           </a>
+          <div className="left-0 top-0 w-full min-w-0 [white-space-collapse:preserve] relative text-[#3F3F3F] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[18px]/5.75 mt-14" style={{ marginBottom: "10px" }}>
+            MCP clients
+          </div>
+          <div className="[letter-spacing:0em] max-w-102 [white-space-collapse:preserve] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[16px]/5.75 text-[#707070] mt-1.5">
+            Expect supports all MCP clients that implement the stdio transport. Below are configuration examples for popular clients.
+          </div>
+          <div
+            className="[font-synthesis:none] flex w-full flex-col rounded-[14px] [box-shadow:#0000000F_0px_0px_0px_1px,#0000000F_0px_1px_2px_-1px,#0000000A_0px_2px_4px] antialiased cursor-text mt-4"
+          >
+            <div className="flex items-center justify-between bg-white rounded-t-[14px] pt-2.5 pr-3.5 pb-2.5 pl-3.75">
+              <div className="flex items-center gap-1.5">
+              <div className="font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[15.5px]/5.75 text-[#6e6e6e]">
+                Agent:
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="cursor-pointer flex items-center gap-1.5 outline-none">
+                  <div className="font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[15.5px]/5.75 text-[#414141]">
+                    {MCP_CLIENTS[activeMcpClient].name}
+                  </div>
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 10 10"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M2.5 4L5 6.5L7.5 4" stroke="#696969" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="max-h-64 w-56 scrollbar-visible font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif]">
+                  {MCP_CLIENTS.map((client, index) => (
+                    <DropdownMenuItem
+                      key={client.name}
+                      className={`cursor-pointer font-medium text-[15px]/5.75 ${activeMcpClient === index ? "text-[#1a1a1a] bg-accent" : "text-[#696969]"}`}
+                      onClick={() => setActiveMcpClient(index)}
+                    >
+                      {client.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  const text = MCP_CLIENTS[activeMcpClient].command;
+                  await navigator.clipboard.writeText(text);
+                  setMcpCopied(true);
+                  setTimeout(() => setMcpCopied(false), 1500);
+                }}
+                className="cursor-pointer shrink-0 content-center group"
+                aria-label="Copy configuration"
+              >
+                {mcpCopied && (
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    style={{ height: "20px", verticalAlign: "middle", width: "20px", overflow: "clip" }}
+                  >
+                    <path
+                      fillRule="evenodd"
+                      clipRule="evenodd"
+                      d="M10.28 3.22a.75.75 0 0 1 0 1.06l-5 5a.75.75 0 0 1-1.06 0l-2.5-2.5a.75.75 0 1 1 1.06-1.06L4.75 7.69l4.47-4.47a.75.75 0 0 1 1.06 0Z"
+                      fill="#059669"
+                    />
+                  </svg>
+                )}
+                {!mcpCopied && (
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    color="#0A0A0A"
+                    style={{ height: "20px", verticalAlign: "middle", width: "20px", overflow: "clip", flexShrink: "0" }}
+                  >
+                    <path
+                      fillRule="evenodd"
+                      clipRule="evenodd"
+                      d="M3.25 2.25C3.25 1.698 3.698 1.25 4.25 1.25H9.25C10.079 1.25 10.75 1.922 10.75 2.75V7.75C10.75 8.302 10.302 8.75 9.75 8.75C9.474 8.75 9.25 8.526 9.25 8.25C9.25 7.974 9.474 7.75 9.75 7.75V2.75C9.75 2.474 9.526 2.25 9.25 2.25H4.25C4.25 2.526 4.026 2.75 3.75 2.75C3.474 2.75 3.25 2.526 3.25 2.25ZM1.25 4.75C1.25 3.922 1.922 3.25 2.75 3.25H7.25C8.078 3.25 8.75 3.922 8.75 4.75V9.25C8.75 10.079 8.078 10.75 7.25 10.75H2.75C1.922 10.75 1.25 10.079 1.25 9.25V4.75ZM2.75 4.25C2.474 4.25 2.25 4.474 2.25 4.75V9.25C2.25 9.526 2.474 9.75 2.75 9.75H7.25C7.526 9.75 7.75 9.526 7.75 9.25V4.75C7.75 4.474 7.526 4.25 7.25 4.25H2.75Z"
+                      fill="#696969"
+                    />
+                  </svg>
+                )}
+              </button>
+            </div>
+            <div className="flex items-start gap-2.75 min-w-0 pr-3.5 pb-3 pl-3.75 pt-0 rounded-b-[14px] bg-white">
+              {MCP_CLIENTS[activeMcpClient].lang === "sh" && (
+                <div className="[white-space-collapse:preserve] w-max text-[#696969] font-mono-override font-medium shrink-0 text-[15.5px]/5.75">
+                  $
+                </div>
+              )}
+              <pre
+                ref={mcpPreRef}
+                onScroll={updateMcpScrollFade}
+                className="min-w-0 font-mono-override font-medium text-[15.5px]/5.75 whitespace-pre overflow-x-auto scrollbar-none"
+                style={{
+                  maskImage: mcpScrollFade === "none" ? "none" : `linear-gradient(to right, ${mcpScrollFade === "left" || mcpScrollFade === "both" ? "transparent, black 32px" : "black 0%"}, ${mcpScrollFade === "right" || mcpScrollFade === "both" ? "black calc(100% - 32px), transparent" : "black 100%"})`,
+                  WebkitMaskImage: mcpScrollFade === "none" ? "none" : `linear-gradient(to right, ${mcpScrollFade === "left" || mcpScrollFade === "both" ? "transparent, black 32px" : "black 0%"}, ${mcpScrollFade === "right" || mcpScrollFade === "both" ? "black calc(100% - 32px), transparent" : "black 100%"})`,
+                }}
+              >
+                {highlightSyntax(MCP_CLIENTS[activeMcpClient].command, MCP_CLIENTS[activeMcpClient].lang)}
+              </pre>
+            </div>
+          </div>
           <div className="flex flex-col w-full max-w-107.25 mt-14">
-            <div className="[letter-spacing:0em] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[17px]/5.75 text-[color(display-p3_0.248_0.248_0.248)] mb-2.75">
+            <div className="[letter-spacing:0em] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[18px]/5.75 text-[color(display-p3_0.248_0.248_0.248)] mb-2.75">
               FAQ
             </div>
             <div className="h-[0.5px] self-stretch shrink-0 bg-[#DDDDDD] mb-2.75" />
@@ -1583,93 +1768,6 @@ export default function HomePage() {
                 </div>
               </div>
             ))}
-          </div>
-          <div className="mb-0 left-0 top-0 w-full min-w-0 [white-space-collapse:preserve] relative text-[#3F3F3F] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[17px]/5.75 mt-14">
-            MCP clients
-          </div>
-          <div className="[letter-spacing:0em] max-w-102 [white-space-collapse:preserve] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[16px]/5.75 text-[#707070] mt-1.5">
-            Expect supports all MCP clients that implement the stdio transport. Below are configuration examples for popular clients.
-          </div>
-          <div
-            className="[font-synthesis:none] flex w-full flex-col rounded-[14px] pt-2.5 pr-3.5 pb-3.5 pl-3.75 gap-3.5 [box-shadow:#0000000F_0px_0px_0px_1px,#0000000F_0px_1px_2px_-1px,#0000000A_0px_2px_4px] antialiased mt-4"
-            style={{
-              backgroundImage:
-                "linear-gradient(in oklab 180deg, oklab(100% 0 0) 45.83%, oklab(97.8% 0 0) 46.26%)",
-            }}
-          >
-            <div className="flex items-center gap-0 overflow-x-auto -mx-1 px-1 scrollbar-none">
-              {MCP_CLIENTS.map((client, index) => (
-                <button
-                  key={client.name}
-                  type="button"
-                  className="cursor-pointer text-left shrink-0 px-2 py-1 first:pl-0"
-                  onClick={() => setActiveMcpClient(index)}
-                >
-                  <div
-                    className={`[white-space-collapse:preserve] w-max font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[14px]/5 transition-colors duration-200 ${activeMcpClient === index ? "text-[#414141]" : "text-[#A0A0A0]"}`}
-                  >
-                    {client.name}
-                  </div>
-                </button>
-              ))}
-            </div>
-            <div className="flex items-start justify-between gap-2">
-              <pre
-                className="text-[#414141] font-['JetBrains_Mono',monospace] text-[13px]/5 whitespace-pre overflow-x-auto min-w-0 flex-1 scrollbar-none"
-              >
-                {MCP_CLIENTS[activeMcpClient].lang === "sh" && (
-                  <span className="text-[#696969]">$ </span>
-                )}
-                {MCP_CLIENTS[activeMcpClient].command}
-              </pre>
-              <button
-                type="button"
-                onClick={async () => {
-                  const text = MCP_CLIENTS[activeMcpClient].command;
-                  await navigator.clipboard.writeText(text);
-                  setMcpCopied(true);
-                  setTimeout(() => setMcpCopied(false), 1500);
-                }}
-                className="cursor-pointer shrink-0 content-center group mt-0.5"
-                aria-label="Copy configuration"
-              >
-                {mcpCopied && (
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 12 12"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    style={{ height: "20px", verticalAlign: "middle", width: "20px", overflow: "clip" }}
-                  >
-                    <path
-                      fillRule="evenodd"
-                      clipRule="evenodd"
-                      d="M10.28 3.22a.75.75 0 0 1 0 1.06l-5 5a.75.75 0 0 1-1.06 0l-2.5-2.5a.75.75 0 1 1 1.06-1.06L4.75 7.69l4.47-4.47a.75.75 0 0 1 1.06 0Z"
-                      fill="#059669"
-                    />
-                  </svg>
-                )}
-                {!mcpCopied && (
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 12 12"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    color="#0A0A0A"
-                    style={{ height: "20px", verticalAlign: "middle", width: "20px", overflow: "clip", flexShrink: "0" }}
-                  >
-                    <path
-                      fillRule="evenodd"
-                      clipRule="evenodd"
-                      d="M3.25 2.25C3.25 1.698 3.698 1.25 4.25 1.25H9.25C10.079 1.25 10.75 1.922 10.75 2.75V7.75C10.75 8.302 10.302 8.75 9.75 8.75C9.474 8.75 9.25 8.526 9.25 8.25C9.25 7.974 9.474 7.75 9.75 7.75V2.75C9.75 2.474 9.526 2.25 9.25 2.25H4.25C4.25 2.526 4.026 2.75 3.75 2.75C3.474 2.75 3.25 2.526 3.25 2.25ZM1.25 4.75C1.25 3.922 1.922 3.25 2.75 3.25H7.25C8.078 3.25 8.75 3.922 8.75 4.75V9.25C8.75 10.079 8.078 10.75 7.25 10.75H2.75C1.922 10.75 1.25 10.079 1.25 9.25V4.75ZM2.75 4.25C2.474 4.25 2.25 4.474 2.25 4.75V9.25C2.25 9.526 2.474 9.75 2.75 9.75H7.25C7.526 9.75 7.75 9.526 7.75 9.25V4.75C7.75 4.474 7.526 4.25 7.25 4.25H2.75Z"
-                      fill="#696969"
-                    />
-                  </svg>
-                )}
-              </button>
-            </div>
           </div>
         </div>
       </div>

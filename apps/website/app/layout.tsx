@@ -67,15 +67,7 @@ export default function RootLayout({
           <TooltipProvider>{children}</TooltipProvider>
         </ThemeProvider>
         <ReactGrab />
-        <Nudge config={{
-          property: "margin-bottom",
-          value: "10px",
-          original: "0px",
-          type: "numeric",
-          step: 1,
-          file: "app/page.tsx",
-          line: "976",
-        }} />
+        <Nudge />
         {process.env.VERCEL && <Analytics />}
       </body>
     </html>
