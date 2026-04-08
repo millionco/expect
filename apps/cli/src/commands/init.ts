@@ -147,7 +147,9 @@ export const runInit = async (options: InitOptions = {}) => {
   logger.break();
 
   if (unsupportedMcpAgents.length > 0) {
-    logger.warn(`  Skipping MCP install for ${unsupportedMcpAgents.map(toDisplayName).join(", ")}.`);
+    logger.warn(
+      `  Skipping MCP install for ${unsupportedMcpAgents.map(toDisplayName).join(", ")}.`,
+    );
     logger.break();
   }
 

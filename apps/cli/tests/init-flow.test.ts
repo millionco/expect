@@ -136,7 +136,9 @@ describe("init flow", () => {
       selectExpectMcpAgents,
       selectExpectMcpInstallScope,
     } = await import("../src/mcp/install-expect-mcp");
-    vi.mocked(formatExpectMcpInstallSummary).mockReturnValue("Expect MCP installed for Claude Code.");
+    vi.mocked(formatExpectMcpInstallSummary).mockReturnValue(
+      "Expect MCP installed for Claude Code.",
+    );
     vi.mocked(getSupportedExpectMcpAgents).mockImplementation((agents) => agents as never);
     vi.mocked(getUnsupportedExpectMcpAgents).mockReturnValue([]);
     vi.mocked(installExpectMcpForAgents).mockReturnValue({
@@ -286,9 +288,8 @@ describe("init flow", () => {
       const { detectAvailableAgents } = await import("@expect/agent");
       vi.mocked(detectAvailableAgents).mockReturnValue([]);
       const { runAddSkill } = await import("../src/commands/add-skill");
-      const { selectExpectMcpInstallScope, installExpectMcpForAgents } = await import(
-        "../src/mcp/install-expect-mcp"
-      );
+      const { selectExpectMcpInstallScope, installExpectMcpForAgents } =
+        await import("../src/mcp/install-expect-mcp");
 
       const mockExit = vi.spyOn(process, "exit").mockImplementation(() => {
         throw new Error("process.exit");
@@ -394,7 +395,7 @@ describe("init flow", () => {
         "utf-8",
       );
       expect(() => JSON.parse(raw)).not.toThrow();
-      const browserMode = readProjectPreference<string>(projectRoot, "browserMode");
+      const browserMode = readProjectPreference(projectRoot, "browserMode");
       expect(browserMode).toBeDefined();
       expect(["headed", "headless"]).toContain(browserMode);
     });
@@ -523,9 +524,8 @@ describe("init flow", () => {
     });
 
     it("forwards --yes to MCP scope and agent selection", async () => {
-      const { selectExpectMcpInstallScope, selectExpectMcpAgents } = await import(
-        "../src/mcp/install-expect-mcp"
-      );
+      const { selectExpectMcpInstallScope, selectExpectMcpAgents } =
+        await import("../src/mcp/install-expect-mcp");
 
       const { runInit } = await import("../src/commands/init");
       await runInit({ yes: true, headless: true });
