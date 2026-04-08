@@ -19,7 +19,6 @@ export {
   testContextFilterText,
   testContextId,
   testContextLabel,
-  TestCoverageEntry,
   TestCoverageReport,
   TestPlan,
   TestPlanDraft,
