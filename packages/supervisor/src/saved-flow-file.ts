@@ -68,7 +68,7 @@ const normalizeSavedFlowEnvironment = (value: unknown): SavedFlowFileData["envir
   };
 };
 
-const parseSavedFlowFile = (content: string): SavedFlowFileData => {
+export const parseSavedFlowFile = (content: string): SavedFlowFileData => {
   const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
   if (!frontmatterMatch) throw new Error("Invalid saved flow file: no frontmatter found");
 

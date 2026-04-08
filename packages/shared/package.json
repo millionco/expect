@@ -30,6 +30,7 @@
     "which": "^6.0.1"
   },
   "devDependencies": {
+    "@types/which": "^3.0.4",
     "@types/node": "^22.0.0",
     "typescript": "^5.7.0"
   }
