@@ -224,16 +224,9 @@ Examples:
   $ expect init --headed            set browser mode to headed
   $ expect init --headless          set browser mode to headless`,
   )
-  .action(
-    async (opts: {
-      yes?: boolean;
-      dry?: boolean;
-      headed?: boolean;
-      headless?: boolean;
-    }) => {
-      await runInit(opts);
-    },
-  );
+  .action(async (opts: { yes?: boolean; dry?: boolean; headed?: boolean; headless?: boolean }) => {
+    await runInit(opts);
+  });
 
 const addCommand = program.command("add").description("add integrations to your project");
 
