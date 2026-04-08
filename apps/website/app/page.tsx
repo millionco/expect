@@ -848,7 +848,7 @@ function TerminalAnimationView({
   } = animState;
 
   return (
-    <div className="flex flex-col items-center justify-center gap-4 text-xs/4 mt-11.5 p-3 pb-14">
+    <div className="flex flex-col items-center justify-center gap-4 text-xs/4 mt-5 sm:mt-11.5 p-3 pb-4 sm:pb-14">
       <div className="relative w-68.5 h-46 shrink-0 overflow-visible">
         <BrowserPreview
           slid={slid}
@@ -1181,7 +1181,7 @@ export default function HomePage() {
 
   return (
     <div className="[font-synthesis:none] overflow-x-clip antialiased min-h-screen bg-[color(display-p3_0.986_0.986_0.986)] flex flex-col items-center">
-      <div className="w-full pt-6 pb-4 flex flex-col items-center relative">
+      <div className="w-full pt-3 sm:pt-6 pb-2 sm:pb-4 flex flex-col items-center relative">
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
