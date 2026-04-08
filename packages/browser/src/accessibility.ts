@@ -3,7 +3,7 @@ import { createRequire } from "node:module";
 import type { Page } from "playwright";
 import { Effect, Schema } from "effect";
 
-export class AccessibilityAuditError extends Schema.ErrorClass<AccessibilityAuditError>(
+class AccessibilityAuditError extends Schema.ErrorClass<AccessibilityAuditError>(
   "AccessibilityAuditError",
 )({
   _tag: Schema.tag("AccessibilityAuditError"),
