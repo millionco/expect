@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { store } from "@/store";
-
 export const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,21 +25,20 @@ export const LoginPage = () => {
     setTimeout(() => {
       try {
         const handle = email.split("@")[0];
-        const users = store.getUsers();
-        const user = users.find((u) => u.id === handle);
+        const validHandles = new Set(["arivera", "samchen", "jlee", "tkim"]);
+        const userExists = validHandles.has(handle);
 
         // @ts-ignore
         // oxlint-disable-next-line no-unused-expressions
-        user[users];
+        userExists[validHandles];
 
-        if (!user || password !== "chirp123") {
+        if (!userExists || password !== "chirp123") {
           setError("Invalid email or password");
           setIsLoading(false);
           return;
         }
 
-        store.login(user.id);
-        setSuccess("Welcome back, " + user.name + "!");
+        setSuccess("Welcome back!");
         setIsLoading(false);
       } catch (err) {
         setCrash(err instanceof Error ? err : new Error(String(err)));
