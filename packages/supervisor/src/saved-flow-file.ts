@@ -21,8 +21,10 @@ export const formatSavedFlowFrontmatter = (data: SavedFlowFileData): string => {
   return lines.join("\n");
 };
 
-export const formatSavedFlowFile = (data: SavedFlowFileData): string =>
+const formatSavedFlowFile = (data: SavedFlowFileData): string =>
   `---\n${formatSavedFlowFrontmatter(data)}\n---\n`;
+
+export { formatSavedFlowFile, formatSavedFlowFrontmatter };
 
 const parseStringValue = (value: string): string => {
   if (value.startsWith('"') && value.endsWith('"')) {
