@@ -28,6 +28,55 @@ import { finder } from "@medv/finder";
 import { CursorIcon, detectCursorShape } from "./components/cursors";
 import { Glow } from "./components/glow";
 
+const StarDots = () => {
+  const dotSize = 4;
+  const spread = 4.5;
+  const cellSize = dotSize + spread * 2;
+  const center = cellSize / 2 - dotSize / 2;
+
+  const dots = [
+    { x: center, y: 0, delay: 0, duration: 1400 },
+    { x: center * 2, y: center, delay: 300, duration: 1700 },
+    { x: center, y: center * 2, delay: 700, duration: 1500 },
+    { x: 0, y: center, delay: 1000, duration: 1600 },
+    { x: center, y: center, delay: 500, duration: 2200 },
+  ];
+
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        position: "relative",
+        width: `${cellSize}px`,
+        height: `${cellSize}px`,
+        flexShrink: 0,
+      }}
+    >
+      {dots.map((dot, index) => {
+        const isCenter = index === 4;
+        return (
+          <span
+            key={index}
+            style={{
+              position: "absolute",
+              left: `${dot.x}px`,
+              top: `${dot.y}px`,
+              width: `${dotSize}px`,
+              height: `${dotSize}px`,
+              borderRadius: "30%",
+              backgroundColor: "rgba(255,255,255,0.9)",
+              animation: isCenter
+                ? `expect-dot-center ${dot.duration}ms ease-in-out infinite`
+                : `expect-dot-orbit ${dot.duration}ms ease-in-out infinite`,
+              animationDelay: `${dot.delay}ms`,
+            }}
+          />
+        );
+      })}
+    </span>
+  );
+};
+
 const CAROUSEL_DURATION_MS = 350;
 
 const TextCarousel = ({ text }: { text: string }) => {
@@ -73,7 +122,6 @@ const TextCarousel = ({ text }: { text: string }) => {
       style={{
         display: "inline-block",
         position: "relative",
-        overflow: "hidden",
         verticalAlign: "top",
       }}
     >
@@ -89,11 +137,22 @@ const TextCarousel = ({ text }: { text: string }) => {
               position: isOutgoing ? "absolute" : undefined,
               left: isOutgoing ? 0 : undefined,
               top: isOutgoing ? 0 : undefined,
-              animation: isOutgoing
-                ? `expect-carousel-out ${CAROUSEL_DURATION_MS}ms cubic-bezier(0.22,1,0.36,1) forwards`
-                : isIncoming
-                  ? `expect-carousel-in ${CAROUSEL_DURATION_MS}ms cubic-bezier(0.22,1,0.36,1) forwards`
-                  : "none",
+              background:
+                "linear-gradient(90deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.85) 35%, #fff 50%, rgba(255,255,255,0.85) 65%, rgba(255,255,255,0.85) 100%)",
+              backgroundSize: "250% 100%",
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              animation: [
+                "expect-text-shimmer 4s ease-in-out infinite",
+                isOutgoing
+                  ? `expect-carousel-out ${CAROUSEL_DURATION_MS}ms cubic-bezier(0.22,1,0.36,1) forwards`
+                  : isIncoming
+                    ? `expect-carousel-in ${CAROUSEL_DURATION_MS}ms cubic-bezier(0.22,1,0.36,1) forwards`
+                    : "",
+              ]
+                .filter(Boolean)
+                .join(", "),
             }}
           >
             {item.text}
@@ -257,6 +316,9 @@ const AgentOverlay = () => {
                 className="rounded-full py-1.5 px-3.5 text-white font-semibold text-[16.5px] leading-[23px] antialiased animate-[expect-comment-in_0.25s_cubic-bezier(0.22,1,0.36,1)_both]"
                 style={{
                   maxWidth: `${tooltipMaxWidth}px`,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
                   background: "#000",
                   border: "3px solid white",
                   boxShadow: "0 0 2px rgba(0,0,0,0.22)",
@@ -267,6 +329,7 @@ const AgentOverlay = () => {
                   textOverflow: "ellipsis",
                 }}
               >
+                <StarDots />
                 <TextCarousel text={state.label} />
               </div>
             </div>
