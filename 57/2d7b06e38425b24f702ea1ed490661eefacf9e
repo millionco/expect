@@ -1,0 +1,49 @@
+apps/cli/src/commands/init.ts
+  e17eedfd60be2d35 6,21-27,145-147,152,296-297,299,301,330,332-337,343-352,355-358,361-363
+apps/cli/src/mcp/config-types.ts
+  e17eedfd60be2d35 1-11
+apps/cli/src/constants.ts
+  e17eedfd60be2d35 49-50
+apps/cli/tests/init-flow.test.ts
+  e17eedfd60be2d35 14-26,29-40,141-158,283-284,287,290-291,294,313-317,327-330,350-352,362-363,377-385,532,535
+apps/cli/src/mcp/json-config.ts
+  e17eedfd60be2d35 1-69
+apps/cli/src/commands/update.ts
+  e17eedfd60be2d35 1,5,7-13,16-19,21-26,30,32-34,37-39,41-54,56,60,62-63
+apps/cli/src/components/app.tsx
+  e17eedfd60be2d35 18,76
+apps/cli/tests/update.test.ts
+  e17eedfd60be2d35 2-6,9-11,14-15,19,21,23-25,27-29,33-39,41-45
+apps/cli/tests/install-expect-mcp.test.ts
+  e17eedfd60be2d35 1-117
+apps/cli/src/mcp/config-utils.ts
+  e17eedfd60be2d35 1-66
+apps/cli/tests/runtime-deps.test.ts
+  e17eedfd60be2d35 52
+apps/cli/src/mcp/toml-config.ts
+  e17eedfd60be2d35 1-18
+apps/cli/src/index.tsx
+  e17eedfd60be2d35 204,280
+apps/cli/src/mcp/install-expect-mcp.ts
+  e17eedfd60be2d35 1-274
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "572d7b06e38425b24f702ea1ed490661eefacf9e",
+  "prompts": {
+    "e17eedfd60be2d35": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "2d060063-f7f9-4e65-abe4-c9d67d205055",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 1023,
+      "total_deletions": 365,
+      "accepted_lines": 925,
+      "overriden_lines": 0
+    }
+  }
+}
