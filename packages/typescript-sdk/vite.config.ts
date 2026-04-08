@@ -4,7 +4,12 @@ export default defineConfig({
   pack: {
     entry: ["src/index.ts", "src/effect.ts"],
     format: ["esm"],
-    dts: true,
+    dts: {
+      tsconfig: "../../tsconfig.json",
+      resolver: "tsc",
+      oxc: false,
+      build: true,
+    },
     sourcemap: true,
     deps: {
       alwaysBundle: [/@expect\//],

@@ -2,7 +2,10 @@ import { Layer, References } from "effect";
 import { Executor, Git } from "@expect/supervisor";
 import { Agent, type AgentBackend } from "@expect/agent";
 
-export const layerSdk = (agentBackend: AgentBackend, rootDir: string) => {
+export const layerSdk = (
+  agentBackend: AgentBackend,
+  rootDir: string,
+): Layer.Layer<any, any, never> => {
   const gitLayer = Git.withRepoRoot(rootDir);
   const agentLayer = Agent.layerFor(agentBackend);
   const executorLayer = Executor.layer.pipe(Layer.provide(gitLayer));
