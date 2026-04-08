@@ -1,0 +1,36 @@
+packages/expect-skill/SKILL.md
+  34b340a2d4e3ba4d 7,18-19,24-29,74-76,78,80-90,94-99,101-126,148,150,153,155,157,161,163-168,176-181
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "650ecf0219d09d1fad3983225748df2a99bd4655",
+  "prompts": {
+    "34b340a2d4e3ba4d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "506fcc50-2f6f-46cf-bbb5-423f6fb8485c",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 79,
+      "total_deletions": 20,
+      "accepted_lines": 78,
+      "overriden_lines": 0
+    },
+    "4c8ca10041013643": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e44d3c25-f394-44e2-86ba-164e06591be5",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 79,
+      "overriden_lines": 0
+    }
+  }
+}
