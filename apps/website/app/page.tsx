@@ -897,11 +897,175 @@ const formatStarCount = (count: number) => {
   return String(count);
 };
 
+const MCP_CLIENTS = [
+  { name: "Claude Code", command: "claude mcp add --scope user expect -- npx -y expect-cli@latest mcp", lang: "sh" as const },
+  { name: "Cursor", command: `{
+  "mcpServers": {
+    "expect": {
+      "command": "npx",
+      "args": ["-y", "expect-cli@latest", "mcp"]
+    }
+  }
+}`, lang: "json" as const },
+  { name: "VS Code", command: `"mcp": {
+  "servers": {
+    "expect": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "expect-cli@latest", "mcp"]
+    }
+  }
+}`, lang: "json" as const },
+  { name: "Windsurf", command: `{
+  "mcpServers": {
+    "expect": {
+      "command": "npx",
+      "args": ["-y", "expect-cli@latest", "mcp"]
+    }
+  }
+}`, lang: "json" as const },
+  { name: "Claude Desktop", command: `{
+  "mcpServers": {
+    "expect": {
+      "command": "npx",
+      "args": ["-y", "expect-cli@latest", "mcp"]
+    }
+  }
+}`, lang: "json" as const },
+  { name: "Opencode", command: `"mcp": {
+  "expect": {
+    "type": "local",
+    "command": ["npx", "-y", "expect-cli@latest", "mcp"],
+    "enabled": true
+  }
+}`, lang: "json" as const },
+  { name: "OpenAI Codex", command: `[mcp_servers.expect]
+command = "npx"
+args = ["-y", "expect-cli@latest", "mcp"]`, lang: "toml" as const },
+  { name: "Antigravity", command: `{
+  "mcpServers": {
+    "expect": {
+      "command": "npx",
+      "args": ["-y", "expect-cli@latest", "mcp"]
+    }
+  }
+}`, lang: "json" as const },
+  { name: "Roo Code", command: `{
+  "mcpServers": {
+    "expect": {
+      "command": "npx",
+      "args": ["-y", "expect-cli@latest", "mcp"]
+    }
+  }
+}`, lang: "json" as const },
+  { name: "Kilo Code", command: `{
+  "mcpServers": {
+    "expect": {
+      "command": "npx",
+      "args": ["-y", "expect-cli@latest", "mcp"],
+      "alwaysAllow": [],
+      "disabled": false
+    }
+  }
+}`, lang: "json" as const },
+  { name: "Cline", command: `{
+  "mcpServers": {
+    "expect": {
+      "command": "npx",
+      "args": ["-y", "expect-cli@latest", "mcp"]
+    }
+  }
+}`, lang: "json" as const },
+  { name: "Copilot Agent", command: `{
+  "mcpServers": {
+    "expect": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "expect-cli@latest", "mcp"]
+    }
+  }
+}`, lang: "json" as const },
+  { name: "Copilot CLI", command: `{
+  "mcpServers": {
+    "expect": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "expect-cli@latest", "mcp"]
+    }
+  }
+}`, lang: "json" as const },
+  { name: "Gemini CLI", command: `{
+  "mcpServers": {
+    "expect": {
+      "command": "npx",
+      "args": ["-y", "expect-cli@latest", "mcp"]
+    }
+  }
+}`, lang: "json" as const },
+  { name: "Trae", command: `{
+  "mcpServers": {
+    "expect": {
+      "command": "npx",
+      "args": ["-y", "expect-cli@latest", "mcp"]
+    }
+  }
+}`, lang: "json" as const },
+  { name: "JetBrains", command: `{
+  "mcpServers": {
+    "expect": {
+      "command": "npx",
+      "args": ["-y", "expect-cli@latest", "mcp"]
+    }
+  }
+}`, lang: "json" as const },
+  { name: "Qwen Code", command: "qwen mcp add expect -- npx -y expect-cli@latest mcp", lang: "sh" as const },
+  { name: "Amp", command: "amp mcp add expect -- npx -y expect-cli@latest mcp", lang: "sh" as const },
+  { name: "VS 2022", command: `{
+  "inputs": [],
+  "servers": {
+    "expect": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "expect-cli@latest", "mcp"]
+    }
+  }
+}`, lang: "json" as const },
+  { name: "Qodo Gen", command: `{
+  "mcpServers": {
+    "expect": {
+      "command": "npx",
+      "args": ["-y", "expect-cli@latest", "mcp"]
+    }
+  }
+}`, lang: "json" as const },
+  { name: "Factory", command: "droid mcp add expect -- npx -y expect-cli@latest mcp", lang: "sh" as const },
+  { name: "Crush", command: `{
+  "$schema": "https://charm.land/crush.json",
+  "mcp": {
+    "expect": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "expect-cli@latest", "mcp"]
+    }
+  }
+}`, lang: "json" as const },
+  { name: "Rovo Dev", command: `{
+  "mcpServers": {
+    "expect": {
+      "command": "npx",
+      "args": ["-y", "expect-cli@latest", "mcp"]
+    }
+  }
+}`, lang: "json" as const },
+];
+
 export default function HomePage() {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<"cli" | "agent-prompt">("cli");
   const [openFaqs, setOpenFaqs] = useState<Set<number>>(new Set());
   const [starCount, setStarCount] = useState<string>("3k");
+  const [activeMcpClient, setActiveMcpClient] = useState(0);
+  const [mcpCopied, setMcpCopied] = useState(false);
   const commandRef = useRef<HTMLDivElement>(null);
   const expectRunCommandRef = useRef<HTMLDivElement>(null);
 
@@ -960,7 +1124,7 @@ export default function HomePage() {
           </div>
         </div>
         <div
-          className="absolute bottom-0 left-1/2 -translate-x-1/2 h-px w-[584px]"
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 h-px w-full max-w-[584px]"
           style={{
             background:
               "linear-gradient(to right, transparent 0%, rgba(0,0,0,0.06) 25%, rgba(0,0,0,0.06) 75%, transparent 100%)",
@@ -972,8 +1136,8 @@ export default function HomePage() {
           <div className="flex flex-col gap-[5px] mt-13">
             <div
               data-nudge-target
-              className="[white-space-collapse:preserve] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[23px]/9.5 text-[#2c2c2c]"
-              style={{ marginBottom: "3px", color: "#2c2c2c" }}
+              className="[white-space-collapse:preserve] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[23px]/9.5 text-[#1a1a1a]"
+              style={{ marginBottom: "10px", color: "#1a1a1a" }}
             >
               Expect
             </div>
@@ -1034,7 +1198,7 @@ export default function HomePage() {
                   )}
                   <div
                     ref={commandRef}
-                    className="left-0 top-0 [white-space-collapse:preserve] w-max min-w-0 text-[#414141] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[15.5px]/5.75"
+                    className="left-0 top-0 [white-space-collapse:preserve] min-w-0 text-[#414141] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[15.5px]/5.75 truncate"
                   >
                     {commandText}
                   </div>
@@ -1220,7 +1384,7 @@ export default function HomePage() {
               </div>
             </div>
           </a>
-          <div className="flex flex-col w-107.25 mt-14">
+          <div className="flex flex-col w-full max-w-107.25 mt-14">
             <div className="[letter-spacing:0em] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[17px]/5.75 text-[color(display-p3_0.248_0.248_0.248)] mb-2.75">
               FAQ
             </div>
@@ -1419,6 +1583,93 @@ export default function HomePage() {
                 </div>
               </div>
             ))}
+          </div>
+          <div className="mb-0 left-0 top-0 w-full min-w-0 [white-space-collapse:preserve] relative text-[#3F3F3F] font-['OpenRunde-Semibold','Open_Runde',system-ui,sans-serif] font-semibold text-[17px]/5.75 mt-14">
+            MCP clients
+          </div>
+          <div className="[letter-spacing:0em] max-w-102 [white-space-collapse:preserve] font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium text-[16px]/5.75 text-[#707070] mt-1.5">
+            Expect supports all MCP clients that implement the stdio transport. Below are configuration examples for popular clients.
+          </div>
+          <div
+            className="[font-synthesis:none] flex w-full flex-col rounded-[14px] pt-2.5 pr-3.5 pb-3.5 pl-3.75 gap-3.5 [box-shadow:#0000000F_0px_0px_0px_1px,#0000000F_0px_1px_2px_-1px,#0000000A_0px_2px_4px] antialiased mt-4"
+            style={{
+              backgroundImage:
+                "linear-gradient(in oklab 180deg, oklab(100% 0 0) 45.83%, oklab(97.8% 0 0) 46.26%)",
+            }}
+          >
+            <div className="flex items-center gap-0 overflow-x-auto -mx-1 px-1 scrollbar-none">
+              {MCP_CLIENTS.map((client, index) => (
+                <button
+                  key={client.name}
+                  type="button"
+                  className="cursor-pointer text-left shrink-0 px-2 py-1 first:pl-0"
+                  onClick={() => setActiveMcpClient(index)}
+                >
+                  <div
+                    className={`[white-space-collapse:preserve] w-max font-['OpenRunde-Medium','Open_Runde',system-ui,sans-serif] font-medium shrink-0 text-[14px]/5 transition-colors duration-200 ${activeMcpClient === index ? "text-[#414141]" : "text-[#A0A0A0]"}`}
+                  >
+                    {client.name}
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="flex items-start justify-between gap-2">
+              <pre
+                className="text-[#414141] font-['JetBrains_Mono',monospace] text-[13px]/5 whitespace-pre overflow-x-auto min-w-0 flex-1 scrollbar-none"
+              >
+                {MCP_CLIENTS[activeMcpClient].lang === "sh" && (
+                  <span className="text-[#696969]">$ </span>
+                )}
+                {MCP_CLIENTS[activeMcpClient].command}
+              </pre>
+              <button
+                type="button"
+                onClick={async () => {
+                  const text = MCP_CLIENTS[activeMcpClient].command;
+                  await navigator.clipboard.writeText(text);
+                  setMcpCopied(true);
+                  setTimeout(() => setMcpCopied(false), 1500);
+                }}
+                className="cursor-pointer shrink-0 content-center group mt-0.5"
+                aria-label="Copy configuration"
+              >
+                {mcpCopied && (
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    style={{ height: "20px", verticalAlign: "middle", width: "20px", overflow: "clip" }}
+                  >
+                    <path
+                      fillRule="evenodd"
+                      clipRule="evenodd"
+                      d="M10.28 3.22a.75.75 0 0 1 0 1.06l-5 5a.75.75 0 0 1-1.06 0l-2.5-2.5a.75.75 0 1 1 1.06-1.06L4.75 7.69l4.47-4.47a.75.75 0 0 1 1.06 0Z"
+                      fill="#059669"
+                    />
+                  </svg>
+                )}
+                {!mcpCopied && (
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    color="#0A0A0A"
+                    style={{ height: "20px", verticalAlign: "middle", width: "20px", overflow: "clip", flexShrink: "0" }}
+                  >
+                    <path
+                      fillRule="evenodd"
+                      clipRule="evenodd"
+                      d="M3.25 2.25C3.25 1.698 3.698 1.25 4.25 1.25H9.25C10.079 1.25 10.75 1.922 10.75 2.75V7.75C10.75 8.302 10.302 8.75 9.75 8.75C9.474 8.75 9.25 8.526 9.25 8.25C9.25 7.974 9.474 7.75 9.75 7.75V2.75C9.75 2.474 9.526 2.25 9.25 2.25H4.25C4.25 2.526 4.026 2.75 3.75 2.75C3.474 2.75 3.25 2.526 3.25 2.25ZM1.25 4.75C1.25 3.922 1.922 3.25 2.75 3.25H7.25C8.078 3.25 8.75 3.922 8.75 4.75V9.25C8.75 10.079 8.078 10.75 7.25 10.75H2.75C1.922 10.75 1.25 10.079 1.25 9.25V4.75ZM2.75 4.25C2.474 4.25 2.25 4.474 2.25 4.75V9.25C2.25 9.526 2.474 9.75 2.75 9.75H7.25C7.526 9.75 7.75 9.526 7.75 9.25V4.75C7.75 4.474 7.526 4.25 7.25 4.25H2.75Z"
+                      fill="#696969"
+                    />
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

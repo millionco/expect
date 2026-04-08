@@ -68,12 +68,13 @@ export default function RootLayout({
         </ThemeProvider>
         <ReactGrab />
         <Nudge config={{
-          property: "color",
-          value: "#2c2c2c",
-          original: "#3c3c3c",
-          type: "color",
+          property: "margin-bottom",
+          value: "10px",
+          original: "0px",
+          type: "numeric",
+          step: 1,
           file: "app/page.tsx",
-          line: "974",
+          line: "976",
         }} />
         {process.env.VERCEL && <Analytics />}
       </body>
