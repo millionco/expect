@@ -53,10 +53,15 @@
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
+    "@agentclientprotocol/claude-agent-acp": "^0.24.2",
     "@effect/atom-react": "4.0.0-beta.35",
     "@effect/platform-node": "4.0.0-beta.35",
+    "@github/copilot": "^1.0.21",
+    "@google/gemini-cli": "^0.35.3",
     "@iarna/toml": "^2.2.5",
     "@tanstack/react-query": "^5.80.7",
+    "@zed-industries/codex-acp": "^0.10.0",
+    "accessibility-checker-engine": "^4.0.16",
     "cli-truncate": "^5.2.0",
     "commander": "^13.1.0",
     "detect-terminal": "^2.0.0",

@@ -20,6 +20,8 @@
     "@agentclientprotocol/sdk": "^0.16.1",
     "@effect/platform-node": "4.0.0-beta.35",
     "@expect/shared": "workspace:*",
+    "@github/copilot": "^1.0.21",
+    "@google/gemini-cli": "^0.35.3",
     "@zed-industries/codex-acp": "^0.10.0",
     "effect": "4.0.0-beta.35"
   },

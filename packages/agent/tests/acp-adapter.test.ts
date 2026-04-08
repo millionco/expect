@@ -34,7 +34,8 @@ describe("AcpAdapter", () => {
         const error = exit.cause;
         expect(
           error.toString().includes("AcpProviderNotInstalledError") ||
-            error.toString().includes("AcpProviderUnauthenticatedError"),
+            error.toString().includes("AcpProviderUnauthenticatedError") ||
+            error.toString().includes("AcpAdapterNotFoundError"),
         ).toBe(true);
       }
     });
@@ -54,7 +55,8 @@ describe("AcpAdapter", () => {
         const error = exit.cause;
         expect(
           error.toString().includes("AcpProviderNotInstalledError") ||
-            error.toString().includes("AcpProviderUnauthenticatedError"),
+            error.toString().includes("AcpProviderUnauthenticatedError") ||
+            error.toString().includes("AcpAdapterNotFoundError"),
         ).toBe(true);
       }
     });

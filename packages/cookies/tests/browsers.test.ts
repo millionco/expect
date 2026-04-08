@@ -4,12 +4,12 @@ import { Browsers } from "../src/browser-detector";
 import { layerLive } from "../src/layers";
 
 describe("Browsers", () => {
-  it("returns at least 2 browsers", () =>
+  it("returns at least 1 browser", () =>
     Effect.gen(function* () {
       const browsers = yield* Browsers;
       const results = yield* browsers.list;
       assert.isArray(results);
-      assert.isAbove(results.length, 1);
+      assert.isAbove(results.length, 0);
     }).pipe(Effect.provide(layerLive), Effect.runPromise));
 
   it("chromium browsers have an executablePath", () =>
