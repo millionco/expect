@@ -449,6 +449,8 @@ export const TestingScreen = ({
     triggerExecute,
     agentBackend,
     browserHeaded,
+    browserProfile,
+    cdpUrl,
     changesFor,
     instruction,
     savedFlow,
