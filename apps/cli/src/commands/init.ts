@@ -3,8 +3,7 @@ import * as fs from "node:fs";
 import * as net from "node:net";
 import * as os from "node:os";
 import * as path from "node:path";
-import { detectAvailableAgents } from "@expect/agent";
-import { isCommandAvailable } from "@expect/shared/is-command-available";
+import { detectAvailableAgents, toDisplayName } from "@expect/agent";
 import { BROWSER_CONFIGS } from "@expect/cookies";
 import figures from "figures";
 import pc from "picocolors";
@@ -19,9 +18,13 @@ import {
   writeProjectPreference,
 } from "../utils/project-preferences-io";
 import { resolveProjectRoot } from "../utils/project-root";
-import { runAddSkill } from "./add-skill";
-import { detectPackageManager } from "./init-utils";
-import { formatInstallCommand, getGlobalInstallCommand, runInstallCommand } from "./update";
+import {
+  formatExpectMcpInstallSummary,
+  getSupportedExpectMcpAgents,
+  getUnsupportedExpectMcpAgents,
+  installExpectMcpForAgents,
+  selectExpectMcpAgents,
+} from "../mcp/install-expect-mcp";
 
 export { detectAvailableAgents };
 
@@ -139,14 +142,14 @@ const probeCdpPorts = async (): Promise<number | undefined> => {
 };
 
 const USAGE_PROMPTS = [
-  "Run /expect to test my changes in the browser",
-  "Run /expect to smoke test the app end to end",
-  "Run /expect to check for regressions after my changes",
+  "Use Expect to test my changes in the browser",
+  "Use Expect to smoke test the app end to end",
+  "Use Expect to check for regressions after my changes",
 ];
 
 const logUsageGuide = () => {
   logger.break();
-  logger.log("  Copy one of these into your coding agent to get started:");
+  logger.log("  Restart your coding agent if it was already running, then try one of these:");
   logger.break();
   for (const prompt of USAGE_PROMPTS) {
     logger.log(`     ${highlighter.info(prompt)}`);
@@ -275,9 +278,6 @@ const handleCdpSetup = async (fromFlag: boolean): Promise<boolean> => {
 };
 
 export const runInit = async (options: InitOptions = {}) => {
-  const packageManager = detectPackageManager();
-  const installCommand = getGlobalInstallCommand(packageManager);
-
   setOnCancel(() => {
     logger.break();
     logger.log("Cancelled.");
@@ -293,10 +293,12 @@ export const runInit = async (options: InitOptions = {}) => {
   logger.break();
 
   const availableAgents = detectAvailableAgents();
+  const supportedMcpAgents = getSupportedExpectMcpAgents(availableAgents);
+  const unsupportedMcpAgents = getUnsupportedExpectMcpAgents(availableAgents);
 
-  if (availableAgents.length === 0) {
+  if (supportedMcpAgents.length === 0) {
     logger.error(
-      "No supported coding agent found. expect requires one of: Claude Code, Codex, GitHub Copilot, Gemini, Cursor, OpenCode, or Factory Droid.",
+      "No supported coding agent found for Expect MCP. Expect MCP currently supports Claude Code, Codex, GitHub Copilot, Gemini CLI, Cursor, and OpenCode.",
     );
     logger.break();
     logger.log(`  Install one to get started:`);
@@ -325,42 +327,40 @@ export const runInit = async (options: InitOptions = {}) => {
     process.exit(1);
   }
 
-  if (options.dry) {
-    spinner("Installing expect skill...").start().succeed("Skill installed (dry run).");
-  } else {
-    await runAddSkill({ yes: options.yes, agents: availableAgents });
+  const projectRoot = await resolveProjectRoot();
+
+  if (unsupportedMcpAgents.length > 0) {
+    logger.warn(
+      `  Skipping MCP install for ${unsupportedMcpAgents.map(toDisplayName).join(", ")}.`,
+    );
+    logger.break();
   }
 
-  logger.break();
-
-  const globalSpinner = spinner("Installing expect-cli globally...").start();
+  const mcpSpinner = spinner("Installing Expect MCP...").start();
   if (options.dry) {
-    globalSpinner.succeed(`Installed expect-cli globally (dry run).`);
+    mcpSpinner.succeed("Expect MCP installed (dry run).");
   } else {
-    const globalSuccess = await runInstallCommand(installCommand);
+    const selectedAgents = await selectExpectMcpAgents(supportedMcpAgents, options.yes);
+    const installSummary = installExpectMcpForAgents(projectRoot, selectedAgents);
 
-    if (globalSuccess) {
-      if (isCommandAvailable("expect-cli")) {
-        globalSpinner.succeed(
-          `Installed! ${highlighter.info("expect-cli")} is now available globally.`,
-        );
-      } else {
-        globalSpinner.warn(`Installed, but ${highlighter.info("expect-cli")} is not on your PATH.`);
-        const globalPrefix = spawnSync("npm", ["prefix", "-g"], {
-          encoding: "utf8",
-          stdio: ["ignore", "pipe", "ignore"],
-        }).stdout?.trim();
-        if (globalPrefix) {
-          logger.dim(
-            `  Add ${highlighter.info(`${globalPrefix}/bin`)} to your PATH, or use ${highlighter.info("npx expect-cli")} instead.`,
-          );
-        } else {
-          logger.dim(`  Use ${highlighter.info("npx expect-cli")} instead.`);
-        }
+    if (
+      installSummary.selectedAgents.length > 0 &&
+      installSummary.failed.length === installSummary.selectedAgents.length
+    ) {
+      mcpSpinner.fail("Failed to install Expect MCP.");
+      for (const failure of installSummary.failed) {
+        logger.warn(`  ${toDisplayName(failure.agent)}: ${failure.reason}`);
       }
+      throw new Error("Failed to install Expect MCP.");
+    }
+
+    if (installSummary.selectedAgents.length === 0) {
+      mcpSpinner.warn("Skipped Expect MCP install.");
     } else {
-      globalSpinner.fail("Failed to install globally.");
-      logger.dim(`  Run manually: ${highlighter.info(formatInstallCommand(installCommand))}`);
+      mcpSpinner.succeed(formatExpectMcpInstallSummary(installSummary));
+      for (const failure of installSummary.failed) {
+        logger.warn(`  ${toDisplayName(failure.agent)}: ${failure.reason}`);
+      }
     }
   }
 
@@ -377,7 +377,7 @@ export const runInit = async (options: InitOptions = {}) => {
   }
 
   if (!options.dry) {
-    writeProjectPreference(await resolveProjectRoot(), "browserMode", browserMode);
+    writeProjectPreference(projectRoot, "browserMode", browserMode);
   }
 
   logger.break();

@@ -15,7 +15,7 @@ import { useNavigationStore, Screen } from "../stores/use-navigation";
 import { usePlanExecutionStore } from "../stores/use-plan-execution-store";
 import { useGitState } from "../hooks/use-git-state";
 import { useUpdateCheck } from "../hooks/use-update-check";
-import { runUpdateCommandSync } from "../commands/update";
+import { runUpdateCommand } from "../commands/update";
 import { clearInkDisplay } from "../utils/clear-ink-display";
 import { useStdoutDimensions } from "../hooks/use-stdout-dimensions";
 import { ALT_SCREEN_OFF } from "../constants";
@@ -73,7 +73,7 @@ export const App = ({ agent }: { agent: AgentBackend }) => {
     if (key.ctrl && input === "u" && updateAvailable) {
       exit();
       process.stdout.write(ALT_SCREEN_OFF);
-      runUpdateCommandSync(latestVersion);
+      void runUpdateCommand(latestVersion);
       return;
     }
     if (key.escape && screen._tag !== "Main") {

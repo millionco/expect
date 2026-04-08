@@ -49,6 +49,7 @@ const extractRuntimeResolvedPackages = (): string[] => {
           : specifier.split("/").slice(0, 1);
         const packageName = parts.join("/");
 
+        if (packageName === "") continue;
         if (specifier.startsWith(`${packageName}/package.json`)) continue;
 
         packages.add(packageName);

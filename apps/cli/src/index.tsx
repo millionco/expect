@@ -203,7 +203,7 @@ const runInteractiveForTarget = async (target: Target, opts: CommanderOpts) => {
 program
   .command("init")
   .alias("setup")
-  .description("set up expect for your coding agent")
+  .description("set up the Expect MCP server for your coding agent")
   .option("-y, --yes", "skip confirmation prompts")
   .option("--dry", "skip install steps, only run prompts")
   .option("--cdp", "use CDP browser mode (connect to existing browser)")
@@ -279,7 +279,7 @@ program
 
 program
   .command("update")
-  .description("update expect-cli globally")
+  .description("update the installed Expect MCP server config")
   .argument("[version]", "version or dist-tag to install")
   .action(async (version?: string) => {
     await runUpdateCommand(version);
