@@ -1,0 +1,44 @@
+apps/website/app/page.tsx
+  d62a5c01242cba9d 1088-1089
+docs/mcp.md
+  d62a5c01242cba9d 129
+apps/cli/src/mcp/install-expect-mcp.ts
+  d62a5c01242cba9d 6-9,69-82,97
+apps/cli/src/constants.ts
+  d62a5c01242cba9d 50
+apps/cli/tests/install-expect-mcp.test.ts
+  d62a5c01242cba9d 7,63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "cd73f02df050ab76161e6455147c492d4c972324",
+  "prompts": {
+    "04c202506dbca0e2": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "532b96bd-26c0-40ae-b0c6-9a45f39e777c",
+        "model": "composer-2"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 14,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    },
+    "d62a5c01242cba9d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4d301918-3eaa-4e92-88ba-2749069bc30a",
+        "model": "composer-2"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 26,
+      "total_deletions": 2,
+      "accepted_lines": 25,
+      "overriden_lines": 0
+    }
+  }
+}
