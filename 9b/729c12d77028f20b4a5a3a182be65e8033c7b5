@@ -1,0 +1,23 @@
+packages/browser/src/mcp/server.ts
+  c762d7b2b2fa2e45 43-48,122,124,187,189,284,286,356,358,397,399,486,488,552,554,589,618-620,622-624,626-627,629-630
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "9b729c12d77028f20b4a5a3a182be65e8033c7b5",
+  "prompts": {
+    "c762d7b2b2fa2e45": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "fc3de8d4-446c-4514-8ded-15ae7bbb4ad4",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 33,
+      "total_deletions": 19,
+      "accepted_lines": 31,
+      "overriden_lines": 0
+    }
+  }
+}
