@@ -64,7 +64,7 @@ const StarDots = () => {
               width: `${dotSize}px`,
               height: `${dotSize}px`,
               borderRadius: "50%",
-              backgroundColor: "rgba(255,255,255,0.9)",
+              backgroundColor: "color(display-p3 1 0.722 0)",
               animation: isCenter
                 ? `expect-dot-center ${dot.duration}ms ease-in-out infinite`
                 : `expect-dot-orbit ${dot.duration}ms ease-in-out infinite`,
