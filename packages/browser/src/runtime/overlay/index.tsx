@@ -200,7 +200,6 @@ const AgentOverlay = () => {
   }, [state.cursorX, state.cursorY, state.cursorPositioned]);
 
   const hasLabel = Boolean(state.label);
-  const showCursor = true;
 
   const spaceRight = viewport.width - cursorX - TOOLTIP_OFFSET_PX - TOOLTIP_VIEWPORT_PADDING_PX;
   const spaceLeft = cursorX - TOOLTIP_VIEWPORT_PADDING_PX;
@@ -220,7 +219,7 @@ const AgentOverlay = () => {
           style={{
             left: `${cursorX}px`,
             top: `${cursorY}px`,
-            opacity: showCursor ? 1 : 0,
+            opacity: 1,
             transition: state.isScrolling
               ? "opacity 150ms ease"
               : `left 600ms cubic-bezier(0.25, 0.1, 0.25, 1), top 600ms cubic-bezier(0.65, 0, 0.35, 1), opacity 150ms ease`,

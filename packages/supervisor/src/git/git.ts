@@ -471,6 +471,9 @@ export class Git extends ServiceMap.Service<Git>()("@supervisor/Git", {
     return Layer.mergeAll(Git.layer.pipe(Layer.provide(repoRootLayer)), repoRootLayer);
   };
 
+  // HACK: falls back to cwd when not inside a git repo — other revparse failures
+  // (permissions, corrupt .git) are also swallowed, but this matches the CLI's
+  // "best effort" behavior where non-repo directories are still usable
   static resolveProjectRoot = (cwd: string) =>
     Effect.tryPromise({
       try: () => simpleGit(cwd).revparse(["--show-toplevel"]),

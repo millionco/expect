@@ -4,7 +4,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import which from "which";
 import { Effect } from "effect";
-import { ChromeNotFoundError, ChromeLaunchTimeoutError } from "./errors";
+import { ChromeNotFoundError, ChromeSpawnError, ChromeLaunchTimeoutError } from "./errors";
 import { parseDevToolsActivePort } from "./utils/parse-devtools-active-port";
 import {
   CDP_LAUNCH_TIMEOUT_MS,
@@ -216,7 +216,8 @@ export const launchSystemChrome = Effect.fn("Chrome.launchSystemChrome")(functio
         stdio: ["ignore", "ignore", "pipe"],
         detached: false,
       }),
-    catch: () => new ChromeNotFoundError(),
+    catch: (cause) =>
+      new ChromeSpawnError({ cause: cause instanceof Error ? cause.message : String(cause) }),
   });
 
   const wsUrl = yield* Effect.callback<string, ChromeLaunchTimeoutError>((resume) => {

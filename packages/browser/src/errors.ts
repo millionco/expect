@@ -133,6 +133,13 @@ export class ChromeNotFoundError extends Schema.ErrorClass<ChromeNotFoundError>(
     "No system Chrome installation found. Install Google Chrome or pass an explicit executable path.";
 }
 
+export class ChromeSpawnError extends Schema.ErrorClass<ChromeSpawnError>("ChromeSpawnError")({
+  _tag: Schema.tag("ChromeSpawnError"),
+  cause: Schema.String,
+}) {
+  message = `Failed to spawn Chrome process: ${this.cause}`;
+}
+
 export class ChromeLaunchTimeoutError extends Schema.ErrorClass<ChromeLaunchTimeoutError>(
   "ChromeLaunchTimeoutError",
 )({
@@ -141,6 +148,15 @@ export class ChromeLaunchTimeoutError extends Schema.ErrorClass<ChromeLaunchTime
   cause: Schema.String,
 }) {
   message = `Chrome launch failed (timeout ${this.timeoutMs}ms): ${this.cause}`;
+}
+
+export class ChromeProfileNotFoundError extends Schema.ErrorClass<ChromeProfileNotFoundError>(
+  "ChromeProfileNotFoundError",
+)({
+  _tag: Schema.tag("ChromeProfileNotFoundError"),
+  profileName: Schema.String,
+}) {
+  message = `Chrome profile "${this.profileName}" not found. Available profiles can be found in your Chrome user data directory.`;
 }
 
 export type ActionError =

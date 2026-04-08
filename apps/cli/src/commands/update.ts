@@ -13,6 +13,7 @@ import {
 } from "../utils/expect-skill";
 import { runAddSkill } from "./add-skill";
 import { detectNonInteractive, detectPackageManager, tryRun } from "./init-utils";
+import { resolveProjectRoot } from "../utils/project-root";
 
 export interface InstallCommand {
   binary: string;
@@ -118,7 +119,7 @@ export const runUpdateCommandSync = (version?: string): boolean => {
 };
 
 const maybePromptForSkillUpdate = async () => {
-  const projectRoot = process.cwd();
+  const projectRoot = await resolveProjectRoot();
   const installedAgents = detectInstalledSkillAgents(projectRoot, detectAvailableAgents());
   if (installedAgents.length === 0) return;
 

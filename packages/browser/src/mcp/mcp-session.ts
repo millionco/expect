@@ -8,6 +8,7 @@ import { Analytics } from "@expect/shared/observability";
 import { Browser } from "../browser";
 import { NavigationError } from "../errors";
 import { launchSystemChrome, killChromeProcess } from "../chrome-launcher";
+import { ChromeProfileNotFoundError } from "../errors";
 import { evaluateRuntime } from "../utils/evaluate-runtime";
 import {
   AGENT_OVERLAY_CONTAINER_ID,
@@ -320,11 +321,9 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
                 ),
               );
             if (resolvedProfile === undefined) {
-              return yield* Effect.die(
-                new Error(
-                  `Chrome profile "${configuredProfileName}" not found. Available profiles can be found in your Chrome user data directory.`,
-                ),
-              );
+              return yield* new ChromeProfileNotFoundError({
+                profileName: configuredProfileName,
+              });
             }
 
             const chrome = yield* launchSystemChrome({
@@ -345,12 +344,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
               chromeCleanup: killChromeProcess(chrome),
               browserName: resolvedProfile.key,
             };
-          }).pipe(
-            Effect.catchTags({
-              ChromeNotFoundError: Effect.die,
-              ChromeLaunchTimeoutError: Effect.die,
-            }),
-          )
+          })
         : {
             cdpUrl: explicitCdpUrl,
             chromeCleanup: Effect.void,
@@ -412,9 +406,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
                 `globalThis.__EXPECT_RUNTIME__.initAgentOverlay('${AGENT_OVERLAY_CONTAINER_ID}')`,
               ),
             )
-            .catch((error) =>
-              console.debug("[expect] overlay re-injection on load failed:", error),
-            );
+            .catch(() => {});
         });
 
         yield* evaluateRuntime(

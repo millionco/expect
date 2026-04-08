@@ -3,7 +3,7 @@ import * as Atom from "effect/unstable/reactivity/Atom";
 import { ExecutedTestPlan, Executor, Git, Reporter, type ExecuteOptions } from "@expect/supervisor";
 import { Analytics } from "@expect/shared/observability";
 import type { AgentBackend } from "@expect/agent";
-import type { AcpConfigOption, TestReport } from "@expect/shared/models";
+import type { AcpConfigOption, TestReport, PlanId } from "@expect/shared/models";
 import { cliAtomRuntime } from "./runtime";
 import { stripUndefinedRequirement } from "../utils/strip-undefined-requirement";
 import * as NodeServices from "@effect/platform-node/NodeServices";
@@ -59,13 +59,13 @@ const executeCore = (input: ExecuteInput) =>
           ? option.value
           : new ExecutedTestPlan({
               ...input.options,
-              id: "" as never,
+              id: "" as PlanId,
               changesFor: input.options.changesFor,
               currentBranch: "",
               diffPreview: "",
               fileStats: [],
               instruction: input.options.instruction,
-              baseUrl: undefined as never,
+              baseUrl: Option.none(),
               isHeadless: input.options.isHeadless,
               cookieBrowserKeys: input.options.cookieBrowserKeys,
               testCoverage: Option.none(),
@@ -134,7 +134,10 @@ export const executeFn = cliAtomRuntime.fn<ExecuteInput>()((input) =>
         yield* analytics.capture("run:failed", {
           error_tag: errorTag,
         });
-      }).pipe(Effect.catchCause(() => Effect.void)),
+      }).pipe(
+        // HACK: analytics must never crash the run — swallow all failures from telemetry
+        Effect.catchCause(() => Effect.void),
+      ),
     ),
     Effect.provide(NodeServices.layer),
   ),

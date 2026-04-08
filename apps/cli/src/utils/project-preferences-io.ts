@@ -34,9 +34,13 @@ export const readProjectPreference = <T>(projectRoot: string, key: string): T | 
 };
 
 export const writeProjectPreference = (projectRoot: string, key: string, value: unknown): void => {
-  const filePath = getPreferencesPath(projectRoot);
-  const state = readRawState(projectRoot);
-  state[key] = value;
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, JSON.stringify({ state, version: 0 }), "utf-8");
+  try {
+    const filePath = getPreferencesPath(projectRoot);
+    const state = readRawState(projectRoot);
+    state[key] = value;
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify({ state, version: 0 }), "utf-8");
+  } catch {
+    // HACK: best-effort persistence — read-only FS or permission issues should not crash the CLI
+  }
 };

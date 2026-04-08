@@ -1,6 +1,7 @@
 export const CURSOR_SIZE_PX = 72;
 export const CURSOR_HEIGHT_PX = 80;
 export const OVERLAY_BLUE = "color(display-p3 0.118 0.481 0.988)";
+export const SRGB_BLUE = "30, 123, 252";
 export const STATE_KEY = "__expect_cursor_state__";
 export const CLICK_ANIMATION_RESET_MS = 300;
 export const MAX_ACTION_LOG_ENTRIES = 50;

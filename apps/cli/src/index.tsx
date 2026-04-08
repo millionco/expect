@@ -68,7 +68,7 @@ interface CommanderOpts {
   url?: string[];
 }
 
-// HACK: when adding or changing options/commands below, update the Options and Commands tables in README-new.md
+// HACK: when adding or changing options/commands below, update the Options and Commands tables in README.md
 const program = new Command()
   .name("expect")
   .description("AI-powered browser testing for your changes")
@@ -88,7 +88,9 @@ const program = new Command()
   .option("--profile <name>", "reuse a Chrome profile by name (e.g. Default)")
   .option("--no-cookies", "skip system browser cookie extraction")
   .option("--ci", "force CI mode: headless, no cookies, auto-yes, 30-minute timeout")
-  .option("--timeout <ms>", "execution timeout in milliseconds", parseInt)
+  .option("--timeout <ms>", "execution timeout in milliseconds", (value: string) =>
+    parseInt(value, 10),
+  )
   .option("--output <format>", "output format: text (default) or json")
   .option("-u, --url <urls...>", "base URL(s) for the dev server (skips port picker)")
   .addHelpText(
@@ -153,7 +155,7 @@ const runHeadlessForTarget = async (target: Target, opts: CommanderOpts) => {
     instruction: opts.message ?? DEFAULT_INSTRUCTION,
     agent: opts.agent ?? "claude",
     verbose: opts.verbose ?? false,
-    headed: opts.browserMode ? browserMode === "headed" : !ciMode,
+    headed: opts.browserMode ? browserMode !== "headless" : !ciMode,
     ci: ciMode,
     noCookies: opts.noCookies ?? ciMode,
     timeoutMs,
