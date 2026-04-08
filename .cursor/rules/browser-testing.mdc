@@ -11,8 +11,9 @@ When using the `cursor-ide-browser` MCP for testing or verification, follow this
 ## Pre-flight
 
 1. Use `browser_tabs` with action `list` to check for existing tabs
-2. If a tab exists for the target URL, `browser_lock` it before interacting
+2. If a tab already exists for the target URL (or a closely related URL), reuse it — `browser_lock` it and continue from the current page state instead of navigating from scratch
 3. If no tab exists, `browser_navigate` first, then `browser_lock`
+4. When re-verifying after a code change, refresh the existing tab rather than closing and reopening — this preserves scroll position, form state, and avoids cold-start overhead
 
 ## Accessibility Quick Audit
 
@@ -52,6 +53,14 @@ Reference the performance skill at `.agents/skills/performance/SKILL.md` and the
 
 1. `browser_console_messages` — look for errors, warnings, deprecation notices
 2. `browser_network_requests` — check for failed requests, mixed content, slow responses
+
+## Session Persistence
+
+When you expect to re-verify after code fixes, keep the browser session alive between turns:
+
+1. Do NOT call `close` or `browser_lock unlock` if you plan to revisit the page
+2. On the next turn, `browser_tabs list` will show the existing tab — reuse it
+3. Only close/unlock when ALL verification is complete and no more iterations are expected
 
 ## Unlock When Done
 

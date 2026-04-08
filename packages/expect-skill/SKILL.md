@@ -87,6 +87,14 @@ Scan the changed files and diff to identify what behavior changed and which user
 - For broad changes touching shared code: test 3-5 flows, prioritizing paths that share components or data with the changed files. If shared layouts or utilities changed, verify multiple pages.
 - For branch-level reviews: aim for 5-8 total flows. Each changed route, component, or data path should get its own verification. Prioritize security and authorization edge cases. Do not stop after the happy path passes.
 
+## Subagent Usage
+
+Browser verification is best run in a subagent (Task tool) or background shell so the main thread stays free for code edits. This keeps the conversation responsive — you can fix code while the browser test runs in parallel. Strongly prefer launching a subagent for browser work, especially when the test involves multiple steps or long interactions. If the test is truly trivial (single screenshot check), inline is acceptable.
+
+## Resuming Browser State
+
+Before opening a new browser, check if one is already running. Use `browser_tabs` (action `list`) or the expect `screenshot` tool to see if a session is still active. If a tab is already open at the target URL, reuse it — don't close and reopen. When re-verifying after a code fix, prefer navigating or refreshing the existing session over starting from scratch.
+
 ## Execution Strategy
 
 `open` → interact with `playwright` and `screenshot` → observe with `console_logs` and `network_requests` → audit with `accessibility_audit` and `performance_metrics` → `close`. One browser session at a time.
@@ -171,6 +179,8 @@ You MUST complete every step before claiming the work is done.
 
 You will reach for these — recognize them and do the opposite:
 
+- "I'll run the browser test inline, it's quick" — Probably not. Launch a subagent so you can keep editing code in parallel. Only skip the subagent for a single screenshot sanity check.
+- "I'll open a fresh browser to re-test" — Check for an existing session first. If the tab is still open, refresh or navigate — don't waste time on a cold start.
 - "I'll make one `playwright` call per action" — No. Put the whole sequence in one `playwright` call. `ref('e3').fill(...); ref('e5').fill(...); ref('e7').click();` — that's one tool call, not three.
 - "I need a fresh snapshot between fills" — No. Fills don't change page structure. Batch them in one `playwright` script.
 - "The page loaded successfully" — Loading is not verification. Check the specific behavior the diff changed.

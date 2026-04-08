@@ -13,6 +13,7 @@ import {
   TOOLTIP_OFFSET_PX,
   TOOLTIP_MAX_WIDTH_PX,
   TOOLTIP_VIEWPORT_PADDING_PX,
+  TOOLTIP_FLIP_THRESHOLD_PX,
   getViewport,
   clampToViewport,
 } from "./lib/constants";
@@ -29,8 +30,8 @@ import { CursorIcon, detectCursorShape } from "./components/cursors";
 import { Glow } from "./components/glow";
 
 const StarDots = () => {
-  const dotSize = 3;
-  const spread = 5.5;
+  const dotSize = 6;
+  const spread = 10;
   const cellSize = dotSize + spread * 2;
   const center = cellSize / 2 - dotSize / 2;
 
@@ -281,6 +282,20 @@ const AgentOverlay = () => {
     setCursorShape(detectCursorShape(state.cursorX, state.cursorY));
   }, [state.cursorX, state.cursorY, state.cursorPositioned]);
 
+  useEffect(() => {
+    if (!state.overlayVisible) return;
+    const handleMouseMove = (event: MouseEvent) => {
+      setState((previous) => ({
+        ...previous,
+        cursorX: event.clientX,
+        cursorY: event.clientY,
+        cursorPositioned: true,
+      }));
+    };
+    window.addEventListener("mousemove", handleMouseMove, true);
+    return () => window.removeEventListener("mousemove", handleMouseMove, true);
+  }, [state.overlayVisible]);
+
   const hasLabel = Boolean(state.label);
 
   const spaceRight = viewport.width - cursorX - TOOLTIP_OFFSET_PX - TOOLTIP_VIEWPORT_PADDING_PX;
@@ -289,7 +304,7 @@ const AgentOverlay = () => {
   const tooltipMaxWidth = tooltipFlipX
     ? Math.min(TOOLTIP_MAX_WIDTH_PX, spaceLeft)
     : Math.min(TOOLTIP_MAX_WIDTH_PX, spaceRight);
-  const tooltipFlipY = cursorY > viewport.height - 80;
+  const tooltipFlipY = cursorY > viewport.height - TOOLTIP_FLIP_THRESHOLD_PX;
 
   return (
     <>
@@ -314,22 +329,22 @@ const AgentOverlay = () => {
             <div
               className="absolute pointer-events-none"
               style={{
-                left: tooltipFlipX ? undefined : "25px",
-                right: tooltipFlipX ? "calc(100% - 2px)" : undefined,
-                top: tooltipFlipY ? undefined : "25px",
-                bottom: tooltipFlipY ? "calc(100% - 2px)" : undefined,
+                left: tooltipFlipX ? undefined : "50px",
+                right: tooltipFlipX ? "calc(100% - 4px)" : undefined,
+                top: tooltipFlipY ? undefined : "50px",
+                bottom: tooltipFlipY ? "calc(100% - 4px)" : undefined,
                 maxWidth: `${tooltipMaxWidth}px`,
               }}
             >
               <div
-                className="rounded-full py-2 px-3.5 text-white font-semibold text-[16.5px] leading-none antialiased animate-[expect-comment-in_0.25s_cubic-bezier(0.22,1,0.36,1)_both]"
+                className="rounded-full py-4 px-6 text-white font-semibold text-[28px] leading-none antialiased animate-[expect-comment-in_0.25s_cubic-bezier(0.22,1,0.36,1)_both]"
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "8px",
+                  gap: "14px",
                   background: "#000",
-                  border: `3px solid ${OVERLAY_BLUE}`,
-                  boxShadow: "0 0 2px rgba(0,0,0,0.22)",
+                  border: `4px solid ${OVERLAY_BLUE}`,
+                  boxShadow: "0 0 4px rgba(0,0,0,0.22)",
                   fontFamily: "'OpenRunde-Medium','Open_Runde',system-ui,sans-serif",
                   fontSynthesis: "none",
                   overflow: "hidden",

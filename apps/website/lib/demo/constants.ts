@@ -5,43 +5,43 @@ export interface DemoStepDefinition {
   readonly endOffsetMs: number;
 }
 
-export const DEMO_TARGET_URL = "https://expect.dev";
+export const DEMO_TARGET_URL = "http://localhost:5173";
 
 export const DEMO_STEP_DEFINITIONS: readonly DemoStepDefinition[] = [
   {
     stepId: "demo-step-1",
-    title: "Navigate to expect.dev and let the homepage intro animation settle",
+    title: "Navigate to InvoiceApp and verify the dashboard loads",
     startOffsetMs: 0,
-    endOffsetMs: 6_000,
+    endOffsetMs: 2_000,
   },
   {
     stepId: "demo-step-2",
-    title: "Scroll down to the installation section",
-    startOffsetMs: 6_000,
-    endOffsetMs: 11_000,
+    title: "Click New Invoice and submit empty form — no validation",
+    startOffsetMs: 2_000,
+    endOffsetMs: 4_500,
   },
   {
     stepId: "demo-step-3",
-    title: "Copy the install command",
-    startOffsetMs: 11_000,
-    endOffsetMs: 15_000,
+    title: "Resize to mobile viewport (375px) — table overflows",
+    startOffsetMs: 4_500,
+    endOffsetMs: 6_000,
   },
   {
     stepId: "demo-step-4",
-    title: "Copy the Cursor skill command",
-    startOffsetMs: 15_000,
-    endOffsetMs: 19_000,
+    title: "Check accessibility — 4 WCAG violations found",
+    startOffsetMs: 6_000,
+    endOffsetMs: 7_500,
   },
   {
     stepId: "demo-step-5",
-    title: "Switch the homepage to dark mode",
-    startOffsetMs: 19_000,
-    endOffsetMs: 24_000,
+    title: "Delete invoice has no confirmation dialog",
+    startOffsetMs: 7_500,
+    endOffsetMs: 8_500,
   },
   {
     stepId: "demo-step-6",
-    title: "Switch back to light mode and return to the top of the page",
-    startOffsetMs: 24_000,
-    endOffsetMs: 30_000,
+    title: "Review results — 5 issues found, 3 videos saved",
+    startOffsetMs: 8_500,
+    endOffsetMs: 10_000,
   },
 ] as const;

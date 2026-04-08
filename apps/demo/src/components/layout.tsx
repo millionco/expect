@@ -1,78 +1,59 @@
 import { Link, useLocation, Outlet } from "react-router-dom";
-import { Home, User, LogOut, LogIn } from "lucide-react";
-import { store } from "@/store";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
-const NAV_ITEMS = [
-  { path: "/", label: "Home", icon: Home },
-  { path: "/profile", label: "Profile", icon: User },
-];
+const NAV_ITEMS = [{ path: "/", label: "Sheet" }];
 
-export const Layout = ({ onUpdate }: { onUpdate: () => void }) => {
+export const Layout = () => {
   const location = useLocation();
-  const currentUser = store.getCurrentUser();
 
   return (
-    <div className="flex justify-center min-h-screen">
-      <nav className="w-60 p-5 border-r border-border sticky top-0 h-screen flex flex-col">
-        <div className="text-3xl px-3 py-2 mb-2">🐦</div>
-        {NAV_ITEMS.map((item) => {
-          const profilePath = currentUser ? `/profile/${currentUser.handle}` : "/profile";
-          const href = item.path === "/profile" ? profilePath : item.path;
-          const isActive =
-            item.path === "/" ? location.pathname === "/" : location.pathname.startsWith(item.path);
-          const Icon = item.icon;
-
-          return (
-            <Button
-              key={item.path}
-              variant="ghost"
-              asChild
-              className={cn(
-                "justify-start gap-4 rounded-full text-lg h-auto py-3 px-4",
-                isActive && "font-bold",
-              )}
+    <div className="min-h-screen bg-white flex flex-col">
+      <header className="border-b border-zinc-200 bg-emerald-700 sticky top-0 z-20">
+        <div className="px-4 flex items-center h-14">
+          <div className="flex items-center gap-2 mr-8">
+            <svg
+              className="size-7 text-white"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
             >
-              <Link to={currentUser ? href : "/login"}>
-                <Icon className="size-6" />
-                <span>{item.label}</span>
-              </Link>
-            </Button>
-          );
-        })}
-        <Separator className="my-2" />
-        {currentUser && (
-          <Button
-            variant="ghost"
-            onClick={() => {
-              store.logout();
-              onUpdate();
-            }}
-            className="justify-start gap-4 rounded-full text-lg h-auto py-3 px-4"
-          >
-            <LogOut className="size-6" />
-            <span>Logout</span>
-          </Button>
-        )}
-        {!currentUser && (
-          <Button
-            variant="ghost"
-            asChild
-            className="justify-start gap-4 rounded-full text-lg h-auto py-3 px-4"
-          >
-            <Link to="/login">
-              <LogIn className="size-6" />
-              <span>Login</span>
-            </Link>
-          </Button>
-        )}
-      </nav>
-      <main className="w-[600px] border-r border-border">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <line x1="3" y1="9" x2="21" y2="9" />
+              <line x1="3" y1="15" x2="21" y2="15" />
+              <line x1="9" y1="3" x2="9" y2="21" />
+              <line x1="15" y1="3" x2="15" y2="21" />
+            </svg>
+            <span className="font-bold text-white text-lg tracking-tight">Sheets</span>
+          </div>
+          <nav className="flex gap-1">
+            {NAV_ITEMS.map((item) => {
+              const isActive =
+                item.path === "/"
+                  ? location.pathname === "/"
+                  : location.pathname.startsWith(item.path);
+
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={cn(
+                    "px-4 py-1.5 text-sm font-medium rounded transition-colors no-underline",
+                    isActive
+                      ? "bg-white/20 text-white"
+                      : "text-emerald-200 hover:text-white hover:bg-white/10",
+                  )}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      </header>
+      <main className="flex-1 flex flex-col">
         <Outlet />
       </main>
-      <aside className="w-60" />
     </div>
   );
 };

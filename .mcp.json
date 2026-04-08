@@ -1,10 +1,9 @@
 {
   "mcpServers": {
     "expect": {
-      "command": "npx",
+      "command": "node",
       "args": [
-        "-y",
-        "expect-cli@latest",
+        "/Users/aidenybai/Developer/expect/apps/cli/dist/index.js",
         "mcp"
       ]
     }
