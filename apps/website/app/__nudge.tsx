@@ -247,7 +247,7 @@ export function Nudge({ config }: { config?: NudgeConfig | null }) {
   const [confirmed, setConfirmed] = useState(false);
   const [barVisible, setBarVisible] = useState(false);
   const [barMounted, setBarMounted] = useState(false);
-  const exitTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const exitTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const lastIsColorRef = useRef(false);
 
   if (config) lastIsColorRef.current = config.type === "color";
@@ -259,8 +259,8 @@ export function Nudge({ config }: { config?: NudgeConfig | null }) {
   const unitRef = useRef("");
   const optionIndexRef = useRef(0);
   const currentValueRef = useRef("");
-  const nudgeTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
-  const stepValueRef = useRef<(direction: number, shift: boolean) => void>();
+  const nudgeTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const stepValueRef = useRef<(direction: number, shift: boolean) => void>(undefined);
 
   const triggerNudge = useCallback(
     (dir: "up" | "down") => {
