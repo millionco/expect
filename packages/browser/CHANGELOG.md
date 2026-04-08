@@ -1,5 +1,14 @@
 # @expect/browser
 
+## 0.1.2
+
+### Patch Changes
+
+- 80a2041: fix codex timeouts with mcp
+- Updated dependencies [80a2041]
+  - @expect/cookies@0.1.2
+  - @expect/shared@0.1.2
+
 ## 0.1.1
 
 ### Patch Changes
