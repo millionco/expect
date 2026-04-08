@@ -1,0 +1,31 @@
+apps/cli/src/commands/update.ts
+  e17eedfd60be2d35 13,39-41,46-70,72,76,82,84-87,90
+apps/cli/tests/init-flow.test.ts
+  e17eedfd60be2d35 34,41,148,155,162,295-301,326,330,341-344,397,550-558,567-571,575-578,583
+apps/cli/tests/install-expect-mcp.test.ts
+  e17eedfd60be2d35 30,32,49-52,84,105,108,121
+apps/cli/src/mcp/install-expect-mcp.ts
+  e17eedfd60be2d35 1,21-22,24-27,29,38,46-55,72-75,79-82,86-89,93-96,100-103,107-110,164-190,194,203-206,220-236,238-242,244,247-251,253,262-263,265-266,269-274,287,290,296,298,306-309,319,321,338,349,352,356,360-362
+apps/cli/src/commands/init.ts
+  e17eedfd60be2d35 27,341,343-346
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "560665f5f2f3aa158753992ea1a3c5e5e335797c",
+  "prompts": {
+    "e17eedfd60be2d35": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "2d060063-f7f9-4e65-abe4-c9d67d205055",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Nisarg Patel",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 714,
+      "overriden_lines": 0
+    }
+  }
+}
