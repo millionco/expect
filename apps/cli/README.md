@@ -1,12 +1,15 @@
 # Expect
 
+[![version](https://img.shields.io/npm/v/expect-cli?style=flat&colorA=000000&colorB=000000)](https://npmjs.com/package/expect-cli)
+[![downloads](https://img.shields.io/npm/dt/expect-cli.svg?style=flat&colorA=000000&colorB=000000)](https://npmjs.com/package/expect-cli)
+
 **Expect** is a skill for testing your agent's code in a real browser.
 
 ### **[Demo →](https://expect.dev)**
 
 ## Getting Started
 
-1. Ask your agent to `"Fetch https://www.expect.dev/ and run init script`
+1. Ask your agent to `Fetch https://www.expect.dev/ and run init script`
 2. Run `/expect` inside Claude Code, Codex, [and more](https://github.com/millionco/expect#supported-agents)
 3. Expect spawns subagents simulating real logged-in users to find issues and regressions
 4. Your agent will fix any issues Expect finds, then re-run to verify
@@ -47,7 +50,8 @@ Coming soon. Email [aiden@million.dev](mailto:aiden@million.dev) if you have que
 | `-a, --agent <provider>`      | Agent provider (`claude`, `codex`, `copilot`, `gemini`, `cursor`, `opencode`, `droid`) | auto-detect |
 | `-t, --target <target>`       | What to test: `unstaged`, `branch`, or `changes`                                       | `changes`   |
 | `-u, --url <urls...>`         | Base URL(s) for the dev server (skips port picker)                                     | -           |
-| `--browser-mode <mode>`       | Browser mode: `cdp`, `headed`, or `headless`                                           | from config |
+| `--browser-mode <mode>`       | Browser mode: `headed` or `headless`                                                   | `headed`    |
+| `--cdp <url>`                 | Connect to an existing Chrome via CDP WebSocket URL                                    | -           |
 | `--profile <name>`            | Reuse a Chrome profile by name (e.g. Default)                                          | -           |
 | `--no-cookies`                | Skip system browser cookie extraction                                                  | -           |
 | `--ci`                        | Force CI mode: headless, no cookies, auto-yes, 30-min timeout                          | -           |

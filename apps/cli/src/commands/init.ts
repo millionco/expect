@@ -1,6 +1,5 @@
 import * as childProcess from "node:child_process";
 import * as fs from "node:fs";
-import * as net from "node:net";
 import * as os from "node:os";
 import * as path from "node:path";
 import { detectAvailableAgents } from "@expect/agent";
@@ -28,14 +27,10 @@ export { detectAvailableAgents };
 interface InitOptions {
   yes?: boolean;
   dry?: boolean;
-  cdp?: boolean;
   headed?: boolean;
   headless?: boolean;
 }
 
-const CDP_PROBE_PORTS = [9222, 9229] as const;
-const CDP_PROBE_TIMEOUT_MS = 500;
-const CDP_INSPECT_MIN_MAJOR_VERSION = 144;
 const CHROME_VERSION_TIMEOUT_MS = 5_000;
 const CHROME_VERSION_PATTERN = /(\d+)\.\d+\.\d+\.\d+/;
 
@@ -107,37 +102,6 @@ export const getChromeMajorVersion = (
   }
 };
 
-const supportsInspectDebugging = (): boolean => {
-  const major = getChromeMajorVersion();
-  return major !== undefined && major >= CDP_INSPECT_MIN_MAJOR_VERSION;
-};
-
-const isPortReachable = (host: string, port: number): Promise<boolean> =>
-  new Promise((resolve) => {
-    const socket = new net.Socket();
-    socket.setTimeout(CDP_PROBE_TIMEOUT_MS);
-    socket.once("connect", () => {
-      socket.destroy();
-      resolve(true);
-    });
-    socket.once("timeout", () => {
-      socket.destroy();
-      resolve(false);
-    });
-    socket.once("error", () => {
-      socket.destroy();
-      resolve(false);
-    });
-    socket.connect(port, host);
-  });
-
-const probeCdpPorts = async (): Promise<number | undefined> => {
-  for (const port of CDP_PROBE_PORTS) {
-    if (await isPortReachable("127.0.0.1", port)) return port;
-  }
-  return undefined;
-};
-
 const USAGE_PROMPTS = [
   "Run /expect to test my changes in the browser",
   "Run /expect to smoke test the app end to end",
@@ -154,41 +118,27 @@ const logUsageGuide = () => {
   logger.break();
 };
 
-const CDP_SUPPORTED_BROWSERS = BROWSER_CONFIGS.filter((config) => config.kind === "chromium").map(
-  (config) => config.displayName,
-);
-
 const resolveBrowserModeFromFlags = (options: InitOptions): BrowserMode | undefined => {
-  const flags: BrowserMode[] = [];
-  if (options.cdp) flags.push("cdp");
-  if (options.headed) flags.push("headed");
-  if (options.headless) flags.push("headless");
-
-  if (flags.length > 1) {
-    logger.warn(`  Multiple browser mode flags passed (${flags.join(", ")}). Using --${flags[0]}.`);
+  if (options.headed && options.headless) {
+    logger.warn("  Both --headed and --headless passed. Using --headed.");
+    return "headed";
   }
-
-  return flags[0];
+  if (options.headed) return "headed";
+  if (options.headless) return "headless";
+  return undefined;
 };
 
 const promptBrowserMode = async (flagMode: BrowserMode | undefined): Promise<BrowserMode> => {
   if (flagMode) return flagMode;
-  logger.log(`  CDP supported browsers: ${highlighter.dim(CDP_SUPPORTED_BROWSERS.join(", "))}`);
-  logger.break();
 
   const response = await prompts({
     type: "select",
     name: "browserMode",
-    message: "How should Expect connect to a browser?",
+    message: "How should Expect launch the browser?",
     choices: [
       {
-        title: "Connect to my browser (recommended)",
-        description: "Tests run in your existing browser session with your cookies and logins",
-        value: "cdp",
-      },
-      {
-        title: "Open a browser window",
-        description: "Launches a fresh browser for each test run",
+        title: "Open a browser window (recommended)",
+        description: "Launches a visible browser for each test run",
         value: "headed",
       },
       {
@@ -201,77 +151,7 @@ const promptBrowserMode = async (flagMode: BrowserMode | undefined): Promise<Bro
   });
 
   const selected: unknown = response.browserMode;
-  return isValidBrowserMode(selected) ? selected : "cdp";
-};
-
-const getCdpLaunchCommand = (): string => {
-  const platform = os.platform();
-  const chromeConfig = BROWSER_CONFIGS.find((config) => config.key === "chrome");
-  if (!chromeConfig || chromeConfig.kind !== "chromium") {
-    return "google-chrome --remote-debugging-port=9222";
-  }
-  if (platform === "darwin") {
-    return `${chromeConfig.executable.darwin.replace(/ /g, "\\ ")} --remote-debugging-port=9222`;
-  }
-  if (platform === "win32") {
-    return `start ${chromeConfig.executable.win32[0]?.split("\\").pop() ?? "chrome.exe"} --remote-debugging-port=9222`;
-  }
-  return `${chromeConfig.executable.linux[0]?.split("/").pop() ?? "google-chrome"} --remote-debugging-port=9222`;
-};
-
-const CDP_RETRY_DELAY_MS = 3000;
-const CDP_MAX_RETRIES = 20;
-
-const waitForCdp = async (): Promise<number | undefined> => {
-  for (let attempt = 0; attempt < CDP_MAX_RETRIES; attempt++) {
-    const port = await probeCdpPorts();
-    if (port) return port;
-    await new Promise((resolve) => setTimeout(resolve, CDP_RETRY_DELAY_MS));
-  }
-  return undefined;
-};
-
-const handleCdpSetup = async (fromFlag: boolean): Promise<boolean> => {
-  const probeSpinner = spinner("Looking for a browser with DevTools Protocol...").start();
-  const port = await probeCdpPorts();
-
-  if (port) {
-    probeSpinner.succeed(`Found browser with CDP on port ${port}.`);
-    return true;
-  }
-
-  if (fromFlag) {
-    probeSpinner.fail("No browser with CDP detected. Falling back to headless mode.");
-    logger.dim(`  Launch Chrome with: ${highlighter.info(getCdpLaunchCommand())}`);
-    return false;
-  }
-
-  probeSpinner.warn("No browser with CDP detected.");
-  logger.break();
-
-  if (supportsInspectDebugging()) {
-    logger.log(`  Open this URL in Chrome to enable remote debugging:`);
-    logger.break();
-    logger.log(`     ${highlighter.info("chrome://inspect/#remote-debugging")}`);
-    logger.break();
-    logger.log(`  ${highlighter.dim("Allow the connection when prompted, then come back here.")}`);
-  } else {
-    logger.log(`  Launch your browser with the debug flag:`);
-    logger.break();
-    logger.log(`     ${highlighter.dim("$")} ${highlighter.info(getCdpLaunchCommand())}`);
-  }
-  logger.break();
-
-  const waitSpinner = spinner("Waiting for browser connection...").start();
-  const retryPort = await waitForCdp();
-
-  if (retryPort) {
-    waitSpinner.succeed(`Connected to browser on port ${retryPort}.`);
-    return true;
-  }
-
-  waitSpinner.fail("Timed out waiting for browser. Falling back to headless mode.");
-  return false;
+  return isValidBrowserMode(selected) ? selected : "headed";
 };
 
 export const runInit = async (options: InitOptions = {}) => {
@@ -370,14 +250,7 @@ export const runInit = async (options: InitOptions = {}) => {
 
   const nonInteractive = Boolean(options.yes);
   const flagMode = resolveBrowserModeFromFlags(options);
-  let browserMode = nonInteractive ? (flagMode ?? "cdp") : await promptBrowserMode(flagMode);
-
-  if (browserMode === "cdp") {
-    const cdpAvailable = await handleCdpSetup(Boolean(flagMode));
-    if (!cdpAvailable) {
-      browserMode = "headless";
-    }
-  }
+  const browserMode = nonInteractive ? (flagMode ?? "headed") : await promptBrowserMode(flagMode);
 
   if (!options.dry) {
     writeProjectPreference(await resolveProjectRoot(), "browserMode", browserMode);

@@ -60,6 +60,7 @@ interface CommanderOpts {
   target?: Target;
   verbose?: boolean;
   browserMode?: string;
+  cdp?: string;
   profile?: string;
   noCookies?: boolean;
   ci?: boolean;
@@ -84,7 +85,8 @@ const program = new Command()
   )
   .option("-t, --target <target>", "what to test: unstaged, branch, or changes", "changes")
   .option("--verbose", "enable verbose logging")
-  .option("--browser-mode <mode>", "browser mode: cdp, headed, or headless")
+  .option("--browser-mode <mode>", "browser mode: headed or headless")
+  .option("--cdp <url>", "connect to an existing Chrome via CDP WebSocket URL")
   .option("--profile <name>", "reuse a Chrome profile by name (e.g. Default)")
   .option("--no-cookies", "skip system browser cookie extraction")
   .option("--ci", "force CI mode: headless, no cookies, auto-yes, 30-minute timeout")
@@ -99,8 +101,8 @@ const program = new Command()
 Examples:
   $ expect                                          open interactive TUI
   $ expect -m "test the login flow" -y              run immediately
-  $ expect --browser-mode headless -m "smoke test"  run with headless browser
-  $ expect --browser-mode headed -m "test" -y       launch a fresh browser
+  $ expect --browser-mode headless -m "smoke test"  run headless
+  $ expect --cdp ws://localhost:9222 -m "test" -y   connect to existing Chrome via CDP
   $ expect --target branch                          test all branch changes
   $ expect update                                   update to the latest CLI release
   $ expect --no-cookies -m "test" -y                skip system browser cookie extraction
@@ -111,9 +113,7 @@ Examples:
 const resolveBrowserMode = async (opts: CommanderOpts) => {
   if (opts.browserMode) {
     if (isValidBrowserMode(opts.browserMode)) return opts.browserMode;
-    logger.warn(
-      `  Unknown browser mode "${opts.browserMode}". Expected: cdp, headed, or headless.`,
-    );
+    logger.warn(`  Unknown browser mode "${opts.browserMode}". Expected: headed or headless.`);
   }
   return (await lazyBrowserMode()) ?? "headed";
 };
@@ -260,7 +260,8 @@ program
   )
   .option("-t, --target <target>", "what to test: unstaged, branch, or changes", "changes")
   .option("--verbose", "enable verbose logging")
-  .option("--browser-mode <mode>", "browser mode: cdp, headed, or headless")
+  .option("--browser-mode <mode>", "browser mode: headed or headless")
+  .option("--cdp <url>", "connect to an existing Chrome via CDP WebSocket URL")
   .option("--profile <name>", "reuse a Chrome profile by name (e.g. Default)")
   .option("--no-cookies", "skip system browser cookie extraction")
   .option("-u, --url <urls...>", "base URL(s) for the dev server")

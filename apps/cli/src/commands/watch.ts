@@ -13,6 +13,7 @@ interface WatchCommandOpts {
   target?: Target;
   verbose?: boolean;
   browserMode?: string;
+  cdp?: string;
   profile?: string;
   noCookies?: boolean;
   url?: string[];

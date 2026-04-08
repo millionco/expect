@@ -1,9 +1,9 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-export type BrowserMode = "cdp" | "headed" | "headless";
+export type BrowserMode = "headed" | "headless";
 
-const VALID_BROWSER_MODES: readonly BrowserMode[] = ["cdp", "headed", "headless"];
+const VALID_BROWSER_MODES: readonly BrowserMode[] = ["headed", "headless"];
 
 export const isValidBrowserMode = (value: unknown): value is BrowserMode =>
   typeof value === "string" && VALID_BROWSER_MODES.includes(value as BrowserMode);
