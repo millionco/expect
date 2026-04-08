@@ -7,6 +7,7 @@
     ".": "./src/index.ts",
     "./mcp": "./src/mcp/index.ts",
     "./cli": "./src/mcp/start.ts",
+    "./cli-http": "./src/mcp/start-http.ts",
     "./runtime": "./src/runtime/index.ts"
   },
   "scripts": {

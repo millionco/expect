@@ -1,5 +1,5 @@
 import { Config, Effect, Option, Schema, Stream } from "effect";
-import { type ChangesFor, CiResultOutput, CiStepResult } from "@expect/shared/models";
+import { type ChangesFor, type PlanId, CiResultOutput, CiStepResult } from "@expect/shared/models";
 import { Executor, ExecutedTestPlan, Reporter, Github } from "@expect/supervisor";
 import { Analytics } from "@expect/shared/observability";
 import { detectParentAgent } from "@expect/shared/launched-from";
@@ -136,13 +136,13 @@ export const runHeadless = (options: HeadlessRunOptions) =>
                   option,
                   () =>
                     new ExecutedTestPlan({
-                      id: "" as never,
+                      id: "" as PlanId,
                       changesFor: options.changesFor,
                       currentBranch: "",
                       diffPreview: "",
                       fileStats: [],
                       instruction: options.instruction,
-                      baseUrl: undefined as never,
+                      baseUrl: Option.none(),
                       isHeadless: !options.headed,
                       cookieBrowserKeys: [],
                       testCoverage: Option.none(),

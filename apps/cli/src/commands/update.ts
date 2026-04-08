@@ -44,7 +44,7 @@ export const runUpdateCommand = async (version?: string) => {
   if (supportedMcpAgents.length === 0) {
     logger.break();
     logger.error(
-      "No supported coding agent found for Expect MCP. Expect MCP currently supports Claude Code, Codex, GitHub Copilot, Gemini CLI, Cursor, and OpenCode.",
+      "No supported coding agent found for Expect MCP. Expect MCP currently supports Claude Code, Codex, GitHub Copilot, Gemini CLI, Cursor, OpenCode, and Pi.",
     );
     process.exitCode = 1;
     return;

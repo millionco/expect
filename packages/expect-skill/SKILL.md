@@ -1,11 +1,12 @@
 ---
-name: expect
+
+## name: expect
+
 description: "Use when editing .tsx/.jsx/.css/.html, React components, pages, routes, forms, styles, or layouts. Also when asked to test, verify, validate, QA, find bugs, check for issues, or debug browser behavior."
 license: MIT
 metadata:
   author: millionco
   version: "3.0.0"
----
 
 # Expect
 
@@ -53,10 +54,10 @@ These are the ONLY tools you should use for browser interactions. Do NOT use any
 
 Always run browser interactions inside a subagent/sub-task to keep browser state isolated from your main conversation.
 
-1. Spawn a subagent for browser work. Instruct it to use ONLY the expect MCP tools.
+1. Spawn browser work in a background subagent so MCP tool calls don't block your main thread. Instruct it to use ONLY the expect MCP tools.
 2. Inside the subagent: `open` → interact with `playwright` and `screenshot` → observe with `console_logs` and `network_requests` → audit with `accessibility_audit` and `performance_metrics` → `close`.
 3. Return only the relevant findings (bugs, evidence, answers) to the main context.
-4. One browser session per subagent. For cross-browser testing (WebKit, Firefox), spawn a separate subagent.
+4. One browser session per subagent. For cross-browser testing (WebKit, Firefox), spawn separate subagents.
 
 ## Snapshot Workflow
 

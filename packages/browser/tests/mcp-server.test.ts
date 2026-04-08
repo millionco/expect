@@ -51,7 +51,7 @@ beforeAll(async () => {
   const port = (httpServer.address() as AddressInfo).port;
   testServerUrl = `http://127.0.0.1:${port}`;
 
-  const server = createBrowserMcpServer(McpRuntime);
+  const { server } = createBrowserMcpServer(McpRuntime);
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   mcpClient = new Client({ name: "test-client", version: "0.0.1" });
   await server.connect(serverTransport);
@@ -88,6 +88,24 @@ describe("MCP server tools", () => {
       "playwright",
       "screenshot",
     ]);
+  });
+
+  it("createBrowserMcpServer returns tool handles with handlers", () => {
+    const { tools } = createBrowserMcpServer(McpRuntime);
+    const expectedToolNames = [
+      "open",
+      "playwright",
+      "screenshot",
+      "console_logs",
+      "network_requests",
+      "performance_metrics",
+      "accessibility_audit",
+      "close",
+    ];
+    expect(Object.keys(tools).sort()).toEqual(expectedToolNames.sort());
+    for (const tool of Object.values(tools)) {
+      expect(typeof tool.handler).toBe("function");
+    }
   });
 
   it("open → snapshot → playwright ref click → verify", async () => {

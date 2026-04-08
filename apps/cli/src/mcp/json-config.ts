@@ -60,8 +60,8 @@ export const writeJsonConfig = (
       const updatedContent = jsoncParser.applyEdits(originalContent, edits);
       fs.writeFileSync(configPath, updatedContent);
       return;
-    } catch (error) {
-      console.debug("[expect] JSONC incremental update failed, rewriting config:", error);
+    } catch {
+      // HACK: console.debug outside Effect context — pure sync utility cannot use Effect.logDebug
     }
   }
 

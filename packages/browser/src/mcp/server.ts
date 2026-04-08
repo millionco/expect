@@ -117,7 +117,7 @@ export const createBrowserMcpServer = <E>(
     version: "0.0.1",
   });
 
-  server.registerTool(
+  const openTool = server.registerTool(
     "open",
     {
       title: "Open URL",
@@ -181,7 +181,7 @@ export const createBrowserMcpServer = <E>(
       ),
   );
 
-  server.registerTool(
+  const playwrightTool = server.registerTool(
     "playwright",
     {
       title: "Execute Playwright",
@@ -277,7 +277,7 @@ export const createBrowserMcpServer = <E>(
       ),
   );
 
-  server.registerTool(
+  const screenshotTool = server.registerTool(
     "screenshot",
     {
       title: "Screenshot",
@@ -348,7 +348,7 @@ export const createBrowserMcpServer = <E>(
       ),
   );
 
-  server.registerTool(
+  const consoleLogsTool = server.registerTool(
     "console_logs",
     {
       title: "Console Logs",
@@ -388,7 +388,7 @@ export const createBrowserMcpServer = <E>(
       ),
   );
 
-  server.registerTool(
+  const networkRequestsTool = server.registerTool(
     "network_requests",
     {
       title: "Network Requests",
@@ -476,7 +476,7 @@ export const createBrowserMcpServer = <E>(
       ),
   );
 
-  server.registerTool(
+  const performanceMetricsTool = server.registerTool(
     "performance_metrics",
     {
       title: "Performance Metrics",
@@ -545,7 +545,7 @@ export const createBrowserMcpServer = <E>(
       ),
   );
 
-  server.registerTool(
+  const accessibilityAuditTool = server.registerTool(
     "accessibility_audit",
     {
       title: "Accessibility Audit",
@@ -581,7 +581,7 @@ export const createBrowserMcpServer = <E>(
       ),
   );
 
-  server.registerTool(
+  const closeTool = server.registerTool(
     "close",
     {
       title: "Close Browser",
@@ -633,13 +633,26 @@ export const createBrowserMcpServer = <E>(
     }),
   );
 
-  return server;
+  const tools = {
+    open: openTool,
+    playwright: playwrightTool,
+    screenshot: screenshotTool,
+    console_logs: consoleLogsTool,
+    network_requests: networkRequestsTool,
+    performance_metrics: performanceMetricsTool,
+    accessibility_audit: accessibilityAuditTool,
+    close: closeTool,
+  };
+
+  return { server, tools };
 };
+
+export type BrowserToolMap = ReturnType<typeof createBrowserMcpServer>["tools"];
 
 export const startBrowserMcpServer = async <E>(
   runtime: ManagedRuntime.ManagedRuntime<McpSession | OverlayController | FileSystem, E>,
 ) => {
-  const server = createBrowserMcpServer(runtime);
+  const { server } = createBrowserMcpServer(runtime);
   const transport = new StdioServerTransport();
   await server.connect(transport);
 };

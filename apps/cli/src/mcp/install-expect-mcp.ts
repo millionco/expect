@@ -43,6 +43,7 @@ interface InstallExpectMcpOptions {
 }
 
 const HOME_DIRECTORY = os.homedir();
+// HACK: process.env for XDG/Codex paths — these are OS-level conventions, not app configuration
 const XDG_CONFIG_DIRECTORY = process.env.XDG_CONFIG_HOME ?? path.join(HOME_DIRECTORY, ".config");
 const CODEX_CONFIG_DIRECTORY = process.env.CODEX_HOME ?? path.join(HOME_DIRECTORY, ".codex");
 const COPILOT_CONFIG_DIRECTORY = path.join(HOME_DIRECTORY, ".copilot");

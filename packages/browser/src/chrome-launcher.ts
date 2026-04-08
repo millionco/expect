@@ -307,10 +307,9 @@ export const killChromeProcess = Effect.fn("Chrome.killChromeProcess")(function*
   yield* Effect.sync(() => chrome.process.kill()).pipe(
     Effect.catchCause((cause) => Effect.logDebug("Failed to kill Chrome process", { cause })),
   );
-  if (chrome.tempUserDataDir) {
-    yield* Effect.sync(() =>
-      fs.rmSync(chrome.tempUserDataDir!, { recursive: true, force: true }),
-    ).pipe(
+  const tempDir = chrome.tempUserDataDir;
+  if (tempDir) {
+    yield* Effect.sync(() => fs.rmSync(tempDir, { recursive: true, force: true })).pipe(
       Effect.catchCause((cause) =>
         Effect.logDebug("Failed to remove temp user data dir", { cause }),
       ),

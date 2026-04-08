@@ -14,24 +14,24 @@ const PREFERENCES_FILE = "project-preferences.json";
 const getPreferencesPath = (projectRoot: string): string =>
   path.join(projectRoot, STATE_DIR, PREFERENCES_FILE);
 
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
 const readRawState = (projectRoot: string): Record<string, unknown> => {
   try {
     const content = fs.readFileSync(getPreferencesPath(projectRoot), "utf-8");
     const parsed: unknown = JSON.parse(content);
-    if (typeof parsed !== "object" || parsed === undefined || Array.isArray(parsed)) return {};
-    const envelope = parsed as Record<string, unknown>;
-    const state = envelope["state"];
-    if (typeof state !== "object" || state === undefined || Array.isArray(state)) return {};
-    return state as Record<string, unknown>;
+    if (!isPlainObject(parsed)) return {};
+    const state: unknown = parsed["state"];
+    if (!isPlainObject(state)) return {};
+    return state;
   } catch {
     return {};
   }
 };
 
-export const readProjectPreference = <T>(projectRoot: string, key: string): T | undefined => {
-  const state = readRawState(projectRoot);
-  return state[key] as T | undefined;
-};
+export const readProjectPreference = (projectRoot: string, key: string): unknown =>
+  readRawState(projectRoot)[key];
 
 export const writeProjectPreference = (projectRoot: string, key: string, value: unknown): void => {
   try {

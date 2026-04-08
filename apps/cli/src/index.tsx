@@ -27,6 +27,7 @@ import {
   readProjectPreference,
 } from "./utils/project-preferences-io";
 import { resolveProjectRoot } from "./utils/project-root";
+import { callTool, killDaemon, printToolResult } from "./utils/browser-client";
 
 try {
   fetch(`${VERSION_API_URL}?source=cli&t=${Date.now()}`).catch(() => {});
@@ -37,7 +38,7 @@ const lazyBrowserMode = (() => {
   let resolved = false;
   return async () => {
     if (!resolved) {
-      const value = readProjectPreference<unknown>(await resolveProjectRoot(), "browserMode");
+      const value = readProjectPreference(await resolveProjectRoot(), "browserMode");
       cached = isValidBrowserMode(value) ? value : undefined;
       resolved = true;
     }
@@ -281,6 +282,131 @@ program
   .argument("[version]", "version or dist-tag to install")
   .action(async (version?: string) => {
     await runUpdateCommand(version);
+  });
+
+program
+  .command("open")
+  .description("open a browser and navigate to a URL")
+  .argument("<url>", "URL to navigate to")
+  .option("--headed", "show browser window")
+  .option("--cookies", "reuse local browser cookies")
+  .option("--cdp <url>", "CDP WebSocket endpoint URL")
+  .option("--browser <engine>", "browser engine: chromium (default), webkit, or firefox")
+  .option(
+    "--wait-until <strategy>",
+    "wait strategy: load, domcontentloaded, networkidle, or commit",
+  )
+  .action(
+    async (
+      url: string,
+      opts: {
+        headed?: boolean;
+        cookies?: boolean;
+        cdp?: string;
+        browser?: string;
+        waitUntil?: string;
+      },
+    ) => {
+      const result = await callTool("open", {
+        url,
+        headed: opts.headed,
+        cookies: opts.cookies,
+        cdp: opts.cdp,
+        browser: opts.browser,
+        waitUntil: opts.waitUntil,
+      });
+      printToolResult(result);
+    },
+  );
+
+program
+  .command("playwright")
+  .description("execute Playwright code against the open browser")
+  .argument("<code>", "Playwright code to execute")
+  .option("--snapshot-after", "take a fresh ARIA snapshot after execution")
+  .option("--description <label>", "short description shown in the overlay")
+  .action(async (code: string, opts: { snapshotAfter?: boolean; description?: string }) => {
+    const result = await callTool("playwright", {
+      code,
+      snapshotAfter: opts.snapshotAfter,
+      description: opts.description,
+    });
+    printToolResult(result);
+  });
+
+program
+  .command("screenshot")
+  .description("capture the current page state")
+  .option("--mode <mode>", "capture mode: screenshot (default), snapshot (ARIA tree), or annotated")
+  .option("--full-page", "capture the full scrollable page")
+  .action(async (opts: { mode?: string; fullPage?: boolean }) => {
+    const result = await callTool("screenshot", {
+      mode: opts.mode,
+      fullPage: opts.fullPage,
+    });
+    printToolResult(result);
+  });
+
+program
+  .command("console_logs")
+  .description("get browser console log messages")
+  .option("--type <type>", "filter by message type (error, warning, log)")
+  .option("--clear", "clear messages after reading")
+  .action(async (opts: { type?: string; clear?: boolean }) => {
+    const result = await callTool("console_logs", {
+      type: opts.type,
+      clear: opts.clear,
+    });
+    printToolResult(result);
+  });
+
+program
+  .command("network_requests")
+  .description("get captured network requests with issue detection")
+  .option("--method <method>", "filter by HTTP method")
+  .option("--url <substring>", "filter by URL substring")
+  .option("--resource-type <type>", "filter by resource type (xhr, fetch, document)")
+  .option("--clear", "clear requests after reading")
+  .action(
+    async (opts: { method?: string; url?: string; resourceType?: string; clear?: boolean }) => {
+      const result = await callTool("network_requests", {
+        method: opts.method,
+        url: opts.url,
+        resourceType: opts.resourceType,
+        clear: opts.clear,
+      });
+      printToolResult(result);
+    },
+  );
+
+program
+  .command("performance_metrics")
+  .description("collect Core Web Vitals and performance trace")
+  .action(async () => {
+    const result = await callTool("performance_metrics");
+    printToolResult(result);
+  });
+
+program
+  .command("accessibility_audit")
+  .description("run a WCAG accessibility audit on the current page")
+  .option("--selector <css>", "CSS selector to scope the audit")
+  .option("--tags <tags...>", "WCAG tags to filter by")
+  .action(async (opts: { selector?: string; tags?: string[] }) => {
+    const result = await callTool("accessibility_audit", {
+      selector: opts.selector,
+      tags: opts.tags,
+    });
+    printToolResult(result);
+  });
+
+program
+  .command("close")
+  .description("close the browser and stop the daemon")
+  .action(async () => {
+    const result = await callTool("close");
+    printToolResult(result);
+    killDaemon();
   });
 
 program.action(async () => {
