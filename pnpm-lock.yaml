@@ -114,9 +114,6 @@ importers:
       react:
         specifier: ^19.2.4
         version: 19.2.4
-      rrweb:
-        specifier: ^2.0.0-alpha.18
-        version: 2.0.0-alpha.20
       string-width:
         specifier: ^8.2.0
         version: 8.2.0
@@ -2883,12 +2880,6 @@ packages:
     resolution: {integrity: sha512-2HRCml6OztYXyJXAvdDXPKcawukWY2GpR5/nxKp4iBgiO3wcoEGkAaqctIbZcNB6KlUQBIqt8VYkNSj2397EfA==}
     cpu: [x64]
     os: [win32]
-
-  '@rrweb/types@2.0.0-alpha.20':
-    resolution: {integrity: sha512-RbnDgKxA/odwB1R4gF7eUUj+rdSrq6ROQJsnMw7MIsGzlbSYvJeZN8YY4XqU0G6sKJvXI6bSzk7w/G94jNwzhw==}
-
-  '@rrweb/utils@2.0.0-alpha.20':
-    resolution: {integrity: sha512-MTQOmhPRe39C0fYaCnnVYOufQsyGzwNXpUStKiyFSfGLUJrzuwhbRoUAKR5w6W2j5XuA0bIz3ZDIBztkquOhLw==}
 
   '@rtsao/scc@1.1.0':
     resolution: {integrity: sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==}
@@ -6663,15 +6654,6 @@ packages:
     resolution: {integrity: sha512-nLTrUKm2UyiL7rlhapu/Zl45FwNgkZGaCpZbIHajDYgwlJCOzLSk+cIPAnsEqV955GjILJnKbdQC1nVPz+gAYQ==}
     engines: {node: '>= 18'}
 
-  rrdom@2.0.0-alpha.20:
-    resolution: {integrity: sha512-hoqjS4662LtBp82qEz9GrqU36UpEmCvTA2Hns3qdF7cklLFFy3G+0Th8hLytJENleHHWxsB5nWJ3eXz5mSRxdQ==}
-
-  rrweb-snapshot@2.0.0-alpha.20:
-    resolution: {integrity: sha512-YTNf9YVeaGRo/jxY3FKBge2c/Ojd/KTHmuWloUSB+oyPXuY73ZeeG873qMMmhIpqEn7hn7aBF1eWEQmP7wjf8A==}
-
-  rrweb@2.0.0-alpha.20:
-    resolution: {integrity: sha512-CZKDlm+j1VA50Ko3gnMbpvguCAleljsTNXPnVk9aeNP8o6T6kolRbISHyDZpqZ4G+bdDLlQOignPP3jEsXs8Gg==}
-
   run-applescript@7.1.0:
     resolution: {integrity: sha512-DPe5pVFaAsinSaV6QjQ6gdiedWDcRCbUuiQfQa2wmWV7+xC9bGulGI8+TdRmoFkAPaBXk8CrAbnlY2ISniJ47Q==}
     engines: {node: '>=18'}
@@ -9844,10 +9826,6 @@ snapshots:
 
   '@rollup/rollup-win32-x64-msvc@4.59.0':
     optional: true
-
-  '@rrweb/types@2.0.0-alpha.20': {}
-
-  '@rrweb/utils@2.0.0-alpha.20': {}
 
   '@rtsao/scc@1.1.0': {}
 
@@ -13834,25 +13812,6 @@ snapshots:
       path-to-regexp: 8.3.0
     transitivePeerDependencies:
       - supports-color
-
-  rrdom@2.0.0-alpha.20:
-    dependencies:
-      rrweb-snapshot: 2.0.0-alpha.20
-
-  rrweb-snapshot@2.0.0-alpha.20:
-    dependencies:
-      postcss: 8.5.8
-
-  rrweb@2.0.0-alpha.20:
-    dependencies:
-      '@rrweb/types': 2.0.0-alpha.20
-      '@rrweb/utils': 2.0.0-alpha.20
-      '@types/css-font-loading-module': 0.0.7
-      '@xstate/fsm': 1.6.5
-      base64-arraybuffer: 1.0.2
-      mitt: 3.0.1
-      rrdom: 2.0.0-alpha.20
-      rrweb-snapshot: 2.0.0-alpha.20
 
   run-applescript@7.1.0: {}
 

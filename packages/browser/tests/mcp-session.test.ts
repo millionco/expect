@@ -6,8 +6,6 @@ import { Browser } from "../src/browser";
 import { McpSession } from "../src/mcp/mcp-session";
 
 const evaluateRuntimeMock = vi.hoisted(() => vi.fn());
-const startLiveViewServerMock = vi.hoisted(() => vi.fn());
-
 vi.mock("../src/utils/evaluate-runtime", async () => {
   const { Effect } = await import("effect");
 
@@ -15,20 +13,6 @@ vi.mock("../src/utils/evaluate-runtime", async () => {
     evaluateRuntime: (...args: ReadonlyArray<unknown>) => {
       evaluateRuntimeMock(...args);
       return Effect.void;
-    },
-  };
-});
-
-vi.mock("../src/mcp/live-view-server", async () => {
-  const { Effect } = await import("effect");
-
-  return {
-    startLiveViewServer: (...args: ReadonlyArray<unknown>) => {
-      startLiveViewServerMock(...args);
-      return Effect.succeed({
-        close: Effect.void,
-        pushRunState: () => {},
-      });
     },
   };
 });

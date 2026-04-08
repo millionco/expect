@@ -4,4 +4,4 @@ export const EXPECT_BASE_URL_ENV_NAME = "EXPECT_BASE_URL";
 export const EXPECT_HEADED_ENV_NAME = "EXPECT_HEADED";
 export const EXPECT_PROFILE_ENV_NAME = "EXPECT_PROFILE";
 export const DUPLICATE_REQUEST_WINDOW_MS = 500;
-export const TMP_ARTIFACT_OUTPUT_DIRECTORY = "/tmp/expect-replays";
+export const TMP_ARTIFACT_OUTPUT_DIRECTORY = "/tmp/expect-artifacts";

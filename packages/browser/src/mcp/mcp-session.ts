@@ -252,8 +252,11 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       return true;
     });
 
-    const ensureOverlay = (page: import("playwright").Page) =>
-      evaluateRuntime(page, "initAgentOverlay", AGENT_OVERLAY_CONTAINER_ID);
+    const ensureOverlay = Effect.fn("McpSession.ensureOverlay")(function* (
+      page: import("playwright").Page,
+    ) {
+      yield* evaluateRuntime(page, "initAgentOverlay", AGENT_OVERLAY_CONTAINER_ID);
+    });
 
     const navigate = Effect.fn("McpSession.navigate")(function* (
       url: string,
@@ -271,7 +274,11 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       });
       const currentHeaded = yield* Ref.get(isHeadedRef);
       if (currentHeaded) {
-        yield* ensureOverlay(sessionData.page).pipe(Effect.catchCause(() => Effect.void));
+        yield* ensureOverlay(sessionData.page).pipe(
+          Effect.catchCause((cause) =>
+            Effect.logDebug("Failed to ensure overlay after navigation", { cause }),
+          ),
+        );
       }
     });
 
@@ -385,7 +392,11 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
               if (document.body) { __expectInitOverlay(); }
               else { document.addEventListener('DOMContentLoaded', __expectInitOverlay); }
             `),
-        ).pipe(Effect.catchCause(() => Effect.void));
+        ).pipe(
+          Effect.catchCause((cause) =>
+            Effect.logDebug("Failed to add overlay init script", { cause }),
+          ),
+        );
 
         yield* ensureOverlay(pageResult.page).pipe(
           Effect.tap(() => Effect.logDebug("Agent overlay injected")),
@@ -406,7 +417,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
                 `globalThis.__EXPECT_RUNTIME__.initAgentOverlay('${AGENT_OVERLAY_CONTAINER_ID}')`,
               ),
             )
-            .catch(() => {});
+            .catch(() => undefined);
         });
 
         yield* evaluateRuntime(
@@ -416,7 +427,11 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
           -1,
           -1,
           `Navigated to ${url}`,
-        ).pipe(Effect.catchCause(() => Effect.void));
+        ).pipe(
+          Effect.catchCause((cause) =>
+            Effect.logDebug("Failed to update overlay cursor on open", { cause }),
+          ),
+        );
       }
 
       const injectedCookieCount = yield* Effect.tryPromise(() => pageResult.context.cookies()).pipe(
@@ -447,7 +462,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
 
       return {
         injectedCookieCount,
-        isExternalBrowser: pageResult.isExternalBrowser,
+        isExternalBrowser,
       } satisfies OpenResult;
     });
 
@@ -486,7 +501,11 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
           activeSession.page,
           "destroyAgentOverlay",
           AGENT_OVERLAY_CONTAINER_ID,
-        ).pipe(Effect.catchCause(() => Effect.void));
+        ).pipe(
+          Effect.catchCause((cause) =>
+            Effect.logDebug("Failed to destroy overlay on close", { cause }),
+          ),
+        );
       }
 
       if (activeSession.isExternalBrowser) {

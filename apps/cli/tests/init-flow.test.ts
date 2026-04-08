@@ -24,6 +24,19 @@ vi.mock("@expect/agent", () => ({
     };
     return displayNames[agent] ?? agent;
   }),
+  toSkillDir: vi.fn((agent: string) => {
+    const skillDirs: Record<string, string> = {
+      claude: ".claude/skills",
+      codex: ".codex/skills",
+      copilot: ".github/copilot/skills",
+      gemini: ".gemini/skills",
+      cursor: ".cursor/skills",
+      opencode: ".opencode/skills",
+      droid: ".droid/skills",
+      pi: ".pi/skills",
+    };
+    return skillDirs[agent] ?? `.${agent}/skills`;
+  }),
 }));
 
 vi.mock("../src/mcp/install-expect-mcp", () => ({
@@ -406,20 +419,21 @@ describe("init flow", () => {
       expect(readProjectPreference(projectRoot, "browserMode")).toBe("headless");
     });
 
-    it("read-only .expect dir — throws on config write", async () => {
+    it("read-only .expect dir — init completes but preference is not written", async () => {
       const expectDir = path.join(projectRoot, ".expect");
       fs.mkdirSync(expectDir, { recursive: true });
       fs.chmodSync(expectDir, 0o444);
 
       const { runInit } = await import("../src/commands/init");
       try {
-        await expect(runInit({ headless: true })).rejects.toThrow();
+        await runInit({ headless: true });
+        expect(readProjectPreference(projectRoot, "browserMode")).toBeUndefined();
       } finally {
         fs.chmodSync(expectDir, 0o755);
       }
     });
 
-    it("read-only project-preferences.json — throws on overwrite", async () => {
+    it("read-only project-preferences.json — init completes but preference keeps old value", async () => {
       const expectDir = path.join(projectRoot, ".expect");
       fs.mkdirSync(expectDir, { recursive: true });
       fs.writeFileSync(
@@ -430,7 +444,8 @@ describe("init flow", () => {
 
       const { runInit } = await import("../src/commands/init");
       try {
-        await expect(runInit({ headless: true })).rejects.toThrow();
+        await runInit({ headless: true });
+        expect(readProjectPreference(projectRoot, "browserMode")).toBe("cdp");
       } finally {
         fs.chmodSync(path.join(expectDir, "project-preferences.json"), 0o644);
       }

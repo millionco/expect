@@ -248,18 +248,17 @@ describe("createCiReporter", () => {
   });
 
   describe("artifacts", () => {
-    it("shows video and replay paths", () => {
+    it("shows video path", () => {
       const reporter = createCiReporter({
         version: "1.0.0",
         agent: "claude",
         timeoutMs: undefined,
         isGitHubActions: false,
       });
-      reporter.artifacts("/tmp/video.mp4", "file:///tmp/replay.html");
+      reporter.artifacts("/tmp/video.mp4");
       const output = stderrText();
       expect(output).toContain("Artifacts");
       expect(output).toContain("/tmp/video.mp4");
-      expect(output).toContain("file:///tmp/replay.html");
     });
 
     it("shows nothing when both are undefined", () => {
@@ -269,7 +268,7 @@ describe("createCiReporter", () => {
         timeoutMs: undefined,
         isGitHubActions: false,
       });
-      reporter.artifacts(undefined, undefined);
+      reporter.artifacts(undefined);
       expect(stderrText()).toBe("");
     });
   });

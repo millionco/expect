@@ -40,7 +40,10 @@ const safeOverlayEval = <K extends keyof ExpectRuntime>(
   page: Page,
   method: K,
   ...args: Parameters<ExpectRuntime[K]>
-) => evaluateRuntime(page, method, ...args).pipe(Effect.catchCause(() => Effect.void));
+) =>
+  evaluateRuntime(page, method, ...args).pipe(
+    Effect.catchCause((cause) => Effect.logDebug("Overlay eval failed", { method, cause })),
+  );
 
 const extractLocatorMatch = (code: string): LocatorMatch | undefined => {
   for (const { pattern, kind, nameGroup } of LOCATOR_PATTERNS) {
@@ -94,11 +97,13 @@ export class OverlayController extends ServiceMap.Service<OverlayController>()(
         yield* safeOverlayEval(page, "updateCursor", AGENT_OVERLAY_CONTAINER_ID, -1, -1, label);
       });
 
-      const hide = (page: Page) =>
-        safeOverlayEval(page, "hideAgentOverlay", AGENT_OVERLAY_CONTAINER_ID);
+      const hide = Effect.fn("OverlayController.hide")(function* (page: Page) {
+        yield* safeOverlayEval(page, "hideAgentOverlay", AGENT_OVERLAY_CONTAINER_ID);
+      });
 
-      const show = (page: Page) =>
-        safeOverlayEval(page, "showAgentOverlay", AGENT_OVERLAY_CONTAINER_ID);
+      const show = Effect.fn("OverlayController.show")(function* (page: Page) {
+        yield* safeOverlayEval(page, "showAgentOverlay", AGENT_OVERLAY_CONTAINER_ID);
+      });
 
       const withHidden = <A, E>(page: Page, effect: Effect.Effect<A, E>) =>
         Effect.ensuring(hide(page).pipe(Effect.flatMap(() => effect)), show(page));
@@ -151,8 +156,11 @@ export class OverlayController extends ServiceMap.Service<OverlayController>()(
         );
       });
 
-      const clearHighlights = (page: Page) =>
-        safeOverlayEval(page, "clearHighlights", AGENT_OVERLAY_CONTAINER_ID);
+      const clearHighlights = Effect.fn("OverlayController.clearHighlights")(function* (
+        page: Page,
+      ) {
+        yield* safeOverlayEval(page, "clearHighlights", AGENT_OVERLAY_CONTAINER_ID);
+      });
 
       const highlightRefsInCode = Effect.fn("OverlayController.highlightRefsInCode")(function* (
         page: Page,
@@ -200,8 +208,13 @@ export class OverlayController extends ServiceMap.Service<OverlayController>()(
         },
       );
 
-      const logAction = (page: Page, label: string, code: string) =>
-        safeOverlayEval(page, "logAction", AGENT_OVERLAY_CONTAINER_ID, label, code);
+      const logAction = Effect.fn("OverlayController.logAction")(function* (
+        page: Page,
+        label: string,
+        code: string,
+      ) {
+        yield* safeOverlayEval(page, "logAction", AGENT_OVERLAY_CONTAINER_ID, label, code);
+      });
 
       const positionCursorForCode = Effect.fn("OverlayController.positionCursorForCode")(function* (
         page: Page,

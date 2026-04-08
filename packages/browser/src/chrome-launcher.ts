@@ -299,18 +299,19 @@ export const launchSystemChrome = Effect.fn("Chrome.launchSystemChrome")(functio
   } satisfies ChromeProcess;
 });
 
-export const killChromeProcess = (chrome: ChromeProcess) =>
-  Effect.gen(function* () {
-    yield* Effect.sync(() => chrome.process.kill()).pipe(
-      Effect.catchCause((cause) => Effect.logDebug("Failed to kill Chrome process", { cause })),
+export const killChromeProcess = Effect.fn("Chrome.killChromeProcess")(function* (
+  chrome: ChromeProcess,
+) {
+  yield* Effect.sync(() => chrome.process.kill()).pipe(
+    Effect.catchCause((cause) => Effect.logDebug("Failed to kill Chrome process", { cause })),
+  );
+  if (chrome.tempUserDataDir) {
+    yield* Effect.sync(() =>
+      fs.rmSync(chrome.tempUserDataDir!, { recursive: true, force: true }),
+    ).pipe(
+      Effect.catchCause((cause) =>
+        Effect.logDebug("Failed to remove temp user data dir", { cause }),
+      ),
     );
-    if (chrome.tempUserDataDir) {
-      yield* Effect.sync(() =>
-        fs.rmSync(chrome.tempUserDataDir!, { recursive: true, force: true }),
-      ).pipe(
-        Effect.catchCause((cause) =>
-          Effect.logDebug("Failed to remove temp user data dir", { cause }),
-        ),
-      );
-    }
-  });
+  }
+});

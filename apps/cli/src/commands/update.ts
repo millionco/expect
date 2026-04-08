@@ -3,6 +3,8 @@ import { highlighter } from "../utils/highlighter";
 import { logger } from "../utils/logger";
 import { spinner } from "../utils/spinner";
 import { resolveProjectRoot } from "../utils/project-root";
+import { tryRun, type PackageManager } from "./init-utils";
+import { NPM_PACKAGE_NAME } from "../constants";
 import {
   detectInstalledExpectMcpAgents,
   formatExpectMcpInstallSummary,
@@ -12,6 +14,26 @@ import {
   installExpectMcpForAgents,
   type McpInstallScope,
 } from "../mcp/install-expect-mcp";
+
+const GLOBAL_INSTALL_COMMANDS: Record<PackageManager, readonly string[]> = {
+  npm: ["npm", "install", "-g"],
+  pnpm: ["pnpm", "add", "-g"],
+  yarn: ["yarn", "global", "add"],
+  bun: ["bun", "add", "-g"],
+  deno: ["deno", "install", "-g"],
+  vp: ["npm", "install", "-g"],
+};
+
+export const getGlobalInstallCommand = (packageManager: PackageManager): readonly string[] => {
+  const base = GLOBAL_INSTALL_COMMANDS[packageManager] ?? GLOBAL_INSTALL_COMMANDS.npm;
+  const packageSpecifier = packageManager === "deno" ? `npm:${NPM_PACKAGE_NAME}` : NPM_PACKAGE_NAME;
+  return [...base, packageSpecifier];
+};
+
+export const formatInstallCommand = (command: readonly string[]): string => command.join(" ");
+
+export const runInstallCommand = (command: readonly string[]): Promise<boolean> =>
+  tryRun(command[0], command.slice(1));
 
 export const runUpdateCommand = async (version?: string) => {
   const availableAgents = detectAvailableAgents();

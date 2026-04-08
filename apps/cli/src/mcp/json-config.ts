@@ -2,7 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as jsoncParser from "jsonc-parser";
 import { ConfigRecord } from "./config-types";
-import { deepMerge, getNestedValue } from "./config-utils";
+import { deepMerge, getNestedValue, isConfigRecord } from "./config-utils";
 
 const detectIndent = (text: string): { tabSize: number; insertSpaces: boolean } => {
   let indent: { tabSize: number; insertSpaces: boolean } | undefined;
@@ -28,9 +28,7 @@ export const readJsonConfig = (configPath: string): ConfigRecord => {
 
   const content = fs.readFileSync(configPath, "utf8");
   const parsed = jsoncParser.parse(content);
-  return parsed !== undefined && typeof parsed === "object" && !Array.isArray(parsed)
-    ? (parsed as ConfigRecord)
-    : {};
+  return isConfigRecord(parsed) ? parsed : {};
 };
 
 export const writeJsonConfig = (
@@ -46,8 +44,8 @@ export const writeJsonConfig = (
   if (fs.existsSync(configPath)) {
     originalContent = fs.readFileSync(configPath, "utf8");
     const parsed = jsoncParser.parse(originalContent);
-    if (parsed !== undefined && typeof parsed === "object" && !Array.isArray(parsed)) {
-      existingConfig = parsed as ConfigRecord;
+    if (isConfigRecord(parsed)) {
+      existingConfig = parsed;
     }
   }
 
@@ -62,7 +60,9 @@ export const writeJsonConfig = (
       const updatedContent = jsoncParser.applyEdits(originalContent, edits);
       fs.writeFileSync(configPath, updatedContent);
       return;
-    } catch {}
+    } catch (error) {
+      console.debug("[expect] JSONC incremental update failed, rewriting config:", error);
+    }
   }
 
   fs.writeFileSync(configPath, JSON.stringify(mergedConfig, null, 2));

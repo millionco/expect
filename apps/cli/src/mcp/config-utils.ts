@@ -1,4 +1,8 @@
+import { Predicate } from "effect";
 import { ConfigRecord } from "./config-types";
+
+export const isConfigRecord = (value: unknown): value is ConfigRecord =>
+  Predicate.isObject(value) && !Array.isArray(value);
 
 export const deepMerge = (target: ConfigRecord, source: ConfigRecord): ConfigRecord => {
   const mergedConfig: ConfigRecord = { ...target };
@@ -7,17 +11,8 @@ export const deepMerge = (target: ConfigRecord, source: ConfigRecord): ConfigRec
     const sourceValue = source[key];
     const targetValue = mergedConfig[key];
 
-    if (
-      sourceValue !== undefined &&
-      typeof sourceValue === "object" &&
-      !Array.isArray(sourceValue)
-    ) {
-      mergedConfig[key] = deepMerge(
-        targetValue !== undefined && typeof targetValue === "object" && !Array.isArray(targetValue)
-          ? (targetValue as ConfigRecord)
-          : {},
-        sourceValue as ConfigRecord,
-      );
+    if (isConfigRecord(sourceValue)) {
+      mergedConfig[key] = deepMerge(isConfigRecord(targetValue) ? targetValue : {}, sourceValue);
       continue;
     }
 
@@ -31,11 +26,11 @@ export const getNestedValue = (record: ConfigRecord, nestedPath: string): unknow
   let current: unknown = record;
 
   for (const key of nestedPath.split(".")) {
-    if (current === undefined || typeof current !== "object" || Array.isArray(current)) {
+    if (!isConfigRecord(current)) {
       return undefined;
     }
 
-    current = (current as ConfigRecord)[key];
+    current = current[key];
   }
 
   return current;
@@ -51,11 +46,7 @@ export const setNestedValue = (record: ConfigRecord, nestedPath: string, value: 
   for (const segment of pathSegments) {
     const existingValue = current[segment];
 
-    if (
-      existingValue === undefined ||
-      typeof existingValue !== "object" ||
-      Array.isArray(existingValue)
-    ) {
+    if (!isConfigRecord(existingValue)) {
       current[segment] = {};
     }
 

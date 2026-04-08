@@ -5,7 +5,7 @@ import { prompts } from "../utils/prompts";
 import { highlighter } from "../utils/highlighter";
 import { EXPECT_MCP_PACKAGE_NAME, EXPECT_MCP_SERVER_NAME } from "../constants";
 import { detectNonInteractive } from "../commands/init-utils";
-import { getNestedValue, setNestedValue } from "./config-utils";
+import { getNestedValue, isConfigRecord, setNestedValue } from "./config-utils";
 import { type ConfigFormat, ConfigRecord, type McpServerConfig } from "./config-types";
 import { readJsonConfig, writeJsonConfig } from "./json-config";
 import { readTomlConfig, writeTomlConfig } from "./toml-config";
@@ -45,8 +45,7 @@ interface InstallExpectMcpOptions {
 const HOME_DIRECTORY = os.homedir();
 const XDG_CONFIG_DIRECTORY = process.env.XDG_CONFIG_HOME ?? path.join(HOME_DIRECTORY, ".config");
 const CODEX_CONFIG_DIRECTORY = process.env.CODEX_HOME ?? path.join(HOME_DIRECTORY, ".codex");
-const COPILOT_CONFIG_DIRECTORY =
-  process.env.XDG_CONFIG_HOME ?? path.join(HOME_DIRECTORY, ".copilot");
+const COPILOT_CONFIG_DIRECTORY = path.join(HOME_DIRECTORY, ".copilot");
 
 const transformOpenCodeConfig = (config: McpServerConfig): ConfigRecord => {
   const transformedConfig: ConfigRecord = {
@@ -270,15 +269,8 @@ const getInstalledExpectMcpEntry = (
   scope: McpInstallScope,
 ): unknown => {
   const currentConfig = readInstalledAgentConfig(projectRoot, agent, scope);
-  if (
-    currentConfig === undefined ||
-    typeof currentConfig !== "object" ||
-    Array.isArray(currentConfig)
-  ) {
-    return undefined;
-  }
-
-  return (currentConfig as ConfigRecord)[EXPECT_MCP_SERVER_NAME];
+  if (!isConfigRecord(currentConfig)) return undefined;
+  return currentConfig[EXPECT_MCP_SERVER_NAME];
 };
 
 const stringifyConfig = (value: unknown): string => JSON.stringify(value);

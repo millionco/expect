@@ -240,20 +240,15 @@ export const runHeadless = (options: HeadlessRunOptions) =>
               report.steps.length,
               totalDurationMs,
             );
-            ciReporter.artifacts(artifacts.videoPath, undefined, artifacts.screenshotPaths);
+            ciReporter.artifacts(artifacts.videoPath, artifacts.screenshotPaths);
             for (const screenshotPath of artifacts.screenshotPaths) {
               process.stdout.write(`Screenshot: ${screenshotPath}\n`);
             }
           }
 
           if (isGitHubActions) {
-            yield* writeGhaOutputs(report.status, artifacts.videoPath, undefined);
-            yield* writeGhaStepSummary(
-              report.toPlainText,
-              report.status,
-              artifacts.videoPath,
-              undefined,
-            );
+            yield* writeGhaOutputs(report.status, artifacts.videoPath);
+            yield* writeGhaStepSummary(report.toPlainText, report.status, artifacts.videoPath);
 
             yield* Effect.gen(function* () {
               const github = yield* Github;

@@ -94,19 +94,12 @@ export const createCiReporter = (options: CiReporterOptions) => {
     writeStderr(` ${pc.bold("Time")}   ${formatElapsedTime(durationMs)}`);
   };
 
-  const artifacts = (
-    videoPath?: string,
-    replayUrl?: string,
-    screenshotPaths?: readonly string[],
-  ) => {
-    if (!videoPath && !replayUrl && (!screenshotPaths || screenshotPaths.length === 0)) return;
+  const artifacts = (videoPath?: string, screenshotPaths?: readonly string[]) => {
+    if (!videoPath && (!screenshotPaths || screenshotPaths.length === 0)) return;
     writeStderr("");
     writeStderr(` ${pc.bold("Artifacts")}`);
     if (videoPath) {
       writeStderr(`   ${pc.dim("Video")}        ${videoPath}`);
-    }
-    if (replayUrl) {
-      writeStderr(`   ${pc.dim("Replay")}       ${replayUrl}`);
     }
     if (screenshotPaths && screenshotPaths.length > 0) {
       for (const screenshotPath of screenshotPaths) {

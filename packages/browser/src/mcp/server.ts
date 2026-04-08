@@ -10,7 +10,6 @@ import { formatPerformanceTrace } from "../performance-trace";
 import { McpSession } from "./mcp-session";
 import { OverlayController } from "./overlay-controller";
 import { DUPLICATE_REQUEST_WINDOW_MS, TMP_ARTIFACT_OUTPUT_DIRECTORY } from "./constants";
-// import { registerRulesResources } from "./rules-resources";
 
 const textResult = (text: string) => ({
   content: [{ type: "text" as const, text }],
@@ -508,7 +507,11 @@ export const createBrowserMcpServer = <E>(
           const fileSystem = yield* FileSystem;
           yield* fileSystem
             .makeDirectory(TMP_ARTIFACT_OUTPUT_DIRECTORY, { recursive: true })
-            .pipe(Effect.catchCause(() => Effect.void));
+            .pipe(
+              Effect.catchCause((cause) =>
+                Effect.logDebug("Failed to create artifact directory", { cause }),
+              ),
+            );
           yield* fileSystem.writeFileString(tracePath, traceDocument);
 
           const summary = [`Performance trace written to: ${tracePath}`, "", "Web Vitals:"];
@@ -629,8 +632,6 @@ export const createBrowserMcpServer = <E>(
       ],
     }),
   );
-
-  // registerRulesResources(server);
 
   return server;
 };

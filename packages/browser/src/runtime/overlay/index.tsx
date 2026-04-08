@@ -1,6 +1,6 @@
 import { createRoot } from "react-dom/client";
 // eslint-disable-next-line no-restricted-imports -- overlay runs in injected runtime, not the CLI React app; React Compiler doesn't apply
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 // @ts-expect-error -- CSS imported as text via esbuild cssTextPlugin
 import cssText from "../../../dist/overlay.css";
 
@@ -10,7 +10,6 @@ import {
   CURSOR_REST_MARGIN_PX,
   OVERLAY_BLUE,
   MAX_ACTION_LOG_ENTRIES,
-  RAF_THROTTLE_INTERVAL_MS,
   TOOLTIP_OFFSET_PX,
   TOOLTIP_MAX_WIDTH_PX,
   TOOLTIP_VIEWPORT_PADDING_PX,
@@ -29,56 +28,6 @@ import { finder } from "@medv/finder";
 import { CursorIcon, detectCursorShape } from "./components/cursors";
 import { Glow } from "./components/glow";
 import { TextMorph } from "torph/react";
-
-const BORDER_BEAM_DURATION_MS = 2500;
-
-const BorderBeam = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const spinnerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    const spinner = spinnerRef.current;
-    if (!container || !spinner) return;
-
-    const resize = () => {
-      const size = Math.max(container.offsetWidth, container.offsetHeight) * 2;
-      spinner.style.width = `${size}px`;
-      spinner.style.height = `${size}px`;
-      spinner.style.left = `${(container.offsetWidth - size) / 2}px`;
-      spinner.style.top = `${(container.offsetHeight - size) / 2}px`;
-    };
-
-    resize();
-    const observer = new ResizeObserver(resize);
-    observer.observe(container);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <>
-      <div ref={containerRef} className="absolute inset-0 rounded-[inherit] overflow-hidden">
-        <div
-          ref={spinnerRef}
-          className="absolute"
-          style={{
-            background:
-              "conic-gradient(from 0deg, color(display-p3 0.118 0.481 0.988) 0%, color(display-p3 0.118 0.481 0.988) 84%, white 88%, white 92%, color(display-p3 0.118 0.481 0.988) 96%, color(display-p3 0.118 0.481 0.988) 100%)",
-            animation: "expect-border-spin 2.5s linear infinite",
-            borderRadius: "50%",
-          }}
-        />
-      </div>
-      <div
-        className="absolute rounded-[inherit]"
-        style={{
-          inset: "2px",
-          background: "#000",
-        }}
-      />
-    </>
-  );
-};
 
 const AgentOverlay = () => {
   const [state, setState] = useState<OverlayState>(loadInitialState);
@@ -141,7 +90,9 @@ const AgentOverlay = () => {
             }, 150);
             return;
           }
-        } catch {}
+        } catch (error) {
+          console.debug("[expect-overlay] reposition selector error:", error);
+        }
       }
       const saved = loadCursorState();
       if (!saved?.positioned) return;
