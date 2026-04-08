@@ -10,7 +10,7 @@ import { formatPerformanceTrace } from "../performance-trace";
 import { McpSession } from "./mcp-session";
 import { OverlayController } from "./overlay-controller";
 import { DUPLICATE_REQUEST_WINDOW_MS, TMP_ARTIFACT_OUTPUT_DIRECTORY } from "./constants";
-import { registerRulesResources } from "./rules-resources";
+// import { registerRulesResources } from "./rules-resources";
 
 const textResult = (text: string) => ({
   content: [{ type: "text" as const, text }],
@@ -40,19 +40,27 @@ const imageResult = (base64: string) => ({
 // HACK: get AsyncFunction constructor for dynamic code evaluation in playwright tool
 const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
 
-const buildExpectPrompt = (): string =>
+const buildExpectGuide = (): string =>
   [
+    "You validate code changes that were just generated or modified by testing them in a real browser. Your job is to find bugs, verify correctness, audit accessibility, and measure performance before the changes are considered complete.",
+    "",
+    "You are the quality gate — the agent made code changes, and now you verify they actually work.",
+    "",
     "<subagent_strategy>",
     "Always run browser interactions inside a subagent/sub-task. This keeps browser state (snapshots, console logs, network captures) isolated from your main conversation, improving context performance and reducing token usage.",
     "",
+    "CRITICAL: The subagent MUST use the expect MCP tools (open, playwright, screenshot, console_logs, network_requests, performance_metrics, accessibility_audit, close) for all browser interactions. Do NOT use any other browser automation tools. The expect MCP server is the only way to interact with the browser.",
+    "",
     "Workflow:",
-    "1. Spawn a subagent for browser work.",
-    "2. Inside the subagent: open a URL, interact, observe, audit, then close.",
+    "1. Spawn a subagent for browser work. Instruct it to use ONLY the expect MCP tools listed below.",
+    "2. Inside the subagent: use the expect `open` tool to launch a browser and navigate to a URL, interact using `playwright` and `screenshot`, observe with `console_logs` and `network_requests`, audit with `accessibility_audit` and `performance_metrics`, then `close`.",
     "3. Return only the relevant findings (bugs, evidence, answers) to the main context.",
     "4. One browser session per subagent. If you need to test a different engine (WebKit, Firefox), spawn a separate subagent.",
     "</subagent_strategy>",
     "",
-    "<tools>",
+    "<expect_mcp_tools>",
+    "These are the ONLY tools you should use for browser interactions. They are provided by the expect MCP server. Do NOT use any other browser tools.",
+    "",
     "1. open: launch a browser and navigate to a URL. Pass headed=true to show the browser window. Pass cookies=true to reuse local browser cookies. Pass browser='webkit' or browser='firefox' for cross-browser testing. Pass cdp='ws://...' to connect to an existing Chrome instance.",
     "2. playwright: execute Playwright code in Node.js context. Globals: page (Page), context (BrowserContext), browser (Browser), ref (function: snapshot ref ID → Locator). Use `return` to send values back. Set snapshotAfter=true to auto-snapshot after DOM-changing actions.",
     "3. screenshot: capture page state. Modes: 'snapshot' (ARIA accessibility tree with element refs — preferred for interaction), 'screenshot' (PNG image), 'annotated' (PNG with numbered labels on interactive elements). Pass fullPage=true for full scrollable content.",
@@ -61,7 +69,7 @@ const buildExpectPrompt = (): string =>
     "6. performance_metrics: collect Core Web Vitals (FCP, LCP, CLS, INP), navigation timing (TTFB), Long Animation Frames (LoAF) with script attribution, and resource breakdown.",
     "7. accessibility_audit: run a WCAG accessibility audit using axe-core + IBM Equal Access. Returns violations sorted by severity with CSS selectors, HTML context, and fix guidance.",
     "8. close: close the browser and end the session. Always call this when done — it flushes the session video and screenshots to disk.",
-    "</tools>",
+    "</expect_mcp_tools>",
     "",
     "<snapshot_workflow>",
     "Prefer screenshot mode 'snapshot' for observing page state. Use 'screenshot' or 'annotated' only for purely visual checks.",
@@ -604,22 +612,25 @@ export const createBrowserMcpServer = <E>(
   );
 
   server.registerPrompt(
-    "expect",
-    { description: "How to use the Expect browser testing tools effectively" },
+    "run",
+    {
+      description:
+        "Validate code changes in a real browser. Use after generating or modifying code to verify correctness, find bugs, audit accessibility, and measure performance.",
+    },
     () => ({
       messages: [
         {
           role: "user" as const,
           content: {
             type: "text" as const,
-            text: buildExpectPrompt(),
+            text: buildExpectGuide(),
           },
         },
       ],
     }),
   );
 
-  registerRulesResources(server);
+  // registerRulesResources(server);
 
   return server;
 };
