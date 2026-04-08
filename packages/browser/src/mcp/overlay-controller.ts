@@ -8,14 +8,32 @@ import type { SnapshotResult } from "../types";
 const REF_PATTERN = /ref\s*\(\s*['"](\w+)['"]\s*\)/;
 const REF_PATTERN_GLOBAL = /ref\s*\(\s*['"](\w+)['"]\s*\)/g;
 
-const SELECTOR_PATTERNS = [
-  /querySelector\s*\(\s*['"]([^'"]+)['"]\s*\)/,
-  /querySelectorAll\s*\(\s*['"]([^'"]+)['"]\s*\)/,
-  /\$\s*\(\s*['"]([^'"]+)['"]\s*\)/,
-  /\$\$\s*\(\s*['"]([^'"]+)['"]\s*\)/,
-  /locator\s*\(\s*['"]([^'"]+)['"]\s*\)/,
-  /getByRole\s*\(\s*['"]([^'"]+)['"]\s*\)/,
-  /getByText\s*\(\s*['"]([^'"]+)['"]\s*\)/,
+interface LocatorMatch {
+  kind: "css" | "locator" | "role" | "text" | "label" | "placeholder" | "testId";
+  value: string;
+  name?: string;
+}
+
+const LOCATOR_PATTERNS: ReadonlyArray<{
+  pattern: RegExp;
+  kind: LocatorMatch["kind"];
+  nameGroup?: number;
+}> = [
+  { pattern: /querySelector\s*\(\s*['"]([^'"]+)['"]\s*\)/, kind: "css" },
+  { pattern: /querySelectorAll\s*\(\s*['"]([^'"]+)['"]\s*\)/, kind: "css" },
+  { pattern: /\$\s*\(\s*['"]([^'"]+)['"]\s*\)/, kind: "css" },
+  { pattern: /\$\$\s*\(\s*['"]([^'"]+)['"]\s*\)/, kind: "css" },
+  { pattern: /locator\s*\(\s*['"]([^'"]+)['"]\s*\)/, kind: "locator" },
+  {
+    pattern:
+      /getByRole\s*\(\s*['"]([^'"]+)['"]\s*(?:,\s*\{[^}]*name:\s*['"]([^'"]+)['"][^}]*\})?\s*\)/,
+    kind: "role",
+    nameGroup: 2,
+  },
+  { pattern: /getByText\s*\(\s*['"]([^'"]+)['"]\s*\)/, kind: "text" },
+  { pattern: /getByLabel\s*\(\s*['"]([^'"]+)['"]\s*\)/, kind: "label" },
+  { pattern: /getByPlaceholder\s*\(\s*['"]([^'"]+)['"]\s*\)/, kind: "placeholder" },
+  { pattern: /getByTestId\s*\(\s*['"]([^'"]+)['"]\s*\)/, kind: "testId" },
 ];
 
 const safeOverlayEval = <K extends keyof ExpectRuntime>(
@@ -24,12 +42,34 @@ const safeOverlayEval = <K extends keyof ExpectRuntime>(
   ...args: Parameters<ExpectRuntime[K]>
 ) => evaluateRuntime(page, method, ...args).pipe(Effect.catchCause(() => Effect.void));
 
-const extractCssSelector = (code: string): string | undefined => {
-  for (const pattern of SELECTOR_PATTERNS) {
+const extractLocatorMatch = (code: string): LocatorMatch | undefined => {
+  for (const { pattern, kind, nameGroup } of LOCATOR_PATTERNS) {
     const match = code.match(pattern);
-    if (match) return match[1];
+    if (match) {
+      return { kind, value: match[1], name: nameGroup ? match[nameGroup] : undefined };
+    }
   }
   return undefined;
+};
+
+const resolvePlaywrightLocator = (page: Page, match: LocatorMatch): Locator => {
+  switch (match.kind) {
+    case "css":
+    case "locator":
+      return page.locator(match.value);
+    case "role":
+      return match.name
+        ? page.getByRole(match.value as Parameters<Page["getByRole"]>[0], { name: match.name })
+        : page.getByRole(match.value as Parameters<Page["getByRole"]>[0]);
+    case "text":
+      return page.getByText(match.value);
+    case "label":
+      return page.getByLabel(match.value);
+    case "placeholder":
+      return page.getByPlaceholder(match.value);
+    case "testId":
+      return page.getByTestId(match.value);
+  }
 };
 
 const resolveCssSelector = (_page: Page, locator: Locator) =>
@@ -88,42 +128,27 @@ export class OverlayController extends ServiceMap.Service<OverlayController>()(
         );
       });
 
-      const moveCursorToSelector = Effect.fn("OverlayController.moveCursorToSelector")(function* (
+      const moveCursorToLocator = Effect.fn("OverlayController.moveCursorToLocator")(function* (
         page: Page,
-        selector: string,
+        match: LocatorMatch,
         label: string,
       ) {
-        const result = yield* Effect.tryPromise(() =>
-          page.evaluate(
-            ([sel]) => {
-              const element = document.querySelector(sel);
-              if (!element) return undefined;
-              const box = element.getBoundingClientRect();
-              const runtime = (globalThis as Record<string, unknown>).__EXPECT_RUNTIME__ as
-                | { cssSelector: (element: Element) => string }
-                | undefined;
-              const cssSelector = runtime?.cssSelector ? runtime.cssSelector(element) : undefined;
-              return {
-                x: box.x + box.width / 2,
-                y: box.y + box.height / 2,
-                selector: cssSelector,
-              };
-            },
-            [selector],
-          ),
-        ).pipe(Effect.catchCause(() => Effect.succeed(undefined)));
+        const locator = resolvePlaywrightLocator(page, match).first();
+        const box = yield* Effect.tryPromise(() => locator.boundingBox()).pipe(
+          Effect.catchCause(() => Effect.succeed(undefined)),
+        );
+        if (!box) return;
 
-        if (result) {
-          yield* safeOverlayEval(
-            page,
-            "updateCursor",
-            AGENT_OVERLAY_CONTAINER_ID,
-            result.x,
-            result.y,
-            label,
-            result.selector ?? "",
-          );
-        }
+        const selector = yield* resolveCssSelector(page, locator);
+        yield* safeOverlayEval(
+          page,
+          "updateCursor",
+          AGENT_OVERLAY_CONTAINER_ID,
+          box.x + box.width / 2,
+          box.y + box.height / 2,
+          label,
+          selector ?? "",
+        );
       });
 
       const clearHighlights = (page: Page) =>
@@ -150,6 +175,31 @@ export class OverlayController extends ServiceMap.Service<OverlayController>()(
         yield* safeOverlayEval(page, "highlightRefs", AGENT_OVERLAY_CONTAINER_ID, selectors);
       });
 
+      const highlightLocatorsInCode = Effect.fn("OverlayController.highlightLocatorsInCode")(
+        function* (page: Page, code: string) {
+          const selectors: string[] = [];
+          for (const { pattern, kind, nameGroup } of LOCATOR_PATTERNS) {
+            const globalPattern = new RegExp(pattern.source, "g");
+            for (const match of code.matchAll(globalPattern)) {
+              const locatorMatch: LocatorMatch = {
+                kind,
+                value: match[1],
+                name: nameGroup ? match[nameGroup] : undefined,
+              };
+              const locator = resolvePlaywrightLocator(page, locatorMatch).first();
+              const selector = yield* resolveCssSelector(page, locator);
+              if (selector) {
+                selectors.push(selector);
+              }
+            }
+          }
+
+          if (selectors.length > 0) {
+            yield* safeOverlayEval(page, "highlightRefs", AGENT_OVERLAY_CONTAINER_ID, selectors);
+          }
+        },
+      );
+
       const logAction = (page: Page, label: string, code: string) =>
         safeOverlayEval(page, "logAction", AGENT_OVERLAY_CONTAINER_ID, label, code);
 
@@ -168,9 +218,10 @@ export class OverlayController extends ServiceMap.Service<OverlayController>()(
           return;
         }
 
-        const cssSelector = extractCssSelector(code);
-        if (cssSelector) {
-          yield* moveCursorToSelector(page, cssSelector, label);
+        const locatorMatch = extractLocatorMatch(code);
+        if (locatorMatch) {
+          yield* moveCursorToLocator(page, locatorMatch, label);
+          yield* highlightLocatorsInCode(page, code);
           return;
         }
 

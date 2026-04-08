@@ -11,6 +11,9 @@ import {
   OVERLAY_BLUE,
   MAX_ACTION_LOG_ENTRIES,
   RAF_THROTTLE_INTERVAL_MS,
+  TOOLTIP_OFFSET_PX,
+  TOOLTIP_MAX_WIDTH_PX,
+  TOOLTIP_VIEWPORT_PADDING_PX,
   getViewport,
   clampToViewport,
 } from "./lib/constants";
@@ -199,7 +202,12 @@ const AgentOverlay = () => {
   const hasLabel = Boolean(state.label);
   const showCursor = true;
 
-  const tooltipFlipX = cursorX > viewport.width * 0.65;
+  const spaceRight = viewport.width - cursorX - TOOLTIP_OFFSET_PX - TOOLTIP_VIEWPORT_PADDING_PX;
+  const spaceLeft = cursorX - TOOLTIP_VIEWPORT_PADDING_PX;
+  const tooltipFlipX = spaceRight < TOOLTIP_MAX_WIDTH_PX && spaceLeft > spaceRight;
+  const tooltipMaxWidth = tooltipFlipX
+    ? Math.min(TOOLTIP_MAX_WIDTH_PX, spaceLeft)
+    : Math.min(TOOLTIP_MAX_WIDTH_PX, spaceRight);
   const tooltipFlipY = cursorY > viewport.height - 80;
 
   return (
@@ -232,8 +240,9 @@ const AgentOverlay = () => {
               }}
             >
               <div
-                className="flex items-center justify-center rounded-full py-1.5 px-3 max-w-[400px] text-white font-medium text-[13px] leading-5 font-[system-ui,-apple-system,sans-serif] animate-[expect-comment-in_0.25s_cubic-bezier(0.22,1,0.36,1)_both]"
+                className="rounded-full py-1.5 px-3 text-white font-medium text-[13px] leading-5 font-[system-ui,-apple-system,sans-serif] animate-[expect-comment-in_0.25s_cubic-bezier(0.22,1,0.36,1)_both]"
                 style={{
+                  maxWidth: `${tooltipMaxWidth}px`,
                   background: "#000",
                   border: "2px solid color(display-p3 0.118 0.481 0.988)",
                   boxShadow: isDark
@@ -241,9 +250,10 @@ const AgentOverlay = () => {
                     : "0 0 4px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.12)",
                   overflow: "hidden",
                   whiteSpace: "nowrap",
+                  textOverflow: "ellipsis",
                 }}
               >
-                <TextMorph style={{ display: "inline-block", whiteSpace: "nowrap" }}>
+                <TextMorph style={{ display: "inline", whiteSpace: "nowrap" }}>
                   {state.label}
                 </TextMorph>
               </div>
