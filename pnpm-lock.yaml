@@ -277,15 +277,9 @@ importers:
       calligraph:
         specifier: ^1.4.1
         version: 1.4.1(motion@12.38.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      class-variance-authority:
-        specifier: ^0.7.1
-        version: 0.7.1
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
-      lucide-react:
-        specifier: ^0.577.0
-        version: 0.577.0(react@19.2.4)
       motion:
         specifier: ^12.38.0
         version: 12.38.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -313,15 +307,9 @@ importers:
       tailwind-merge:
         specifier: ^3.5.0
         version: 3.5.0
-      torph:
-        specifier: ^0.0.9
-        version: 0.0.9(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0
-      web-haptics:
-        specifier: ^0.0.6
-        version: 0.0.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       zustand:
         specifier: ^5.0.12
         version: 5.0.12(@types/react@19.2.14)(react@19.2.4)(use-sync-external-store@1.6.0(react@19.2.4))
@@ -7060,23 +7048,6 @@ packages:
   toml@3.0.0:
     resolution: {integrity: sha512-y/mWCZinnvxjTKYhJ+pYxwD0mRLVvOtdS2Awbgxln6iEnt4rk0yBxeSBHkGJcPucRiG0e55mwWp+g/05rsrd6w==}
 
-  torph@0.0.9:
-    resolution: {integrity: sha512-WrFMtJwqXCfIXbLNuTOwHWff0XVm/Ewctb+71bFis3HykPvCXl1CHXapU0r67pQhAI323fsA1L2pGPeqxXeRRA==}
-    peerDependencies:
-      react: '>=18'
-      react-dom: '>=18'
-      svelte: '>=5'
-      vue: '>=3'
-    peerDependenciesMeta:
-      react:
-        optional: true
-      react-dom:
-        optional: true
-      svelte:
-        optional: true
-      vue:
-        optional: true
-
   totalist@3.0.1:
     resolution: {integrity: sha512-sf4i37nQ2LBx4m3wB74y+ubopq6W/dIzXg0FDGjsYnZHVa1Da8FH853wlL2gtUhg+xJXjfk3kUZS3BRoQeoQBQ==}
     engines: {node: '>=6'}
@@ -7354,23 +7325,6 @@ packages:
       tsx:
         optional: true
       yaml:
-        optional: true
-
-  web-haptics@0.0.6:
-    resolution: {integrity: sha512-eCzcf1LDi20+Fr0x9V3OkX92k0gxEQXaHajmhXHitsnk6SxPeshv8TBtBRqxyst8HI1uf2FyFVE7QS3jo1gkrw==}
-    peerDependencies:
-      react: '>=18'
-      react-dom: '>=18'
-      svelte: '>=4'
-      vue: '>=3'
-    peerDependenciesMeta:
-      react:
-        optional: true
-      react-dom:
-        optional: true
-      svelte:
-        optional: true
-      vue:
         optional: true
 
   web-streams-polyfill@3.3.3:
@@ -14382,11 +14336,6 @@ snapshots:
 
   toml@3.0.0: {}
 
-  torph@0.0.9(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
-    optionalDependencies:
-      react: 19.2.4
-      react-dom: 19.2.4(react@19.2.4)
-
   totalist@3.0.1: {}
 
   tough-cookie@6.0.1:
@@ -14686,11 +14635,6 @@ snapshots:
       terser: 5.46.1
       tsx: 4.21.0
       yaml: 2.8.2
-
-  web-haptics@0.0.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
-    optionalDependencies:
-      react: 19.2.4
-      react-dom: 19.2.4(react@19.2.4)
 
   web-streams-polyfill@3.3.3: {}
 
