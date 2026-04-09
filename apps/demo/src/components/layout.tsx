@@ -1,5 +1,4 @@
 import { Link, useLocation, Outlet } from "react-router-dom";
-import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [{ path: "/", label: "Sheet" }];
 
@@ -33,16 +32,15 @@ export const Layout = () => {
                   ? location.pathname === "/"
                   : location.pathname.startsWith(item.path);
 
+              const className = isActive
+                ? "px-4 py-1.5 text-sm font-medium rounded transition-colors no-underline bg-white/20 text-white"
+                : "px-4 py-1.5 text-sm font-medium rounded transition-colors no-underline text-emerald-200 hover:text-white hover:bg-white/10";
+
               return (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={cn(
-                    "px-4 py-1.5 text-sm font-medium rounded transition-colors no-underline",
-                    isActive
-                      ? "bg-white/20 text-white"
-                      : "text-emerald-200 hover:text-white hover:bg-white/10",
-                  )}
+                  className={className}
                 >
                   {item.label}
                 </Link>
