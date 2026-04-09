@@ -1,6 +1,6 @@
 # Prompt Optimization
 
-Applied prompt engineering research (Anthropic's official guidance for Claude 4.6) and skill-writing principles to the execution system prompt (`packages/shared/src/prompts.ts`) and the expect skill (`packages/expect-skill/SKILL.md`).
+Applied prompt engineering research (Anthropic's official guidance for Claude 4.6) and skill-writing principles to the execution system prompt (`packages/shared/src/prompts.ts`) and the expect skill (`packages/expect-skill/README.md`).
 
 Sources: [Prompting best practices](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices), [Effort parameter](https://platform.claude.com/docs/en/build-with-claude/effort), [Prompting tools](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-tools)
 

@@ -96,7 +96,7 @@ This keeps the source of truth as markdown files, avoids runtime filesystem acce
 
 ### What happens to the outer skill
 
-The root `packages/expect-skill/SKILL.md` drops the `<important if>` blocks entirely. The "Reference Skills" section becomes a brief note:
+The root `packages/expect-skill/README.md` drops the `<important if>` blocks entirely. The "Reference Skills" section becomes a brief note:
 
 ```markdown
 ## Reference Skills
@@ -151,7 +151,7 @@ The guidance stays in the agent's conversation context for the rest of the sessi
 | -------------------------------------------------------- | ---------------------------------------------------- |
 | `packages/browser/src/mcp/server.ts`                     | Register `load_guidance` tool                        |
 | `packages/shared/src/prompts.ts`                         | Add `<domain_guidance>` TOC section to system prompt |
-| `packages/expect-skill/SKILL.md`                         | Remove `<important if>` blocks, add fallback note    |
+| `packages/expect-skill/README.md`                         | Remove `<important if>` blocks, add fallback note    |
 | `packages/browser/src/mcp/generated/guidance-content.ts` | New generated module (build-time codegen)            |
 | `packages/expect-skill/build-guidance.ts`                | New build script for codegen                         |
 | `packages/browser/tests/mcp-server.test.ts`              | Add `load_guidance` to tool list assertion, add test |
