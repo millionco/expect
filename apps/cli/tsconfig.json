@@ -4,7 +4,12 @@
     "outDir": "./dist",
     "rootDir": ".",
     "jsx": "react-jsx",
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "*": ["./*"],
+      "expect-sdk": ["../../packages/typescript-sdk/src/index.ts"],
+      "expect-sdk/*": ["../../packages/typescript-sdk/src/*"]
+    }
   },
   "include": ["src"]
 }

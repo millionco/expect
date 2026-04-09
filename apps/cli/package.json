@@ -83,7 +83,8 @@
     "string-width": "^8.2.0",
     "supports-terminal-graphics": "^0.1.0",
     "which": "^6.0.1",
-    "zod": "^4.3.6"
+    "zod": "^4.3.6",
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",

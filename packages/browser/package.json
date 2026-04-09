@@ -12,15 +12,16 @@
   },
   "scripts": {
     "build:css": "mkdir -p dist && pnpm exec tailwindcss -i ./src/runtime/overlay/index.css -o ./dist/overlay.css -m && node scripts/css-rem-to-px.js && node scripts/inline-fonts.js",
+    "generate:runtime": "pnpm build:css && node scripts/build-runtime.js",
     "build": "pnpm build:css && node scripts/build-runtime.js",
     "dev": "pnpm build:css && node scripts/build-runtime.js --watch",
     "lint": "vp lint && tsc --noEmit",
     "format": "vp fmt",
     "format:check": "vp fmt --check",
     "check": "vp check",
-    "test": "vp test run",
-    "test:watch": "vp test",
-    "typecheck": "tsgo --noEmit"
+    "test": "pnpm generate:runtime && vp test run",
+    "test:watch": "pnpm generate:runtime && vp test",
+    "typecheck": "pnpm generate:runtime && tsgo --noEmit"
   },
   "dependencies": {
     "@axe-core/playwright": "^4.11.1",
