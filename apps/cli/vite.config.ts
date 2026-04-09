@@ -4,7 +4,6 @@ import * as path from "node:path";
 import type { Plugin } from "rolldown";
 import { defineConfig } from "vite-plus";
 import { reactCompilerPlugin } from "./react-compiler-plugin";
-import { buildRulesContent } from "../../packages/browser/scripts/build-rules-content.js";
 
 const require = createRequire(import.meta.url);
 const pkg = require("./package.json");
@@ -94,7 +93,6 @@ export default defineConfig({
     banner: "#!/usr/bin/env node",
     define: {
       __VERSION__: JSON.stringify(pkg.version),
-      __RULES_CONTENT__: buildRulesContent(),
     },
     deps: {
       alwaysBundle: [/^@expect\//],
