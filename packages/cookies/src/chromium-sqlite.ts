@@ -35,7 +35,7 @@ interface DecryptFn {
   (encrypted: Uint8Array): string | undefined;
 }
 
-export class ChromiumKeyProvider extends ServiceMap.Service<
+class ChromiumKeyProvider extends ServiceMap.Service<
   ChromiumKeyProvider,
   {
     readonly buildDecryptor: (

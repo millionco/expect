@@ -491,7 +491,7 @@ export const configByBundleId = (identifier: string): BrowserConfig | undefined 
 export const configByDesktopFile = (name: string): BrowserConfig | undefined =>
   desktopFileMap.get(name.replace(/\.desktop$/, ""));
 
-export const configByDisplayName = (name: string): BrowserConfig | undefined =>
+const configByDisplayName = (name: string): BrowserConfig | undefined =>
   displayNameMap.get(name);
 
 export const chromiumConfig = (key: ChromiumBrowserKey): ChromiumConfig =>

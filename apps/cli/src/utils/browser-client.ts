@@ -48,7 +48,7 @@ const isProcessAlive = (pid: number): boolean => {
   }
 };
 
-export const isDaemonRunning = (): boolean => {
+const isDaemonRunning = (): boolean => {
   const session = readSession();
   return Boolean(session && isProcessAlive(session.pid));
 };
@@ -71,7 +71,7 @@ const waitForSessionFile = (): Promise<SessionInfo> =>
     poll();
   });
 
-export const ensureDaemon = async (): Promise<SessionInfo> => {
+const ensureDaemon = async (): Promise<SessionInfo> => {
   const existing = readSession();
   if (existing && isProcessAlive(existing.pid)) return existing;
 
@@ -85,7 +85,7 @@ export const ensureDaemon = async (): Promise<SessionInfo> => {
   return waitForSessionFile();
 };
 
-export const stripUndefined = (args: Record<string, unknown>): Record<string, unknown> => {
+const stripUndefined = (args: Record<string, unknown>): Record<string, unknown> => {
   const cleaned: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(args)) {
     if (value !== undefined) cleaned[key] = value;

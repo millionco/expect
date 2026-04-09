@@ -164,10 +164,10 @@ export const formatExpectMcpVersion = (version?: string): string => {
   return /^\d+\.\d+\.\d+/.test(versionSpecifier) ? `v${versionSpecifier}` : versionSpecifier;
 };
 
-export const getExpectMcpPackageSpecifier = (version?: string): string =>
+const getExpectMcpPackageSpecifier = (version?: string): string =>
   `${NPM_PACKAGE_NAME}@${normalizeVersionSpecifier(version)}`;
 
-export const buildExpectMcpServerConfig = (version?: string): McpServerConfig => ({
+const buildExpectMcpServerConfig = (version?: string): McpServerConfig => ({
   command: "npx",
   args: ["-y", getExpectMcpPackageSpecifier(version), "mcp"],
 });
