@@ -95,7 +95,7 @@ export interface WatchOptions {
   readonly onEvent: (event: WatchEvent) => void;
 }
 
-export const parseAssessmentResponse = (raw: string): WatchDecision | undefined => {
+export const parseWatchDecision = (raw: string): WatchDecision | undefined => {
   const trimmed = raw.trim().toLowerCase();
   if (trimmed === "run") return "run";
   if (trimmed === "skip") return "skip";
@@ -146,7 +146,7 @@ export class Watch extends ServiceMap.Service<Watch>()("@supervisor/Watch", {
         ),
       );
 
-      const decision = parseAssessmentResponse(responseText);
+      const decision = parseWatchDecision(responseText);
       if (!decision) {
         return yield* new WatchAssessmentError({ response: responseText });
       }
