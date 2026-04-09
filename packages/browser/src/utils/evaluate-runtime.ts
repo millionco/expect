@@ -11,7 +11,9 @@ export const evaluateRuntime = <K extends keyof ExpectRuntime>(
   Effect.promise(
     () =>
       page.evaluate(
-        ({ method, args }: { method: string; args: unknown[] }) => {
+        (
+          { method, args }: { method: string; args: unknown[] },
+        ) => {
           const runtime = Reflect.get(globalThis, "__EXPECT_RUNTIME__");
           if (!runtime || typeof runtime !== "object") {
             throw new Error("Browser runtime is not initialized");
@@ -24,6 +26,6 @@ export const evaluateRuntime = <K extends keyof ExpectRuntime>(
 
           return fn(...args);
         },
-        { method, args: args as unknown[] },
+        { method, args: [...args] },
       ) as Promise<ReturnType<ExpectRuntime[K]>>,
   );
