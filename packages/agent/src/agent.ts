@@ -111,25 +111,4 @@ export class Agent extends ServiceMap.Service<
     return layers[backend];
   };
 
-  static layerTest = (fixturePath: string) =>
-    Layer.effect(
-      Agent,
-      Effect.gen(function* () {
-        const fs = yield* FileSystem.FileSystem;
-        const decode = Schema.decodeSync(AcpSessionUpdate);
-
-        return Agent.of({
-          stream: () =>
-            fs.stream(fixturePath).pipe(
-              Stream.decodeText(),
-              Stream.splitLines,
-              Stream.map((line) => decode(JSON.parse(line))),
-              Stream.orDie,
-            ),
-          createSession: () => Effect.die("createSession not supported for test layer"),
-          setConfigOption: () => Effect.die("setConfigOption not supported for test layer"),
-          fetchConfigOptions: () => Effect.succeed([] as AcpConfigOption[]),
-        });
-      }),
-    ).pipe(Layer.provide(NodeServices.layer));
 }

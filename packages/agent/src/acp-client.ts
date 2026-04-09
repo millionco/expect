@@ -943,11 +943,4 @@ export class AcpClient extends ServiceMap.Service<AcpClient>()("@expect/AcpClien
   }),
 }) {
   static layer = Layer.effect(this)(this.make).pipe(Layer.provide(NodeServices.layer));
-  static layerCodex = this.layer.pipe(Layer.provide(AcpAdapter.layerCodex));
-  static layerClaude = this.layer.pipe(Layer.provide(AcpAdapter.layerClaude));
-  static layerCopilot = this.layer.pipe(Layer.provide(AcpAdapter.layerCopilot));
-  static layerGemini = this.layer.pipe(Layer.provide(AcpAdapter.layerGemini));
-  static layerCursor = this.layer.pipe(Layer.provide(AcpAdapter.layerCursor));
-  static layerOpencode = this.layer.pipe(Layer.provide(AcpAdapter.layerOpencode));
-  static layerDroid = this.layer.pipe(Layer.provide(AcpAdapter.layerDroid));
 }
