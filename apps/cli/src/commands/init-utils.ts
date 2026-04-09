@@ -47,32 +47,6 @@ export const detectPackageManager = (): PackageManager => {
 export const detectNonInteractive = (yesFlag: boolean): boolean =>
   yesFlag || isRunningInAgent() || isHeadless();
 
-export const hasGitHubRemote = Effect.tryPromise({
-  try: () =>
-    new Promise<string>((resolve, reject) => {
-      const child = spawn("git", ["remote", "-v"], { stdio: ["ignore", "pipe", "ignore"] });
-      let stdout = "";
-      child.stdout.on("data", (data: Buffer) => {
-        stdout += data.toString();
-      });
-      child.on("close", (code) => {
-        if (code === 0) resolve(stdout);
-        else reject(new Error(`git remote exited with ${code}`));
-      });
-      child.on("error", reject);
-    }),
-  catch: (cause) => ({ _tag: "GitRemoteCheckError" as const, cause: String(cause) }),
-}).pipe(
-  Effect.map((stdout) => stdout.includes("github.com")),
-  Effect.timeout(GIT_REMOTE_TIMEOUT_MS),
-  Effect.catchTag("GitRemoteCheckError", (error) =>
-    Effect.logWarning("Failed to detect git remote", error.cause).pipe(Effect.as(false)),
-  ),
-  Effect.catchTag("TimeoutError", () =>
-    Effect.logWarning("Git remote check timed out").pipe(Effect.as(false)),
-  ),
-);
-
 export const hasGhCli = Effect.sync(() => isCommandAvailable("gh"));
 
 export const isGithubCliAuthenticated = Effect.try({
@@ -87,20 +61,6 @@ export const isGithubCliAuthenticated = Effect.try({
     Effect.logWarning("GitHub CLI auth check failed", error.cause).pipe(Effect.as(false)),
   ),
 );
-
-export const tryRun = (binary: string, args: readonly string[]): Promise<boolean> =>
-  new Promise((resolve) => {
-    const child = spawn(binary, [...args], {
-      stdio: "ignore",
-      timeout: GLOBAL_INSTALL_TIMEOUT_MS,
-    });
-    child.on("close", (code) => {
-      resolve(code === 0);
-    });
-    child.on("error", () => {
-      resolve(false);
-    });
-  });
 
 const CLAUDE_TOKEN_PATTERN = /^(sk-ant-\S+)$/m;
 const ESC = String.fromCharCode(0x1b);
