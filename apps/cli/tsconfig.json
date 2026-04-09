@@ -4,7 +4,10 @@
     "outDir": "./dist",
     "rootDir": ".",
     "jsx": "react-jsx",
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "expect-sdk/effect": ["../../packages/typescript-sdk/src/effect.ts"]
+    }
   },
   "include": ["src"]
 }
