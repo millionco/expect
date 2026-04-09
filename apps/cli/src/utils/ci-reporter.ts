@@ -133,4 +133,4 @@ export const createCiReporter = (options: CiReporterOptions) => {
   } as const;
 };
 
-export type CiReporter = ReturnType<typeof createCiReporter>;
+type CiReporter = ReturnType<typeof createCiReporter>;

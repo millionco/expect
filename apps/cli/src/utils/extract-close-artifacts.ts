@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url";
 const PLAYWRIGHT_VIDEO_PREFIX = "Playwright video:";
 const SCREENSHOT_PREFIX = "Screenshot:";
 
-export interface CloseArtifacts {
+interface CloseArtifacts {
   readonly videoUrl: string | undefined;
   readonly videoPath: string | undefined;
   readonly screenshotPaths: readonly string[];

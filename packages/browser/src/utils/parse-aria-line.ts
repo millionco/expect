@@ -1,7 +1,7 @@
 import { Option } from "effect";
 import { EXCLUDED_ARIA_ROLE } from "../constants";
 
-export interface ParsedAriaLine {
+interface ParsedAriaLine {
   role: string;
   name: string;
 }

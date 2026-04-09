@@ -28,9 +28,9 @@ export const SKIP_DIRECTORIES = new Set([
   "__fixtures__",
 ]);
 
-export const TEST_FILE_CONTENT_SIZE_LIMIT_BYTES = 256 * 1024;
+const TEST_FILE_CONTENT_SIZE_LIMIT_BYTES = 256 * 1024;
 export const TEST_FILE_SCAN_LIMIT = 200;
-export const TEST_COVERAGE_TIMEOUT_MS = 15_000;
+const TEST_COVERAGE_TIMEOUT_MS = 15_000;
 
 export const ALL_STEPS_TERMINAL_GRACE_MS = 2 * 60 * 1000;
 
