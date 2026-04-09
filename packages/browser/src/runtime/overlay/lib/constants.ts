@@ -40,7 +40,6 @@ export interface OverlayState {
   highlightSelectors: string[];
   actionLog: ActionLogEntry[];
   overlayVisible: boolean;
-  toolbarExpanded: boolean;
   isScrolling: boolean;
 }
 
