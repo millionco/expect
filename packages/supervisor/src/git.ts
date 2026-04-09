@@ -14,12 +14,6 @@ const execGit = (cwd: string, command: string): string => {
   }
 };
 
-export const getLocalBranches = (cwd: string): string[] => {
-  const output = execGit(cwd, "git branch --format='%(refname:short)'");
-  if (!output) return [];
-  return output.split("\n").filter(Boolean);
-};
-
 export const checkoutBranch = (cwd: string, branch: string): boolean => {
   try {
     execSync(`git checkout ${branch}`, {

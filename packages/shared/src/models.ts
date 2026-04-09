@@ -283,9 +283,6 @@ export class Branch extends Schema.Class<Branch>("@ami/Branch")({
   isMyBranch: Schema.Boolean,
 }) {}
 
-export const formatFileStats = (fileStats: readonly FileStat[]): string =>
-  fileStats.map((stat) => `  ${stat.relativePath} (+${stat.added} -${stat.removed})`).join("\n");
-
 export class GitState extends Schema.Class<GitState>("@supervisor/GitState")({
   isGitRepo: Schema.Boolean,
   currentBranch: Schema.String,

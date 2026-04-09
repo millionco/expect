@@ -82,13 +82,6 @@ export class NavigationError extends Schema.ErrorClass<NavigationError>("Navigat
   message = `Navigation to "${this.url}" failed: ${this.cause}`;
 }
 
-export class CdpDiscoveryError extends Schema.ErrorClass<CdpDiscoveryError>("CdpDiscoveryError")({
-  _tag: Schema.tag("CdpDiscoveryError"),
-  cause: Schema.String,
-}) {
-  message = `CDP discovery failed: ${this.cause}`;
-}
-
 export class CdpConnectionError extends Schema.ErrorClass<CdpConnectionError>("CdpConnectionError")(
   {
     _tag: Schema.tag("CdpConnectionError"),

@@ -53,9 +53,6 @@ export const AGENT_OVERLAY_CONTAINER_ID = "__expect_agent_overlay__";
 export const VIDEO_WIDTH_PX = 1920;
 export const VIDEO_HEIGHT_PX = 1080;
 
-export const CDP_DISCOVERY_TIMEOUT_MS = 2_000;
-export const CDP_PORT_PROBE_TIMEOUT_MS = 500;
-export const CDP_COMMON_PORTS = [9222, 9229] as const;
 export const CDP_LAUNCH_TIMEOUT_MS = 30_000;
 export const CDP_POLL_INTERVAL_MS = 50;
 

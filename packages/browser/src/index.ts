@@ -1,6 +1,5 @@
 export { Browser, runBrowser } from "./browser";
 export { diffSnapshots } from "./diff";
-export { autoDiscoverCdp, discoverCdpUrl } from "./cdp-discovery";
 export type {
   Browser as BrowserProfile,
   BrowserKey,
@@ -14,7 +13,6 @@ export {
   BrowserLaunchError,
   BrowserNotOpenError,
   CdpConnectionError,
-  CdpDiscoveryError,
   ChromeNotFoundError,
   ChromeSpawnError,
   ChromeLaunchTimeoutError,
