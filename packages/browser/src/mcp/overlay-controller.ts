@@ -2,7 +2,7 @@ import type { Locator, Page } from "playwright";
 import { Effect, Layer, ServiceMap } from "effect";
 import { evaluateRuntime } from "../utils/evaluate-runtime";
 import { AGENT_OVERLAY_CONTAINER_ID } from "../constants";
-import type { ExpectRuntime } from "../generated/runtime-types";
+import type { ExpectRuntime } from "../runtime/runtime-types";
 import type { SnapshotResult } from "../types";
 
 const REF_PATTERN = /ref\s*\(\s*['"](\w+)['"]\s*\)/;

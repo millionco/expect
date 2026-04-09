@@ -1,4 +1,4 @@
-import type { ExpectRuntime } from "./generated/runtime-types";
+import type { ExpectRuntime } from "./runtime/runtime-types";
 
 type PerformanceTrace = ReturnType<ExpectRuntime["getPerformanceTrace"]>;
 
