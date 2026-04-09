@@ -1,7 +1,8 @@
 export { Updates } from "./updates";
-export { Executor, type ExecuteOptions } from "./executor";
+export { Executor, ExecutionError, type ExecuteOptions } from "./executor";
 export { Reporter } from "./reporter";
-export { Git } from "./git/git";
+export { FindRepoRootError } from "./git/errors";
+export { Git, GitRepoRoot } from "./git/git";
 export {
   ChangesFor,
   type CommitSummary,
