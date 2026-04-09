@@ -12,7 +12,7 @@ export const SKILL_SOURCE_DIR = "packages/expect-skill";
 export const SKILL_TARBALL_URL = `https://codeload.github.com/${SKILL_REPO}/tar.gz/${SKILL_BRANCH}`;
 export const SKILL_RAW_URL = `https://raw.githubusercontent.com/${SKILL_REPO}/${SKILL_BRANCH}/${SKILL_SOURCE_DIR}/SKILL.md`;
 
-export interface ExpectSkillStatus {
+interface ExpectSkillStatus {
   installed: boolean;
   isLatest: boolean | undefined;
   installedVersion: string | undefined;

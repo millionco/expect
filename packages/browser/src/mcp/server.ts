@@ -735,8 +735,6 @@ export const createBrowserMcpServer = <E>(
   return { server, tools };
 };
 
-export type BrowserToolMap = ReturnType<typeof createBrowserMcpServer>["tools"];
-
 export const startBrowserMcpServer = async <E>(
   runtime: ManagedRuntime.ManagedRuntime<McpSession | OverlayController | FileSystem, E>,
 ) => {

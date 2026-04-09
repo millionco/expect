@@ -18,7 +18,7 @@ interface ToolResultContent {
   readonly mimeType?: string;
 }
 
-export interface ToolResult {
+interface ToolResult {
   readonly content: readonly ToolResultContent[];
 }
 

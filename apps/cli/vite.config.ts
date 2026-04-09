@@ -1,10 +1,10 @@
 import { createRequire } from "node:module";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Plugin } from "rolldown";
 import { defineConfig } from "vite-plus";
 import { reactCompilerPlugin } from "./react-compiler-plugin";
-import { buildRulesContent } from "../../packages/browser/scripts/build-rules-content.js";
 
 const require = createRequire(import.meta.url);
 const pkg = require("./package.json");
@@ -41,6 +41,45 @@ const distToSource = (distPath: string): string =>
     .replace(/dist\//, "src/")
     .replace(/\.mjs$/, ".ts")
     .replace(/\.d\.mts$/, ".ts");
+
+const collectMdFiles = (
+  baseDir: string,
+  dir: string,
+  prefix: string = "",
+): Record<string, string> => {
+  const result: Record<string, string> = {};
+  for (const entry of fs.readdirSync(path.join(baseDir, dir))) {
+    const fullPath = path.join(baseDir, dir, entry);
+    const relativePath = prefix ? `${prefix}/${entry}` : entry;
+    if (fs.statSync(fullPath).isDirectory()) {
+      Object.assign(result, collectMdFiles(baseDir, path.join(dir, entry), relativePath));
+    } else if (entry.endsWith(".md") && !entry.startsWith("_")) {
+      const pathParts = relativePath.split("/");
+      const isRule = relativePath.endsWith("/rule.md") || relativePath === "rule.md";
+      const parentDir = pathParts.length >= 2 ? pathParts[pathParts.length - 2] : "";
+      const isSubRule = parentDir === "rules" || parentDir === "references";
+      if (isRule || isSubRule) {
+        result[relativePath] = fs.readFileSync(fullPath, "utf-8");
+      }
+    }
+  }
+  return result;
+};
+
+const buildRulesContent = (): string => {
+  const configDirectory = fileURLToPath(new URL(".", import.meta.url));
+  const resourcesDirectory = path.join(
+    configDirectory,
+    "..",
+    "..",
+    "packages",
+    "browser",
+    "src",
+    "mcp",
+    "resources",
+  );
+  return JSON.stringify(collectMdFiles(resourcesDirectory, "."));
+};
 
 const buildExpectSubpathMap = (): Record<string, string> => {
   const map: Record<string, string> = {};

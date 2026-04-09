@@ -16,14 +16,13 @@ export {
   GitError,
   GitRepoRoot,
   GitState,
-  type SavedFlow,
-  type SavedFlowStep,
   TestPlan,
   TestPlanDraft,
   TestPlanStep,
   TestReport,
   type UpdateContent,
 } from "./git/index";
+export type { SavedFlow, SavedFlowStep } from "@expect/shared/models";
 export { FlowStorage } from "./flow-storage";
 export type { SavedFlowFileData, SavedFlowEnvironment } from "./types";
 export { checkoutBranch, getLocalBranches } from "./git";

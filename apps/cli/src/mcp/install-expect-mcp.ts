@@ -14,7 +14,7 @@ import { type ConfigFormat, ConfigRecord, type McpServerConfig } from "./config-
 import { readJsonConfig, writeJsonConfig } from "./json-config";
 import { readTomlConfig, writeTomlConfig } from "./toml-config";
 
-export type McpSupportedAgent = "claude" | "codex" | "copilot" | "cursor" | "gemini" | "opencode";
+type McpSupportedAgent = "claude" | "codex" | "copilot" | "cursor" | "gemini" | "opencode";
 
 export type McpInstallScope = "global" | "project";
 
@@ -32,7 +32,7 @@ interface AgentInstallFailure {
   readonly reason: string;
 }
 
-export interface ExpectMcpInstallSummary {
+interface ExpectMcpInstallSummary {
   readonly scope: McpInstallScope;
   readonly selectedAgents: readonly McpSupportedAgent[];
   readonly installed: readonly McpSupportedAgent[];

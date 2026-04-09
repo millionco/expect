@@ -17,10 +17,9 @@ export const FALLBACK_TERMINAL_COLUMNS = 80;
 export const FALLBACK_TERMINAL_ROWS = 24;
 export const CONTEXT_PICKER_VISIBLE_COUNT = 8;
 
-export const TEST_FILE_CONTENT_SIZE_LIMIT_BYTES = 256 * 1024;
-export const TEST_FILE_SCAN_LIMIT = 50;
+const TEST_FILE_CONTENT_SIZE_LIMIT_BYTES = 256 * 1024;
+const TEST_FILE_SCAN_LIMIT = 50;
 
-export const GIT_REMOTE_TIMEOUT_MS = 5_000;
 export const GIT_STATE_TIMEOUT_MS = 10_000;
 export const TEST_COVERAGE_TIMEOUT_MS = 15_000;
 
@@ -36,7 +35,7 @@ export const LISTENING_PORTS_REFETCH_INTERVAL_MS = 5000;
 
 export const WATCH_IDLE_TICK_INTERVAL_MS = 1000;
 export const WATCH_IDLE_SPINNER_DURATION_S = 5;
-export const WATCH_IDLE_HINT_DURATION_S = 3;
+const WATCH_IDLE_HINT_DURATION_S = 3;
 export const WATCH_IDLE_CYCLE_DURATION_S =
   WATCH_IDLE_SPINNER_DURATION_S + WATCH_IDLE_HINT_DURATION_S;
 export const TLS_PROBE_TIMEOUT_MS = 300;
@@ -52,7 +51,7 @@ export const VERSION_API_URL = "https://expect.dev/api/version";
 export const UPDATE_CHECK_STALE_MS = 3_600_000;
 export const UPDATE_CHECK_TIMEOUT_MS = 5_000;
 export const SKILL_FETCH_TIMEOUT_MS = 5_000;
-export const GLOBAL_INSTALL_TIMEOUT_MS = 60_000;
+const GLOBAL_INSTALL_TIMEOUT_MS = 60_000;
 
 export type PackageManager = "npm" | "pnpm" | "yarn" | "bun" | "deno" | "vp";
 
