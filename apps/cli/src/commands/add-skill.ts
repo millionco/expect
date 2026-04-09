@@ -45,13 +45,13 @@ class ExpectSkillDownloadError extends Schema.ErrorClass<ExpectSkillDownloadErro
   message = `Failed to download expect skill: ${this.reason}`;
 }
 
-const readNullTerminated = (buffer: Buffer, start: number, length: number): string => {
+export const readNullTerminated = (buffer: Buffer, start: number, length: number): string => {
   const raw = buffer.subarray(start, start + length).toString("utf8");
   const nullIndex = raw.indexOf("\x00");
   return nullIndex === -1 ? raw : raw.slice(0, nullIndex);
 };
 
-const extractTarEntries = (tar: Buffer, prefix: string, destDir: string) => {
+export const extractTarEntries = (tar: Buffer, prefix: string, destDir: string) => {
   let offset = 0;
 
   while (offset + TAR_HEADER_SIZE <= tar.length) {
@@ -195,7 +195,7 @@ const copySkillDirectoryContents = (sourceDir: string, targetDir: string) => {
   }
 };
 
-const ensureAgentSkillCopy = (
+export const ensureAgentSkillCopy = (
   projectRoot: string,
   agent: SupportedAgent,
 ): AgentSkillCopyResult => {

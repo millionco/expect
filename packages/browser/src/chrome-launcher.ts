@@ -40,7 +40,7 @@ const SYSTEM_CHROME_NAMES_LINUX = [
   "microsoft-edge",
 ] as const;
 
-const findSystemChrome = Effect.fn("Chrome.findSystemChrome")(function* () {
+export const findSystemChrome = Effect.fn("Chrome.findSystemChrome")(function* () {
   const platform = os.platform();
 
   if (platform === "darwin") {
