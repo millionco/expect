@@ -1,6 +1,6 @@
 import { Schema } from "effect";
 
-export const McpEnvEntry = Schema.Struct({
+const McpEnvEntry = Schema.Struct({
   name: Schema.String,
   value: Schema.String,
 });

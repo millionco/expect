@@ -1,9 +1,7 @@
 export const CURSOR_SIZE_PX = 72;
 export const CURSOR_HEIGHT_PX = 80;
 export const OVERLAY_BLUE = "color(display-p3 0.25 0.61 0.98)";
-export const SRGB_BLUE = "64, 156, 250";
 export const STATE_KEY = "__expect_cursor_state__";
-export const CLICK_ANIMATION_RESET_MS = 300;
 export const MAX_ACTION_LOG_ENTRIES = 50;
 export const TOOLTIP_FLIP_THRESHOLD_PX = 80;
 export const TOOLTIP_OFFSET_PX = 32;
