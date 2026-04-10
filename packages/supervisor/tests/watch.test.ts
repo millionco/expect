@@ -1,46 +1,46 @@
 import { describe, expect, it } from "vite-plus/test";
-import { parseAssessmentResponse } from "../src/watch";
+import { parseWatchAssessmentResponse } from "../src/watch";
 
 describe("Watch", () => {
   describe("parseAssessmentResponse", () => {
     it("parses exact 'run'", () => {
-      expect(parseAssessmentResponse("run")).toBe("run");
+      expect(parseWatchAssessmentResponse("run")).toBe("run");
     });
 
     it("parses exact 'skip'", () => {
-      expect(parseAssessmentResponse("skip")).toBe("skip");
+      expect(parseWatchAssessmentResponse("skip")).toBe("skip");
     });
 
     it("parses 'run' with whitespace", () => {
-      expect(parseAssessmentResponse("  run  ")).toBe("run");
+      expect(parseWatchAssessmentResponse("  run  ")).toBe("run");
     });
 
     it("parses 'skip' with whitespace", () => {
-      expect(parseAssessmentResponse("\n skip \n")).toBe("skip");
+      expect(parseWatchAssessmentResponse("\n skip \n")).toBe("skip");
     });
 
     it("parses 'Run' case-insensitive", () => {
-      expect(parseAssessmentResponse("Run")).toBe("run");
+      expect(parseWatchAssessmentResponse("Run")).toBe("run");
     });
 
     it("parses 'SKIP' case-insensitive", () => {
-      expect(parseAssessmentResponse("SKIP")).toBe("skip");
+      expect(parseWatchAssessmentResponse("SKIP")).toBe("skip");
     });
 
     it("parses response starting with 'run'", () => {
-      expect(parseAssessmentResponse("run - changes affect UI")).toBe("run");
+      expect(parseWatchAssessmentResponse("run - changes affect UI")).toBe("run");
     });
 
     it("parses response starting with 'skip'", () => {
-      expect(parseAssessmentResponse("skip - only comments")).toBe("skip");
+      expect(parseWatchAssessmentResponse("skip - only comments")).toBe("skip");
     });
 
     it("returns undefined for unparseable response", () => {
-      expect(parseAssessmentResponse("I think we should run tests")).toBeUndefined();
+      expect(parseWatchAssessmentResponse("I think we should run tests")).toBeUndefined();
     });
 
     it("returns undefined for empty response", () => {
-      expect(parseAssessmentResponse("")).toBeUndefined();
+      expect(parseWatchAssessmentResponse("")).toBeUndefined();
     });
   });
 });
