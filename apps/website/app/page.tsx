@@ -7,7 +7,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Stepper } from "pasito";
 
 import { ClaudeSpinner } from "./claude-spinner";
 import {
@@ -140,8 +139,6 @@ function useAnimationPhase(config: AnimationConfig, onComplete: () => void) {
   const [clicking, setClicking] = useState(false);
   const [labelVisible, setLabelVisible] = useState(false);
   const [cursorLabel, setCursorLabel] = useState<CursorLabelState>("security");
-  const [cursorOnTerminal, setCursorOnTerminal] = useState(false);
-  const [clickingTerminal, setClickingTerminal] = useState(false);
   const [terminalFocused, setTerminalFocused] = useState(false);
   const [fixing, setFixing] = useState(false);
   const [fixDiff, setFixDiff] = useState(false);
@@ -227,9 +224,7 @@ function useAnimationPhase(config: AnimationConfig, onComplete: () => void) {
     focused,
     cursorVisible,
     cursorOnBrowser,
-    cursorOnTerminal,
     clicking,
-    clickingTerminal,
     labelVisible,
     cursorLabel,
     terminalFocused,
@@ -670,18 +665,14 @@ function NetworkPanel({ fixed }: { fixed: boolean }) {
 function AnimatedCursor({
   visible,
   onBrowser,
-  onTerminal,
   clicking,
-  clickingTerminal,
   labelVisible,
   label,
   config,
 }: {
   visible: boolean;
   onBrowser: boolean;
-  onTerminal: boolean;
   clicking: boolean;
-  clickingTerminal: boolean;
   labelVisible: boolean;
   label: CursorLabelState;
   config: AnimationConfig;
@@ -693,13 +684,11 @@ function AnimatedCursor({
       style={{ transformOrigin: "top left" }}
       initial={{ x: 200, y: 115, opacity: 0, scale: 0 }}
       animate={
-        visible && onTerminal
-          ? { x: 210, y: 80, opacity: 1, scale: 1 }
-          : visible && onBrowser
-            ? { x: -60, y: 145, opacity: 1, scale: 1 }
-            : visible
-              ? { x: 200, y: 115, opacity: 1, scale: 1 }
-              : { opacity: 0, scale: 0.8 }
+        visible && onBrowser
+          ? { x: -60, y: 145, opacity: 1, scale: 1 }
+          : visible
+            ? { x: 200, y: 115, opacity: 1, scale: 1 }
+            : { opacity: 0, scale: 0.8 }
       }
       transition={
         !visible
@@ -717,7 +706,7 @@ function AnimatedCursor({
         animate={
           isAlert
             ? { scale: 1, x: [0, -3, 3, -2, 2, -1, 1, 0] }
-            : { scale: clicking || clickingTerminal ? 0.85 : 1, x: 0 }
+            : { scale: clicking ? 0.85 : 1, x: 0 }
         }
         transition={
           isAlert
@@ -851,9 +840,7 @@ function TerminalAnimationView({
     focused,
     cursorVisible,
     cursorOnBrowser,
-    cursorOnTerminal,
     clicking,
-    clickingTerminal,
     labelVisible,
     cursorLabel,
     terminalFocused,
@@ -879,9 +866,7 @@ function TerminalAnimationView({
         <AnimatedCursor
           visible={cursorVisible}
           onBrowser={cursorOnBrowser}
-          onTerminal={cursorOnTerminal}
           clicking={clicking}
-          clickingTerminal={clickingTerminal}
           labelVisible={labelVisible}
           label={cursorLabel}
           config={config}
