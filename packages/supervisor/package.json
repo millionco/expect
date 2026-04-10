@@ -17,14 +17,12 @@
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/provider": "^3.0.8",
     "@effect/platform-node": "4.0.0-beta.35",
     "@expect/agent": "workspace:*",
     "@expect/browser": "workspace:*",
     "@expect/shared": "workspace:*",
     "effect": "4.0.0-beta.35",
     "oxc-resolver": "^11.19.1",
-    "pathe": "^2.0.3",
     "simple-git": "^3.33.0"
   },
   "devDependencies": {
