@@ -14,9 +14,7 @@ type WebFramework =
   | "svelte"
   | "webpack";
 
-;
-
-interface DetectedProject {
+export interface DetectedProject {
   readonly name: string;
   readonly path: string;
   readonly framework: WebFramework;
