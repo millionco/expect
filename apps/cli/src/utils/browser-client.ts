@@ -48,7 +48,7 @@ const isProcessAlive = (pid: number): boolean => {
   }
 };
 
-export const isDaemonRunning = (): boolean => {
+const isDaemonRunning = (): boolean => {
   const session = readSession();
   return Boolean(session && isProcessAlive(session.pid));
 };
