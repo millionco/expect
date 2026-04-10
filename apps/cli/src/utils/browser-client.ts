@@ -48,11 +48,6 @@ const isProcessAlive = (pid: number): boolean => {
   }
 };
 
-export const isDaemonRunning = (): boolean => {
-  const session = readSession();
-  return Boolean(session && isProcessAlive(session.pid));
-};
-
 const waitForSessionFile = (): Promise<SessionInfo> =>
   new Promise((resolve, reject) => {
     const deadline = Date.now() + DAEMON_STARTUP_TIMEOUT_MS;

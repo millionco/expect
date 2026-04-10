@@ -9,7 +9,3 @@ export const configure = (config: Partial<ExpectConfig>): void => {
 };
 
 export const getGlobalConfig = (): ExpectConfig => globalConfig;
-
-export const resetGlobalConfig = (): void => {
-  globalConfig = {};
-};
