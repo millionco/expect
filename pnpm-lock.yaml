@@ -308,6 +308,9 @@ importers:
       '@expect/shared':
         specifier: workspace:*
         version: link:../shared
+      '@github/copilot':
+        specifier: ^1.0.23
+        version: 1.0.23
       '@zed-industries/codex-acp':
         specifier: ^0.10.0
         version: 0.10.0
@@ -1170,6 +1173,46 @@ packages:
 
   '@fontsource-variable/geist@5.2.8':
     resolution: {integrity: sha512-cJ6m9e+8MQ5dCYJsLylfZrgBh6KkG4bOLckB35Tr9J/EqdkEM6QllH5PxqP1dhTvFup+HtMRPuz9xOjxXJggxw==}
+
+  '@github/copilot-darwin-arm64@1.0.23':
+    resolution: {integrity: sha512-jLPa6koJLKp1fNI2k9Tetj4h6Tht6dXHM8MVZQtZ+ap8Z03OBAXpHIVvBaI+qSbRkP6BE74mevIG6nUhD7FZLw==}
+    cpu: [arm64]
+    os: [darwin]
+    hasBin: true
+
+  '@github/copilot-darwin-x64@1.0.23':
+    resolution: {integrity: sha512-CBNjzo/qb4w8TDDObPIkP9njen8PC+MJhQTHGq2lSwbSU4UOIKEbkzrU1ZxLaLrUR8H5i5dorsnty+XZFAzcyg==}
+    cpu: [x64]
+    os: [darwin]
+    hasBin: true
+
+  '@github/copilot-linux-arm64@1.0.23':
+    resolution: {integrity: sha512-XQ8x8xoNyhUErfxTCuYDWFMEjl2GZCbVit87tcO+dJ4rJBKokuLRIR1UUTVhOB3pe/F3d/Dl9D7ytEs3hTIw7A==}
+    cpu: [arm64]
+    os: [linux]
+    hasBin: true
+
+  '@github/copilot-linux-x64@1.0.23':
+    resolution: {integrity: sha512-OoPZ/Z8fVCam/IDyjhhCn+qj7rnQKS7987pyCfsWcrKoCiX9NB3pzXaoGBXQfndcu9TmH3qi+DJoaO+aJaLHfg==}
+    cpu: [x64]
+    os: [linux]
+    hasBin: true
+
+  '@github/copilot-win32-arm64@1.0.23':
+    resolution: {integrity: sha512-7mwtEwhES1V4b4u3Rg5bztaNyyGvEP3WnIuPqleiXDmot2ofOA4Zj5HemSsTbxTCeJc7jL7xRxyjX851xKiW2w==}
+    cpu: [arm64]
+    os: [win32]
+    hasBin: true
+
+  '@github/copilot-win32-x64@1.0.23':
+    resolution: {integrity: sha512-ZOhnwGFtx1cb4a/AOpQS/gmEBkv5rS9YtO3S+e/0etT1+q+A2RRcDh9ahtM4d7P7v4Tb+Ws64MSXOrwsXvvXhA==}
+    cpu: [x64]
+    os: [win32]
+    hasBin: true
+
+  '@github/copilot@1.0.23':
+    resolution: {integrity: sha512-YUx8ksTEy8LjZ9PrYxT/LcZlDsX+nceNar1BGIiwnvtDvaf5bLSoo7ZkGKlBjK14WQ0KldWLk4K4MOBK4e1dEg==}
+    hasBin: true
 
   '@hono/node-server@1.19.11':
     resolution: {integrity: sha512-dr8/3zEaB+p0D2n/IUrlPF1HZm586qgJNXK1a9fhg/PzdtkK7Ksd5l312tJX2yBuALqDYBlG20QEbayqPyxn+g==}
@@ -6607,6 +6650,33 @@ snapshots:
   '@floating-ui/utils@0.2.11': {}
 
   '@fontsource-variable/geist@5.2.8': {}
+
+  '@github/copilot-darwin-arm64@1.0.23':
+    optional: true
+
+  '@github/copilot-darwin-x64@1.0.23':
+    optional: true
+
+  '@github/copilot-linux-arm64@1.0.23':
+    optional: true
+
+  '@github/copilot-linux-x64@1.0.23':
+    optional: true
+
+  '@github/copilot-win32-arm64@1.0.23':
+    optional: true
+
+  '@github/copilot-win32-x64@1.0.23':
+    optional: true
+
+  '@github/copilot@1.0.23':
+    optionalDependencies:
+      '@github/copilot-darwin-arm64': 1.0.23
+      '@github/copilot-darwin-x64': 1.0.23
+      '@github/copilot-linux-arm64': 1.0.23
+      '@github/copilot-linux-x64': 1.0.23
+      '@github/copilot-win32-arm64': 1.0.23
+      '@github/copilot-win32-x64': 1.0.23
 
   '@hono/node-server@1.19.11(hono@4.12.7)':
     dependencies:
