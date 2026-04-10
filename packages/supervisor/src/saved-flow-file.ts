@@ -1,5 +1,30 @@
 import { Predicate } from "effect";
-import type { SavedFlowFileData } from "./types";
+
+export interface SavedFlowEnvironment {
+  baseUrl: string;
+  cookies: boolean;
+}
+
+export interface SavedFlowFileData {
+  formatVersion: number;
+  title: string;
+  description: string;
+  slug: string;
+  savedTargetScope: string;
+  savedTargetDisplayName: string;
+  selectedCommit?: string;
+  flow: {
+    title: string;
+    userInstruction: string;
+    steps: Array<{
+      id: string;
+      title: string;
+      instruction: string;
+      expectedOutcome: string;
+    }>;
+  };
+  environment: SavedFlowEnvironment;
+}
 
 export const formatSavedFlowFrontmatter = (data: SavedFlowFileData): string => {
   const lines: string[] = [

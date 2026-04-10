@@ -3,7 +3,6 @@ import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as path from "node:path";
 import { type TestPlan, changesForDisplayName } from "@expect/shared/models";
 import { formatSavedFlowFile, parseSavedFlowFile } from "./saved-flow-file";
-import type { SavedFlowFileData } from "./types";
 import {
   FLOW_DIRECTORY_NAME,
   FLOW_DESCRIPTION_CHAR_LIMIT,
@@ -11,6 +10,32 @@ import {
 } from "./constants";
 import { ensureStateDir } from "./utils/ensure-state-dir";
 import { GitRepoRoot } from "./git/git";
+
+interface SavedFlowEnvironment {
+  baseUrl: string;
+  cookies: boolean;
+}
+
+interface SavedFlowFileData {
+  formatVersion: number;
+  title: string;
+  description: string;
+  slug: string;
+  savedTargetScope: string;
+  savedTargetDisplayName: string;
+  selectedCommit?: string;
+  flow: {
+    title: string;
+    userInstruction: string;
+    steps: Array<{
+      id: string;
+      title: string;
+      instruction: string;
+      expectedOutcome: string;
+    }>;
+  };
+  environment: SavedFlowEnvironment;
+}
 
 const slugify = (text: string): string =>
   text

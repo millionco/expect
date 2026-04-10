@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
     "./models": "./src/models.ts",
     "./prompts": "./src/prompts.ts",
     "./observability": "./src/observability/exports.ts",
