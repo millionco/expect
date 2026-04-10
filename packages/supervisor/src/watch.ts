@@ -95,7 +95,7 @@ export interface WatchOptions {
   readonly onEvent: (event: WatchEvent) => void;
 }
 
-export const parseAssessmentResponse = (raw: string): WatchDecision | undefined => {
+const parseAssessmentResponse = (raw: string): WatchDecision | undefined => {
   const trimmed = raw.trim().toLowerCase();
   if (trimmed === "run") return "run";
   if (trimmed === "skip") return "skip";
