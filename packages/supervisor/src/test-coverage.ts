@@ -26,7 +26,7 @@ const isInSkippedDirectory = (filePath: string): boolean => {
   return segments.some((segment) => SKIP_DIRECTORIES.has(segment));
 };
 
-export const isTestFile = (filePath: string): boolean => {
+const isTestFile = (filePath: string): boolean => {
   if (TEST_FILE_PATTERN.test(filePath)) return true;
   if (TEST_DIRECTORY_PATTERN.test(filePath) && SOURCE_EXTENSION_PATTERN.test(filePath)) return true;
   return false;

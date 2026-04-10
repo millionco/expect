@@ -1,4 +1,4 @@
-export interface DemoStepDefinition {
+interface DemoStepDefinition {
   readonly stepId: string;
   readonly title: string;
   readonly startOffsetMs: number;
