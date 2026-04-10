@@ -2,25 +2,25 @@ export { FindRepoRootError, GitError } from "./errors";
 export { Git, GitRepoRoot } from "./git";
 export {
   AgentProvider,
-  Branch,
+  
   type ChangedFile,
   ChangesFor,
   DraftId,
-  changesForDisplayName,
+  
   type CommitSummary,
   ExecutedTestPlan,
   type ExecutionEvent,
   FileStat,
   formatFileStats,
   GitState,
-  TestContext,
-  testContextDescription,
-  testContextDisplayLabel,
-  testContextFilterText,
-  testContextId,
-  testContextLabel,
-  TestCoverageEntry,
-  TestCoverageReport,
+  
+  
+  
+  
+  
+  
+  
+  
   TestPlan,
   TestPlanDraft,
   TestPlanStep,

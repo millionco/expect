@@ -2,7 +2,7 @@ export interface CellData {
   value: string;
 }
 
-export interface SpreadsheetState {
+interface SpreadsheetState {
   cells: Record<string, CellData>;
   selectedCell: string;
 }
