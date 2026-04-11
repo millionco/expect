@@ -23,7 +23,6 @@ import {
 } from "../mcp/install-expect-mcp";
 import { runAddSkill } from "./add-skill";
 
-export { detectAvailableAgents };
 
 interface InitOptions {
   yes?: boolean;

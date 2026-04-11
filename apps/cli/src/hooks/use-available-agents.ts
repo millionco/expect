@@ -3,7 +3,7 @@ import { detectAvailableAgents, type SupportedAgent } from "@expect/agent";
 import type { AgentBackend } from "@expect/agent";
 import { AGENT_PROVIDER_DISPLAY_NAMES } from "@expect/shared/models";
 
-export interface AvailableAgent {
+interface AvailableAgent {
   backend: AgentBackend;
   displayName: string;
   isInstalled: boolean;
