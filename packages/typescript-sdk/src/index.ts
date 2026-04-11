@@ -1,6 +1,6 @@
 export { Expect, Expect as default } from "./expect";
 export { tool } from "./tool";
-export { defineConfig, configure } from "./config";
+export { configure } from "./config";
 export { ExpectConfigError } from "./errors";
 export { DEFAULT_TIMEOUT_MS } from "./constants";
 export type {
