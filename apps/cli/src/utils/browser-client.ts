@@ -48,7 +48,7 @@ const isProcessAlive = (pid: number): boolean => {
   }
 };
 
-export const isDaemonRunning = (): boolean => {
+const isDaemonRunning = (): boolean => {
   const session = readSession();
   return Boolean(session && isProcessAlive(session.pid));
 };
@@ -71,7 +71,7 @@ const waitForSessionFile = (): Promise<SessionInfo> =>
     poll();
   });
 
-export const ensureDaemon = async (): Promise<SessionInfo> => {
+const ensureDaemon = async (): Promise<SessionInfo> => {
   const existing = readSession();
   if (existing && isProcessAlive(existing.pid)) return existing;
 
