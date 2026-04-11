@@ -29,7 +29,6 @@ export const SKIP_DIRECTORIES = new Set([
 ]);
 
 export const TEST_FILE_SCAN_LIMIT = 200;
-export const TEST_COVERAGE_TIMEOUT_MS = 15_000;
 
 export const ALL_STEPS_TERMINAL_GRACE_MS = 2 * 60 * 1000;
 
