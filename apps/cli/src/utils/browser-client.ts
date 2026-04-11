@@ -18,7 +18,7 @@ interface ToolResultContent {
   readonly mimeType?: string;
 }
 
-export interface ToolResult {
+interface ToolResult {
   readonly content: readonly ToolResultContent[];
 }
 
@@ -46,11 +46,6 @@ const isProcessAlive = (pid: number): boolean => {
   } catch {
     return false;
   }
-};
-
-export const isDaemonRunning = (): boolean => {
-  const session = readSession();
-  return Boolean(session && isProcessAlive(session.pid));
 };
 
 const waitForSessionFile = (): Promise<SessionInfo> =>

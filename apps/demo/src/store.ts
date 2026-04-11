@@ -47,13 +47,6 @@ const notify = () => {
 };
 
 export const store = {
-  subscribe(listener: () => void) {
-    listeners.push(listener);
-    return () => {
-      listeners = listeners.filter((l) => l !== listener);
-    };
-  },
-
   getSnapshot: () => data,
 
   getCellValue: (cellId: string) => {
@@ -82,22 +75,6 @@ export const store = {
 
   selectCell(cellId: string) {
     data = { ...data, selectedCell: cellId };
-    notify();
-  },
-
-  getSelectionRange(anchor: string, end: string) {
-    return `${anchor}:${end}`;
-  },
-
-  deleteRow(rowNumber: number) {
-    const newCells: Record<string, CellData> = {};
-    for (const [id, cell] of Object.entries(data.cells)) {
-      const row = parseInt(id.slice(1), 10);
-      if (row !== rowNumber) {
-        newCells[id] = cell;
-      }
-    }
-    data = { ...data, cells: newCells };
     notify();
   },
 
