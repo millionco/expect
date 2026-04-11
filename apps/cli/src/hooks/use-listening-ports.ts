@@ -11,7 +11,7 @@ import {
 
 export type Protocol = "http" | "https";
 
-export interface ListeningPort {
+interface ListeningPort {
   readonly port: number;
   readonly processName: string;
   readonly cwd: string;

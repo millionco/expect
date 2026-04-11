@@ -21,7 +21,7 @@ const stepStatusToResultStatus = (status: string): Status => {
   return "pending";
 };
 
-export interface ExecutionArtifacts {
+interface ExecutionArtifacts {
   readonly recordingPath: string | undefined;
   readonly screenshotPaths: readonly string[];
 }

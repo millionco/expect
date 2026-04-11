@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { projectPreferencesStorage } from "@expect/supervisor";
 
 export type { BrowserMode } from "../utils/project-preferences-io";
-export { isValidBrowserMode } from "../utils/project-preferences-io";
+;
 import type { BrowserMode } from "../utils/project-preferences-io";
 
 interface ProjectPreferencesStore {
