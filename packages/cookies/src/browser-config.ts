@@ -25,7 +25,7 @@ export interface ChromiumConfig {
   readonly localStatePath: string;
 }
 
-export interface FirefoxConfig {
+interface FirefoxConfig {
   readonly kind: "firefox";
   readonly key: "firefox";
   readonly displayName: string;
@@ -39,7 +39,7 @@ export interface FirefoxConfig {
   readonly dataDir: PlatformPaths;
 }
 
-export interface SafariConfig {
+interface SafariConfig {
   readonly kind: "safari";
   readonly key: "safari";
   readonly displayName: string;
@@ -48,7 +48,7 @@ export interface SafariConfig {
   readonly cookieRelativePaths: readonly string[];
 }
 
-export type BrowserConfig = ChromiumConfig | FirefoxConfig | SafariConfig;
+type BrowserConfig = ChromiumConfig | FirefoxConfig | SafariConfig;
 
 const chromium = (
   key: ChromiumBrowserKey,
@@ -491,7 +491,7 @@ export const configByBundleId = (identifier: string): BrowserConfig | undefined 
 export const configByDesktopFile = (name: string): BrowserConfig | undefined =>
   desktopFileMap.get(name.replace(/\.desktop$/, ""));
 
-export const configByDisplayName = (name: string): BrowserConfig | undefined =>
+const configByDisplayName = (name: string): BrowserConfig | undefined =>
   displayNameMap.get(name);
 
 export const chromiumConfig = (key: ChromiumBrowserKey): ChromiumConfig =>
