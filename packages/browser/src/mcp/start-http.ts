@@ -2,6 +2,7 @@ import * as fs from "node:fs";
 import * as http from "node:http";
 import { Effect, Predicate } from "effect";
 import { McpSession } from "./mcp-session";
+import { registerProcessCleanup } from "./register-process-cleanup";
 import { McpRuntime } from "./runtime";
 import { createBrowserMcpServer } from "./server";
 import { CLI_SESSION_FILE, MAX_DAEMON_REQUEST_BODY_BYTES } from "./constants";
@@ -89,17 +90,20 @@ const closeSession = Effect.gen(function* () {
   yield* session.close();
 });
 
-const shutdown = () => {
-  void McpRuntime.runPromise(closeSession).finally(() => {
+registerProcessCleanup({
+  cleanup: () => McpRuntime.runPromise(closeSession),
+  afterCleanup: async () => {
     removeSessionFile();
-    process.exit(0);
-  });
-};
-
-process.once("SIGINT", shutdown);
-process.once("SIGTERM", shutdown);
-process.once("beforeExit", () => {
-  void McpRuntime.runPromise(closeSession).finally(removeSessionFile);
+    await new Promise<void>((resolve, reject) => {
+      httpServer.close((error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve();
+      });
+    });
+  },
 });
 
 httpServer.listen(0, "127.0.0.1", () => {
