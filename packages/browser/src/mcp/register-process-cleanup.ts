@@ -1,5 +1,3 @@
-import type { Signal } from "node:process";
-
 const UNIX_SIGNALS = ["SIGINT", "SIGTERM", "SIGHUP"] as const;
 const WINDOWS_SIGNALS = ["SIGINT", "SIGTERM", "SIGBREAK"] as const;
 
@@ -58,7 +56,7 @@ export const registerProcessCleanup = (options: RegisterProcessCleanupOptions) =
   };
 
   for (const signal of SIGNALS) {
-    process.once(signal as Signal, () => {
+    process.once(signal as NodeJS.Signals, () => {
       requestShutdown(signal, true);
     });
   }
