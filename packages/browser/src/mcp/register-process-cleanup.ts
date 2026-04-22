@@ -21,12 +21,15 @@ let cleanupRegistered = false;
 const SIGNALS: readonly SignalShutdownReason[] =
   process.platform === "win32" ? WINDOWS_SIGNALS : UNIX_SIGNALS;
 
-const formatError = (error: unknown) => (error instanceof Error ? error.stack ?? error.message : String(error));
+const formatError = (error: unknown) =>
+  error instanceof Error ? (error.stack ?? error.message) : String(error);
 
-const writeShutdownError = (stage: "cleanup" | "afterCleanup", reason: ShutdownReason, error: unknown) => {
-  process.stderr.write(
-    `expect mcp ${stage} failed during ${reason}: ${formatError(error)}\n`,
-  );
+const writeShutdownError = (
+  stage: "cleanup" | "afterCleanup",
+  reason: ShutdownReason,
+  error: unknown,
+) => {
+  process.stderr.write(`expect mcp ${stage} failed during ${reason}: ${formatError(error)}\n`);
 };
 
 export const registerProcessCleanup = (options: RegisterProcessCleanupOptions) => {
@@ -40,7 +43,8 @@ export const registerProcessCleanup = (options: RegisterProcessCleanupOptions) =
     exitAfterCleanup = exitAfterCleanup || shouldExit;
     if (shutdownPromise) return;
 
-    shutdownPromise = options.cleanup(reason)
+    shutdownPromise = options
+      .cleanup(reason)
       .catch((error) => {
         writeShutdownError("cleanup", reason, error);
       })
