@@ -91,7 +91,7 @@ export class Cookie extends Schema.Class<Cookie>("@cookies/Cookie")({
       expires: this.expires ?? SESSION_EXPIRES,
       secure: this.secure,
       httpOnly: this.httpOnly,
-      sameSite: this.sameSite,
+      ...(this.sameSite !== undefined && { sameSite: this.sameSite }),
     };
   }
 }
