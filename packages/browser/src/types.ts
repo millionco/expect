@@ -53,6 +53,7 @@ export interface CreatePageOptions {
   videoOutputDir?: string;
   cdpUrl?: Option.Option<string>;
   browserType?: BrowserEngine;
+  viewport?: { width: number; height: number };
 }
 
 export interface AnnotatedScreenshotOptions extends SnapshotOptions {

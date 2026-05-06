@@ -29,6 +29,7 @@ import {
   EXPECT_HEADED_ENV_NAME,
   EXPECT_PROFILE_ENV_NAME,
   EXPECT_BROWSER_ENV_NAME,
+  EXPECT_VIEWPORT_ENV_NAME,
   TMP_ARTIFACT_OUTPUT_DIRECTORY,
 } from "./constants";
 import { McpSessionNotOpenError } from "./errors";
@@ -157,6 +158,15 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
     const defaultBrowserEngine = Option.getOrUndefined(browserConfig) as
       | BrowserEngine
       | undefined;
+    const viewportConfig = yield* Config.option(Config.string(EXPECT_VIEWPORT_ENV_NAME));
+    const configuredViewport = Option.match(viewportConfig, {
+      onNone: () => undefined,
+      onSome: (value) => {
+        const match = /^(\d+)x(\d+)$/i.exec(value.trim());
+        if (!match) return undefined;
+        return { width: parseInt(match[1]!, 10), height: parseInt(match[2]!, 10) };
+      },
+    });
     const cookieBrowserKeys = Option.match(cookieBrowsersConfig, {
       onNone: (): string[] => [],
       onSome: (value) => value.split(",").filter(Boolean),
@@ -359,6 +369,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         waitUntil: options.waitUntil,
         cdpUrl,
         browserType: engine,
+        viewport: configuredViewport,
       });
 
       const sessionData: BrowserSessionData = {

@@ -7,6 +7,7 @@ export {
   EXPECT_HEADED_ENV_NAME,
   EXPECT_PROFILE_ENV_NAME,
   EXPECT_BROWSER_ENV_NAME,
+  EXPECT_VIEWPORT_ENV_NAME,
   TMP_ARTIFACT_OUTPUT_DIRECTORY,
 } from "./constants";
 export { McpSession } from "./mcp-session";

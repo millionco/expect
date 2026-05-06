@@ -221,7 +221,9 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
 
         const contextOptions: Parameters<typeof browser.newContext>[0] = {
           ignoreHTTPSErrors: true,
-          ...(options.headed && { viewport: null }),
+          ...(options.viewport
+            ? { viewport: options.viewport }
+            : options.headed && { viewport: null }),
         };
         if (profileLocale) {
           contextOptions.locale = profileLocale;
