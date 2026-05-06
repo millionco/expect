@@ -689,11 +689,6 @@ export const createBrowserMcpServer = <E>(
             ),
           );
           const lines = ["Browser closed."];
-          if (result.tmpVideoPath) {
-            lines.push(`Playwright video: ${result.tmpVideoPath}`);
-          } else if (result.videoPath) {
-            lines.push(`Playwright video: ${result.videoPath}`);
-          }
           for (const screenshotPath of result.screenshotPaths) {
             lines.push(`Screenshot: ${screenshotPath}`);
           }

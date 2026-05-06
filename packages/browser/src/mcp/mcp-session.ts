@@ -14,7 +14,6 @@ import {
   AGENT_OVERLAY_CONTAINER_ID,
   BROWSER_CLOSE_TIMEOUT_MS,
   OVERLAY_REINJECT_TIMEOUT_MS,
-  VIDEO_PATH_TIMEOUT_MS,
 } from "../constants";
 import type {
   AnnotatedScreenshotOptions,
@@ -74,8 +73,6 @@ export interface OpenResult {
 }
 
 export interface CloseResult {
-  readonly videoPath: string | undefined;
-  readonly tmpVideoPath: string | undefined;
   readonly screenshotPaths: readonly string[];
 }
 
@@ -89,7 +86,6 @@ interface BrowserOpenAnalyticsProperties {
   readonly cookie_count: number;
 }
 
-const PLAYWRIGHT_VIDEO_SUBDIRECTORY = "playwright";
 
 const setupPageTracking = (page: Page, sessionData: BrowserSessionData) => {
   if (sessionData.trackedPages.has(page)) return;
@@ -302,18 +298,6 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       yield* Ref.set(savedScreenshotPathsRef, []);
 
       const cookiesOption = yield* resolveCookies(options.cookies ?? defaultCookiesEnabled);
-      const videoOutputDir = path.join(
-        TMP_ARTIFACT_OUTPUT_DIRECTORY,
-        PLAYWRIGHT_VIDEO_SUBDIRECTORY,
-      );
-
-      yield* fileSystem
-        .makeDirectory(videoOutputDir, { recursive: true })
-        .pipe(
-          Effect.catchCause((cause) =>
-            Effect.logDebug("Failed to create Playwright video directory", { cause }),
-          ),
-        );
 
       const explicitCdpUrl = Option.orElse(options.cdpUrl ?? Option.none(), () => defaultCdpUrl);
       const headed = options.headed ?? isHeadedDefault;
@@ -373,7 +357,6 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         headed,
         cookies: cookiesOption,
         waitUntil: options.waitUntil,
-        videoOutputDir,
         cdpUrl,
         browserType: engine,
       });
@@ -504,9 +487,6 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
 
       yield* Ref.set(sessionRef, undefined);
 
-      const pageVideo = activeSession.page.video();
-      const artifactBaseName = `session-${Date.now()}`;
-
       if (!activeSession.page.isClosed()) {
         yield* evaluateRuntime(
           activeSession.page,
@@ -543,50 +523,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
         ),
       );
 
-      let videoPath: string | undefined;
-      let tmpVideoPath: string | undefined;
-
-      if (pageVideo) {
-        videoPath = yield* Effect.tryPromise(() => pageVideo.path()).pipe(
-          Effect.timeoutOrElse({
-            duration: `${VIDEO_PATH_TIMEOUT_MS} millis`,
-            onTimeout: () => Effect.succeed(undefined),
-          }),
-          Effect.catchCause((cause) =>
-            Effect.logDebug("Failed to resolve Playwright video path", { cause }).pipe(
-              Effect.as(undefined),
-            ),
-          ),
-        );
-
-        if (videoPath) {
-          yield* fileSystem
-            .makeDirectory(TMP_ARTIFACT_OUTPUT_DIRECTORY, { recursive: true })
-            .pipe(
-              Effect.catchCause((cause) =>
-                Effect.logDebug("Failed to create /tmp artifact directory", { cause }),
-              ),
-            );
-
-          const tmpVideoFilePath = path.join(
-            TMP_ARTIFACT_OUTPUT_DIRECTORY,
-            `${artifactBaseName}.webm`,
-          );
-
-          yield* fileSystem
-            .copyFile(videoPath, tmpVideoFilePath)
-            .pipe(
-              Effect.catchCause((cause) =>
-                Effect.logDebug("Failed to copy video to /tmp", { cause }),
-              ),
-            );
-          tmpVideoPath = tmpVideoFilePath;
-        }
-      }
-
       return {
-        videoPath,
-        tmpVideoPath,
         screenshotPaths: yield* Ref.get(savedScreenshotPathsRef),
       } satisfies CloseResult;
     });
