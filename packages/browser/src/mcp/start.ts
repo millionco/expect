@@ -14,23 +14,15 @@ const registerProcessCleanup = () => {
   if (cleanupRegistered) return;
   cleanupRegistered = true;
 
-  let alreadyShutdown = false;
-
   const handleShutdown = () => {
-    if (alreadyShutdown) return;
-    alreadyShutdown = true;
-    McpRuntime.runPromise(closeSession).catch(() => {
-      process.exit(0);
-    });
+    void McpRuntime.runPromise(closeSession).finally(() => process.exit(0));
   };
+
   process.once("SIGINT", handleShutdown);
   process.once("SIGTERM", handleShutdown);
   process.once("beforeExit", () => {
     void McpRuntime.runPromise(closeSession);
   });
-
-  process.stdin.on("end", handleShutdown);
-  process.stdin.on("close", handleShutdown);
 };
 
 registerProcessCleanup();
