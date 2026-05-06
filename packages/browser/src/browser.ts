@@ -269,10 +269,43 @@ export class Browser extends ServiceMap.Service<Browser>()("@browser/Browser", {
                 url ?? "",
                 defaultBrowserContext.preferredProfile,
               );
+          const formatted = cookies.map((cookie) => cookie.playwrightFormat);
           yield* Effect.tryPromise({
-            try: () => context.addCookies(cookies.map((cookie) => cookie.playwrightFormat)),
+            try: () => context.addCookies(formatted),
             catch: toBrowserLaunchError,
-          });
+          }).pipe(
+            Effect.catchTag("BrowserLaunchError", (batchError) =>
+              Effect.gen(function* () {
+                yield* Effect.logDebug(
+                  "Batch addCookies failed, falling back to per-cookie injection",
+                  { error: batchError.message, totalCookies: formatted.length },
+                );
+                const results = yield* Effect.forEach(
+                  formatted,
+                  (cookie) =>
+                    Effect.tryPromise({
+                      try: () => context.addCookies([cookie]),
+                      catch: toBrowserLaunchError,
+                    }).pipe(
+                      Effect.as(true),
+                      Effect.catchTag("BrowserLaunchError", (perCookieError) =>
+                        Effect.logDebug("Skipping invalid cookie", {
+                          cookieName: cookie.name,
+                          cookieDomain: cookie.domain,
+                          error: perCookieError.message,
+                        }).pipe(Effect.as(false)),
+                      ),
+                    ),
+                  { concurrency: 1 },
+                );
+                const injected = results.filter(Boolean).length;
+                yield* Effect.logInfo("Cookies injected with per-cookie fallback", {
+                  injected,
+                  skipped: formatted.length - injected,
+                });
+              }),
+            ),
+          );
         }
 
         const page = yield* Effect.tryPromise({

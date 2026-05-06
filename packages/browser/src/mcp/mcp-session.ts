@@ -24,10 +24,12 @@ import type {
 } from "../types";
 import {
   EXPECT_COOKIE_BROWSERS_ENV_NAME,
+  EXPECT_COOKIES_ENV_NAME,
   EXPECT_CDP_URL_ENV_NAME,
   EXPECT_BASE_URL_ENV_NAME,
   EXPECT_HEADED_ENV_NAME,
   EXPECT_PROFILE_ENV_NAME,
+  EXPECT_BROWSER_ENV_NAME,
   TMP_ARTIFACT_OUTPUT_DIRECTORY,
 } from "./constants";
 import { McpSessionNotOpenError } from "./errors";
@@ -150,11 +152,20 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
     });
     const profileConfig = yield* Config.option(Config.string(EXPECT_PROFILE_ENV_NAME));
     const configuredProfileName = Option.getOrUndefined(profileConfig);
+    const cookiesConfig = yield* Config.option(Config.string(EXPECT_COOKIES_ENV_NAME));
+    const defaultCookiesEnabled = Option.match(cookiesConfig, {
+      onNone: () => false,
+      onSome: (value) => value !== "false",
+    });
+    const browserConfig = yield* Config.option(Config.string(EXPECT_BROWSER_ENV_NAME));
+    const defaultBrowserEngine = Option.getOrUndefined(browserConfig) as
+      | BrowserEngine
+      | undefined;
     const cookieBrowserKeys = Option.match(cookieBrowsersConfig, {
       onNone: (): string[] => [],
       onSome: (value) => value.split(",").filter(Boolean),
     });
-    const cookiesDisabled = cookieBrowserKeys.length === 0;
+    const cookiesDisabled = cookieBrowserKeys.length === 0 && !defaultCookiesEnabled;
 
     const sessionRef = yield* Ref.make<BrowserSessionData | undefined>(undefined);
     const preExtractedCookiesRef = yield* Ref.make<Cookie[] | undefined>(undefined);
@@ -290,7 +301,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
       yield* Effect.annotateCurrentSpan({ url });
       yield* Ref.set(savedScreenshotPathsRef, []);
 
-      const cookiesOption = yield* resolveCookies(options.cookies);
+      const cookiesOption = yield* resolveCookies(options.cookies ?? defaultCookiesEnabled);
       const videoOutputDir = path.join(
         TMP_ARTIFACT_OUTPUT_DIRECTORY,
         PLAYWRIGHT_VIDEO_SUBDIRECTORY,
@@ -306,7 +317,7 @@ export class McpSession extends ServiceMap.Service<McpSession>()("@browser/McpSe
 
       const explicitCdpUrl = Option.orElse(options.cdpUrl ?? Option.none(), () => defaultCdpUrl);
       const headed = options.headed ?? isHeadedDefault;
-      const engine = options.browserType ?? "chromium";
+      const engine = options.browserType ?? defaultBrowserEngine ?? "chromium";
       yield* Ref.set(isHeadedRef, headed);
 
       const useSystemChrome =
